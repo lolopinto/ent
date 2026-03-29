@@ -110,11 +110,7 @@ function createLoader<T extends AssocEdge>(
         clause: cls1,
       });
 
-      const rows = await performRawQuery(
-        query,
-        cls.values(),
-        cls.logValues(),
-      );
+      const rows = await performRawQuery(query, cls.values(), cls.logValues());
       for (const row of rows) {
         const srcID = row.id1;
         const idx = m.get(srcID);

@@ -141,7 +141,11 @@ export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
       return batchLoadFn(keys);
     };
 
-    const cacheMap = instrumentCacheMap(options.cacheMap, tableName, cacheKeyFn);
+    const cacheMap = instrumentCacheMap(
+      options.cacheMap,
+      tableName,
+      cacheKeyFn,
+    );
     const loaderOptions =
       cacheMap === options.cacheMap ? options : { ...options, cacheMap };
     super(wrappedBatchFn, loaderOptions);
@@ -241,7 +245,7 @@ export class CacheMap {
       // was designed for ObjectLoader time. Now we have different needs e.g. count, assoc etc
       log("cache", {
         "dataloader-cache-hit": key,
-        "tableName": this.options.tableName,
+        tableName: this.options.tableName,
       });
     }
     return ret;

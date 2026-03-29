@@ -128,7 +128,10 @@ export function createCountDataLoader<K extends any>(
 export class RawCountLoader<K extends any> implements Loader<K, number> {
   private loader: DataLoader<K, number> | undefined;
   // tableName, columns
-  constructor(private options: QueryCountOptions, public context?: Context) {
+  constructor(
+    private options: QueryCountOptions,
+    public context?: Context,
+  ) {
     if (context && options.groupCol) {
       this.loader = createCountDataLoader(options, context);
     }

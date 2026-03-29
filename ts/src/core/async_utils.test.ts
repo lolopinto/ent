@@ -8,13 +8,17 @@ describe("mapWithConcurrency", () => {
     let maxInFlight = 0;
     const items = [1, 2, 3, 4, 5];
 
-    const results = await mapWithConcurrency(items, limit, async (item, idx) => {
-      inFlight += 1;
-      maxInFlight = Math.max(maxInFlight, inFlight);
-      await new Promise((resolve) => setTimeout(resolve, delays[idx]));
-      inFlight -= 1;
-      return item * 2;
-    });
+    const results = await mapWithConcurrency(
+      items,
+      limit,
+      async (item, idx) => {
+        inFlight += 1;
+        maxInFlight = Math.max(maxInFlight, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, delays[idx]));
+        inFlight -= 1;
+        return item * 2;
+      },
+    );
 
     return { maxInFlight, results };
   }

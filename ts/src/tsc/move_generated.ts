@@ -23,7 +23,7 @@ class TransformImports implements TransformFile {
   cwd: string;
   constructor(
     public glob: string,
-    public prettierGlob: string,
+    public formatGlob: string,
     private relativeImports: boolean,
     private checkRelativeImportsValid?: boolean,
   ) {

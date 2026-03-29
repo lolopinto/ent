@@ -636,9 +636,7 @@ test("custom type", () => {
 test("custom interface", async () => {
   @gqlInterfaceType({
     name: "AuthResponse",
-  })
-  // decorators not valid on interfaces so have to add them to a class
-  // doesn't have to be abstract, but it can be
+  }) // decorators not valid on interfaces so have to add them to a class // doesn't have to be abstract, but it can be
   abstract class AuthResponse {
     @gqlField({
       class: "AuthResponse",
@@ -902,9 +900,7 @@ test("custom interface", async () => {
 test("custom interface with fields also defined in class", async () => {
   @gqlInterfaceType({
     name: "AuthResponse",
-  })
-  // decorators not valid on interfaces so have to add them to a class
-  // doesn't have to be abstract, but it can be
+  }) // decorators not valid on interfaces so have to add them to a class // doesn't have to be abstract, but it can be
   abstract class AuthResponse {
     @gqlField({
       class: "AuthResponse",

@@ -211,9 +211,6 @@ func (p *Processor) FormatTS() error {
 }
 
 func (p *Processor) formatWithBiome() error {
-	biome := p.Config.GetBiomeConfig()
-	// get files without "generated" in the path and pass them manually to biome
-	// for the generated paths, we'll pass src/ent/generated and src/graphql/generated to handle that
 	var nonGenerated []string
 	root := p.Config.GetAbsPathToRoot()
 	for _, f := range p.Config.changedTSFiles {
@@ -229,37 +226,40 @@ func (p *Processor) formatWithBiome() error {
 		}
 	}
 
-	var args []string
-	if biome != nil {
-		args = biome.GetArgs()
-	} else {
-		args = defaultBiomeArgs
+	configPath, err := p.Config.GetBiomeConfigPath()
+	if err != nil {
+		return err
 	}
-	if len(args) == 0 {
-		if p.debugMode {
-			fmt.Printf("no args to pass to biome to format\n")
-		}
-		return nil
-	}
-
-	args = append(args, "--write")
+	args := []string{"format", "--config-path", configPath, "--write"}
+	hasTargets := false
 
 	// doesn't use globs when done from here
 	dirs := []string{"src/graphql/generated", "src/ent/generated"}
 	for _, dir := range dirs {
-		_, err := os.Stat(dir)
+		_, err := os.Stat(filepath.Join(root, dir))
 		// path doesn't exist. nothing to do here
 		if os.IsNotExist(err) {
-			return nil
+			continue
+		}
+		if err != nil {
+			return err
 		}
 
 		args = append(args, dir)
+		hasTargets = true
 	}
 	// add any non-generated paths
 	args = append(args, nonGenerated...)
-	args = append([]string{"format"}, args...)
+	hasTargets = hasTargets || len(nonGenerated) > 0
+	if !hasTargets {
+		if p.debugMode {
+			fmt.Printf("no files for biome to format\n")
+		}
+		return nil
+	}
 
 	cmd := exec.Command("biome", args...)
+	cmd.Dir = root
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
@@ -542,8 +542,6 @@ func parseExistingSchema(cfg *Config, buildInfo *build_info.BuildInfo) *schema.S
 	if err != nil {
 		return nil
 	}
-	// set input cfg
-	cfg.SetInputConfig(existingSchema.Config)
 
 	mutationName := codegenapi.DefaultGraphQLMutationName
 	if buildInfo != nil {

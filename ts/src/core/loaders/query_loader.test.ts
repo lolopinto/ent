@@ -609,7 +609,7 @@ function commonTests() {
     ml.logs.forEach((log, idx) => {
       expect(log).toStrictEqual({
         "dataloader-cache-hit": ids[idx],
-        "tableName": "fake_events",
+        tableName: "fake_events",
       });
     });
   }
@@ -820,7 +820,7 @@ function commonTests() {
         });
         expect(log).toStrictEqual({
           "cache-hit": cacheKey,
-          "tableName": "fake_events",
+          tableName: "fake_events",
         });
         return;
       }

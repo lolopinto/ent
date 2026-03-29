@@ -59,7 +59,9 @@ export function getContextCacheKey(options: QueryOptions): string {
     parts.push(`disableFieldsAlias:${options.disableFieldsAlias}`);
   }
   if (options.disableDefaultOrderByAlias !== undefined) {
-    parts.push(`disableDefaultOrderByAlias:${options.disableDefaultOrderByAlias}`);
+    parts.push(
+      `disableDefaultOrderByAlias:${options.disableDefaultOrderByAlias}`,
+    );
   }
   if (options.groupby !== undefined) {
     parts.push(`groupby:${options.groupby}`);
@@ -143,7 +145,7 @@ export class ContextCache {
       }
       log("cache", {
         "cache-hit": key,
-        "tableName": options.tableName,
+        tableName: options.tableName,
       });
     }
     return rows || null;
@@ -166,7 +168,7 @@ export class ContextCache {
       }
       log("cache", {
         "cache-hit": key,
-        "tableName": options.tableName,
+        tableName: options.tableName,
       });
     }
     return row || null;
@@ -207,9 +209,7 @@ export class ContextCache {
       return;
     }
     if (this.discardedLoaders.length > maxDiscardedLoaders) {
-      this.discardedLoaders = this.discardedLoaders.slice(
-        -maxDiscardedLoaders,
-      );
+      this.discardedLoaders = this.discardedLoaders.slice(-maxDiscardedLoaders);
     }
   }
 

@@ -18,6 +18,8 @@ Here are the current supported commands:
 * updates the database if there's been any changes
 * generates the code for the Ent and GraphQL layer
 
+Generated TypeScript is formatted with Biome as part of codegen. If the project root contains `biome.json` or `biome.jsonc`, that config is used directly. Otherwise, ent falls back to its bundled Biome config.
+
 You can filter to only run one "step" if you don't want to run all steps.
 
 Currently, there are 3 steps:

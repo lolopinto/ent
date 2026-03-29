@@ -353,7 +353,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       "dataloader-cache-hit": 1,
-      "tableName": "users",
+      tableName: "users",
     });
   });
 
@@ -384,7 +384,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       "dataloader-cache-hit": 1,
-      "tableName": "users",
+      tableName: "users",
     });
   }
 
@@ -686,9 +686,7 @@ function commonTests() {
         expect(rows.map((row) => row?.id)).toEqual(orderedIds);
 
         const queryLogs = ml.logs.filter((log) => log?.query);
-        expect(queryLogs.length).toBe(
-          Math.ceil(orderedIds.length / batchSize),
-        );
+        expect(queryLogs.length).toBe(Math.ceil(orderedIds.length / batchSize));
       }
     } finally {
       setLoaderMaxBatchSize(prevMaxBatchSize);
@@ -850,7 +848,7 @@ function commonTests() {
         expect.arrayContaining([
           {
             "dataloader-cache-hit": user.phoneNumber,
-            "tableName": "fake_users",
+            tableName: "fake_users",
           },
         ]),
       );
@@ -878,7 +876,7 @@ function commonTests() {
         expect.arrayContaining([
           {
             "dataloader-cache-hit": user.emailAddress,
-            "tableName": "fake_users",
+            tableName: "fake_users",
           },
         ]),
       );
@@ -924,7 +922,7 @@ function commonTests() {
         expect.arrayContaining([
           {
             "dataloader-cache-hit": user.id,
-            "tableName": "fake_users",
+            tableName: "fake_users",
           },
         ]),
       );
@@ -955,7 +953,7 @@ function commonTests() {
         expect.arrayContaining([
           {
             "dataloader-cache-hit": user.emailAddress,
-            "tableName": "fake_users",
+            tableName: "fake_users",
           },
         ]),
       );
@@ -1103,7 +1101,7 @@ function commonTests() {
         },
         {
           "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
-          "tableName": "users",
+          tableName: "users",
         },
       ]);
     });
@@ -1193,9 +1191,7 @@ function commonTests() {
       ]);
 
       expect(rows.map((rowSet) => rowSet?.length ?? 0)).toStrictEqual([
-        20,
-        5,
-        10,
+        20, 5, 10,
       ]);
       expect(counts).toStrictEqual([20, 5, 10]);
 
@@ -1244,7 +1240,7 @@ function commonTests() {
         },
         {
           "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
-          "tableName": "users",
+          tableName: "users",
         },
       ]);
     });
@@ -1354,7 +1350,7 @@ function commonTests() {
           "dataloader-cache-hit": `${clause
             .Greater("id", 10)
             .instanceKey()}:count`,
-          "tableName": "users",
+          tableName: "users",
         },
       ]);
     });
@@ -1460,7 +1456,7 @@ function commonTests() {
           "dataloader-cache-hit": `${clause
             .Greater("id", 10)
             .instanceKey()}:count`,
-          "tableName": "users",
+          tableName: "users",
         },
       ]);
     });
@@ -1619,13 +1615,13 @@ function commonTests() {
     expect(ml.logs).toStrictEqual([
       {
         "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
-        "tableName": "users",
+        tableName: "users",
       },
       {
         "dataloader-cache-hit": `${clause
           .Greater("id", 10)
           .instanceKey()}:count`,
-        "tableName": "users",
+        tableName: "users",
       },
     ]);
   });
@@ -1753,7 +1749,7 @@ function verifyMultiIDsCacheHit(ids: ID[]) {
   ids.forEach((id, idx) => {
     expect(ml.logs[idx]).toStrictEqual({
       "dataloader-cache-hit": id,
-      "tableName": "users",
+      tableName: "users",
     });
   });
 }

@@ -104,7 +104,7 @@ function commonTests() {
     // This is not the best
     expect(ml.logs[1]).toStrictEqual({
       "dataloader-cache-hit": user.id,
-      "tableName": "fake_contacts",
+      tableName: "fake_contacts",
     });
 
     ml.verifyNoErrors();
@@ -135,7 +135,7 @@ function commonTests() {
     // This is not the best
     expect(ml.logs[1]).toStrictEqual({
       "dataloader-cache-hit": id,
-      "tableName": "fake_contacts",
+      tableName: "fake_contacts",
     });
     ml.verifyNoErrors();
   });
@@ -428,7 +428,7 @@ function verifyGroupedCacheHit(ids: ID[]) {
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
       "dataloader-cache-hit": ids[idx],
-      "tableName": "fake_contacts",
+      tableName: "fake_contacts",
     });
   });
 }

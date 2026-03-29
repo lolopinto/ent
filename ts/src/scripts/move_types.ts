@@ -45,7 +45,7 @@ class GatherExportsInGeneratedTypes implements TransformFile {
 class TransformImports implements TransformFile {
   glob = "src/**/*.ts";
 
-  prettierGlob = "src/**/*.ts";
+  formatGlob = "src/**/*.ts";
 
   impsToMove = new Map();
   cwd = "";

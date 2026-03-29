@@ -65,10 +65,7 @@ async function loadRowsForIDLoader<K, V = Data>(
   }
 
   for (const batch of batches) {
-    const cls = getCombinedClause(
-      options,
-      clause.DBTypeIn(col, batch, typ),
-    );
+    const cls = getCombinedClause(options, clause.DBTypeIn(col, batch, typ));
     const rowOptions: LoadRowOptions = {
       ...options,
       clause: cls,
@@ -165,7 +162,8 @@ class clauseCacheMap<
   TQueryData extends Data = Data,
   K = keyof TQueryData,
   V = any,
-> implements DataLoader.CacheMap<clause.Clause<TQueryData, K>, Promise<V>> {
+> implements DataLoader.CacheMap<clause.Clause<TQueryData, K>, Promise<V>>
+{
   private m = new Map<string, Promise<V>>();
 
   constructor(
@@ -179,7 +177,7 @@ class clauseCacheMap<
     if (ret) {
       log("cache", {
         "dataloader-cache-hit": key2 + (this.count ? ":count" : ""),
-        "tableName": this.options.tableName,
+        tableName: this.options.tableName,
       });
     }
     return ret;
@@ -252,8 +250,10 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
       if (!clauses.length) {
         return [];
       }
-      return mapWithConcurrency(clauses, clauseLoaderConcurrency, (clauseItem) =>
-        loadCountForClauseLoader(options, clauseItem, context),
+      return mapWithConcurrency(
+        clauses,
+        clauseLoaderConcurrency,
+        (clauseItem) => loadCountForClauseLoader(options, clauseItem, context),
       );
     },
     {
@@ -266,11 +266,10 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
 }
 
 export class ObjectLoader<
-    TQueryData extends Data = Data,
-    TResultData extends Data = TQueryData,
-    K = keyof TQueryData,
-  >
-  implements
+  TQueryData extends Data = Data,
+  TResultData extends Data = TQueryData,
+  K = keyof TQueryData,
+> implements
     Loader<ID, TResultData | null>,
     Loader<clause.Clause<TQueryData, K>, TResultData[] | null>
 {
