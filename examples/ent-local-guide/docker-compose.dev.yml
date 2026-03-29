@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  db:
+    build:
+      context: .
+      dockerfile: postgis.Dockerfile
+    ports:
+      - 54329:5432
+    environment:
+      POSTGRES_DB: ent-local-guide
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres

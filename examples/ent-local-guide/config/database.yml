@@ -1,0 +1,8 @@
+dialect: postgres
+database: ent-local-guide
+user: postgres
+password: postgres
+host: localhost
+port: 54329
+pool: 5
+sslmode: disable
