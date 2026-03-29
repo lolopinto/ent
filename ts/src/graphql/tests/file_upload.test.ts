@@ -14,6 +14,7 @@ import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
 import { expectMutation } from "../../testutils/ent-graphql-tests";
 
 const fileContents = ["col1,col2", "data1,data2"].join("\n");
+const tempFiles: string[] = [];
 
 function createTempFile() {
   // Generate a unique file name
@@ -25,6 +26,7 @@ function createTempFile() {
 
   // Write content to the newly created file
   fs.writeFileSync(tempFilePath, fileContents, "utf8");
+  tempFiles.push(tempFilePath);
 
   return tempFilePath;
 }
@@ -41,6 +43,15 @@ async function readStream(file): Promise<string> {
   }
   return Buffer.concat(chunks).toString("utf8");
 }
+
+afterEach(() => {
+  while (tempFiles.length > 0) {
+    const tempFilePath = tempFiles.pop()!;
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+  }
+});
 
 const schema = new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -85,13 +96,17 @@ const schema = new GraphQLSchema({
           },
         },
         async resolve(src, args) {
-          for (const f of args.files) {
-            const file = await f;
-            const data = await readStream(file);
-            if (data !== fileContents) {
-              throw new Error(`invalid file sent`);
-            }
-          }
+          // graphql-upload resolves each promise as buffering starts, so consume
+          // multiple uploads concurrently instead of serializing the reads.
+          await Promise.all(
+            args.files.map(async (f) => {
+              const file = await f;
+              const data = await readStream(file);
+              if (data !== fileContents) {
+                throw new Error(`invalid file sent`);
+              }
+            }),
+          );
 
           return true;
         },
