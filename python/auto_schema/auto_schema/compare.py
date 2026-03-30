@@ -792,24 +792,13 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | 
         r = m.groups()
 
         info = _parse_raw_index_details(r[0], r[1])
+        payload = _raw_index_details_payload(info)
 
-        all_indices[name] = {
-            'postgresql_using': info.get('postgresql_using'),
-            'postgresql_using_internals': info.get('postgresql_using_internals'),
-            'postgresql_ops': info.get('postgresql_ops', {}),
-            'postgresql_with': info.get('postgresql_with', {}),
-            # TODO don't have columns|column to pass to FullTextIndex
-        }
+        all_indices[name] = payload
 
         # missing!
         if name not in names:
-            missing[name] = {
-                'postgresql_using': info.get('postgresql_using'),
-                'postgresql_using_internals': info.get('postgresql_using_internals'),
-                'postgresql_ops': info.get('postgresql_ops', {}),
-                'postgresql_with': info.get('postgresql_with', {}),
-                # TODO don't have columns|column to pass to FullTextIndex
-            }
+            missing[name] = payload
 
     return {'missing': missing, 'all': all_indices}
 
@@ -831,9 +820,9 @@ def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str, schem
     return res
 
 
-# pg_get_indexdef gives us an index fragment, not a full SQL statement, so a
-# tiny purpose-built parser is safer than trying to coerce a general SQL parser
-# into accepting it.
+# pg_get_indexdef gives us a constrained index fragment rather than full SQL.
+# We only need the access method, operator classes, and WITH params, so keep the
+# parser narrowly scoped to those pieces instead of pulling in a general parser.
 simple_index_part_regex = re.compile(
     r'^\s*"?(?P<column>[a-zA-Z0-9_]+)"?(?:\s+(?P<operator_class>[a-zA-Z0-9_.]+))?(?:\s+(?:ASC|DESC))?(?:\s+NULLS\s+(?:FIRST|LAST))?\s*$'
 )
@@ -925,6 +914,16 @@ def _parse_raw_index_details(using: str, details: str) -> dict[str, Any]:
     }
 
 
+def _raw_index_details_payload(info: dict[str, Any]) -> dict[str, Any]:
+    return {
+        'postgresql_using': info.get('postgresql_using'),
+        'postgresql_using_internals': info.get('postgresql_using_internals'),
+        'postgresql_ops': info.get('postgresql_ops', {}),
+        'postgresql_with': info.get('postgresql_with', {}),
+        # TODO don't have columns|column to pass to FullTextIndex
+    }
+
+
 def _normalize_index_using(using):
     if using in (None, False, '', 'btree'):
         return None
@@ -945,13 +944,11 @@ def _get_index_kwarg(index: sa.Index, key: str):
     if value not in (None, False):
         return value
 
-    dialect_options = getattr(index, 'dialect_options', None)
-    if dialect_options is not None:
-        postgres_options = dialect_options.get('postgresql')
-        if postgres_options is not None:
-            value = postgres_options.get(key.removeprefix('postgresql_'))
-            if value not in (None, False, [], {}):
-                return value
+    postgres_options = index.dialect_options.get('postgresql')
+    if postgres_options is not None:
+        value = postgres_options.get(key.removeprefix('postgresql_'))
+        if value not in (None, False, [], {}):
+            return value
     return None
 
 

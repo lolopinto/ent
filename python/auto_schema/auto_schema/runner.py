@@ -313,7 +313,7 @@ class Runner(object):
             if context.connection.dialect.name != 'postgresql':
                 return True
 
-            schema = getattr(metadata_column.table, "schema", None)
+            schema = metadata_column.table.schema
             reflected_type = cls._get_reflected_postgres_column_type(
                 context.connection,
                 metadata_column.table.name,
