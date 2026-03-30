@@ -171,7 +171,7 @@ describe("postgres", () => {
   });
 
   test("config object. extensions", () => {
-    const connStr = `postgres://:@localhost/ent_test`;
+    const connStr = `postgres://localhost/ent_test`;
 
     loadConfig({
       dbConnectionString: connStr,
@@ -203,7 +203,7 @@ describe("postgres", () => {
   });
 
   test("config object. extensions participate in search path", () => {
-    const connStr = `postgres://:@localhost/ent_test`;
+    const connStr = `postgres://localhost/ent_test`;
 
     loadConfig({
       dbConnectionString: connStr,
