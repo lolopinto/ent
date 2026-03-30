@@ -34,6 +34,7 @@ enum fieldPrivacyEvaluated {
 // runtime configurations
 export interface RuntimeDBExtension {
   name: string;
+  provisionedBy?: "ent" | "external";
   managed?: boolean;
   version?: string;
   installSchema?: string;
@@ -69,8 +70,8 @@ export interface Config {
   // dev schema configuration
   devSchema?: RuntimeDevSchemaConfig;
 
-  // runtime extension configuration. when omitted, generated state is used
-  // if available.
+  // runtime extension configuration. when omitted, ent only uses the
+  // default schemas/type parsers registered by imported extension packages.
   extensions?: RuntimeDBExtension[];
 }
 

@@ -92,6 +92,9 @@ export interface Config {
 
   // dev branch schemas (postgres only)
   devSchema?: RuntimeDevSchemaConfig;
+
+  // optional runtime extension validation / schema overrides
+  extensions?: RuntimeDBExtension[];
 }
 
 export interface ConfigWithCodegen extends Config {
@@ -126,6 +129,15 @@ interface RuntimeDevSchemaConfig {
   schemaName?: string; // optional explicit schema name
   includePublic?: boolean;
   ignoreBranches?: string[];
+}
+
+interface RuntimeDBExtension {
+  name: string;
+  provisionedBy?: "ent" | "external";
+  version?: string;
+  installSchema?: string;
+  runtimeSchemas?: string[];
+  dropCascade?: boolean;
 }
 
 interface DevSchemaConfig extends RuntimeDevSchemaConfig {
@@ -194,3 +206,34 @@ generated state file and by [`tsent prune_schemas`](/docs/advanced-topics/cli#pr
 `loadConfig` does not prune schemas on connection open.
 
 You can force-enable or disable this behavior with `ENT_DEV_SCHEMA_ENABLED` (useful for tests).
+
+### DB extensions at runtime
+
+Extension packages such as `@snowtop/ent-postgis` and `@snowtop/ent-pgvector` register their type parsers and default runtime schemas when they are imported. Ent batches those registrations into a single type lookup query at startup, so multiple extensions do not each issue their own `pg_type` query.
+
+If you want fail-fast runtime validation, version checks, or non-default runtime schemas, pass `extensions` to `loadConfig`:
+
+```ts
+import { loadConfig } from "@snowtop/ent";
+import { PostGISExtension } from "@snowtop/ent-postgis";
+
+loadConfig({
+  dbConnectionString: process.env.DB_CONNECTION_STRING,
+  extensions: [
+    PostGISExtension(),
+  ],
+});
+```
+
+`provisionedBy` has the same meaning here as in `dbExtensions`:
+
+* `"ent"` is the default. It means Ent owns the extension lifecycle in migrations.
+* `"external"` means the database service or DBA owns the extension lifecycle and Ent should only validate that it already exists.
+
+Runtime config is optional when the package defaults are enough. It is recommended when:
+
+* you want startup to fail if a required extension is missing or at the wrong version
+* the extension is installed outside `public`
+* dev-schema mode needs extra schemas added to `search_path`
+
+Runtime no longer reads a generated extension state file from `src/schema/.ent`. If you need runtime validation or schema overrides, pass them explicitly via `loadConfig`.

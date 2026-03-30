@@ -189,13 +189,13 @@ describe("postgres", () => {
     expect(db.db.extensions).toEqual([
       {
         name: "postgis",
-        managed: true,
+        provisionedBy: "ent",
         runtimeSchemas: ["public"],
         dropCascade: false,
       },
       {
         name: "vector",
-        managed: true,
+        provisionedBy: "ent",
         runtimeSchemas: [],
         dropCascade: false,
       },

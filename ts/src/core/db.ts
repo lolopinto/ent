@@ -214,9 +214,7 @@ export default class DB {
           ),
         );
       }
-      if (extensions.length > 0) {
-        readyTasks.push(initializeExtensions(this.pool, extensions));
-      }
+      readyTasks.push(initializeExtensions(this.pool, extensions));
       const ready =
         readyTasks.length > 0
           ? Promise.all(readyTasks).then(() => undefined)

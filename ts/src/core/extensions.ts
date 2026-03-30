@@ -1,43 +1,106 @@
-import fs from "fs";
-import path from "path";
-import type { Pool } from "pg";
+import { types as pgTypes, type Pool } from "pg";
 import type { RuntimeDBExtension } from "./config";
 import type { ResolvedDevSchema } from "./dev_schema";
 
-const STATE_DIR = ".ent";
-const STATE_FILE = "extensions.json";
-const DEFAULT_SCHEMA_DIR = path.join("src", "schema");
-
-interface ExtensionsState {
-  extensions?: RuntimeDBExtension[];
-}
+const TEXT_ARRAY_OID = 1009;
 
 export interface InstalledDBExtension {
   name: string;
   version: string;
+  installSchema?: string;
+}
+
+export interface ExtensionTypeParser {
+  name: string;
+  parse(value: string | null): unknown;
 }
 
 export interface ExtensionRuntimeHandler {
   name: string;
+  runtimeSchemas?: string[];
+  types?: ExtensionTypeParser[];
   validate?(
-    installed: InstalledDBExtension,
-    extension: RuntimeDBExtension,
-  ): void | Promise<void>;
-  initialize?(
-    pool: Pool,
     installed: InstalledDBExtension,
     extension: RuntimeDBExtension,
   ): void | Promise<void>;
 }
 
 const runtimeHandlers = new Map<string, ExtensionRuntimeHandler>();
+const registeredTypeOIDs = new Set<number>();
+
+function normalizeProvisionedBy(
+  extension: RuntimeDBExtension,
+): "ent" | "external" {
+  if (
+    extension.provisionedBy === "ent" ||
+    extension.provisionedBy === "external"
+  ) {
+    return extension.provisionedBy;
+  }
+  if (extension.provisionedBy) {
+    throw new Error(
+      `invalid provisionedBy ${extension.provisionedBy} for db extension ${extension.name}`,
+    );
+  }
+  return extension.managed === false ? "external" : "ent";
+}
+
+function normalizeRuntimeHandler(
+  handler: ExtensionRuntimeHandler,
+): ExtensionRuntimeHandler {
+  const typeHandlers = new Map<string, ExtensionTypeParser>();
+  for (const typeHandler of handler.types || []) {
+    typeHandlers.set(typeHandler.name, typeHandler);
+  }
+  return {
+    ...handler,
+    runtimeSchemas: [...new Set(handler.runtimeSchemas || [])],
+    types: [...typeHandlers.values()],
+  };
+}
+
+function mergeRuntimeHandlers(
+  lhs: ExtensionRuntimeHandler,
+  rhs: ExtensionRuntimeHandler,
+): ExtensionRuntimeHandler {
+  const mergedTypes = new Map<string, ExtensionTypeParser>();
+  for (const typeHandler of lhs.types || []) {
+    mergedTypes.set(typeHandler.name, typeHandler);
+  }
+  for (const typeHandler of rhs.types || []) {
+    mergedTypes.set(typeHandler.name, typeHandler);
+  }
+  return {
+    name: rhs.name,
+    runtimeSchemas: [
+      ...new Set([
+        ...(lhs.runtimeSchemas || []),
+        ...(rhs.runtimeSchemas || []),
+      ]),
+    ],
+    types: [...mergedTypes.values()],
+    validate: rhs.validate || lhs.validate,
+  };
+}
+
+function getRegisteredRuntimeHandlers(): ExtensionRuntimeHandler[] {
+  return [...runtimeHandlers.values()].sort((lhs, rhs) =>
+    lhs.name.localeCompare(rhs.name),
+  );
+}
 
 export function registerExtensionRuntime(handler: ExtensionRuntimeHandler) {
-  runtimeHandlers.set(handler.name, handler);
+  const normalized = normalizeRuntimeHandler(handler);
+  const existing = runtimeHandlers.get(normalized.name);
+  runtimeHandlers.set(
+    normalized.name,
+    existing ? mergeRuntimeHandlers(existing, normalized) : normalized,
+  );
 }
 
 export function clearExtensionRuntimes() {
   runtimeHandlers.clear();
+  registeredTypeOIDs.clear();
 }
 
 export function normalizeExtensions(
@@ -46,7 +109,7 @@ export function normalizeExtensions(
   return [...extensions]
     .map((extension) => ({
       ...extension,
-      managed: extension.managed !== false,
+      provisionedBy: normalizeProvisionedBy(extension),
       runtimeSchemas: extension.runtimeSchemas || [],
       dropCascade: extension.dropCascade === true,
     }))
@@ -56,23 +119,22 @@ export function normalizeExtensions(
 export function resolveExtensions(
   cfg?: RuntimeDBExtension[],
 ): RuntimeDBExtension[] {
-  if (cfg !== undefined) {
-    return normalizeExtensions(cfg);
-  }
-  const state = loadExtensionsState(resolveStatePath());
-  if (!state?.extensions?.length) {
-    return [];
-  }
-  return normalizeExtensions(state.extensions);
+  return normalizeExtensions(cfg || []);
 }
 
 export function getExtensionSearchPathSchemas(
   extensions: RuntimeDBExtension[],
 ): string[] {
+  const normalizedExtensions = normalizeExtensions(extensions);
+  const configuredExtensions = new Map(
+    normalizedExtensions.map((extension) => [extension.name, extension]),
+  );
+
   const seen = new Set<string>();
   const schemas: string[] = [];
-  for (const extension of normalizeExtensions(extensions)) {
-    for (const schema of extension.runtimeSchemas || []) {
+
+  function addSchemas(runtimeSchemas: string[]) {
+    for (const schema of runtimeSchemas) {
       if (!schema || seen.has(schema)) {
         continue;
       }
@@ -80,6 +142,20 @@ export function getExtensionSearchPathSchemas(
       schemas.push(schema);
     }
   }
+
+  for (const extension of normalizedExtensions) {
+    addSchemas(extension.runtimeSchemas || []);
+  }
+
+  for (const handler of getRegisteredRuntimeHandlers()) {
+    const configured = configuredExtensions.get(handler.name);
+    addSchemas(
+      configured
+        ? configured.runtimeSchemas || []
+        : handler.runtimeSchemas || [],
+    );
+  }
+
   return schemas;
 }
 
@@ -116,73 +192,155 @@ export function buildExtensionSearchPath(
   return schemas.join(",");
 }
 
-export async function initializeExtensions(
-  pool: Pool,
+async function getInstalledExtensions(
+  pool: Pick<Pool, "query">,
   extensions: RuntimeDBExtension[],
-) {
+): Promise<Map<string, InstalledDBExtension>> {
   if (extensions.length === 0) {
-    return;
+    return new Map();
   }
 
-  const res = await pool.query<{ extname: string; extversion: string }>(
-    "SELECT extname, extversion FROM pg_extension",
+  const res = await pool.query<{
+    extname: string;
+    extversion: string;
+    install_schema: string;
+  }>(
+    `
+      SELECT
+        extname,
+        extversion,
+        extnamespace::regnamespace::text AS install_schema
+      FROM pg_extension
+      WHERE extname = ANY($1::text[])
+    `,
+    [extensions.map((extension) => extension.name)],
   );
+
   const installed = new Map<string, InstalledDBExtension>();
   for (const row of res.rows) {
     installed.set(row.extname, {
       name: row.extname,
       version: row.extversion,
+      installSchema: row.install_schema,
     });
   }
+  return installed;
+}
 
-  for (const extension of normalizeExtensions(extensions)) {
-    const current = installed.get(extension.name);
-    if (!current) {
+function registerArrayParser(
+  arrayOID: number,
+  parse: (value: string | null) => unknown,
+) {
+  if (!arrayOID || registeredTypeOIDs.has(arrayOID)) {
+    return;
+  }
+  const parseTextArray = pgTypes.getTypeParser(TEXT_ARRAY_OID as any);
+  pgTypes.setTypeParser(arrayOID as any, (value: string | null) => {
+    if (value === null) {
+      return null;
+    }
+    const parsed = parseTextArray(value) as Array<string | null>;
+    return parsed.map((entry) => parse(entry));
+  });
+  registeredTypeOIDs.add(arrayOID);
+}
+
+async function initializeRegisteredTypeParsers(
+  pool: Pick<Pool, "query">,
+  configuredExtensions: Map<string, RuntimeDBExtension>,
+) {
+  const registeredTypes = new Map<
+    string,
+    { extensionName: string; parse: (value: string | null) => unknown }
+  >();
+
+  for (const handler of getRegisteredRuntimeHandlers()) {
+    for (const typeHandler of handler.types || []) {
+      registeredTypes.set(typeHandler.name, {
+        extensionName: handler.name,
+        parse: typeHandler.parse,
+      });
+    }
+  }
+
+  if (registeredTypes.size === 0) {
+    return;
+  }
+
+  const res = await pool.query<{
+    oid: number;
+    typname: string;
+    typarray: number;
+  }>(
+    `
+      SELECT oid, typname, typarray
+      FROM pg_type
+      WHERE typname = ANY($1::text[])
+    `,
+    [[...registeredTypes.keys()]],
+  );
+
+  const rowsByType = new Map(
+    res.rows.map((row) => [row.typname, row] as const),
+  );
+
+  for (const [typeName, typeHandler] of registeredTypes.entries()) {
+    const row = rowsByType.get(typeName);
+    if (!row) {
+      if (configuredExtensions.has(typeHandler.extensionName)) {
+        throw new Error(
+          `required pg type "${typeName}" for db extension "${typeHandler.extensionName}" was not found`,
+        );
+      }
+      continue;
+    }
+
+    if (!registeredTypeOIDs.has(row.oid)) {
+      pgTypes.setTypeParser(row.oid as any, typeHandler.parse);
+      registeredTypeOIDs.add(row.oid);
+    }
+    registerArrayParser(row.typarray, typeHandler.parse);
+  }
+}
+
+export async function initializeExtensions(
+  pool: Pick<Pool, "query">,
+  extensions: RuntimeDBExtension[],
+) {
+  const normalizedExtensions = normalizeExtensions(extensions);
+  const configuredExtensions = new Map(
+    normalizedExtensions.map((extension) => [extension.name, extension]),
+  );
+
+  const installedExtensions = await getInstalledExtensions(
+    pool,
+    normalizedExtensions,
+  );
+
+  for (const extension of normalizedExtensions) {
+    const installed = installedExtensions.get(extension.name);
+    if (!installed) {
       throw new Error(
         `required db extension "${extension.name}" is not installed`,
       );
     }
-    if (extension.version && extension.version !== current.version) {
+    if (extension.version && extension.version !== installed.version) {
       throw new Error(
-        `required db extension "${extension.name}" version "${extension.version}" but found "${current.version}"`,
+        `required db extension "${extension.name}" version "${extension.version}" but found "${installed.version}"`,
+      );
+    }
+    if (
+      extension.installSchema &&
+      extension.installSchema !== installed.installSchema
+    ) {
+      throw new Error(
+        `required db extension "${extension.name}" install schema "${extension.installSchema}" but found "${installed.installSchema}"`,
       );
     }
 
     const handler = runtimeHandlers.get(extension.name);
-    await handler?.validate?.(current, extension);
-    await handler?.initialize?.(pool, current, extension);
+    await handler?.validate?.(installed, extension);
   }
-}
 
-function loadExtensionsState(statePath?: string): ExtensionsState | undefined {
-  if (!statePath || !fs.existsSync(statePath)) {
-    return undefined;
-  }
-  try {
-    return JSON.parse(fs.readFileSync(statePath, "utf8")) as ExtensionsState;
-  } catch (err) {
-    throw new Error(`invalid extensions state file at ${statePath}`);
-  }
-}
-
-function resolveStatePath(): string | undefined {
-  const start = process.cwd();
-  const root = findGitRoot(start) || start;
-  const schemaDir = path.join(root, DEFAULT_SCHEMA_DIR);
-  return path.join(schemaDir, STATE_DIR, STATE_FILE);
-}
-
-function findGitRoot(start: string): string | undefined {
-  let dir = start;
-  while (true) {
-    const gitPath = path.join(dir, ".git");
-    if (fs.existsSync(gitPath)) {
-      return dir;
-    }
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      return undefined;
-    }
-    dir = parent;
-  }
+  await initializeRegisteredTypeParsers(pool, configuredExtensions);
 }

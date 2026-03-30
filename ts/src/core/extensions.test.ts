@@ -1,7 +1,4 @@
-import fs from "fs";
-import os from "os";
-import path from "path";
-import type { Pool } from "pg";
+import { types as pgTypes, type Pool } from "pg";
 import {
   buildExtensionSearchPath,
   clearExtensionRuntimes,
@@ -10,95 +7,51 @@ import {
   resolveExtensions,
 } from "./extensions";
 
-function writeHead(gitDir: string, head: string) {
-  fs.mkdirSync(gitDir, { recursive: true });
-  fs.writeFileSync(path.join(gitDir, "HEAD"), head, "utf8");
-}
-
-function makeRepo(branch: string): string {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ent-extensions-"));
-  writeHead(path.join(dir, ".git"), `ref: refs/heads/${branch}`);
-  return dir;
-}
-
-function writeState(
-  repo: string,
-  state: {
-    extensions: Array<{
-      name: string;
-      managed?: boolean;
-      version?: string;
-      installSchema?: string;
-      runtimeSchemas?: string[];
-      dropCascade?: boolean;
-    }>;
-  },
-) {
-  const stateDir = path.join(repo, "src", "schema", ".ent");
-  fs.mkdirSync(stateDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(stateDir, "extensions.json"),
-    JSON.stringify(state),
-    "utf8",
-  );
-}
-
-describe("extension state resolution", () => {
-  const originalCwd = process.cwd();
-
-  afterEach(() => {
-    process.chdir(originalCwd);
+describe("extension config resolution", () => {
+  test("defaults to an empty extension list when runtime config is absent", () => {
+    expect(resolveExtensions()).toEqual([]);
   });
 
-  test("loads generated state when config is absent", () => {
-    const repo = makeRepo("main");
-    process.chdir(repo);
-    writeState(repo, {
-      extensions: [
+  test("normalizes runtime extension configuration", () => {
+    expect(
+      resolveExtensions([
         {
           name: "vector",
         },
         {
           name: "postgis",
+          provisionedBy: "external",
           runtimeSchemas: ["public"],
         },
-      ],
-    });
-
-    expect(resolveExtensions()).toEqual([
+      ]),
+    ).toEqual([
       {
         name: "postgis",
-        managed: true,
+        provisionedBy: "external",
         runtimeSchemas: ["public"],
         dropCascade: false,
       },
       {
         name: "vector",
-        managed: true,
+        provisionedBy: "ent",
         runtimeSchemas: [],
         dropCascade: false,
       },
     ]);
   });
-
-  test("runtime config overrides generated state", () => {
-    const repo = makeRepo("main");
-    process.chdir(repo);
-    writeState(repo, {
-      extensions: [
-        {
-          name: "postgis",
-          runtimeSchemas: ["public"],
-        },
-      ],
-    });
-
-    expect(resolveExtensions([])).toEqual([]);
-  });
 });
 
 describe("extension search path", () => {
-  test("combines dev schema and extension schemas", () => {
+  afterEach(() => {
+    clearExtensionRuntimes();
+  });
+
+  test("combines dev schema, configured schemas, and registered defaults", () => {
+    registerExtensionRuntime({
+      name: "postgis",
+      runtimeSchemas: ["public"],
+    });
+
     expect(
       buildExtensionSearchPath(
         {
@@ -111,13 +64,9 @@ describe("extension search path", () => {
             name: "vector",
             runtimeSchemas: ["extensions"],
           },
-          {
-            name: "postgis",
-            runtimeSchemas: ["public"],
-          },
         ],
       ),
-    ).toBe("ent_dev_feature,public,extensions");
+    ).toBe("ent_dev_feature,extensions,public");
   });
 
   test("returns undefined when nothing contributes to search path", () => {
@@ -131,64 +80,135 @@ describe("extension search path", () => {
     ).toBeUndefined();
   });
 
-  test("keeps public available outside dev schema mode", () => {
+  test("registered defaults participate without runtime config", () => {
+    registerExtensionRuntime({
+      name: "postgis",
+      runtimeSchemas: ["public"],
+    });
+
     expect(
       buildExtensionSearchPath(
         {
-          enabled: false,
+          enabled: true,
+          schemaName: "ent_dev_feature",
+          includePublic: false,
         },
-        [
-          {
-            name: "vector",
-            runtimeSchemas: ["extensions"],
-          },
-        ],
+        [],
       ),
-    ).toBe("extensions,public");
+    ).toBe("ent_dev_feature,public");
   });
 });
 
 describe("extension initialization", () => {
   afterEach(() => {
     clearExtensionRuntimes();
+    jest.restoreAllMocks();
   });
 
-  test("validates installed extensions and calls runtime hooks", async () => {
+  test("validates configured extensions and batches type parser lookup", async () => {
     const validate = jest.fn();
-    const initialize = jest.fn();
+    const setTypeParser = jest
+      .spyOn(pgTypes, "setTypeParser")
+      .mockImplementation(() => pgTypes);
+    const getTypeParser = jest
+      .spyOn(pgTypes, "getTypeParser")
+      .mockImplementation((oid: number) => {
+        if (oid === (1009 as any)) {
+          return ((value: string) => ["POINT(-122.4 37.78)"]) as any;
+        }
+        return ((value: string) => value) as any;
+      });
+
     registerExtensionRuntime({
       name: "postgis",
+      runtimeSchemas: ["public"],
       validate,
-      initialize,
+      types: [
+        {
+          name: "geometry",
+          parse: (value) => value,
+        },
+        {
+          name: "geography",
+          parse: (value) => value,
+        },
+      ],
+    });
+    registerExtensionRuntime({
+      name: "vector",
+      runtimeSchemas: ["public"],
+      types: [
+        {
+          name: "vector",
+          parse: (value) => value,
+        },
+      ],
     });
 
     const pool = {
-      query: jest.fn().mockResolvedValue({
-        rows: [{ extname: "postgis", extversion: "3.4.0" }],
-      }),
+      query: jest
+        .fn()
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              extname: "postgis",
+              extversion: "3.4.0",
+              install_schema: "public",
+            },
+            {
+              extname: "vector",
+              extversion: "0.8.1",
+              install_schema: "public",
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [
+            { oid: 1234, typname: "geometry", typarray: 1235 },
+            { oid: 5678, typname: "geography", typarray: 5679 },
+            { oid: 9012, typname: "vector", typarray: 9013 },
+          ],
+        }),
     } as unknown as Pool;
 
     await initializeExtensions(pool, [
       {
         name: "postgis",
         version: "3.4.0",
+        runtimeSchemas: ["public"],
+      },
+      {
+        name: "vector",
+        provisionedBy: "external",
       },
     ]);
 
+    expect(pool.query).toHaveBeenNthCalledWith(
+      1,
+      expect.stringContaining("FROM pg_extension"),
+      [["postgis", "vector"]],
+    );
+    expect(pool.query).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining("FROM pg_type"),
+      [["geometry", "geography", "vector"]],
+    );
     expect(validate).toHaveBeenCalledWith(
       {
         name: "postgis",
         version: "3.4.0",
+        installSchema: "public",
       },
       {
         name: "postgis",
-        managed: true,
-        runtimeSchemas: [],
-        dropCascade: false,
+        provisionedBy: "ent",
         version: "3.4.0",
+        runtimeSchemas: ["public"],
+        dropCascade: false,
       },
     );
-    expect(initialize).toHaveBeenCalled();
+    expect(setTypeParser).toHaveBeenCalledTimes(6);
+    expect(getTypeParser).toHaveBeenCalledWith(1009 as any);
   });
 
   test("throws when a required extension is missing", async () => {
@@ -205,5 +225,44 @@ describe("extension initialization", () => {
         },
       ]),
     ).rejects.toThrow('required db extension "vector" is not installed');
+  });
+
+  test("throws when a configured runtime type is missing", async () => {
+    registerExtensionRuntime({
+      name: "vector",
+      types: [
+        {
+          name: "vector",
+          parse: (value) => value,
+        },
+      ],
+    });
+
+    const pool = {
+      query: jest
+        .fn()
+        .mockResolvedValueOnce({
+          rows: [
+            {
+              extname: "vector",
+              extversion: "0.8.1",
+              install_schema: "public",
+            },
+          ],
+        })
+        .mockResolvedValueOnce({
+          rows: [],
+        }),
+    } as unknown as Pool;
+
+    await expect(
+      initializeExtensions(pool, [
+        {
+          name: "vector",
+        },
+      ]),
+    ).rejects.toThrow(
+      'required pg type "vector" for db extension "vector" was not found',
+    );
   });
 });
