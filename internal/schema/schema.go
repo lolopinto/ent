@@ -811,6 +811,15 @@ func (s *Schema) validateDBExtensions(extensions []*input.DBExtension) error {
 		if extension.Version != "" && strings.TrimSpace(extension.Version) == "" {
 			return fmt.Errorf("version for extension %s cannot be empty", extension.Name)
 		}
+		if extension.ProvisionedBy == "" {
+			extension.ProvisionedBy = "ent"
+		}
+		if extension.ProvisionedBy != "ent" && extension.ProvisionedBy != "external" {
+			return fmt.Errorf(
+				"provisionedBy for extension %s must be ent or external",
+				extension.Name,
+			)
+		}
 
 		seenSchemas := make(map[string]bool)
 		for _, schemaName := range extension.RuntimeSchemas {

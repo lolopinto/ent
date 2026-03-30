@@ -2655,14 +2655,14 @@ func TestDBExtensionsTemplateData(t *testing.T) {
 				DBExtensions: []*input.DBExtension{
 					{
 						Name:           "postgis",
-						Managed:        true,
+						ProvisionedBy:  "ent",
 						InstallSchema:  "public",
 						RuntimeSchemas: []string{"public"},
 					},
 					{
-						Name:        "vector",
-						Managed:     false,
-						DropCascade: true,
+						Name:          "vector",
+						ProvisionedBy: "external",
+						DropCascade:   true,
 					},
 				},
 			},
@@ -2674,12 +2674,12 @@ func TestDBExtensionsTemplateData(t *testing.T) {
 	require.Len(t, template.DBExtensions, 2)
 	assert.Equal(
 		t,
-		"{'name': \"postgis\", 'managed': True, 'version': None, 'install_schema': \"public\", 'runtime_schemas': [\"public\"], 'drop_cascade': False}",
+		"{\"name\":\"postgis\", \"provisioned_by\":\"ent\", \"version\":None, \"install_schema\":\"public\", \"runtime_schemas\":[\"public\"], \"drop_cascade\":False}",
 		template.DBExtensions[0],
 	)
 	assert.Equal(
 		t,
-		"{'name': \"vector\", 'managed': False, 'version': None, 'install_schema': None, 'runtime_schemas': [], 'drop_cascade': True}",
+		"{\"name\":\"vector\", \"provisioned_by\":\"external\", \"version\":None, \"install_schema\":None, \"runtime_schemas\":[], \"drop_cascade\":True}",
 		template.DBExtensions[1],
 	)
 }

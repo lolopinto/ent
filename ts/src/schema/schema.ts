@@ -20,6 +20,7 @@ export type FieldInfoMap = {
 
 export interface DBExtension {
   name: string;
+  provisionedBy?: "ent" | "external";
   managed?: boolean;
   version?: string;
   installSchema?: string;

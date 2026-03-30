@@ -676,11 +676,26 @@ interface ProcessedGlobalSchema {
   dbExtensions?: DBExtension[];
 }
 
+function normalizeProvisionedBy(extension: DBExtension): "ent" | "external" {
+  if (
+    extension.provisionedBy === "ent" ||
+    extension.provisionedBy === "external"
+  ) {
+    return extension.provisionedBy;
+  }
+  if (extension.provisionedBy) {
+    throw new Error(
+      `invalid provisionedBy ${extension.provisionedBy} for db extension ${extension.name}`,
+    );
+  }
+  return extension.managed === false ? "external" : "ent";
+}
+
 function processDBExtensions(src: DBExtension[]): DBExtension[] {
   return src
     .map((extension) => ({
       ...extension,
-      managed: extension.managed !== false,
+      provisionedBy: normalizeProvisionedBy(extension),
       runtimeSchemas: extension.runtimeSchemas || [],
       dropCascade: extension.dropCascade === true,
     }))

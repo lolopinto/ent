@@ -50,7 +50,7 @@ test("global schema db extensions normalized", async () => {
         },
         {
           name: "vector",
-          managed: false,
+          provisionedBy: "external",
           dropCascade: true,
         },
       ],
@@ -60,13 +60,13 @@ test("global schema db extensions normalized", async () => {
   expect(parsed.globalSchema?.dbExtensions).toEqual([
     {
       name: "postgis",
-      managed: true,
+      provisionedBy: "ent",
       runtimeSchemas: ["public"],
       dropCascade: false,
     },
     {
       name: "vector",
-      managed: false,
+      provisionedBy: "external",
       runtimeSchemas: [],
       dropCascade: true,
     },

@@ -81,7 +81,7 @@ type GlobalSchema struct {
 
 type DBExtension struct {
 	Name           string   `json:"name,omitempty"`
-	Managed        bool     `json:"managed"`
+	ProvisionedBy  string   `json:"provisionedBy,omitempty"`
 	Version        string   `json:"version,omitempty"`
 	InstallSchema  string   `json:"installSchema,omitempty"`
 	RuntimeSchemas []string `json:"runtimeSchemas,omitempty"`

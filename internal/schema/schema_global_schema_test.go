@@ -188,13 +188,13 @@ func TestDBExtensions(t *testing.T) {
 			DBExtensions: []*input.DBExtension{
 				{
 					Name:           "postgis",
-					Managed:        true,
+					ProvisionedBy:  "ent",
 					InstallSchema:  "public",
 					RuntimeSchemas: []string{"public"},
 				},
 				{
 					Name:           "vector",
-					Managed:        false,
+					ProvisionedBy:  "external",
 					DropCascade:    true,
 					RuntimeSchemas: []string{"public", "extensions"},
 				},
@@ -208,10 +208,10 @@ func TestDBExtensions(t *testing.T) {
 	dbExtensions := schema.DBExtensions()
 	require.Len(t, dbExtensions, 2)
 	assert.Equal(t, "postgis", dbExtensions[0].Name)
-	assert.True(t, dbExtensions[0].Managed)
+	assert.Equal(t, "ent", dbExtensions[0].ProvisionedBy)
 	assert.Equal(t, []string{"public"}, dbExtensions[0].RuntimeSchemas)
 	assert.Equal(t, "vector", dbExtensions[1].Name)
-	assert.False(t, dbExtensions[1].Managed)
+	assert.Equal(t, "external", dbExtensions[1].ProvisionedBy)
 	assert.True(t, dbExtensions[1].DropCascade)
 }
 
@@ -233,12 +233,12 @@ func TestDuplicateDBExtensionsInvalid(t *testing.T) {
 		GlobalSchema: &input.GlobalSchema{
 			DBExtensions: []*input.DBExtension{
 				{
-					Name:    "postgis",
-					Managed: true,
+					Name:          "postgis",
+					ProvisionedBy: "ent",
 				},
 				{
-					Name:    "POSTGIS",
-					Managed: true,
+					Name:          "POSTGIS",
+					ProvisionedBy: "ent",
 				},
 			},
 		},

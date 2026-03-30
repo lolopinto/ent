@@ -74,7 +74,7 @@ func dbExtensionEqual(existing, extension *DBExtension) bool {
 	}
 
 	return existing.Name == extension.Name &&
-		existing.Managed == extension.Managed &&
+		existing.ProvisionedBy == extension.ProvisionedBy &&
 		existing.Version == extension.Version &&
 		existing.InstallSchema == extension.InstallSchema &&
 		change.StringListEqual(existing.RuntimeSchemas, extension.RuntimeSchemas) &&

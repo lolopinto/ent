@@ -135,8 +135,8 @@ func TestCompareGlobalSchemaDBExtensionsChange(t *testing.T) {
 		GlobalSchema: &input.GlobalSchema{
 			DBExtensions: []*input.DBExtension{
 				{
-					Name:    "postgis",
-					Managed: true,
+					Name:          "postgis",
+					ProvisionedBy: "ent",
 				},
 			},
 		},
@@ -159,8 +159,8 @@ func TestCompareGlobalSchemaDBExtensionsChange(t *testing.T) {
 		GlobalSchema: &input.GlobalSchema{
 			DBExtensions: []*input.DBExtension{
 				{
-					Name:    "vector",
-					Managed: true,
+					Name:          "vector",
+					ProvisionedBy: "ent",
 				},
 			},
 		},

@@ -853,7 +853,7 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 		return err
 	}
 
-	return s.writeDBExtensionsState(cfg)
+	return nil
 }
 
 func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplate, error) {
@@ -1015,30 +1015,15 @@ func getPythonStringList(values []string) string {
 }
 
 func getDBExtensionLine(extension *input.DBExtension) string {
-	return fmt.Sprintf(
-		"{'name': %s, 'managed': %s, 'version': %s, 'install_schema': %s, 'runtime_schemas': %s, 'drop_cascade': %s}",
-		strconv.Quote(extension.Name),
-		getPythonBool(extension.Managed),
-		getPythonNullableString(extension.Version),
-		getPythonNullableString(extension.InstallSchema),
-		getPythonStringList(extension.RuntimeSchemas),
-		getPythonBool(extension.DropCascade),
-	)
-}
-
-func (s *dbSchema) writeDBExtensionsState(cfg *codegen.Config) error {
-	path := fmt.Sprintf("%s/.ent/extensions.json", s.cfg.GetRootPathToConfigs())
-	dbExtensions := s.schema.DBExtensions()
-	if len(dbExtensions) == 0 {
-		return file.GetDeleteFileFunction(cfg, path)()
+	kvPairs := []string{
+		getKVPair("name", strconv.Quote(extension.Name)),
+		getKVPair("provisioned_by", strconv.Quote(extension.ProvisionedBy)),
+		getKVPair("version", getPythonNullableString(extension.Version)),
+		getKVPair("install_schema", getPythonNullableString(extension.InstallSchema)),
+		getKVPair("runtime_schemas", getPythonStringList(extension.RuntimeSchemas)),
+		getKVPair("drop_cascade", getPythonBool(extension.DropCascade)),
 	}
-	return file.Write(&file.JSONFileWriter{
-		Config: cfg,
-		Data: &dbExtensionsState{
-			Extensions: dbExtensions,
-		},
-		PathToFile: path,
-	})
+	return getKVDict(kvPairs)
 }
 
 func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {
@@ -1643,10 +1628,6 @@ type dbDataInfo struct {
 	TableName string
 	Pkeys     string
 	Rows      []string
-}
-
-type dbExtensionsState struct {
-	Extensions []*input.DBExtension `json:"extensions"`
 }
 
 // wrapper object to represent the list of tables that will be passed to a schema template file
