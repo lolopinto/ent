@@ -763,10 +763,7 @@ class Runner(object):
             )
 
         inspector = sa.inspect(connection)
-        if self.schema_name:
-            table_names = inspector.get_table_names(schema=self.schema_name)
-        else:
-            table_names = inspector.get_table_names()
+        table_names = inspector.get_table_names(schema=self.schema_name or None)
         excluded_tables = set(Runner.exclude_tables().split(','))
         table_names = [name for name in table_names if name not in excluded_tables]
         if len(table_names) != 0:

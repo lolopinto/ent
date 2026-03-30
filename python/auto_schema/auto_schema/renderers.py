@@ -165,7 +165,7 @@ def _wrap_autocommit(op_text: str) -> str:
 def _render_db_extension(extension: dict) -> str:
     ordered_keys = [
         "name",
-        "managed",
+        "provisioned_by",
         "version",
         "install_schema",
         "runtime_schemas",

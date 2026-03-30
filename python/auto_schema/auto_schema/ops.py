@@ -30,9 +30,16 @@ class MigrateOpInterface(MigrateOperation, metaclass=abc.ABCMeta):
 
 
 def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
+    provisioned_by = extension.get("provisioned_by")
+    if provisioned_by not in ("ent", "external", None):
+        raise ValueError(
+            f"invalid provisioned_by {provisioned_by} for db extension {extension['name']}"
+        )
     return {
         "name": extension["name"],
-        "managed": extension.get("managed", True),
+        "provisioned_by": provisioned_by or (
+            "external" if extension.get("managed") is False else "ent"
+        ),
         "version": extension.get("version"),
         "install_schema": extension.get("install_schema"),
         "runtime_schemas": list(extension.get("runtime_schemas") or []),

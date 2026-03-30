@@ -208,7 +208,7 @@ class OpsTest(object):
                 operations,
                 {
                     "name": "vector",
-                    "managed": True,
+                    "provisioned_by": "ent",
                     "version": "0.4.1",
                     "install_schema": "public",
                     "runtime_schemas": ["public"],
@@ -226,7 +226,7 @@ class OpsTest(object):
                 operations,
                 {
                     "name": "uuid-ossp",
-                    "managed": True,
+                    "provisioned_by": "ent",
                     "version": None,
                     "install_schema": None,
                     "runtime_schemas": [],
@@ -511,7 +511,7 @@ class TestPostgres(OpsTest):
                 operations,
                 {
                     "name": "vector",
-                    "managed": True,
+                    "provisioned_by": "ent",
                     "version": "0.4.1",
                     "install_schema": "public",
                     "runtime_schemas": ["public"],
@@ -528,7 +528,7 @@ class TestPostgres(OpsTest):
                 operations,
                 {
                     "name": "vector",
-                    "managed": True,
+                    "provisioned_by": "ent",
                     "version": None,
                     "install_schema": None,
                     "runtime_schemas": [],

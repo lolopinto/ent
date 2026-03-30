@@ -95,7 +95,7 @@ class TestPostgresDevSchema(object):
             "public": [
                 {
                     "name": "vector",
-                    "managed": True,
+                    "provisioned_by": "ent",
                     "version": None,
                     "install_schema": "public",
                     "runtime_schemas": ["public"],

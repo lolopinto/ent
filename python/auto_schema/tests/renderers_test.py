@@ -86,7 +86,7 @@ def test_render_create_db_extension():
     op = ops.CreateExtensionOp(
         {
             "name": "vector",
-            "managed": True,
+            "provisioned_by": "ent",
             "version": "0.4.1",
             "install_schema": "public",
             "runtime_schemas": ["public"],
@@ -103,7 +103,7 @@ def test_render_drop_db_extension():
     op = ops.DropExtensionOp(
         {
             "name": "vector",
-            "managed": True,
+            "provisioned_by": "ent",
             "version": None,
             "install_schema": None,
             "runtime_schemas": [],

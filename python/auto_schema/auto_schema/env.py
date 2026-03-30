@@ -137,7 +137,7 @@ def run_migrations_online():
 
         # Ensure the connection is not in an external transaction before
         # configuring Alembic; otherwise Alembic will treat the transaction
-        # as externally managed and won't commit migrations.
+        # as externally provisioned and won't commit migrations.
         try:
             if connection.in_transaction():
                 connection.commit()

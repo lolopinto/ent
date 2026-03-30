@@ -24,7 +24,7 @@ def _get_revision_file(r, rev="head"):
 def _db_extension_metadata(
     *,
     name: str,
-    managed: bool = True,
+    provisioned_by: str = "ent",
     version: str | None = None,
     install_schema: str | None = None,
     runtime_schemas: list[str] | None = None,
@@ -35,7 +35,7 @@ def _db_extension_metadata(
         "public": [
             {
                 "name": name,
-                "managed": managed,
+                "provisioned_by": provisioned_by,
                 "version": version,
                 "install_schema": install_schema,
                 "runtime_schemas": runtime_schemas or [],
@@ -1807,15 +1807,15 @@ class TestPostgresRunner(BaseTestRunner):
         r2 = new_test_runner(metadata, r)
         assert r2.compute_changes() == []
 
-    def test_unmanaged_db_extension_requires_installed_extension(
+    def test_external_db_extension_requires_installed_extension(
         self, new_test_runner
     ):
-        metadata = _db_extension_metadata(name="pgcrypto", managed=False)
+        metadata = _db_extension_metadata(name="pgcrypto", provisioned_by="external")
         r = new_test_runner(metadata)
 
         with pytest.raises(
             ValueError,
-            match='required unmanaged db extension "pgcrypto" is not installed',
+            match='required externally provisioned db extension "pgcrypto" is not installed',
         ):
             r.compute_changes()
 

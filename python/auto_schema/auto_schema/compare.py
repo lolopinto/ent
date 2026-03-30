@@ -1,32 +1,43 @@
 import functools
+import pprint
+import re
+from typing import Any
+
+import alembic.operations.ops as alembicops
+import sqlalchemy as sa
 from alembic.autogenerate import comparators
 from alembic.autogenerate.api import AutogenContext
-
-from auto_schema.schema_item import FullTextIndex
-from auto_schema.clause_text import normalize_clause_text
-from . import ops
-from alembic.operations import Operations, MigrateOperation
-import sqlalchemy as sa
+from alembic.operations import MigrateOperation, Operations
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
 
-import pprint
-import re
-from sqlalchemy.dialects import postgresql
-import alembic.operations.ops as alembicops
-from typing import Any
-import functools
+from auto_schema.clause_text import normalize_clause_text
+from auto_schema.schema_item import FullTextIndex
+
+from . import ops
 
 
 def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
+    provisioned_by = extension.get("provisioned_by")
+    if provisioned_by not in ("ent", "external", None):
+        raise ValueError(
+            f"invalid provisioned_by {provisioned_by} for db extension {extension['name']}"
+        )
     return {
         "name": extension["name"],
-        "managed": extension.get("managed", True),
+        "provisioned_by": provisioned_by or (
+            "external" if extension.get("managed") is False else "ent"
+        ),
         "version": extension.get("version"),
         "install_schema": extension.get("install_schema"),
         "runtime_schemas": list(extension.get("runtime_schemas") or []),
         "drop_cascade": extension.get("drop_cascade", False),
     }
+
+
+def _is_ent_provisioned(extension: dict[str, Any]) -> bool:
+    return extension["provisioned_by"] == "ent"
 
 
 def _get_metadata_extensions(autogen_context: AutogenContext) -> list[dict[str, Any]]:
@@ -64,14 +75,14 @@ def _get_extension_ops(
     extension_ops = []
     for extension in metadata_extensions:
         name = extension["name"]
-        managed = extension.get("managed", True)
+        ent_provisioned = _is_ent_provisioned(extension)
         db_extension = db_extensions.get(name.lower())
         version = extension.get("version")
         install_schema = extension.get("install_schema")
         if db_extension is None:
-            if not managed:
+            if not ent_provisioned:
                 raise ValueError(
-                    f'required unmanaged db extension "{name}" is not installed'
+                    f'required externally provisioned db extension "{name}" is not installed'
                 )
             extension_ops.append(
                 ops.CreateExtensionOp(extension)
@@ -79,9 +90,9 @@ def _get_extension_ops(
             continue
 
         if version is not None and db_extension.get("version") != version:
-            if not managed:
+            if not ent_provisioned:
                 raise ValueError(
-                    f'unmanaged db extension "{name}" is installed at version '
+                    f'externally provisioned db extension "{name}" is installed at version '
                     f'"{db_extension.get("version")}" but schema requires "{version}"'
                 )
             extension_ops.append(
@@ -93,9 +104,9 @@ def _get_extension_ops(
             )
 
         if install_schema is not None and db_extension.get("install_schema") != install_schema:
-            if not managed:
+            if not ent_provisioned:
                 raise ValueError(
-                    f'unmanaged db extension "{name}" is installed in schema '
+                    f'externally provisioned db extension "{name}" is installed in schema '
                     f'"{db_extension.get("install_schema")}" but schema requires '
                     f'"{install_schema}"'
                 )
