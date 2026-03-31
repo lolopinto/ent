@@ -688,7 +688,7 @@ function normalizeProvisionedBy(extension: DBExtension): "ent" | "external" {
       `invalid provisionedBy ${extension.provisionedBy} for db extension ${extension.name}`,
     );
   }
-  return extension.managed === false ? "external" : "ent";
+  return "ent";
 }
 
 function processDBExtensions(src: DBExtension[]): DBExtension[] {
