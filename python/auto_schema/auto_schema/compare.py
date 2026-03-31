@@ -669,12 +669,7 @@ def _compare_indexes(autogen_context: AutogenContext,
                         name,
                         index.table.name,
                         index.columns,
-                        postgresql_using=index.kwargs.get('postgresql_using'),
-                        postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
-                        postgresql_where=index.kwargs.get('postgresql_where'),
-                        sqlite_where=index.kwargs.get('sqlite_where'),
-                        postgresql_ops=meta_signature.get('postgresql_ops') or None,
-                        postgresql_with=meta_signature.get('postgresql_with') or None,
+                        **_get_create_index_kwargs(index, meta_signature),
                     ))
 
 
@@ -721,15 +716,20 @@ def _compare_generated_column(autogen_context: AutogenContext,
 
                 # this is using underlying columns so we use drop and create directly
                 if conn_info['columns'] != meta_info['columns']:
+                    modify_table_ops.ops = [
+                        op for op in modify_table_ops.ops
+                        if not (
+                            isinstance(op, (alembicops.CreateIndexOp, alembicops.DropIndexOp))
+                            and op.index_name == index.name
+                        )
+                    ]
+
                     # we'll have to change the entire beh
                     create_index = alembicops.CreateIndexOp(
                         index.name,
                         index.table.name,
                         index.columns,
-                        postgresql_using=index_type,
-                        postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
-                        postgresql_where=index.kwargs.get('postgresql_where'),
-                        sqlite_where=index.kwargs.get('sqlite_where'),
+                        **_get_create_index_kwargs(index),
                     )
 
                     modify_table_ops.ops.append(
@@ -964,6 +964,29 @@ def _get_index_signature(index: sa.Index, raw_index: dict[str, Any]) -> dict[str
             _get_index_kwarg(index, 'postgresql_with') or raw_index.get('postgresql_with')
         ),
     }
+
+
+def _get_create_index_kwargs(
+    index: sa.Index, signature: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    kwargs = {}
+    for key in (
+        'postgresql_using',
+        'postgresql_concurrently',
+        'postgresql_where',
+        'sqlite_where',
+    ):
+        value = index.kwargs.get(key)
+        if value not in (None, False):
+            kwargs[key] = value
+
+    if signature is not None:
+        if signature.get('postgresql_ops'):
+            kwargs['postgresql_ops'] = signature['postgresql_ops']
+        if signature.get('postgresql_with'):
+            kwargs['postgresql_with'] = signature['postgresql_with']
+
+    return kwargs
 
 
 def _index_signatures_differ(meta_signature: dict[str, Any], conn_signature: dict[str, Any]) -> bool:
