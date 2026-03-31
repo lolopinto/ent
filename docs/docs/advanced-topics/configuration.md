@@ -235,5 +235,3 @@ Runtime config is optional when the package defaults are enough. It is recommend
 * you want startup to fail if a required extension is missing or at the wrong version
 * the extension is installed outside `public`
 * dev-schema mode needs extra schemas added to `search_path`
-
-Runtime no longer reads a generated extension state file from `src/schema/.ent`. If you need runtime validation or schema overrides, pass them explicitly via `loadConfig`.

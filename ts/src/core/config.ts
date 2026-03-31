@@ -35,7 +35,6 @@ enum fieldPrivacyEvaluated {
 export interface RuntimeDBExtension {
   name: string;
   provisionedBy?: "ent" | "external";
-  managed?: boolean;
   version?: string;
   installSchema?: string;
   runtimeSchemas?: string[];

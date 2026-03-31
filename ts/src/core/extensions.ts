@@ -42,7 +42,7 @@ function normalizeProvisionedBy(
       `invalid provisionedBy ${extension.provisionedBy} for db extension ${extension.name}`,
     );
   }
-  return extension.managed === false ? "external" : "ent";
+  return "ent";
 }
 
 function normalizeRuntimeHandler(

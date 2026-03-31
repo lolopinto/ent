@@ -177,6 +177,7 @@ describe("postgres", () => {
       dbConnectionString: connStr,
       extensions: [
         {
+          // pgvector installs the "vector" extension in Postgres.
           name: "vector",
         },
         {
