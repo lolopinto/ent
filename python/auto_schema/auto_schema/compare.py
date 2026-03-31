@@ -26,9 +26,7 @@ def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
         )
     return {
         "name": extension["name"],
-        "provisioned_by": provisioned_by or (
-            "external" if extension.get("managed") is False else "ent"
-        ),
+        "provisioned_by": provisioned_by or "ent",
         "version": extension.get("version"),
         "install_schema": extension.get("install_schema"),
         "runtime_schemas": list(extension.get("runtime_schemas") or []),
