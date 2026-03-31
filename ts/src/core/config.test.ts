@@ -170,6 +170,23 @@ describe("postgres", () => {
     expect(db.db.dialect).toBe(Dialect.Postgres);
   });
 
+  test("reinitializing db closes the previous instance", () => {
+    loadConfig({
+      dbConnectionString: `postgres://:@localhost/ent_test`,
+    });
+    const first = DB.getInstance();
+    const closeSpy = jest
+      .spyOn(first, "endPool")
+      .mockResolvedValue(undefined);
+
+    loadConfig({
+      dbConnectionString: `postgres://:@localhost/ent_test2`,
+    });
+
+    expect(closeSpy).toHaveBeenCalledTimes(1);
+    expect(DB.getInstance()).not.toBe(first);
+  });
+
   test("config object. extensions", () => {
     const connStr = `postgres://localhost/ent_test`;
 
