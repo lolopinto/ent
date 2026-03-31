@@ -18,6 +18,18 @@ export type FieldInfoMap = {
   [key: string]: FieldInfo;
 };
 
+export interface DBExtension {
+  name: string;
+  provisionedBy?: "ent" | "external";
+  version?: string;
+  installSchema?: string;
+  runtimeSchemas?: string[];
+  dropCascade?: boolean;
+
+  // allow other keys
+  [x: string]: any;
+}
+
 export interface GlobalSchema {
   // source is ¯\_(ツ)_/¯
   // this api works fine for external to int
@@ -37,6 +49,8 @@ export interface GlobalSchema {
 
   // for enum and other fields
   fields?: FieldMap;
+
+  dbExtensions?: DBExtension[];
 }
 
 // we may eventually support more properties but for now, minimal field properties

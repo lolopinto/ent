@@ -34,6 +34,7 @@ type Schema struct {
 	globalConsts                *objWithConsts
 	extraEdgeFields             []*field.Field
 	edgeIndices                 []*input.Index
+	dbExtensions                []*input.DBExtension
 	initGlobalSchema            bool
 	globalSchemaTransformsEdges bool
 	tables                      NodeMapInfo
@@ -74,6 +75,10 @@ func (s *Schema) ExtraEdgeFields() []*field.Field {
 
 func (s *Schema) EdgeIndices() []*input.Index {
 	return s.edgeIndices
+}
+
+func (s *Schema) DBExtensions() []*input.DBExtension {
+	return s.dbExtensions
 }
 
 func (s *Schema) GetGlobalConsts() WithConst {
@@ -727,6 +732,14 @@ func (s *Schema) parseGlobalSchema(cfg codegenapi.Config, gs *input.GlobalSchema
 		}
 	}
 
+	if len(gs.DBExtensions) > 0 {
+		if err := s.validateDBExtensions(gs.DBExtensions); err != nil {
+			errs = append(errs, err)
+		} else {
+			s.dbExtensions = gs.DBExtensions
+		}
+	}
+
 	s.initGlobalSchema = gs.Init
 	s.globalSchemaTransformsEdges = gs.TransformsEdges
 
@@ -739,20 +752,20 @@ func (s *Schema) validateEdgeIndices() error {
 	}
 
 	validColumns := map[string]bool{
-		"id1":      true,
-		"id1_type": true,
+		"id1":       true,
+		"id1_type":  true,
 		"edge_type": true,
-		"id2":      true,
-		"id2_type": true,
-		"time":     true,
-		"data":     true,
-		"ID1":      true,
-		"ID1Type":  true,
-		"EdgeType": true,
-		"ID2":      true,
-		"ID2Type":  true,
-		"Time":     true,
-		"Data":     true,
+		"id2":       true,
+		"id2_type":  true,
+		"time":      true,
+		"data":      true,
+		"ID1":       true,
+		"ID1Type":   true,
+		"EdgeType":  true,
+		"ID2":       true,
+		"ID2Type":   true,
+		"Time":      true,
+		"Data":      true,
 	}
 
 	for _, f := range s.extraEdgeFields {
@@ -772,6 +785,52 @@ func (s *Schema) validateEdgeIndices() error {
 		}
 		if index.FullText != nil {
 			return fmt.Errorf("full text indexes not supported for edge index %s", index.Name)
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) validateDBExtensions(extensions []*input.DBExtension) error {
+	seenExtensions := make(map[string]bool)
+
+	for _, extension := range extensions {
+		name := strings.TrimSpace(extension.Name)
+		if name == "" {
+			return fmt.Errorf("global db extension name cannot be empty")
+		}
+		key := strings.ToLower(name)
+		if seenExtensions[key] {
+			return fmt.Errorf("duplicate db extension %s", extension.Name)
+		}
+		seenExtensions[key] = true
+
+		if extension.InstallSchema != "" && strings.TrimSpace(extension.InstallSchema) == "" {
+			return fmt.Errorf("install schema for extension %s cannot be empty", extension.Name)
+		}
+		if extension.Version != "" && strings.TrimSpace(extension.Version) == "" {
+			return fmt.Errorf("version for extension %s cannot be empty", extension.Name)
+		}
+		if extension.ProvisionedBy == "" {
+			extension.ProvisionedBy = "ent"
+		}
+		if extension.ProvisionedBy != "ent" && extension.ProvisionedBy != "external" {
+			return fmt.Errorf(
+				"provisionedBy for extension %s must be ent or external",
+				extension.Name,
+			)
+		}
+
+		seenSchemas := make(map[string]bool)
+		for _, schemaName := range extension.RuntimeSchemas {
+			trimmed := strings.TrimSpace(schemaName)
+			if trimmed == "" {
+				return fmt.Errorf("runtime schema for extension %s cannot be empty", extension.Name)
+			}
+			if seenSchemas[trimmed] {
+				return fmt.Errorf("duplicate runtime schema %s for extension %s", schemaName, extension.Name)
+			}
+			seenSchemas[trimmed] = true
 		}
 	}
 

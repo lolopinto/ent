@@ -70,12 +70,22 @@ func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
 }
 
 type GlobalSchema struct {
-	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
-	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
-	EdgeIndices     []*Index     `json:"edgeIndices,omitempty"`
-	Init            bool         `json:"init,omitempty"`
-	TransformsEdges bool         `json:"transformsEdges,omitempty"`
-	GlobalFields    []*Field     `json:"globalFields,omitempty"`
+	ExtraEdgeFields []*Field       `json:"extraEdgeFields,omitempty"`
+	GlobalEdges     []*AssocEdge   `json:"globalEdges,omitempty"`
+	EdgeIndices     []*Index       `json:"edgeIndices,omitempty"`
+	Init            bool           `json:"init,omitempty"`
+	TransformsEdges bool           `json:"transformsEdges,omitempty"`
+	GlobalFields    []*Field       `json:"globalFields,omitempty"`
+	DBExtensions    []*DBExtension `json:"dbExtensions,omitempty"`
+}
+
+type DBExtension struct {
+	Name           string   `json:"name,omitempty"`
+	ProvisionedBy  string   `json:"provisionedBy,omitempty"`
+	Version        string   `json:"version,omitempty"`
+	InstallSchema  string   `json:"installSchema,omitempty"`
+	RuntimeSchemas []string `json:"runtimeSchemas,omitempty"`
+	DropCascade    bool     `json:"dropCascade"`
 }
 
 type DBType string

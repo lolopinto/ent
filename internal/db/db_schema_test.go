@@ -2634,6 +2634,56 @@ func TestExtraEdgeCols(t *testing.T) {
 	}
 }
 
+func TestDBExtensionsTemplateData(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+			},
+			GlobalSchema: &input.GlobalSchema{
+				DBExtensions: []*input.DBExtension{
+					{
+						Name:           "postgis",
+						ProvisionedBy:  "ent",
+						InstallSchema:  "public",
+						RuntimeSchemas: []string{"public"},
+					},
+					{
+						Name:          "vector",
+						ProvisionedBy: "external",
+						DropCascade:   true,
+					},
+				},
+			},
+		},
+	)
+
+	template, err := dbSchema.getSchemaForTemplate(dbSchema.cfg)
+	require.NoError(t, err)
+	require.Len(t, template.DBExtensions, 2)
+	assert.Equal(
+		t,
+		"{\"name\":\"postgis\", \"provisioned_by\":\"ent\", \"version\":None, \"install_schema\":\"public\", \"runtime_schemas\":[\"public\"], \"drop_cascade\":False}",
+		template.DBExtensions[0],
+	)
+	assert.Equal(
+		t,
+		"{\"name\":\"vector\", \"provisioned_by\":\"external\", \"version\":None, \"install_schema\":None, \"runtime_schemas\":[], \"drop_cascade\":True}",
+		template.DBExtensions[1],
+	)
+}
+
 func TestExplicitScalarIndexBtree(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,

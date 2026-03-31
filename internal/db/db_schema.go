@@ -841,7 +841,7 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 	if err != nil {
 		return err
 	}
-	return file.Write(
+	if err := file.Write(
 		&file.TemplatedBasedFileWriter{
 			Config:            cfg,
 			Data:              data,
@@ -849,7 +849,11 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 			TemplateName:      "db_schema.tmpl",
 			PathToFile:        fmt.Sprintf("%s/schema.py", s.cfg.GetRootPathToConfigs()),
 		},
-	)
+	); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplate, error) {
@@ -971,7 +975,55 @@ func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplat
 	sort.Slice(ret.Data, func(i, j int) bool {
 		return ret.Data[i].TableName < ret.Data[j].TableName
 	})
+
+	dbExtensions := s.schema.DBExtensions()
+	if len(dbExtensions) > 0 {
+		extensions := append([]*input.DBExtension{}, dbExtensions...)
+		sort.Slice(extensions, func(i, j int) bool {
+			return extensions[i].Name < extensions[j].Name
+		})
+		for _, extension := range extensions {
+			ret.DBExtensions = append(ret.DBExtensions, getDBExtensionLine(extension))
+		}
+	}
 	return ret, nil
+}
+
+func getPythonBool(val bool) string {
+	if val {
+		return "True"
+	}
+	return "False"
+}
+
+func getPythonNullableString(val string) string {
+	if val == "" {
+		return "None"
+	}
+	return strconv.Quote(val)
+}
+
+func getPythonStringList(values []string) string {
+	if len(values) == 0 {
+		return "[]"
+	}
+	var parts []string
+	for _, value := range values {
+		parts = append(parts, strconv.Quote(value))
+	}
+	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
+}
+
+func getDBExtensionLine(extension *input.DBExtension) string {
+	kvPairs := []string{
+		getKVPair("name", strconv.Quote(extension.Name)),
+		getKVPair("provisioned_by", strconv.Quote(extension.ProvisionedBy)),
+		getKVPair("version", getPythonNullableString(extension.Version)),
+		getKVPair("install_schema", getPythonNullableString(extension.InstallSchema)),
+		getKVPair("runtime_schemas", getPythonStringList(extension.RuntimeSchemas)),
+		getKVPair("drop_cascade", getPythonBool(extension.DropCascade)),
+	}
+	return getKVDict(kvPairs)
 }
 
 func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {
@@ -1580,8 +1632,9 @@ type dbDataInfo struct {
 
 // wrapper object to represent the list of tables that will be passed to a schema template file
 type dbSchemaTemplate struct {
-	Config codegenapi.Config
-	Tables []dbSchemaTableInfo
-	Edges  []dbEdgeInfo
-	Data   []dbDataInfo
+	Config       codegenapi.Config
+	Tables       []dbSchemaTableInfo
+	Edges        []dbEdgeInfo
+	Data         []dbDataInfo
+	DBExtensions []string
 }
