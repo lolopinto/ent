@@ -2,6 +2,7 @@ package auto_schema
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -13,7 +14,6 @@ import (
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/devschema"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 const WHICH_ERROR = "Warning: the which -a system utility is required for Pipenv to find Python installations properly.\n  Please install it."
@@ -75,7 +75,7 @@ func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...str
 	errMsg := trimErrorMsg(&berr, local)
 	if err != nil {
 		if len(errMsg) != 0 {
-			return errors.Wrap(err, errMsg)
+			return fmt.Errorf("%s: %w", errMsg, err)
 		}
 		return err
 	}

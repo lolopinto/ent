@@ -2,14 +2,13 @@ package db
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/auto_schema"
@@ -926,7 +925,7 @@ func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplat
 					b, err := json.Marshal(v)
 					val = string(b)
 					if err != nil {
-						return errors.Wrap(err, "Error unmarshalling value")
+						return fmt.Errorf("Error unmarshalling value: %w", err)
 					}
 				}
 				kvPairs = append(kvPairs, fmt.Sprintf("'%s': %v", k, val))

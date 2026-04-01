@@ -3,6 +3,7 @@ package graphql
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -35,7 +36,6 @@ import (
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 type TSStep struct {
@@ -825,7 +825,7 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 	cmd.Env = cmdInfo.Env
 
 	if err := cmd.Run(); err != nil {
-		err = errors.Wrap(err, "error generating custom graphql")
+		err = fmt.Errorf("error generating custom graphql: %w", err)
 		return nil, err
 	}
 
@@ -850,7 +850,7 @@ func parseCustomData(processor *codegen.Processor, fromTest bool) chan *CustomDa
 
 		if err := json.Unmarshal(b, &cd); err != nil {
 			spew.Dump(b)
-			err = errors.Wrap(err, "error unmarshalling custom processor")
+			err = fmt.Errorf("error unmarshalling custom processor: %w", err)
 			cd.Error = err
 		}
 		if cd.Error == nil {
@@ -4229,7 +4229,7 @@ func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {
 
 	defer os.Remove(filePath)
 	if err != nil {
-		return errors.Wrap(err, "error writing temporary schema file")
+		return fmt.Errorf("error writing temporary schema file: %w", err)
 	}
 
 	cmd := exec.Command("ts-node", "-r", cmd.GetTsconfigPaths(), filePath)
@@ -4242,7 +4242,7 @@ func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		return errors.Wrap(err, "error writing schema file")
+		return fmt.Errorf("error writing schema file: %w", err)
 	}
 	return nil
 }

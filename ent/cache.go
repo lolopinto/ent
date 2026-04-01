@@ -2,11 +2,11 @@ package ent
 
 // TODO everything here needs work
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 type cachedItem struct {

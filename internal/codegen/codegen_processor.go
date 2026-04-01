@@ -20,7 +20,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/syncerr"
-	"github.com/pkg/errors"
 )
 
 type option struct {
@@ -264,7 +263,7 @@ func (p *Processor) formatWithBiome() error {
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		str := stderr.String()
-		err = errors.Wrap(err, str)
+		err = fmt.Errorf("%s: %w", str, err)
 		return err
 	}
 	return nil
@@ -301,7 +300,7 @@ func (p *Processor) formatWithPrettier() error {
 			cmd.Stderr = &stderr
 			if err := cmd.Run(); err != nil {
 				str := stderr.String()
-				err = errors.Wrap(err, str)
+				err = fmt.Errorf("%s: %w", str, err)
 				return err
 			}
 			return nil
