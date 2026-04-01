@@ -1342,21 +1342,20 @@ func TestIndices(t *testing.T) {
 				"user.ts": testhelper.GetCodeWithSchema(
 					`import {Schema, Field, StringListType, Index, EntSchema} from "{schema}";
 
-					export default class User = new EntSchema({
-						fields: Field[] = [
-							StringListType({
-								name: 'emails',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							emails: StringListType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_emails_idx",
 								columns: ["emails"],
-								indexType: 'gist',
+								indexType: "gist",
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
 			expectedMap: map[string]*schema.NodeData{
