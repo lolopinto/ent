@@ -1705,9 +1705,6 @@ class TestPostgresRunner(BaseTestRunner):
         )
 
     @ pytest.mark.usefixtures("metadata_with_table")
-    @ pytest.mark.xfail()
-    # not sure why this fails for gist but not gin|btree
-    # TODO https://github.com/lolopinto/ent/issues/848
     def test_multi_col_full_text_index_added_and_removed_gist(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,

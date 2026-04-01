@@ -624,19 +624,23 @@ def _compare_indexes(autogen_context: AutogenContext,
                 if to_remove:
                     to_remove_list.append(op)
                 else:
-                    conn_postgresql_using = normalize_clause_text(
-                        conn_index.expressions[0], None)
+                    raw_index = all_conn_indexes.get(conn_index.name, {})
+                    full_text_info = {
+                        'postgresql_using': raw_index.get('postgresql_using')
+                        or _get_index_signature(conn_index, raw_index).get('postgresql_using')
+                        or 'gin',
+                        'postgresql_using_internals': raw_index.get('postgresql_using_internals')
+                        or normalize_clause_text(conn_index.expressions[0], None),
+                    }
+                    for key in ('postgresql_concurrently', 'postgresql_where'):
+                        value = _get_index_kwarg(conn_index, key)
+                        if value not in (None, False):
+                            full_text_info[key] = value
 
                     modify_table_ops.ops[i] = ops.DropFullTextIndexOp(
                         conn_index.name,
                         conn_index.table.name,
-                        info={
-                            # TODO get the right value of this from somewhere since it won't be in expressions
-                            'postgresql_using': 'gin',
-                            'postgresql_using_internals': conn_postgresql_using,
-
-                        },
-                        # info=index.info,
+                        info=full_text_info,
                         table=conn_table,
                     )
             continue
@@ -671,9 +675,6 @@ def _compare_indexes(autogen_context: AutogenContext,
                         index.columns,
                         **_get_create_index_kwargs(index, meta_signature),
                     ))
-
-
-index_regex = re.compile(r'CREATE (?:UNIQUE )?INDEX .* USING ([a-zA-Z0-9_]+) (.+)')
 
 # this handles computed columns changing and so drops and re-creates the column.
 
@@ -761,40 +762,60 @@ def _compare_generated_column(autogen_context: AutogenContext,
                         create_index
                     )
 
-
-# sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
-# fetch these indices from pg_indices to find them
-# warning: "Skipped unsupported reflection of expression-based index accounts_full_text_idx"
+# Pull structured index metadata from pg_catalog so compare logic does not
+# depend on parsing pg_indexes.indexdef text.
 def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | None):
     if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
         return {'missing': {}, 'all': {}}
 
     missing = {}
     all_indices = {}
-    # we cache the db hit but the table seems to change across the same call and so we're
-    # just paying the CPU price. can probably be fixed in some way...
     names = set([index.name for index in conn_table.indexes] +
                 [constraint.name for constraint in conn_table.constraints])
-    res = get_db_indexes_for_table(
+    for row in _get_db_index_key_rows(
         autogen_context.connection,
         conn_table.name,
         conn_table.schema,
-    )
-
-    for row in res.fetchall():
-        (
+    ):
+        row_dict = row._asdict()
+        name = row_dict['index_name']
+        payload = all_indices.setdefault(
             name,
-            details
-        ) = row
-        m = index_regex.match(details)
-        if m is None:
+            {
+                'postgresql_using': row_dict['access_method'],
+                'postgresql_using_internals': None,
+                'postgresql_ops': {},
+                'postgresql_with': {},
+                '_key_definitions': [],
+            },
+        )
+        key_definition = row_dict.get('key_definition')
+        if key_definition:
+            payload['_key_definitions'].append(key_definition)
+        column_name = row_dict.get('column_name')
+        operator_class = row_dict.get('operator_class')
+        if column_name and operator_class:
+            payload['postgresql_ops'][column_name] = operator_class
+
+    for row in _get_db_index_storage_rows(
+        autogen_context.connection,
+        conn_table.name,
+        conn_table.schema,
+    ):
+        row_dict = row._asdict()
+        name = row_dict['index_name']
+        payload = all_indices.get(name)
+        if payload is None:
             continue
-        r = m.groups()
+        option_name = row_dict.get('option_name')
+        option_value = row_dict.get('option_value')
+        if option_name and option_value is not None:
+            payload['postgresql_with'][option_name] = option_value
 
-        info = _parse_raw_index_details(r[0], r[1])
-        payload = _raw_index_details_payload(info)
-
-        all_indices[name] = payload
+    for name, payload in all_indices.items():
+        key_definitions = payload.pop('_key_definitions', [])
+        if key_definitions:
+            payload['postgresql_using_internals'] = ', '.join(key_definitions)
 
         # missing!
         if name not in names:
@@ -803,125 +824,80 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | 
     return {'missing': missing, 'all': all_indices}
 
 
-# use a cache so we only hit the db once for each table
-# @functools.lru_cache()
-def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str, schema_name: str | None = None):
-    res = connection.execute(sa.text(
-       """
-       SELECT indexname, indexdef
-       FROM pg_indexes
-       WHERE tablename = :table_name
-         AND schemaname = COALESCE(:schema_name, current_schema())
-       """),
-       {
-           'table_name': tname,
-           'schema_name': schema_name,
-       })
-    return res
+def _get_db_index_key_rows(
+    connection: sa.engine.Connection, tname: str, schema_name: str | None = None
+):
+    return connection.execute(
+        sa.text(
+            """
+            SELECT
+                idx.relname AS index_name,
+                am.amname AS access_method,
+                key_parts.ord AS key_position,
+                pg_get_indexdef(i.indexrelid, key_parts.ord::int, false) AS key_definition,
+                attr.attname AS column_name,
+                CASE
+                    WHEN opc.opcdefault THEN NULL
+                    ELSE opc.opcname
+                END AS operator_class
+            FROM pg_index AS i
+            JOIN pg_class AS idx
+                ON idx.oid = i.indexrelid
+            JOIN pg_class AS tbl
+                ON tbl.oid = i.indrelid
+            JOIN pg_namespace AS ns
+                ON ns.oid = tbl.relnamespace
+            JOIN pg_am AS am
+                ON am.oid = idx.relam
+            LEFT JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS key_parts(attnum, ord)
+                ON key_parts.ord <= i.indnkeyatts
+            LEFT JOIN pg_attribute AS attr
+                ON attr.attrelid = tbl.oid AND attr.attnum = key_parts.attnum
+            LEFT JOIN LATERAL unnest(i.indclass) WITH ORDINALITY AS opclasses(opclass_oid, ord)
+                ON opclasses.ord = key_parts.ord
+            LEFT JOIN pg_opclass AS opc
+                ON opc.oid = opclasses.opclass_oid
+            WHERE tbl.relname = :table_name
+              AND ns.nspname = COALESCE(:schema_name, current_schema())
+            ORDER BY idx.relname, key_parts.ord
+            """
+        ),
+        {
+            'table_name': tname,
+            'schema_name': schema_name,
+        },
+    )
 
 
-# pg_get_indexdef gives us a constrained index fragment rather than full SQL.
-# We only need the access method, operator classes, and WITH params, so keep the
-# parser narrowly scoped to those pieces instead of pulling in a general parser.
-simple_index_part_regex = re.compile(
-    r'^\s*"?(?P<column>[a-zA-Z0-9_]+)"?(?:\s+(?P<operator_class>[a-zA-Z0-9_.]+))?(?:\s+(?:ASC|DESC))?(?:\s+NULLS\s+(?:FIRST|LAST))?\s*$'
-)
-
-
-def _split_top_level_csv(text: str) -> list[str]:
-    parts = []
-    current = []
-    depth = 0
-    in_quotes = False
-
-    for char in text:
-        if char == '"':
-            in_quotes = not in_quotes
-        if not in_quotes:
-            if char == '(':
-                depth += 1
-            elif char == ')':
-                depth -= 1
-            elif char == ',' and depth == 0:
-                parts.append(''.join(current).strip())
-                current = []
-                continue
-        current.append(char)
-
-    if current:
-        parts.append(''.join(current).strip())
-
-    return [part for part in parts if part]
-
-
-def _extract_parenthesized_segment(text: str) -> tuple[str | None, str]:
-    if not text.startswith('('):
-        return (None, text)
-
-    depth = 0
-    in_quotes = False
-    for index, char in enumerate(text):
-        if char == '"':
-            in_quotes = not in_quotes
-        if in_quotes:
-            continue
-        if char == '(':
-            depth += 1
-        elif char == ')':
-            depth -= 1
-            if depth == 0:
-                return (text[1:index], text[index + 1:].strip())
-
-    return (None, text)
-
-
-def _parse_index_ops(columns_clause: str | None) -> dict[str, str]:
-    if not columns_clause:
-        return {}
-
-    ret = {}
-    for part in _split_top_level_csv(columns_clause):
-        match = simple_index_part_regex.match(part)
-        if match is None:
-            continue
-        operator_class = match.group('operator_class')
-        if operator_class:
-            ret[match.group('column')] = operator_class
-    return ret
-
-
-def _parse_index_with(remainder: str) -> dict[str, str]:
-    match = re.search(r'\bWITH\s*\((.+?)\)', remainder)
-    if match is None:
-        return {}
-
-    ret = {}
-    for part in _split_top_level_csv(match.group(1)):
-        key, _, value = part.partition('=')
-        if not _:
-            continue
-        ret[key.strip()] = value.strip().strip("'")
-    return ret
-
-
-def _parse_raw_index_details(using: str, details: str) -> dict[str, Any]:
-    columns_clause, remainder = _extract_parenthesized_segment(details.strip())
-    return {
-        'postgresql_using': using,
-        'postgresql_using_internals': details,
-        'postgresql_ops': _parse_index_ops(columns_clause),
-        'postgresql_with': _parse_index_with(remainder),
-    }
-
-
-def _raw_index_details_payload(info: dict[str, Any]) -> dict[str, Any]:
-    return {
-        'postgresql_using': info.get('postgresql_using'),
-        'postgresql_using_internals': info.get('postgresql_using_internals'),
-        'postgresql_ops': info.get('postgresql_ops', {}),
-        'postgresql_with': info.get('postgresql_with', {}),
-        # TODO don't have columns|column to pass to FullTextIndex
-    }
+def _get_db_index_storage_rows(
+    connection: sa.engine.Connection, tname: str, schema_name: str | None = None
+):
+    return connection.execute(
+        sa.text(
+            """
+            SELECT
+                idx.relname AS index_name,
+                opt.option_name,
+                opt.option_value
+            FROM pg_index AS i
+            JOIN pg_class AS idx
+                ON idx.oid = i.indexrelid
+            JOIN pg_class AS tbl
+                ON tbl.oid = i.indrelid
+            JOIN pg_namespace AS ns
+                ON ns.oid = tbl.relnamespace
+            LEFT JOIN LATERAL pg_options_to_table(idx.reloptions) AS opt
+                ON true
+            WHERE tbl.relname = :table_name
+              AND ns.nspname = COALESCE(:schema_name, current_schema())
+            ORDER BY idx.relname, opt.option_name
+            """
+        ),
+        {
+            'table_name': tname,
+            'schema_name': schema_name,
+        },
+    )
 
 
 def _normalize_index_using(using):
