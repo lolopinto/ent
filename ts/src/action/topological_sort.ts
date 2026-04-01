@@ -24,7 +24,7 @@ export class TopologicalGraph {
     const visit = (node: NodeID) => {
       const state = seen.get(node);
       if (state === 1) {
-        throw new Error("dependency graph contains a cycle");
+        throw new Error("Cycle found");
       }
       if (state === 2) {
         return;
