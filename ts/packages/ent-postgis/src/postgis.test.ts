@@ -1,5 +1,3 @@
-import { types as pgTypes } from "pg";
-import * as wkx from "wkx";
 import {
   GeographyPointType,
   GeometryPointType,
@@ -7,9 +5,9 @@ import {
   dWithin,
   distance,
   geoPoint,
-  initializePostGISParsers,
   orderByDistance,
   parsePostGISValue,
+  postgisRuntimeHandler,
   selectDistance,
   toEWKT,
 } from "./postgis";
@@ -19,6 +17,15 @@ describe("PostGIS extension helper", () => {
     expect(PostGISExtension()).toEqual({
       name: "postgis",
       managed: true,
+      runtimeSchemas: ["public"],
+      dropCascade: false,
+    });
+  });
+
+  test("can be marked as externally provisioned", () => {
+    expect(PostGISExtension({ managed: false })).toEqual({
+      name: "postgis",
+      managed: false,
       runtimeSchemas: ["public"],
       dropCascade: false,
     });
@@ -104,11 +111,42 @@ describe("PostGIS parsing", () => {
   });
 
   test("parses ewkb hex strings into GeoPoint values", () => {
-    const ewkb = new wkx.Point(-73.9857, 40.7484, undefined, undefined, 4326)
-      .toEwkb()
-      .toString("hex");
+    const ewkb = (() => {
+      const buffer = Buffer.alloc(1 + 4 + 4 + 8 + 8);
+      let offset = 0;
+      buffer.writeUInt8(1, offset);
+      offset += 1;
+      buffer.writeUInt32LE(0x20000001, offset);
+      offset += 4;
+      buffer.writeUInt32LE(4326, offset);
+      offset += 4;
+      buffer.writeDoubleLE(-73.9857, offset);
+      offset += 8;
+      buffer.writeDoubleLE(40.7484, offset);
+      return buffer.toString("hex");
+    })();
 
     expect(parsePostGISValue(ewkb)).toEqual({
+      longitude: -73.9857,
+      latitude: 40.7484,
+      srid: 4326,
+    });
+  });
+
+  test("parses ewkb buffers into GeoPoint values", () => {
+    const buffer = Buffer.alloc(1 + 4 + 4 + 8 + 8);
+    let offset = 0;
+    buffer.writeUInt8(1, offset);
+    offset += 1;
+    buffer.writeUInt32LE(0x20000001, offset);
+    offset += 4;
+    buffer.writeUInt32LE(4326, offset);
+    offset += 4;
+    buffer.writeDoubleLE(-73.9857, offset);
+    offset += 8;
+    buffer.writeDoubleLE(40.7484, offset);
+
+    expect(parsePostGISValue(buffer)).toEqual({
       longitude: -73.9857,
       latitude: 40.7484,
       srid: 4326,
@@ -117,24 +155,20 @@ describe("PostGIS parsing", () => {
 });
 
 describe("PostGIS runtime initialization", () => {
-  test("registers parsers for geometry and geography oids", async () => {
-    const setTypeParser = jest.spyOn(pgTypes, "setTypeParser").mockImplementation(
-      () => pgTypes,
-    );
-    const pool = {
-      query: jest.fn().mockResolvedValue({
-        rows: [
-          { oid: 1234, typname: "geometry" },
-          { oid: 5678, typname: "geography" },
-        ],
-      }),
-    };
-
-    await initializePostGISParsers(pool as never);
-
-    expect(setTypeParser).toHaveBeenCalledTimes(2);
-    expect(setTypeParser).toHaveBeenNthCalledWith(1, 1234, expect.any(Function));
-    expect(setTypeParser).toHaveBeenNthCalledWith(2, 5678, expect.any(Function));
-    setTypeParser.mockRestore();
+  test("registers point type handlers through the core runtime registry", () => {
+    expect(postgisRuntimeHandler).toEqual({
+      name: "postgis",
+      runtimeSchemas: ["public"],
+      types: [
+        {
+          name: "geometry",
+          parse: parsePostGISValue,
+        },
+        {
+          name: "geography",
+          parse: parsePostGISValue,
+        },
+      ],
+    });
   });
 });

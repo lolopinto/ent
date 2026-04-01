@@ -28,9 +28,7 @@
     "url": "https://github.com/lolopinto/ent/issues"
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
-  "dependencies": {
-    "wkx": "^0.5.0"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@snowtop/ent": "file:../../dist",
     "@types/jest": "^30.0.0",

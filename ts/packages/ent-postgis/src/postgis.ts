@@ -13,9 +13,6 @@ import {
   Type,
   registerExtensionRuntime,
 } from "@snowtop/ent";
-import { types as pgTypes } from "pg";
-import type { Pool } from "pg";
-import * as wkx from "wkx";
 
 export interface GeoPoint {
   longitude: number;
@@ -37,6 +34,10 @@ export interface PostGISPointFieldOptions extends FieldOptions {
 }
 
 export interface PostGISExtensionOptions {
+  /**
+   * When false, Ent treats PostGIS as externally provisioned and only validates
+   * that it is present. The default is true so Ent manages the lifecycle.
+   */
   managed?: boolean;
   version?: string;
   installSchema?: string;
@@ -327,20 +328,85 @@ export function pointGISTIndex(name: string, column: string) {
   };
 }
 
-function isHexEncodedGeometry(value: string) {
-  const trimmed = value.startsWith("\\x") ? value.slice(2) : value;
-  return trimmed.length % 2 === 0 && /^[0-9A-Fa-f]+$/.test(trimmed);
+function parseNumericToken(value: string): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`invalid PostGIS point coordinate ${value}`);
+  }
+  return parsed;
 }
 
-function fromWKXGeometry(geometry: wkx.Geometry): any {
-  if (geometry instanceof wkx.Point) {
-    return {
-      longitude: geometry.x,
-      latitude: geometry.y,
-      srid: geometry.srid,
-    } satisfies GeoPoint;
+function parsePointText(value: string): GeoPoint | null {
+  let text = value.trim();
+  if (!text) {
+    return null;
   }
-  return geometry.toGeoJSON();
+
+  let srid: number | undefined;
+  const sridMatch = /^SRID=(\d+);(.*)$/i.exec(text);
+  if (sridMatch) {
+    srid = Number(sridMatch[1]);
+    text = sridMatch[2].trim();
+  }
+
+  const pointMatch =
+    /^POINT(?:\s+ZM|\s+Z|\s+M)?\(\s*([^\s]+)\s+([^\s]+)(?:\s+[^\s]+(?:\s+[^\s]+)?)?\s*\)$/i.exec(
+      text,
+    );
+  if (!pointMatch) {
+    return null;
+  }
+
+  return {
+    longitude: parseNumericToken(pointMatch[1]),
+    latitude: parseNumericToken(pointMatch[2]),
+    srid,
+  };
+}
+
+function parseWkbPoint(buffer: Buffer): GeoPoint | null {
+  if (buffer.length < 21) {
+    return null;
+  }
+
+  const littleEndian = buffer.readUInt8(0) === 1;
+  let offset = 1;
+
+  const readUInt32 = littleEndian
+    ? buffer.readUInt32LE.bind(buffer)
+    : buffer.readUInt32BE.bind(buffer);
+  const readDouble = littleEndian
+    ? buffer.readDoubleLE.bind(buffer)
+    : buffer.readDoubleBE.bind(buffer);
+
+  let type = readUInt32(offset);
+  offset += 4;
+
+  let srid: number | undefined;
+  const hasSrid = (type & 0x20000000) !== 0;
+  type &= 0x1fffffff;
+  if (hasSrid) {
+    srid = readUInt32(offset);
+    offset += 4;
+  }
+
+  if (type !== 1 || offset + 16 > buffer.length) {
+    return null;
+  }
+
+  return {
+    longitude: readDouble(offset),
+    latitude: readDouble(offset + 8),
+    srid,
+  };
+}
+
+function parseWkbHexPoint(value: string): GeoPoint | null {
+  const hex = value.startsWith("\\x") ? value.slice(2) : value;
+  if (hex.length % 2 !== 0 || !/^[0-9A-Fa-f]+$/.test(hex)) {
+    return null;
+  }
+  return parseWkbPoint(Buffer.from(hex, "hex"));
 }
 
 export function parsePostGISValue(value: unknown): unknown {
@@ -352,57 +418,30 @@ export function parsePostGISValue(value: unknown): unknown {
     return value;
   }
 
-  let geometry: wkx.Geometry;
   if (Buffer.isBuffer(value)) {
-    geometry = wkx.Geometry.parse(value);
-    return fromWKXGeometry(geometry);
+    return parseWkbPoint(value) || value;
   }
 
   if (typeof value !== "string") {
     return value;
   }
 
-  const trimmed = value.trim();
-  if (!trimmed) {
-    return value;
-  }
-
-  if (isHexEncodedGeometry(trimmed)) {
-    const hex = trimmed.startsWith("\\x") ? trimmed.slice(2) : trimmed;
-    geometry = wkx.Geometry.parse(Buffer.from(hex, "hex"));
-    return fromWKXGeometry(geometry);
-  }
-
-  geometry = wkx.Geometry.parse(trimmed);
-  return fromWKXGeometry(geometry);
+  return parsePointText(value) || parseWkbHexPoint(value) || value;
 }
 
-export async function initializePostGISParsers(pool: Pick<Pool, "query">) {
-  const res = await pool.query<{ oid: number; typname: string }>(
-    `
-      SELECT t.oid, t.typname
-      FROM pg_catalog.pg_type AS t
-      WHERE t.typname = ANY($1::text[])
-    `,
-    [["geometry", "geography"]],
-  );
+export const postgisRuntimeHandler = {
+  name: "postgis",
+  runtimeSchemas: ["public"],
+  types: [
+    {
+      name: "geometry",
+      parse: parsePostGISValue,
+    },
+    {
+      name: "geography",
+      parse: parsePostGISValue,
+    },
+  ],
+};
 
-  for (const row of res.rows) {
-    pgTypes.setTypeParser(Number(row.oid), (value: string) => parsePostGISValue(value));
-  }
-}
-
-let registeredRuntime = false;
-
-export function registerPostGISRuntime() {
-  if (registeredRuntime) {
-    return;
-  }
-  registerExtensionRuntime({
-    name: "postgis",
-    initialize: initializePostGISParsers,
-  });
-  registeredRuntime = true;
-}
-
-registerPostGISRuntime();
+registerExtensionRuntime(postgisRuntimeHandler);

@@ -1,5 +1,6 @@
 import "src/global_augment";
 import { DB, loadConfig } from "@snowtop/ent";
+import { PostGISExtension } from "@snowtop/ent-postgis";
 
 beforeAll(() => {
   const db = process.env.POSTGRES_TEST_DB;
@@ -16,6 +17,7 @@ beforeAll(() => {
       port: 5432,
       sslmode: "disable",
     },
+    extensions: [PostGISExtension()],
   });
 });
 
