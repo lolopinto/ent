@@ -1,5 +1,4 @@
 import DataLoader from "dataloader";
-import memoizee from "memoizee";
 import {
   Context,
   Data,
@@ -17,6 +16,7 @@ import {
 } from "../ent";
 import { OrderBy } from "../query_impl";
 import { stableStringify } from "../cache_utils";
+import { memoizeNoArgs } from "../memoize";
 import {
   createLoaderCacheMap,
   InstrumentedDataLoader,
@@ -162,7 +162,7 @@ class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
     private queryOptions?: EdgeQueryableDataOptions,
     public context?: Context,
   ) {
-    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+    this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
 
   private initPrime() {
@@ -222,7 +222,7 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
     if (context) {
       this.loader = createLoader(options, queryOptions, context);
     }
-    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+    this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
 
   private initPrime() {
