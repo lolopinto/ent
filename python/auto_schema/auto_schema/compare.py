@@ -675,7 +675,6 @@ def _compare_indexes(autogen_context: AutogenContext,
                         index.columns,
                         **_get_create_index_kwargs(index, meta_signature),
                     ))
-
 # this handles computed columns changing and so drops and re-creates the column.
 
 
@@ -898,7 +897,6 @@ def _get_db_index_storage_rows(
             'schema_name': schema_name,
         },
     )
-
 
 def _normalize_index_using(using):
     if using in (None, False, '', 'btree'):
