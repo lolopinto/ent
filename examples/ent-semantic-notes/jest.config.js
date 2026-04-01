@@ -24,6 +24,7 @@ module.exports = {
     "^@snowtop/ent-pgvector$":
       "<rootDir>/../../ts/packages/ent-pgvector/src/pgvector.ts"
   },
+  setupFilesAfterEnv: ["./src/testsetup/setup.ts"],
   testPathIgnorePatterns: ["dist"],
   transformIgnorePatterns: ["<rootDir>/node_modules/"]
 };

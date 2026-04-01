@@ -1,5 +1,9 @@
+import * as ent from "@snowtop/ent";
 import { buildQueryData } from "@snowtop/ent/core/query_impl";
-import { buildSemanticChunkSearchQuery } from "src/search/semantic_search";
+import {
+  buildSemanticChunkSearchQuery,
+  semanticChunkSearch,
+} from "src/search/semantic_search";
 
 describe("semantic notes search", () => {
   test("builds a nearest-neighbor query over note chunks", () => {
@@ -23,5 +27,27 @@ describe("semantic notes search", () => {
       0.42,
       "[0.12,0.3,0.44,0.08,0.19,0.71]",
     ]);
+  });
+
+  test("semanticChunkSearch delegates through ent loadRows", async () => {
+    const loadRowsSpy = jest
+      .spyOn(ent, "loadRows")
+      .mockResolvedValue([{ id: "chunk-1" }] as never);
+
+    const options = {
+      workspaceID: "workspace-1",
+      embedding: [0.12, 0.3, 0.44, 0.08, 0.19, 0.71],
+      limit: 2,
+    };
+
+    const rows = await semanticChunkSearch(options);
+    const queryOptions = loadRowsSpy.mock.calls[0][0];
+
+    expect(loadRowsSpy).toHaveBeenCalledTimes(1);
+    expect(buildQueryData(queryOptions)).toEqual(
+      buildQueryData(buildSemanticChunkSearchQuery(options)),
+    );
+    expect(rows).toEqual([{ id: "chunk-1" }]);
+    loadRowsSpy.mockRestore();
   });
 });

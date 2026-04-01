@@ -221,7 +221,7 @@ metadata.info["edges"] = {
 
 metadata.info["db_extensions"] = {
   'public': [
-    {'name': "vector", 'managed': True, 'version': None, 'install_schema': None, 'runtime_schemas': ["public"], 'drop_cascade': False},
+    {'name': "vector", 'provisioned_by': "ent", 'version': None, 'install_schema': None, 'runtime_schemas': ["public"], 'drop_cascade': False},
     ],
 }
 

@@ -1,4 +1,3 @@
-import pg from "pg";
 import { buildQueryData } from "@snowtop/ent";
 import {
   HNSWIndex,
@@ -17,7 +16,9 @@ describe("ent-pgvector", () => {
   test("PgVectorExtension uses ergonomic defaults", () => {
     expect(PgVectorExtension()).toEqual({
       name: "vector",
+      provisionedBy: "ent",
       runtimeSchemas: ["public"],
+      dropCascade: false,
     });
   });
 
@@ -109,46 +110,17 @@ describe("ent-pgvector", () => {
     });
   });
 
-  test("runtime handler registers parsers from pg_type metadata", async () => {
-    const setTypeParser = jest.spyOn(pg.types, "setTypeParser");
-    const textArrayParser = jest
-      .spyOn(pg.types, "getTypeParser")
-      .mockImplementation((oid: number) => {
-        if (oid === (1009 as any)) {
-          return ((value: string) => ['[1,2,3]', '[4,5,6]']) as any;
-        }
-        return ((value: string) => value) as any;
-      });
-
-    const pool = {
-      query: jest.fn().mockResolvedValue({
-        rows: [{ oid: 12345, typarray: 12346 }],
-      }),
-    } as any;
-
-    await pgvectorRuntimeHandler.initialize(pool);
-
-    expect(pool.query).toHaveBeenCalledWith(
-      "SELECT oid, typarray FROM pg_type WHERE typname = $1 LIMIT 1",
-      ["vector"],
-    );
-    expect(setTypeParser).toHaveBeenCalledTimes(2);
-
-    const scalarParser = setTypeParser.mock.calls[0][1] as unknown as (
-      value: string,
-    ) => number[];
-    const arrayParser = setTypeParser.mock.calls[1][1] as unknown as (
-      value: string,
-    ) => Array<number[] | null | undefined>;
-
-    expect(scalarParser("[1,2,3]")).toEqual([1, 2, 3]);
-    expect(arrayParser("{\"[1,2,3]\",\"[4,5,6]\"}")).toEqual([
-      [1, 2, 3],
-      [4, 5, 6],
-    ]);
+  test("runtime handler exposes the core parser registration contract", () => {
+    expect(pgvectorRuntimeHandler).toEqual({
+      name: "vector",
+      runtimeSchemas: ["public"],
+      types: [
+        {
+          name: "vector",
+          parse: parseVectorLiteral,
+        },
+      ],
+    });
     expect(parseVectorLiteral("[4,5,6]")).toEqual([4, 5, 6]);
-
-    setTypeParser.mockRestore();
-    textArrayParser.mockRestore();
   });
 });

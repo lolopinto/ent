@@ -1,4 +1,3 @@
-import pg, { type Pool } from "pg";
 import {
   type Clause,
   BaseField,
@@ -80,8 +79,6 @@ const VECTOR_OPERATOR_CLASSES: Record<VectorMetric, string> = {
   inner_product: "vector_ip_ops",
   l1: "vector_l1_ops",
 };
-
-const registeredTypeOIDs = new Set<number>();
 
 function isTypedNumericArray(value: unknown): value is Float32Array | Float64Array {
   return (
@@ -277,7 +274,10 @@ export function PgVectorExtension(
 ): DBExtension {
   return {
     name: VECTOR_EXTENSION_NAME,
+    provisionedBy:
+      extension.provisionedBy ?? (extension.managed === false ? "external" : "ent"),
     runtimeSchemas: extension.runtimeSchemas ?? DEFAULT_RUNTIME_SCHEMAS,
+    dropCascade: extension.dropCascade === true,
     ...extension,
   };
 }
@@ -462,42 +462,15 @@ export function IVFFlatIndex(options: IVFFlatIndexOptions): Index {
   };
 }
 
-async function maybeRegisterArrayParser(arrayOID: number) {
-  if (!arrayOID || registeredTypeOIDs.has(arrayOID)) {
-    return;
-  }
-  const parseTextArray = pg.types.getTypeParser(1009 as any);
-  pg.types.setTypeParser(arrayOID as any, (value: string | null) => {
-    if (value === null) {
-      return null;
-    }
-    const parsed = parseTextArray(value) as string[];
-    return parsed.map((entry) => parseVectorLiteral(entry));
-  });
-  registeredTypeOIDs.add(arrayOID);
-}
-
 export const pgvectorRuntimeHandler = {
   name: VECTOR_EXTENSION_NAME,
-  async initialize(pool: Pick<Pool, "query">) {
-    const result = await pool.query<{ oid: number; typarray: number }>(
-      "SELECT oid, typarray FROM pg_type WHERE typname = $1 LIMIT 1",
-      [VECTOR_TYPE_NAME],
-    );
-    const row = result.rows[0];
-    if (!row) {
-      throw new Error('required pg_type entry "vector" was not found');
-    }
-
-    if (!registeredTypeOIDs.has(row.oid)) {
-      pg.types.setTypeParser(row.oid as any, (value: string | null) =>
-        parseVectorLiteral(value),
-      );
-      registeredTypeOIDs.add(row.oid);
-    }
-
-    await maybeRegisterArrayParser(row.typarray);
-  },
+  runtimeSchemas: DEFAULT_RUNTIME_SCHEMAS,
+  types: [
+    {
+      name: VECTOR_TYPE_NAME,
+      parse: parseVectorLiteral,
+    },
+  ],
 };
 
 registerExtensionRuntime(pgvectorRuntimeHandler);

@@ -17,6 +17,12 @@ included `docker-compose.dev.yml` uses a pgvector-enabled Postgres image so
 the same migration flow. Run `npm run db:up` before using `npm run codegen` or
 `npm run upgrade` from this repo checkout.
 
+Runtime registration is now explicit:
+
+* importing `@snowtop/ent-pgvector` registers the vector parser metadata with Ent
+* `src/testsetup/setup.ts` calls `loadConfig` only when `POSTGRES_TEST_DB` is set
+* the example no longer relies on a generated `src/schema/.ent/extensions.json`
+
 The package also includes `HNSWIndex()` and `IVFFlatIndex()` helpers, but this example
 keeps the schema portable to older local pgvector installs by not requiring ANN access
 methods during setup.
