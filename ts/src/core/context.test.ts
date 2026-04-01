@@ -81,4 +81,58 @@ describe("ContextCache", () => {
       }),
     ).toBeNull();
   });
+
+  test("query cache keys include computed field and order expressions", () => {
+    const cache = new ContextCache();
+    const expression = (key: string) =>
+      clause.ParameterizedExpression(
+        key,
+        (idx, alias) =>
+          `distance(${alias ? `${alias}.location` : "location"}, $${idx}, $${idx + 1})`,
+        [12.3, 45.6],
+      );
+    const baseOptions: QueryOptions = {
+      tableName: "places",
+      alias: "p",
+      fields: ["id", { alias: "distance", expression: expression("same") }],
+      clause: clause.Eq("id", 1),
+      orderby: [
+        {
+          column: "distance",
+          direction: "ASC",
+          expression: expression("same"),
+        },
+      ],
+    };
+    const rows = [{ id: 1, distance: 5 }];
+
+    cache.primeCache(baseOptions, rows);
+
+    expect(
+      cache.getCachedRows({
+        ...baseOptions,
+        fields: ["id", { alias: "distance", expression: expression("same") }],
+        orderby: [
+          {
+            column: "distance",
+            direction: "ASC",
+            expression: expression("same"),
+          },
+        ],
+      }),
+    ).toBe(rows);
+
+    expect(
+      cache.getCachedRows({
+        ...baseOptions,
+        orderby: [
+          {
+            column: "distance",
+            direction: "ASC",
+            expression: expression("different"),
+          },
+        ],
+      }),
+    ).toBeNull();
+  });
 });

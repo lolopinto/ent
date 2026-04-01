@@ -3,11 +3,22 @@ package schema_test
 import (
 	"testing"
 
+	entconfig "github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func withPostgresDialect(t *testing.T) {
+	t.Helper()
+
+	prev := *entconfig.Get().DB
+	entconfig.ResetConfig(&entconfig.DBConfig{Dialect: "postgres"})
+	t.Cleanup(func() {
+		entconfig.ResetConfig(&prev)
+	})
+}
 
 func TestGlobalEdge(t *testing.T) {
 	inputSchema := &input.Schema{
@@ -169,6 +180,85 @@ func TestExtraEdgeCols(t *testing.T) {
 	require.Equal(t, []string{"id1", "edge_type", "deleted_at"}, edgeIndices[0].Columns)
 }
 
+func TestFieldRequiresDeclaredDBExtension(t *testing.T) {
+	withPostgresDialect(t)
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Location": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "point",
+						Type: &input.FieldType{
+							DBType:       input.String,
+							Type:         "Point",
+							GraphQLType:  "Point",
+							PostgresType: "point",
+							DBExtension:  "postgis",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	_, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.EqualError(t, err, "field point on Location requires db extension postgis to be declared in the global schema")
+}
+
+func TestFieldWithDeclaredDBExtension(t *testing.T) {
+	withPostgresDialect(t)
+
+	inputSchema := &input.Schema{
+		Nodes: map[string]*input.Node{
+			"Location": {
+				Fields: []*input.Field{
+					{
+						Name: "id",
+						Type: &input.FieldType{
+							DBType: input.UUID,
+						},
+						PrimaryKey: true,
+					},
+					{
+						Name: "point",
+						Type: &input.FieldType{
+							DBType:       input.String,
+							Type:         "Point",
+							GraphQLType:  "Point",
+							PostgresType: "point",
+							DBExtension:  "postgis",
+						},
+					},
+				},
+			},
+		},
+		GlobalSchema: &input.GlobalSchema{
+			DBExtensions: []*input.DBExtension{
+				{
+					Name: "postgis",
+				},
+			},
+		},
+	}
+
+	schema, err := parseFromInputSchema(inputSchema, base.TypeScript)
+	require.NoError(t, err)
+
+	location := schema.Nodes["Location"]
+	require.NotNil(t, location)
+	field := location.NodeData.FieldInfo.GetFieldByName("point")
+	require.NotNil(t, field)
+	assert.Equal(t, `auto_schema.schema_item.CustomSQLAlchemyType("point")`, field.GetDbTypeForField())
+	assert.Equal(t, "postgis", field.GetDBExtension())
+}
 func TestDBExtensions(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{

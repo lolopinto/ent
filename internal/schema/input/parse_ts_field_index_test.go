@@ -89,3 +89,66 @@ func TestFieldIndexWhere(t *testing.T) {
 
 	runTestCases(t, testCases)
 }
+
+func TestIndexOperatorClassesAndStorageParams(t *testing.T) {
+	testCases := map[string]testCase{
+		"index operator classes and storage params": {
+			code: map[string]string{
+				"user.ts": getCodeWithSchema(`
+					import {EntSchema, StringType} from "{schema}";
+
+					const UserSchema = new EntSchema({
+						fields: {
+							email: StringType(),
+						},
+						indices: [
+							{
+								name: "users_email_pattern_idx",
+								columns: ["email"],
+								indexType: "btree",
+								ops: {
+									email: "text_pattern_ops",
+								},
+								indexParams: {
+									fillfactor: 70,
+								},
+							},
+						],
+					});
+					export default UserSchema;
+				`),
+			},
+			expectedPatterns: map[string]pattern{
+				"node": {
+					name:   "node",
+					fields: nodeFields(),
+				},
+			},
+			expectedNodes: map[string]node{
+				"User": {
+					fields: fieldsWithNodeFields(
+						field{
+							name:   "email",
+							dbType: input.String,
+						},
+					),
+					indices: []index{
+						{
+							name:      "users_email_pattern_idx",
+							columns:   []string{"email"},
+							indexType: input.Btree,
+							ops: map[string]string{
+								"email": "text_pattern_ops",
+							},
+							indexParams: map[string]interface{}{
+								"fillfactor": float64(70),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	runTestCases(t, testCases)
+}

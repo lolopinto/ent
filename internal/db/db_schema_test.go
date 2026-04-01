@@ -2734,6 +2734,99 @@ func TestExplicitScalarIndexBtree(t *testing.T) {
 	)
 }
 
+func TestCustomPostgresTypeColumn(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Location": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "point",
+							Type: &input.FieldType{
+								DBType:       input.String,
+								Type:         "Point",
+								GraphQLType:  "Point",
+								PostgresType: "point",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("Location", dbSchema, t)
+	column := getTestColumnFromTable(t, table, "point")
+	testColumn(t, column, "point", "point", "point", []string{
+		`"point"`,
+		`auto_schema.schema_item.CustomSQLAlchemyType("point")`,
+		"nullable=False",
+	})
+}
+
+func TestIndexWithOperatorClassesAndStorageParams(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "email",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:      "users_email_pattern_idx",
+							Columns:   []string{"email"},
+							IndexType: input.Btree,
+							Ops: map[string]string{
+								"email": "text_pattern_ops",
+							},
+							IndexParams: map[string]interface{}{
+								"fillfactor": float64(70),
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("User", dbSchema, t)
+	constraint := getTestIndexedConstraintFromTable(t, table, "email")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s, postgresql_ops=%s, postgresql_with=%s)",
+			strconv.Quote("users_email_pattern_idx"),
+			strconv.Quote("email"),
+			strconv.Quote("btree"),
+			`{"email":"text_pattern_ops"}`,
+			`{"fillfactor":70}`,
+		),
+	)
+}
+
 func TestExplicitListIndexGin(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,

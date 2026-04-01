@@ -332,6 +332,11 @@ export class EditNodeOperation<
       return `RETURNING ${this.options.loadEntOptions.fields
         .map((f) => {
           if (typeof f === "object") {
+            if ("expression" in f) {
+              throw new Error(
+                "RETURNING does not support computed select expressions",
+              );
+            }
             return `${f.alias}.${f.column}`;
           }
           return f;

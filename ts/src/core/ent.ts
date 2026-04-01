@@ -17,6 +17,7 @@ import {
   PrimableLoader,
   PrivacyPolicy,
   QueryDataOptions,
+  SelectBaseDataOptions,
   SelectCustomDataOptions,
   SelectDataOptions,
   Viewer,
@@ -42,7 +43,12 @@ import {
   getLoaderMaxBatchSize,
 } from "./loaders/loader";
 import { log, logEnabled, logTrace } from "./logger";
-import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
+import {
+  OrderBy,
+  buildQueryData,
+  getOrderByPhrase,
+  orderByHasExpressions,
+} from "./query_impl";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();
@@ -873,14 +879,14 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
     }
   }
 
-  const query = buildQuery(options);
-  logQuery(query, options.clause.logValues());
+  const queryData = buildQueryData(options);
+  logQuery(queryData.query, queryData.logValues);
   const pool = DB.getInstance().getPool();
 
-  const res = await pool.query(query, options.clause.values());
+  const res = await pool.query(queryData.query, queryData.values);
   if (res.rowCount != 1) {
     if (res.rowCount > 1) {
-      log("error", "got more than one row for query " + query);
+      log("error", "got more than one row for query " + queryData.query);
     }
     return null;
   }
@@ -932,11 +938,11 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
     }
   }
 
-  const query = buildQuery(options);
+  const queryData = buildQueryData(options);
   const r = await performRawQuery(
-    query,
-    options.clause.values(),
-    options.clause.logValues(),
+    queryData.query,
+    queryData.values,
+    queryData.logValues,
   );
   if (cache) {
     // put the rows in the cache...
@@ -951,13 +957,7 @@ interface GroupQueryOptions<T extends Data, K = keyof T> {
   // extra clause to join
   clause?: clause.Clause<T, K>;
   groupColumn: K;
-  fields: (
-    | K
-    | {
-        alias: string;
-        column: K;
-      }
-  )[];
+  fields: SelectBaseDataOptions["fields"];
   values: any[];
   orderby?: OrderBy;
   limit: number;
@@ -967,6 +967,16 @@ interface GroupQueryOptions<T extends Data, K = keyof T> {
 export function buildGroupQuery<T extends Data = Data, K = keyof T>(
   options: GroupQueryOptions<T, K>,
 ): [string, clause.Clause<T, K>] {
+  if (
+    options.fields.some(
+      (field) => typeof field === "object" && "expression" in field,
+    )
+  ) {
+    throw new Error("group queries do not support computed select expressions");
+  }
+  if (options.orderby && orderByHasExpressions(options.orderby)) {
+    throw new Error("group queries do not support computed order expressions");
+  }
   const fields = [...options.fields, "row_number()"];
 
   let cls = clause.In<T, K>(options.groupColumn, ...options.values);

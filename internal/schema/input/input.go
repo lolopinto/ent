@@ -141,6 +141,10 @@ type FieldType struct {
 	DisableUnknownType bool       `json:"disableUnknownType"`
 
 	GlobalType string `json:"globalType,omitempty"`
+	// raw postgres type used for extension-backed fields e.g. vector(1536)
+	PostgresType string `json:"postgresType,omitempty"`
+	// declared db extension required by this field type
+	DBExtension string `json:"dbExtension,omitempty"`
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
@@ -910,9 +914,12 @@ type Index struct {
 	Unique   bool      `json:"unique,omitempty"`
 	FullText *FullText `json:"fullText,omitempty"`
 	// for regular indices. doesn't apply for full text...
-	IndexType    IndexType `json:"indexType,omitempty"`
-	Concurrently bool      `json:"concurrently,omitempty"`
-	Where        string    `json:"where,omitempty"`
+	IndexType    IndexType              `json:"indexType,omitempty"`
+	Concurrently bool                   `json:"concurrently,omitempty"`
+	Where        string                 `json:"where,omitempty"`
+	Ops          map[string]string      `json:"ops,omitempty"`
+	IndexParams  map[string]interface{} `json:"indexParams,omitempty"`
+	DBExtension  string                 `json:"dbExtension,omitempty"`
 }
 
 type FullTextLanguage string
@@ -931,9 +938,14 @@ const (
 type IndexType string
 
 const (
-	Gin   IndexType = "gin"
-	Gist  IndexType = "gist"
-	Btree IndexType = "btree"
+	Gin     IndexType = "gin"
+	Gist    IndexType = "gist"
+	Btree   IndexType = "btree"
+	Hash    IndexType = "hash"
+	SpGist  IndexType = "spgist"
+	Brin    IndexType = "brin"
+	HNSW    IndexType = "hnsw"
+	IVFFlat IndexType = "ivfflat"
 )
 
 type FullTextWeight struct {
