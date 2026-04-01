@@ -1,21 +1,142 @@
 import functools
+import pprint
+import re
+from typing import Any
+
+import alembic.operations.ops as alembicops
+import sqlalchemy as sa
 from alembic.autogenerate import comparators
 from alembic.autogenerate.api import AutogenContext
-
-from auto_schema.schema_item import FullTextIndex
-from auto_schema.clause_text import normalize_clause_text
-from . import ops
-from alembic.operations import Operations, MigrateOperation
-import sqlalchemy as sa
+from alembic.operations import MigrateOperation, Operations
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
 
-import pprint
-import re
-from sqlalchemy.dialects import postgresql
-import alembic.operations.ops as alembicops
-from typing import Any
-import functools
+from auto_schema.clause_text import normalize_clause_text
+from auto_schema.schema_item import FullTextIndex
+
+from . import ops
+
+
+def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
+    provisioned_by = extension.get("provisioned_by")
+    if provisioned_by not in ("ent", "external", None):
+        raise ValueError(
+            f"invalid provisioned_by {provisioned_by} for db extension {extension['name']}"
+        )
+    return {
+        "name": extension["name"],
+        "provisioned_by": provisioned_by or "ent",
+        "version": extension.get("version"),
+        "install_schema": extension.get("install_schema"),
+        "runtime_schemas": list(extension.get("runtime_schemas") or []),
+        "drop_cascade": extension.get("drop_cascade", False),
+    }
+
+
+def _is_ent_provisioned(extension: dict[str, Any]) -> bool:
+    return extension["provisioned_by"] == "ent"
+
+
+def _get_metadata_extensions(autogen_context: AutogenContext) -> list[dict[str, Any]]:
+    metadata_extensions = autogen_context.metadata.info.get("db_extensions", {})
+    extensions = metadata_extensions.get("public", [])
+    if not isinstance(extensions, list):
+        raise ValueError("db_extensions['public'] needs to be a list")
+    return [_normalize_db_extension(extension) for extension in extensions]
+
+
+def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, Any]]:
+    rows = autogen_context.connection.execute(
+        sa.text(
+            """
+            SELECT
+                ext.extname AS name,
+                ext.extversion AS version,
+                ns.nspname AS install_schema
+            FROM pg_catalog.pg_extension AS ext
+            JOIN pg_catalog.pg_namespace AS ns
+                ON ns.oid = ext.extnamespace
+            """
+        )
+    )
+    return {
+        row._asdict()["name"].lower(): row._asdict()
+        for row in rows
+    }
+
+
+def _get_extension_ops(
+    metadata_extensions: list[dict[str, Any]],
+    db_extensions: dict[str, dict[str, Any]],
+) -> list[ops.MigrateOpInterface]:
+    extension_ops = []
+    for extension in metadata_extensions:
+        name = extension["name"]
+        ent_provisioned = _is_ent_provisioned(extension)
+        db_extension = db_extensions.get(name.lower())
+        version = extension.get("version")
+        install_schema = extension.get("install_schema")
+        if db_extension is None:
+            if not ent_provisioned:
+                raise ValueError(
+                    f'required externally provisioned db extension "{name}" is not installed'
+                )
+            extension_ops.append(
+                ops.CreateExtensionOp(extension)
+            )
+            continue
+
+        if version is not None and db_extension.get("version") != version:
+            if not ent_provisioned:
+                raise ValueError(
+                    f'externally provisioned db extension "{name}" is installed at version '
+                    f'"{db_extension.get("version")}" but schema requires "{version}"'
+                )
+            extension_ops.append(
+                ops.UpdateExtensionOp(
+                    name,
+                    db_extension.get("version"),
+                    version,
+                )
+            )
+
+        if install_schema is not None and db_extension.get("install_schema") != install_schema:
+            if not ent_provisioned:
+                raise ValueError(
+                    f'externally provisioned db extension "{name}" is installed in schema '
+                    f'"{db_extension.get("install_schema")}" but schema requires '
+                    f'"{install_schema}"'
+                )
+            extension_ops.append(
+                ops.SetExtensionSchemaOp(
+                    name,
+                    db_extension.get("install_schema"),
+                    install_schema,
+                )
+            )
+
+    return extension_ops
+
+
+@comparators.dispatch_for("schema")
+def compare_extensions(autogen_context, upgrade_ops, schemas):
+    metadata_extensions = _get_metadata_extensions(autogen_context)
+    if len(metadata_extensions) == 0:
+        return
+
+    dialect = _dialect_name(autogen_context)
+    if dialect != "postgresql":
+        raise ValueError("db extensions are only supported for postgres")
+
+    db_extensions = _get_db_extensions(autogen_context)
+    extension_ops = _get_extension_ops(metadata_extensions, db_extensions)
+    if len(extension_ops) == 0:
+        return
+
+    # create/update extension ops need to happen before any dependent
+    # tables, columns, or indexes are created.
+    upgrade_ops.ops[0:0] = extension_ops
 
 
 @comparators.dispatch_for("schema")
