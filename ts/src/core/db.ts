@@ -293,6 +293,10 @@ export default class DB {
   static initDB(args?: clientConfigArgs) {
     const config = getClientConfig(args);
     if (config) {
+      const existing = DB.instance;
+      if (existing) {
+        void existing.endPool().catch(() => {});
+      }
       DB.instance = new DB(config);
       DB.dialect = DB.instance.db.dialect;
     }
@@ -504,6 +508,8 @@ export class Sqlite implements Connection, SyncClient {
 }
 
 export class Postgres implements Connection {
+  private closePromise?: Promise<void>;
+
   constructor(
     private pool: Pool,
     private ready?: Promise<void>,
@@ -557,7 +563,10 @@ export class Postgres implements Connection {
   }
 
   async close() {
-    return this.pool.end();
+    if (!this.closePromise) {
+      this.closePromise = this.pool.end();
+    }
+    return this.closePromise;
   }
 }
 
