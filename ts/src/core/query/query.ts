@@ -12,7 +12,7 @@ import {
   Viewer,
 } from "../base";
 import * as clause from "../clause";
-import { getCursor, getDefaultLimit } from "../ent";
+import { decodeCursorPayload, getCursor, getDefaultLimit } from "../ent";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 import { OrderBy, orderByHasExpressions, reverseOrderBy } from "../query_impl";
 
@@ -104,7 +104,7 @@ function translateCursorToKeyValues(
   opts: validCursorOptions,
 ): CursorKeyValues {
   const { keys } = opts;
-  const decoded = atob(cursor);
+  const decoded = decodeCursorPayload(cursor);
   let cursorData: CursorKeyValues = [];
   try {
     cursorData = JSON.parse(decoded);

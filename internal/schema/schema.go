@@ -793,51 +793,6 @@ func (s *Schema) validateEdgeIndices() error {
 	return nil
 }
 
-func (s *Schema) validateDBExtensions(extensions []*input.DBExtension) error {
-	seenExtensions := make(map[string]bool)
-
-	for _, extension := range extensions {
-		name := strings.TrimSpace(extension.Name)
-		if name == "" {
-			return fmt.Errorf("global db extension name cannot be empty")
-		}
-		key := strings.ToLower(name)
-		if seenExtensions[key] {
-			return fmt.Errorf("duplicate db extension %s", extension.Name)
-		}
-		seenExtensions[key] = true
-
-		if extension.InstallSchema != "" && strings.TrimSpace(extension.InstallSchema) == "" {
-			return fmt.Errorf("install schema for extension %s cannot be empty", extension.Name)
-		}
-		if extension.Version != "" && strings.TrimSpace(extension.Version) == "" {
-			return fmt.Errorf("version for extension %s cannot be empty", extension.Name)
-		}
-		if extension.ProvisionedBy == "" {
-			extension.ProvisionedBy = "ent"
-		}
-		if extension.ProvisionedBy != "ent" && extension.ProvisionedBy != "external" {
-			return fmt.Errorf(
-				"provisionedBy for extension %s must be ent or external",
-				extension.Name,
-			)
-		}
-
-		seenSchemas := make(map[string]bool)
-		for _, schemaName := range extension.RuntimeSchemas {
-			trimmed := strings.TrimSpace(schemaName)
-			if trimmed == "" {
-				return fmt.Errorf("runtime schema for extension %s cannot be empty", extension.Name)
-			}
-			if seenSchemas[trimmed] {
-				return fmt.Errorf("duplicate runtime schema %s for extension %s", schemaName, extension.Name)
-			}
-			seenSchemas[trimmed] = true
-		}
-	}
-
-	return nil
-}
 
 func normalizeDBExtensionName(name string) string {
 	return strings.ToLower(strings.TrimSpace(name))
@@ -955,6 +910,52 @@ func (s *Schema) validateIndexMetadata(index *input.Index, validColumn func(stri
 		}
 		if err := validateIndexParams(index); err != nil {
 			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) validateDBExtensions(extensions []*input.DBExtension) error {
+	seenExtensions := make(map[string]bool)
+
+	for _, extension := range extensions {
+		name := strings.TrimSpace(extension.Name)
+		if name == "" {
+			return fmt.Errorf("global db extension name cannot be empty")
+		}
+		key := strings.ToLower(name)
+		if seenExtensions[key] {
+			return fmt.Errorf("duplicate db extension %s", extension.Name)
+		}
+		seenExtensions[key] = true
+
+		if extension.InstallSchema != "" && strings.TrimSpace(extension.InstallSchema) == "" {
+			return fmt.Errorf("install schema for extension %s cannot be empty", extension.Name)
+		}
+		if extension.Version != "" && strings.TrimSpace(extension.Version) == "" {
+			return fmt.Errorf("version for extension %s cannot be empty", extension.Name)
+		}
+		if extension.ProvisionedBy == "" {
+			extension.ProvisionedBy = "ent"
+		}
+		if extension.ProvisionedBy != "ent" && extension.ProvisionedBy != "external" {
+			return fmt.Errorf(
+				"provisionedBy for extension %s must be ent or external",
+				extension.Name,
+			)
+		}
+
+		seenSchemas := make(map[string]bool)
+		for _, schemaName := range extension.RuntimeSchemas {
+			trimmed := strings.TrimSpace(schemaName)
+			if trimmed == "" {
+				return fmt.Errorf("runtime schema for extension %s cannot be empty", extension.Name)
+			}
+			if seenSchemas[trimmed] {
+				return fmt.Errorf("duplicate runtime schema %s for extension %s", schemaName, extension.Name)
+			}
+			seenSchemas[trimmed] = true
 		}
 	}
 

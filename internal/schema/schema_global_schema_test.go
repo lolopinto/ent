@@ -3,11 +3,22 @@ package schema_test
 import (
 	"testing"
 
+	entconfig "github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func withPostgresDialect(t *testing.T) {
+	t.Helper()
+
+	prev := *entconfig.Get().DB
+	entconfig.ResetConfig(&entconfig.DBConfig{Dialect: "postgres"})
+	t.Cleanup(func() {
+		entconfig.ResetConfig(&prev)
+	})
+}
 
 func TestGlobalEdge(t *testing.T) {
 	inputSchema := &input.Schema{
@@ -170,6 +181,8 @@ func TestExtraEdgeCols(t *testing.T) {
 }
 
 func TestFieldRequiresDeclaredDBExtension(t *testing.T) {
+	withPostgresDialect(t)
+
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
 			"Location": {
@@ -201,6 +214,8 @@ func TestFieldRequiresDeclaredDBExtension(t *testing.T) {
 }
 
 func TestFieldWithDeclaredDBExtension(t *testing.T) {
+	withPostgresDialect(t)
+
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{
 			"Location": {
@@ -244,7 +259,6 @@ func TestFieldWithDeclaredDBExtension(t *testing.T) {
 	assert.Equal(t, `auto_schema.schema_item.CustomSQLAlchemyType("point")`, field.GetDbTypeForField())
 	assert.Equal(t, "postgis", field.GetDBExtension())
 }
-
 func TestDBExtensions(t *testing.T) {
 	inputSchema := &input.Schema{
 		Nodes: map[string]*input.Node{

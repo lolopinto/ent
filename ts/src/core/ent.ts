@@ -1316,6 +1316,16 @@ export interface cursorOptions {
   rowKeys?: string[];
 }
 
+// UTF-8-safe cursor encoding (btoa only supports Latin-1 code units).
+function encodeCursorPayload(json: string): string {
+  return Buffer.from(json, "utf8").toString("base64");
+}
+// Inverse of encodeCursorPayload; exported for pagination decode in query.ts
+export function decodeCursorPayload(encoded: string): string {
+  return Buffer.from(encoded, "base64").toString("utf8");
+}
+
+
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
   const { row, cursorKeys, rowKeys } = opts;
@@ -1334,7 +1344,7 @@ export function getCursor(opts: cursorOptions) {
     const rowKey = rowKeys?.[i] || cursorKey;
     parts.push([cursorKey, convert(row[rowKey])]);
   }
-  return btoa(JSON.stringify(parts));
+  return encodeCursorPayload(JSON.stringify(parts));
 }
 
 export class AssocEdgeData {
