@@ -1,4 +1,4 @@
-import minimist from "minimist";
+const { parseArgs } = require("./parse_args");
 import { transform } from "../tsc/transform";
 import { TransformSchema } from "../tsc/transform_schema";
 import { TransformEnt } from "../tsc/transform_ent";
@@ -10,7 +10,7 @@ import { getCustomInfo } from "../tsc/ast";
 //  ts-node-script --swc --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/migrate_v0.1.ts --transform_schema --old_base_class BaseEntTodoSchema --new_schema_class TodoEntSchema  --transform_path src/schema/patterns/base
 function main() {
   const customInfo = getCustomInfo();
-  const options = minimist(process.argv.slice(2));
+  const options = parseArgs(process.argv.slice(2));
 
   // install 0.1.x dependencies
   // maybe provide options to make this easier if someone wants to do this in steps to see what's happening
