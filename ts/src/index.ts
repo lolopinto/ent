@@ -42,6 +42,7 @@ export {
   AssocEdgeInput,
 } from "./action/operations";
 export { setGlobalSchema } from "./core/global_schema";
+export { registerExtensionRuntime } from "./core/extensions";
 import DB from "./core/db";
 export * from "./core/loaders";
 export { DB };
