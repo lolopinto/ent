@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "lib": ["es2018", "esnext.asynciterable", "ES2020.String"],
+    "outDir": "./dist",
+    "target": "es2020",
+    "strictNullChecks": true,
+    "module": "commonjs",
+    "downlevelIteration": true,
+    "baseUrl": ".",
+    "paths": {
+      "src/*": ["src/*"],
+      "@snowtop/ent": ["../../ts/src/index"],
+      "@snowtop/ent/*": ["../../ts/src/*"],
+      "@snowtop/ent-pgvector": ["../../ts/packages/ent-pgvector/src/pgvector"]
+    },
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "noUnusedLocals": true,
+    "types": ["jest", "node"],
+    "typeRoots": ["./node_modules/@types", "../../ts/node_modules/@types"],
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"]
+}
