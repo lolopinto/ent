@@ -20,9 +20,9 @@ import {
   loadTwoWayEdges,
   performRawQuery,
 } from "../ent";
-import { OrderBy } from "../query_impl";
 import { stableStringify } from "../cache_utils";
 import { memoizeNoArgs } from "../memoize";
+import { getOrderByKey, OrderBy } from "../query_impl";
 import {
   createLoaderCacheMap,
   InstrumentedDataLoader,
@@ -339,8 +339,8 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     }
 
     const effectiveOptions = getEffectiveOptions(options);
-    const key = `${this.name}:limit:${effectiveOptions.limit}:orderby:${stableStringify(
-      effectiveOptions.orderby,
+    const key = `${this.name}:limit:${effectiveOptions.limit}:orderby:${getOrderByKey(
+      effectiveOptions.orderby ?? getDefaultOrderBy(),
     )}:disableTransformations:${effectiveOptions.disableTransformations}`;
     return getCustomLoader(
       key,

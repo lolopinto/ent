@@ -245,10 +245,10 @@ func TestForeignkeyConstraint(t *testing.T) {
 
 func TestIndex(t *testing.T) {
 	i := &Index{
-		Name:    "contacts_name_index",
-		Columns: []string{"first_name", "last_name"},
+		Name:         "contacts_name_index",
+		Columns:      []string{"first_name", "last_name"},
 		Concurrently: true,
-		Where:   "place = 1",
+		Where:        "place = 1",
 	}
 
 	b, err := json.Marshal(i)
@@ -262,10 +262,10 @@ func TestIndex(t *testing.T) {
 
 func TestDiffIndexType(t *testing.T) {
 	i := &Index{
-		Name:    "contacts_name_index",
-		Columns: []string{"first_name", "last_name"},
+		Name:         "contacts_name_index",
+		Columns:      []string{"first_name", "last_name"},
 		Concurrently: true,
-		Where:   "place = 1",
+		Where:        "place = 1",
 	}
 
 	b, err := json.Marshal(i)
@@ -292,6 +292,66 @@ func TestDiffIndexWhere(t *testing.T) {
 	i2.Where = "place = 1"
 	require.Nil(t, err)
 	require.False(t, indexEqual(i, i2))
+}
+
+func TestDiffIndexOps(t *testing.T) {
+	i := &Index{
+		Name:    "contacts_name_index",
+		Columns: []string{"first_name"},
+		Ops: map[string]string{
+			"first_name": "text_pattern_ops",
+		},
+	}
+
+	b, err := json.Marshal(i)
+	require.Nil(t, err)
+
+	i2 := &Index{}
+	err = json.Unmarshal(b, i2)
+	require.Nil(t, err)
+	require.True(t, indexEqual(i, i2))
+
+	i2.Ops["first_name"] = "varchar_pattern_ops"
+	require.False(t, indexEqual(i, i2))
+}
+
+func TestIndexParamsNumericEquality(t *testing.T) {
+	i := &Index{
+		Name:    "contacts_name_index",
+		Columns: []string{"first_name"},
+		IndexParams: map[string]interface{}{
+			"fillfactor": 70,
+		},
+	}
+
+	b, err := json.Marshal(i)
+	require.Nil(t, err)
+
+	i2 := &Index{}
+	err = json.Unmarshal(b, i2)
+	require.Nil(t, err)
+	require.True(t, indexEqual(i, i2))
+
+	i2.IndexParams["fillfactor"] = float64(80)
+	require.False(t, indexEqual(i, i2))
+}
+
+func TestDiffFieldTypePostgresType(t *testing.T) {
+	f1 := &FieldType{
+		DBType:       String,
+		PostgresType: "point",
+		DBExtension:  "postgis",
+	}
+	f2 := &FieldType{
+		DBType:       String,
+		PostgresType: "point",
+		DBExtension:  "postgis",
+	}
+
+	require.True(t, fieldTypeEqual(f1, f2))
+
+	f2.PostgresType = "geography(point,4326)"
+	require.False(t, fieldTypeEqual(f1, f2))
 }
 
 func TestForeignKey(t *testing.T) {

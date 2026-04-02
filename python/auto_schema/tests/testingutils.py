@@ -3,6 +3,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from auto_schema.clause_text import get_clause_text
 from auto_schema import runner
+from auto_schema import schema_item
 from sqlalchemy.sql.sqltypes import String
 
 from auto_schema import compare
@@ -355,6 +356,14 @@ def _validate_column_type_impl(schema_column_type, db_column_type, metadata: sa.
         # enum type if possible otherwise check constraint...
         assert isinstance(db_column_type, postgresql.ENUM)
         _validate_enum_column_type(metadata, db_column, schema_column)
+    elif isinstance(schema_column_type, schema_item.CustomSQLAlchemyType):
+        reflected_type = runner.Runner._get_reflected_postgres_column_type(
+            metadata.bind,
+            db_column.table.name,
+            db_column.name,
+            db_column.table.schema,
+        )
+        assert runner.Runner._normalize_postgres_type(schema_column_type.type_name) == runner.Runner._normalize_postgres_type(reflected_type)
     else:
         # compare types by using the string version of the types.
         # seems to account for differences btw Integer and INTEGER, String(255) and VARCHAR(255) etc

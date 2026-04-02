@@ -32,6 +32,15 @@ enum fieldPrivacyEvaluated {
 }
 
 // runtime configurations
+export interface RuntimeDBExtension {
+  name: string;
+  provisionedBy?: "ent" | "external";
+  version?: string;
+  installSchema?: string;
+  runtimeSchemas?: string[];
+  dropCascade?: boolean;
+}
+
 export interface Config {
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
@@ -59,6 +68,10 @@ export interface Config {
 
   // dev schema configuration
   devSchema?: RuntimeDevSchemaConfig;
+
+  // runtime extension configuration. when omitted, ent only uses the
+  // default schemas/type parsers registered by imported extension packages.
+  extensions?: RuntimeDBExtension[];
 }
 
 // things that can be set in ent.yml
@@ -218,12 +231,19 @@ function setConfig(cfg: Config) {
     setLogLevels(cfg.log);
   }
 
-  if (cfg.dbConnectionString || cfg.dbFile || cfg.db || cfg.devSchema) {
+  if (
+    cfg.dbConnectionString ||
+    cfg.dbFile ||
+    cfg.db ||
+    cfg.devSchema ||
+    cfg.extensions
+  ) {
     DB.initDB({
       connectionString: cfg.dbConnectionString,
       dbFile: cfg.dbFile,
       db: cfg.db,
       devSchema: cfg.devSchema,
+      extensions: cfg.extensions,
     });
   }
 

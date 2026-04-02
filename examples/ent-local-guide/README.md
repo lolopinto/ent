@@ -1,0 +1,31 @@
+# ent-local-guide
+
+Example schema and query module that uses `dbExtensions` plus
+`@snowtop/ent-postgis` to model places, reviews, favorites, and nearby place
+search.
+
+Concepts covered:
+- database-level PostGIS extension declaration
+- `geography(Point,4326)` field generation
+- GIST index metadata for spatial queries
+- distance selection, radius filtering, and nearest-first ordering
+- ordinary ent features alongside spatial data: creator ownership, reviews, and favorites
+
+This example expects PostgreSQL with PostGIS available. The included
+`docker-compose.dev.yml` builds a local Postgres image with the PostGIS packages
+installed so `npm run upgrade` can create the extension and schema objects
+together. Run `npm run db:up` before using `npm run codegen` or `npm run upgrade`
+from this repo checkout. The focused Jest test proves the generated nearby-search
+SQL shape. Runtime setup is explicit in `src/testsetup/setup.ts`, which passes
+`PostGISExtension()` to `loadConfig()` instead of relying on generated runtime
+state.
+
+`PostGISExtension()` defaults to `managed: true`, which means Ent owns the
+extension lifecycle. Set `managed: false` when PostGIS is provisioned outside
+Ent and the app should only validate that it already exists.
+
+After `npm run upgrade`, the example also has a DB-backed Jest integration test that
+creates users, places, reviews, and favorites through generated actions, then proves
+nearby search and PostGIS point parsing work together:
+
+`POSTGRES_TEST_DB=ent-local-guide POSTGRES_PORT=54329 npm test -- --runInBand nearby_places.integration.test.ts`

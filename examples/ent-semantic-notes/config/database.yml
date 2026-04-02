@@ -1,0 +1,9 @@
+# for typescript
+dialect: postgres
+database: ent_semantic_notes
+user: postgres
+password: postgres
+host: localhost
+port: 54330
+pool: 5
+sslmode: disable

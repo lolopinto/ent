@@ -162,6 +162,21 @@ def _wrap_autocommit(op_text: str) -> str:
     )
 
 
+def _render_db_extension(extension: dict) -> str:
+    ordered_keys = [
+        "name",
+        "provisioned_by",
+        "version",
+        "install_schema",
+        "runtime_schemas",
+        "drop_cascade",
+    ]
+    parts = []
+    for key in ordered_keys:
+        parts.append(f"'{key}': {extension.get(key)!r}")
+    return "{" + ", ".join(parts) + "}"
+
+
 def _get_index_kw(op) -> dict:
     if hasattr(op, "kw") and (kw := op.kw) is not None:
         return dict(kw)
@@ -225,6 +240,40 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
     if (info := op.kw.get("info", {})).get("postgresql_concurrently") is True:
         return _wrap_autocommit(op_text)
     return op_text
+
+
+@renderers.dispatch_for(ops.CreateExtensionOp)
+def render_create_db_extension(
+    autogen_context: AutogenContext, op: ops.CreateExtensionOp
+) -> str:
+    return f"op.create_db_extension({_render_db_extension(op.extension)})"
+
+
+@renderers.dispatch_for(ops.DropExtensionOp)
+def render_drop_db_extension(
+    autogen_context: AutogenContext, op: ops.DropExtensionOp
+) -> str:
+    return f"op.drop_db_extension({_render_db_extension(op.extension)})"
+
+
+@renderers.dispatch_for(ops.UpdateExtensionOp)
+def render_update_db_extension(
+    autogen_context: AutogenContext, op: ops.UpdateExtensionOp
+) -> str:
+    return (
+        f"op.update_db_extension({op.extension_name!r}, "
+        f"{op.from_version!r}, {op.to_version!r})"
+    )
+
+
+@renderers.dispatch_for(ops.SetExtensionSchemaOp)
+def render_set_db_extension_schema(
+    autogen_context: AutogenContext, op: ops.SetExtensionSchemaOp
+) -> str:
+    return (
+        f"op.set_db_extension_schema({op.extension_name!r}, "
+        f"{op.from_schema!r}, {op.to_schema!r})"
+    )
 
 
 # i don't think this is every used since the way it works is that this is called

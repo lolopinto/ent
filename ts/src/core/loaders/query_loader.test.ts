@@ -182,6 +182,56 @@ function commonTests() {
       expect(loader1).toBe(loader2);
     });
 
+    test("computed orderby keys reuse the same loader", () => {
+      const localCtx = new TestContext();
+      const expression = (key: string) =>
+        clause.ParameterizedExpression(
+          key,
+          (idx, alias) =>
+            `distance(${alias ? `${alias}.location` : "location"}, $${idx}, $${idx + 1})`,
+          [12.3, 45.6],
+        );
+      const loader1 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "distance",
+              direction: "ASC",
+              expression: expression("same"),
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "distance",
+              direction: "ASC",
+              expression: expression("same"),
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader3 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "distance",
+              direction: "ASC",
+              expression: expression("different"),
+            },
+          ],
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+      expect(loader1).not.toBe(loader3);
+    });
+
     test("disableTransformations changes cache keys", () => {
       const localCtx = new TestContext();
       const loader1 = factory.createConfigurableLoader(

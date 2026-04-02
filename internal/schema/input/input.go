@@ -70,12 +70,22 @@ func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
 }
 
 type GlobalSchema struct {
-	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
-	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
-	EdgeIndices     []*Index     `json:"edgeIndices,omitempty"`
-	Init            bool         `json:"init,omitempty"`
-	TransformsEdges bool         `json:"transformsEdges,omitempty"`
-	GlobalFields    []*Field     `json:"globalFields,omitempty"`
+	ExtraEdgeFields []*Field       `json:"extraEdgeFields,omitempty"`
+	GlobalEdges     []*AssocEdge   `json:"globalEdges,omitempty"`
+	EdgeIndices     []*Index       `json:"edgeIndices,omitempty"`
+	Init            bool           `json:"init,omitempty"`
+	TransformsEdges bool           `json:"transformsEdges,omitempty"`
+	GlobalFields    []*Field       `json:"globalFields,omitempty"`
+	DBExtensions    []*DBExtension `json:"dbExtensions,omitempty"`
+}
+
+type DBExtension struct {
+	Name           string   `json:"name,omitempty"`
+	ProvisionedBy  string   `json:"provisionedBy,omitempty"`
+	Version        string   `json:"version,omitempty"`
+	InstallSchema  string   `json:"installSchema,omitempty"`
+	RuntimeSchemas []string `json:"runtimeSchemas,omitempty"`
+	DropCascade    bool     `json:"dropCascade"`
 }
 
 type DBType string
@@ -131,6 +141,10 @@ type FieldType struct {
 	DisableUnknownType bool       `json:"disableUnknownType"`
 
 	GlobalType string `json:"globalType,omitempty"`
+	// raw postgres type used for extension-backed fields e.g. vector(1536)
+	PostgresType string `json:"postgresType,omitempty"`
+	// declared db extension required by this field type
+	DBExtension string `json:"dbExtension,omitempty"`
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
@@ -900,9 +914,12 @@ type Index struct {
 	Unique   bool      `json:"unique,omitempty"`
 	FullText *FullText `json:"fullText,omitempty"`
 	// for regular indices. doesn't apply for full text...
-	IndexType    IndexType `json:"indexType,omitempty"`
-	Concurrently bool      `json:"concurrently,omitempty"`
-	Where        string    `json:"where,omitempty"`
+	IndexType    IndexType              `json:"indexType,omitempty"`
+	Concurrently bool                   `json:"concurrently,omitempty"`
+	Where        string                 `json:"where,omitempty"`
+	Ops          map[string]string      `json:"ops,omitempty"`
+	IndexParams  map[string]interface{} `json:"indexParams,omitempty"`
+	DBExtension  string                 `json:"dbExtension,omitempty"`
 }
 
 type FullTextLanguage string
@@ -921,9 +938,14 @@ const (
 type IndexType string
 
 const (
-	Gin   IndexType = "gin"
-	Gist  IndexType = "gist"
-	Btree IndexType = "btree"
+	Gin     IndexType = "gin"
+	Gist    IndexType = "gist"
+	Btree   IndexType = "btree"
+	Hash    IndexType = "hash"
+	SpGist  IndexType = "spgist"
+	Brin    IndexType = "brin"
+	HNSW    IndexType = "hnsw"
+	IVFFlat IndexType = "ivfflat"
 )
 
 type FullTextWeight struct {
