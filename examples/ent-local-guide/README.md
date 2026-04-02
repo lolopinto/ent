@@ -23,3 +23,9 @@ state.
 `PostGISExtension()` defaults to `managed: true`, which means Ent owns the
 extension lifecycle. Set `managed: false` when PostGIS is provisioned outside
 Ent and the app should only validate that it already exists.
+
+After `npm run upgrade`, the example also has a DB-backed Jest integration test that
+creates users, places, reviews, and favorites through generated actions, then proves
+nearby search and PostGIS point parsing work together:
+
+`POSTGRES_TEST_DB=ent-local-guide POSTGRES_PORT=54329 npm test -- --runInBand nearby_places.integration.test.ts`

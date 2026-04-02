@@ -14,7 +14,7 @@ beforeAll(() => {
       host: "localhost",
       user: process.env.POSTGRES_USER || "postgres",
       password: process.env.POSTGRES_PASSWORD || "postgres",
-      port: 5432,
+      port: Number(process.env.POSTGRES_PORT || 54329),
       sslmode: "disable",
     },
     extensions: [PostGISExtension()],
