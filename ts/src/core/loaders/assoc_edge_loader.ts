@@ -1,5 +1,4 @@
 import DataLoader from "dataloader";
-import memoizee from "memoizee";
 import {
   Context,
   EdgeQueryableDataOptions,
@@ -21,6 +20,8 @@ import {
   loadTwoWayEdges,
   performRawQuery,
 } from "../ent";
+import { stableStringify } from "../cache_utils";
+import { memoizeNoArgs } from "../memoize";
 import { getOrderByKey, OrderBy } from "../query_impl";
 import {
   createLoaderCacheMap,
@@ -143,7 +144,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
     private options: EdgeQueryableDataOptions,
     public context: Context,
   ) {
-    this.loaderFn = memoizee(this.getLoader);
+    this.loaderFn = memoizeNoArgs(this.getLoader.bind(this));
   }
 
   private async getLoader() {
@@ -205,7 +206,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
     public context?: Context,
   ) {
     if (this.context) {
-      this.loaderFn = memoizee(this.getLoader);
+      this.loaderFn = memoizeNoArgs(this.getLoader.bind(this));
     }
   }
 

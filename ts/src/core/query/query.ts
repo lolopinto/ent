@@ -1,4 +1,3 @@
-import memoize from "memoizee";
 import { isPromise } from "util/types";
 import {
   Data,
@@ -14,6 +13,7 @@ import {
 import * as clause from "../clause";
 import { decodeCursorPayload, getCursor, getDefaultLimit } from "../ent";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
+import { memoizeNoArgs } from "../memoize";
 import { OrderBy, orderByHasExpressions, reverseOrderBy } from "../query_impl";
 
 export interface EdgeQuery<
@@ -420,8 +420,10 @@ export abstract class BaseEdgeQuery<
     this.cursorCol = options.cursorCol;
     this.cursorKeys = orderBy.map((orderBy) => orderBy.column);
 
-    this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
-    this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
+    this.memoizedloadEdges = memoizeNoArgs(this.loadEdges.bind(this));
+    this.genIDInfosToFetch = memoizeNoArgs(
+      this.genIDInfosToFetchImpl.bind(this),
+    );
   }
 
   protected getCursorCol(): string {
