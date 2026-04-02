@@ -26,3 +26,9 @@ Runtime registration is now explicit:
 The package also includes `HNSWIndex()` and `IVFFlatIndex()` helpers, but this example
 keeps the schema portable to older local pgvector installs by not requiring ANN access
 methods during setup.
+
+After `npm run upgrade`, the example also has a DB-backed Jest integration test that
+creates users, workspaces, notes, note chunks, and edges through generated actions, then
+proves semantic search returns the expected chunks:
+
+`POSTGRES_TEST_DB=ent_semantic_notes POSTGRES_PORT=54330 npm test -- --runInBand semantic_search.integration.test.ts`

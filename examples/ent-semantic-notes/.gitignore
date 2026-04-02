@@ -1,3 +1,4 @@
 .ent/build_info.yaml
 .ent/custom_schema.json
+.ent/schema.json
 src/schema/.ent/extensions.json

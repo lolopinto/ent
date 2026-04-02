@@ -4,8 +4,20 @@ import {
   buildSemanticChunkSearchQuery,
   semanticChunkSearch,
 } from "src/search/semantic_search";
+import globalSchema from "src/schema/__global__schema";
 
 describe("semantic notes search", () => {
+  test("declares pgvector in the example global schema", () => {
+    expect(globalSchema.dbExtensions).toEqual([
+      {
+        name: "vector",
+        provisionedBy: "ent",
+        runtimeSchemas: ["public"],
+        dropCascade: false,
+      },
+    ]);
+  });
+
   test("builds a nearest-neighbor query over note chunks", () => {
     const queryData = buildQueryData(
       buildSemanticChunkSearchQuery({
