@@ -1,16 +1,15 @@
 import { IDViewer } from "@snowtop/ent";
 import { geoPoint } from "@snowtop/ent-postgis";
-import { Place } from "src/ent";
 import CreatePlaceAction from "src/ent/place/actions/create_place_action";
-import CreatePlaceReviewAction from "src/ent/place_review/actions/create_place_review_action";
+import CreatePlaceReviewAction, {
+  type PlaceReviewCreateInput,
+} from "src/ent/place_review/actions/create_place_review_action";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import FavoritePlace from "src/ent/user/actions/favorite_place";
 import { nearbyPlaces } from "src/search/nearby_places";
 
 const dbTest = process.env.POSTGRES_TEST_DB ? test : test.skip;
-const bootstrapViewer = new IDViewer(
-  "00000000-0000-0000-0000-000000000111",
-);
+const bootstrapViewer = new IDViewer("local-guide-bootstrap");
 
 function uniqueSuffix() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -25,26 +24,6 @@ function seededCenter(seed: string) {
     -124 + (hash % 1000) / 1000,
     36 + (Math.floor(hash / 1000) % 1000) / 1000,
   );
-}
-
-async function createPlace(
-  viewer: IDViewer,
-  input: Parameters<typeof CreatePlaceAction.create>[1],
-) {
-  const action = CreatePlaceAction.create(viewer, input);
-  const id = await action.builder.getEntID();
-  await action.builder.saveX();
-  return new Place(new IDViewer(id), await Place.loadRawDataX(id));
-}
-
-async function createPlaceReview(
-  viewer: IDViewer,
-  input: Parameters<typeof CreatePlaceReviewAction.create>[1],
-) {
-  const action = CreatePlaceReviewAction.create(viewer, input);
-  const id = await action.builder.getEntID();
-  await action.builder.saveX();
-  return id;
 }
 
 describe("local guide nearby search integration", () => {
@@ -69,41 +48,45 @@ describe("local guide nearby search integration", () => {
     const creatorViewer = new IDViewer(creator.id);
     const fanViewer = new IDViewer(fan.id);
 
-    const exactPlace = await createPlace(creatorViewer, {
+    const exactPlace = await CreatePlaceAction.create(creatorViewer, {
       name: `Cafe ${suffix}`,
       slug: `cafe-${suffix}`,
       category: "coffee",
       description: "Closest coffee shop",
       website: "https://example.com/cafe",
       location: center,
-    });
-    const nearbyPlace = await createPlace(creatorViewer, {
+    }).saveX();
+    const nearbyPlace = await CreatePlaceAction.create(creatorViewer, {
       name: `Roaster ${suffix}`,
       slug: `roaster-${suffix}`,
       category: "coffee",
       description: "Still walkable",
       location: nearbyCenter,
-    });
-    await createPlace(creatorViewer, {
+    }).saveX();
+    await CreatePlaceAction.create(creatorViewer, {
       name: `Museum ${suffix}`,
       slug: `museum-${suffix}`,
       category: "museum",
       description: "Wrong category",
       location: center,
-    });
-    await createPlace(creatorViewer, {
+    }).saveX();
+    await CreatePlaceAction.create(creatorViewer, {
       name: `Far Cafe ${suffix}`,
       slug: `far-cafe-${suffix}`,
       category: "coffee",
       description: "Outside the search radius",
       location: farCenter,
-    });
+    }).saveX();
 
-    const reviewID = await createPlaceReview(fanViewer, {
+    const reviewInput: PlaceReviewCreateInput = {
       placeId: exactPlace.id,
       rating: 5,
       body: "Worth the walk",
-    });
+    };
+    const review = await CreatePlaceReviewAction.create(
+      fanViewer,
+      reviewInput,
+    ).saveX();
     await FavoritePlace.create(fanViewer, fan)
       .addFavoritePlace(exactPlace.id)
       .builder.saveX();
@@ -119,14 +102,13 @@ describe("local guide nearby search integration", () => {
     expect(rows[0].distance_meters).toBeCloseTo(0, 6);
     expect(rows[1].distance_meters).toBeGreaterThan(rows[0].distance_meters);
 
-    const loadedPlace = exactPlace;
-    expect(loadedPlace.location.longitude).toBeCloseTo(center.longitude, 6);
-    expect(loadedPlace.location.latitude).toBeCloseTo(center.latitude, 6);
+    expect(exactPlace.location.longitude).toBeCloseTo(center.longitude, 6);
+    expect(exactPlace.location.latitude).toBeCloseTo(center.latitude, 6);
 
-    const fans = await loadedPlace.queryFans().queryIDs();
+    const fans = await exactPlace.queryFans().queryIDs();
     expect(fans).toEqual([fan.id]);
 
-    const reviews = await loadedPlace.queryReviews().queryIDs();
-    expect(reviews).toEqual([reviewID]);
+    const reviews = await exactPlace.queryReviews().queryIDs();
+    expect(reviews).toEqual([review.id]);
   });
 });
