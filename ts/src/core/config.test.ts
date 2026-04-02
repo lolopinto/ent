@@ -3,8 +3,13 @@ import DB, { Dialect } from "./db";
 import { logEnabled, logIf } from "./logger";
 import { MockLogs } from "../testutils/mock_log";
 
-afterEach(() => {
+afterEach(async () => {
   delete process.env.DB_CONNECTION_STRING;
+  if ((DB as any).instance) {
+    await DB.getInstance().endPool();
+    (DB as any).instance = undefined;
+  }
+  (DB as any).dialect = undefined;
 });
 
 describe("postgres", () => {
@@ -163,6 +168,84 @@ describe("postgres", () => {
     const db = DB.getInstance();
     expect(db.db.config.connectionString).toEqual(connStr);
     expect(db.db.dialect).toBe(Dialect.Postgres);
+  });
+
+  test("reinitializing db closes the previous instance", () => {
+    loadConfig({
+      dbConnectionString: `postgres://:@localhost/ent_test`,
+    });
+    const first = DB.getInstance();
+    const closeSpy = jest
+      .spyOn(first, "endPool")
+      .mockResolvedValue(undefined);
+
+    loadConfig({
+      dbConnectionString: `postgres://:@localhost/ent_test2`,
+    });
+
+    expect(closeSpy).toHaveBeenCalledTimes(1);
+    expect(DB.getInstance()).not.toBe(first);
+  });
+
+  test("config object. extensions", () => {
+    const connStr = `postgres://postgres:postgres@localhost/postgres`;
+
+    loadConfig({
+      dbConnectionString: connStr,
+      extensions: [
+        {
+          // pgvector installs the "vector" extension in Postgres.
+          name: "vector",
+        },
+        {
+          name: "postgis",
+          runtimeSchemas: ["public"],
+        },
+      ],
+    });
+    const db = DB.getInstance();
+    expect(db.db.extensions).toEqual([
+      {
+        name: "postgis",
+        provisionedBy: "ent",
+        runtimeSchemas: ["public"],
+        dropCascade: false,
+      },
+      {
+        name: "vector",
+        provisionedBy: "ent",
+        runtimeSchemas: [],
+        dropCascade: false,
+      },
+    ]);
+  });
+
+  test("config object. extensions participate in search path", () => {
+    const connStr = `postgres://postgres:postgres@localhost/postgres`;
+
+    loadConfig({
+      dbConnectionString: connStr,
+      devSchema: {
+        enabled: true,
+        schemaName: "feature_branch",
+        includePublic: false,
+      },
+      extensions: [
+        {
+          name: "postgis",
+          runtimeSchemas: ["public"],
+        },
+        {
+          name: "vector",
+          runtimeSchemas: ["extensions"],
+        },
+      ],
+    });
+
+    const db = DB.getInstance();
+    expect(db.db.config.options).toBe(
+      "-c search_path=feature_branch,public,extensions",
+    );
   });
 
   test("env variable + config object", () => {

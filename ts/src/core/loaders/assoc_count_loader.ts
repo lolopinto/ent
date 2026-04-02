@@ -14,7 +14,7 @@ import {
 import * as clause from "../clause";
 import { getCustomLoader, getLoader } from "./loader";
 import { createCountDataLoader } from "./raw_count_loader";
-import memoize from "memoizee";
+import { memoizeNoArgs } from "../memoize";
 
 export class AssocEdgeCountLoader implements Loader<ID, number> {
   private loaderFn: () => Promise<DataLoader<ID, number>>;
@@ -26,7 +26,7 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
     private options?: EdgeQueryableDataOptionsConfigureLoader,
   ) {
     if (context) {
-      this.loaderFn = memoize(this.getLoader);
+      this.loaderFn = memoizeNoArgs(this.getLoader.bind(this));
     }
   }
 

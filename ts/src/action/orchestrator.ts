@@ -46,9 +46,9 @@ import {
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
+import { memoizeNoArgs } from "../core/memoize";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
-import memoize from "memoizee";
 import * as clause from "../core/clause";
 import { isPromise } from "util/types";
 import { RawQueryOperation } from "./operations";
@@ -264,7 +264,7 @@ export class Orchestrator<
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
-    this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
+    this.memoizedGetFields = memoizeNoArgs(this.getFieldsInfo.bind(this));
   }
 
   // don't type this because we don't care

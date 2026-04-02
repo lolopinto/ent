@@ -1,16 +1,13 @@
 import { Data, ID, QueryableDataOptions, SelectDataOptions } from "./base";
 import DB, { Dialect } from "./db";
 import { buildQuery } from "./query_impl";
+import { QueryExpression } from "./query_expression";
 
 // NOTE: we use ? for sqlite dialect even though it supports $1 like postgres so that it'll be easier to support different dialects down the line
 
-export interface Clause<T extends Data = Data, K = keyof T> {
-  clause(idx: number, alias?: string): string;
+export interface Clause<T extends Data = Data, K = keyof T>
+  extends QueryExpression {
   columns(): K[];
-  values(): any[];
-  instanceKey(): string;
-  // values to log when querying
-  logValues(): any[];
   // to indicate if a composite clause e.g. combining multiple things
   // one such reason is to be used by other composite clauses to know if to add parens
   // around a clause to ensure order of operations is met
@@ -228,6 +225,39 @@ class simpleExpression<T extends Data, K = keyof T> implements Clause<T, K> {
 
   instanceKey(): string {
     return `${this.expression}`;
+  }
+}
+
+class parameterizedExpression implements QueryExpression {
+  constructor(
+    private key: string,
+    private expression: (idx: number, alias?: string) => string,
+    private params: any[],
+    private logParams?: any[],
+  ) {}
+
+  clause(idx: number, alias?: string): string {
+    return this.expression(idx, alias);
+  }
+
+  values(): any[] {
+    return this.params.map((value) => rawValue(value));
+  }
+
+  logValues(): any[] {
+    if (this.logParams) {
+      return this.logParams;
+    }
+    return this.params.map((value) => {
+      if (isSensitive(value)) {
+        return value.logValue();
+      }
+      return value;
+    });
+  }
+
+  instanceKey(): string {
+    return this.key;
   }
 }
 
@@ -1598,4 +1628,13 @@ export function Expression<T extends Data, K = keyof T>(
   expression: string,
 ): Clause<T, K> {
   return new simpleExpression(expression);
+}
+
+export function ParameterizedExpression(
+  key: string,
+  expression: (idx: number, alias?: string) => string,
+  values: any[],
+  logValues?: any[],
+): QueryExpression {
+  return new parameterizedExpression(key, expression, values, logValues);
 }

@@ -2,6 +2,7 @@
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import auto_schema
 from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
@@ -62,6 +63,15 @@ metadata.info["data"] = {
       {{end -}}
     ],
   }
+{{ end}}
+{{ $extensionsLen := len .DBExtensions -}} {{ if ne $extensionsLen 0 -}}
+metadata.info["db_extensions"] = {
+  'public': [
+    {{ range .DBExtensions -}}
+      {{ . }},
+    {{ end -}}
+  ],
+}
 {{ end}}
 
 def get_metadata():

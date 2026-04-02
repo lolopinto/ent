@@ -24,7 +24,7 @@ import {
   getCustomLoader,
   getLoaderMaxBatchSize,
 } from "./loader";
-import memoizee from "memoizee";
+import { memoizeNoArgs } from "../memoize";
 
 const DEFAULT_CLAUSE_LOADER_CONCURRENCY = 10;
 let clauseLoaderConcurrency = DEFAULT_CLAUSE_LOADER_CONCURRENCY;
@@ -296,7 +296,7 @@ export class ObjectLoader<
       this.idLoader = createDataLoader(options, context);
       this.clauseLoader = createClauseDataLoder(options, context);
     }
-    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+    this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
 
   getOptions(): SelectDataOptions {

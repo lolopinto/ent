@@ -21,6 +21,14 @@ class exact(object):
         self.val = val
 
 
+def _quote_ident(val: str) -> str:
+    return '"' + val.replace('"', '""') + '"'
+
+
+def _quote_literal(val: str) -> str:
+    return "'" + val.replace("'", "''") + "'"
+
+
 def _sql_version(val):
     # for sql mode, need to convert to values that can run from sql script
     match val:
@@ -258,6 +266,54 @@ def create_full_text_index(operations: ops.Operations, operation: ops.CreateFull
             f"CREATE INDEX{concurrently_sql} {index_name} ON {table_name} USING {using} ({using_internals}){where_sql}"
         )
     )
+
+
+@Operations.implementation_for(ops.CreateExtensionOp)
+def create_db_extension(
+    operations: ops.Operations, operation: ops.CreateExtensionOp
+):
+    extension = operation.extension
+    stmt = f"CREATE EXTENSION IF NOT EXISTS {_quote_ident(extension['name'])}"
+    with_clauses = []
+    if (install_schema := extension.get("install_schema")) is not None:
+        with_clauses.append(f"SCHEMA {_quote_ident(install_schema)}")
+    if (version := extension.get("version")) is not None:
+        with_clauses.append(f"VERSION {_quote_literal(version)}")
+    if with_clauses:
+        stmt = f"{stmt} WITH {' '.join(with_clauses)}"
+    operations.get_bind().execute(sa.text(stmt))
+
+
+@Operations.implementation_for(ops.DropExtensionOp)
+def drop_db_extension(
+    operations: ops.Operations, operation: ops.DropExtensionOp
+):
+    stmt = f"DROP EXTENSION IF EXISTS {_quote_ident(operation.extension['name'])}"
+    if operation.extension.get("drop_cascade") is True:
+        stmt = f"{stmt} CASCADE"
+    operations.get_bind().execute(sa.text(stmt))
+
+
+@Operations.implementation_for(ops.UpdateExtensionOp)
+def update_db_extension(
+    operations: ops.Operations, operation: ops.UpdateExtensionOp
+):
+    stmt = (
+        f"ALTER EXTENSION {_quote_ident(operation.extension_name)} "
+        f"UPDATE TO {_quote_literal(operation.to_version)}"
+    )
+    operations.get_bind().execute(sa.text(stmt))
+
+
+@Operations.implementation_for(ops.SetExtensionSchemaOp)
+def set_db_extension_schema(
+    operations: ops.Operations, operation: ops.SetExtensionSchemaOp
+):
+    stmt = (
+        f"ALTER EXTENSION {_quote_ident(operation.extension_name)} "
+        f"SET SCHEMA {_quote_ident(operation.to_schema)}"
+    )
+    operations.get_bind().execute(sa.text(stmt))
 
 
 @ Operations.implementation_for(ops.DropFullTextIndexOp)

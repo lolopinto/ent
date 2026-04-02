@@ -78,6 +78,8 @@ func FieldEqual(existing, field *Field) bool {
 		base.FieldEdgeInfoEqual(existing.fieldEdge, field.fieldEdge) &&
 		existing.index == field.index &&
 		existing.dbName == field.dbName &&
+		existing.dbTypeOverride == field.dbTypeOverride &&
+		existing.dbExtension == field.dbExtension &&
 		existing.graphQLName == field.graphQLName &&
 		existing.exposeToActionsByDefault == field.exposeToActionsByDefault &&
 		existing.disableBuilderType == field.disableBuilderType &&
@@ -137,7 +139,7 @@ func compareFieldMap(m1, m2 map[string]*Field) ([]change.Change, error) {
 
 		} else {
 			if !FieldEqual(f1, f2) {
-				if f1.fieldType.GetDBType() != f2.fieldType.GetDBType() {
+				if f1.GetDbTypeForField() != f2.GetDbTypeForField() {
 					return nil, fmt.Errorf("changing the database type of a field isn't currently supported. you should drop field %s and add it back if you really want to do that", f1.FieldName)
 				}
 				ret = append(ret, change.Change{

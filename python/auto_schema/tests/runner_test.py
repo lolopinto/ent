@@ -10,6 +10,7 @@ from . import conftest
 from . import testingutils
 from auto_schema import runner
 from auto_schema import ops
+from auto_schema import schema_item
 
 from typing import Any, Callable
 
@@ -19,6 +20,31 @@ def _get_revision_file(r, rev="head"):
     assert revisions is not None
     assert len(revisions) == 1
     return testingutils.find_file_by_revision(r, revisions[0])
+
+
+def _db_extension_metadata(
+    *,
+    name: str,
+    provisioned_by: str = "ent",
+    version: str | None = None,
+    install_schema: str | None = None,
+    runtime_schemas: list[str] | None = None,
+    drop_cascade: bool = False,
+):
+    metadata = sa.MetaData()
+    metadata.info["db_extensions"] = {
+        "public": [
+            {
+                "name": name,
+                "provisioned_by": provisioned_by,
+                "version": version,
+                "install_schema": install_schema,
+                "runtime_schemas": runtime_schemas or [],
+                "drop_cascade": drop_cascade,
+            }
+        ]
+    }
+    return metadata
 
 
 class BaseTestRunner(object):
@@ -881,6 +907,85 @@ class TestPostgresRunner(BaseTestRunner):
 
         testingutils.validate_metadata_after_change(r2, metadata_with_table)
 
+    def test_custom_postgres_type_noop(self, new_test_runner):
+        metadata = sa.MetaData()
+        sa.Table(
+            "locations",
+            metadata,
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("location", schema_item.CustomSQLAlchemyType("point"), nullable=False),
+            sa.PrimaryKeyConstraint("id", name="locations_pkey"),
+        )
+
+        r = new_test_runner(metadata)
+        r.run()
+        testingutils.assert_num_files(r, 1)
+        testingutils.assert_num_tables(r, 2, ['alembic_version', 'locations'])
+
+        reflected_type = runner.Runner._get_reflected_postgres_column_type(
+            r.get_connection(),
+            "locations",
+            "location",
+            None,
+        )
+        assert runner.Runner._normalize_postgres_type(reflected_type) == "point"
+
+        r2 = new_test_runner(metadata, r)
+        assert len(r2.compute_changes()) == 0
+
+    def test_change_index_ops_and_storage_params(self, new_test_runner):
+        metadata = sa.MetaData()
+        table = sa.Table(
+            "accounts",
+            metadata,
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column("first_name", sa.Text(), nullable=False),
+            sa.PrimaryKeyConstraint("id", name="accounts_pkey"),
+        )
+        sa.Index(
+            "accounts_first_name_pattern_idx",
+            table.c.first_name,
+            postgresql_using="btree",
+            postgresql_ops={"first_name": "text_pattern_ops"},
+            postgresql_with={"fillfactor": 70},
+        )
+
+        r = new_test_runner(metadata)
+        r.run()
+        testingutils.assert_num_files(r, 1)
+        testingutils.assert_num_tables(r, 2, ['accounts', 'alembic_version'])
+
+        index = next(idx for idx in table.indexes if idx.name == "accounts_first_name_pattern_idx")
+        index.kwargs["postgresql_with"] = {"fillfactor": 80}
+
+        r2 = new_test_runner(metadata, r)
+        diff = r2.compute_changes()
+
+        assert len(diff) == 1
+        assert isinstance(diff[0], alembicops.ModifyTableOps)
+        modify_op = diff[0]
+        assert len(modify_op.ops) == 2
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], alembicops.CreateIndexOp)
+
+        r2.run()
+
+        with open(_get_revision_file(r2), "r") as f:
+            contents = f.read()
+        assert "text_pattern_ops" in contents
+        assert "fillfactor" in contents
+
+        row = r2.get_connection().execute(
+            sa.text("select indexdef from pg_indexes where indexname = 'accounts_first_name_pattern_idx'")
+        ).fetchone()
+        assert row is not None
+        indexdef = row._asdict()["indexdef"]
+        assert "text_pattern_ops" in indexdef
+        assert "fillfactor='80'" in indexdef
+
+        r3 = new_test_runner(metadata, r2)
+        assert len(r3.compute_changes()) == 0
+
     @pytest.mark.usefixtures("address_metadata_table_fixture")
     def test_server_default_no_change_string(self, new_test_runner, address_metadata_table_fixture):
         r = new_test_runner(address_metadata_table_fixture)
@@ -1600,9 +1705,6 @@ class TestPostgresRunner(BaseTestRunner):
         )
 
     @ pytest.mark.usefixtures("metadata_with_table")
-    @ pytest.mark.xfail()
-    # not sure why this fails for gist but not gin|btree
-    # TODO https://github.com/lolopinto/ent/issues/848
     def test_multi_col_full_text_index_added_and_removed_gist(self, new_test_runner, metadata_with_table):
         testingutils.make_changes_and_restore(
             new_test_runner,
@@ -1763,6 +1865,83 @@ class TestPostgresRunner(BaseTestRunner):
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_bytea_column_fixture, ['tbl'])
 
+    def test_create_db_extension_and_noop_when_installed(self, new_test_runner):
+        metadata = _db_extension_metadata(name="pgcrypto")
+        r = new_test_runner(metadata)
+
+        diff = r.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], ops.CreateExtensionOp)
+        assert r.revision_message() == "add db extension pgcrypto"
+
+        r.run()
+
+        row = r.get_connection().execute(
+            sa.text("SELECT extname FROM pg_extension WHERE extname = 'pgcrypto'")
+        ).first()
+        assert row is not None
+
+        r2 = new_test_runner(metadata, r)
+        assert r2.compute_changes() == []
+
+    def test_external_db_extension_requires_installed_extension(
+        self, new_test_runner
+    ):
+        metadata = _db_extension_metadata(name="pgcrypto", provisioned_by="external")
+        r = new_test_runner(metadata)
+
+        with pytest.raises(
+            ValueError,
+            match='required externally provisioned db extension "pgcrypto" is not installed',
+        ):
+            r.compute_changes()
+
+    def test_db_extension_version_mismatch_creates_update_op(
+        self, new_test_runner, empty_metadata
+    ):
+        setup_runner = new_test_runner(empty_metadata)
+        setup_runner.get_connection().execute(
+            sa.text('CREATE EXTENSION IF NOT EXISTS "pgcrypto"')
+        )
+        setup_runner.get_connection().commit()
+        current_version = setup_runner.get_connection().execute(
+            sa.text("SELECT extversion FROM pg_extension WHERE extname = 'pgcrypto'")
+        ).scalar()
+
+        metadata = _db_extension_metadata(name="pgcrypto", version="0.0")
+        r = new_test_runner(metadata, setup_runner)
+        diff = r.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], ops.UpdateExtensionOp)
+        assert diff[0].from_version == current_version
+        assert diff[0].to_version == "0.0"
+
+    def test_db_extension_schema_mismatch_creates_set_schema_op(
+        self, new_test_runner, empty_metadata
+    ):
+        setup_runner = new_test_runner(empty_metadata)
+        setup_runner.get_connection().execute(
+            sa.text('CREATE EXTENSION IF NOT EXISTS "hstore"')
+        )
+        setup_runner.get_connection().commit()
+
+        metadata = _db_extension_metadata(
+            name="hstore",
+            install_schema="extensions",
+        )
+        r = new_test_runner(metadata, setup_runner)
+        diff = r.compute_changes()
+        assert len(diff) == 1
+        assert isinstance(diff[0], ops.SetExtensionSchemaOp)
+        assert diff[0].from_schema == "public"
+        assert diff[0].to_schema == "extensions"
+
 
 class TestSqliteRunner(BaseTestRunner):
-    pass
+    def test_db_extensions_error_on_sqlite(self, new_test_runner):
+        metadata = _db_extension_metadata(name="pgcrypto")
+        r = new_test_runner(metadata)
+        with pytest.raises(
+            ValueError, match="db extensions are only supported for postgres"
+        ):
+            r.compute_changes()

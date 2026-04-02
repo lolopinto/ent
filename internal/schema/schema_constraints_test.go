@@ -1338,30 +1338,38 @@ func TestIndices(t *testing.T) {
 			},
 		},
 		"gist-index-type-specified": {
-			// TODO https://github.com/lolopinto/ent/issues/1029
-			skip: true,
 			code: map[string]string{
 				"user.ts": testhelper.GetCodeWithSchema(
 					`import {Schema, Field, StringListType, Index, EntSchema} from "{schema}";
 
-					export default class User = new EntSchema({
-						fields: Field[] = [
-							StringListType({
-								name: 'emails',
-							}),
-						];
+					const User = new EntSchema({
+						fields: {
+							emails: StringListType(),
+						},
 
-						indices: Index[] = [
+						indices: [
 							{
 								name: "users_emails_idx",
 								columns: ["emails"],
-								indexType: 'gist',
+								indexType: "gist",
 							},
-						];
-					}`,
+						],
+					});
+					export default User;`,
 				),
 			},
-			expectedErr: fmt.Errorf("gist index currently only supported for full text indexes"),
+			expectedMap: map[string]*schema.NodeData{
+				"User": {
+					Constraints: constraintsWithNodeConstraints("users"),
+					Indices: []*input.Index{
+						{
+							Name:      "users_emails_idx",
+							Columns:   []string{"emails"},
+							IndexType: input.Gist,
+						},
+					},
+				},
+			},
 		},
 		"invalid-column": {
 			code: map[string]string{

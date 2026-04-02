@@ -1,0 +1,43 @@
+{
+  "name": "@snowtop/ent-postgis",
+  "version": "0.1.0",
+  "description": "snowtop ent postgis support",
+  "main": "dist/postgis.js",
+  "types": "dist/postgis.d.ts",
+  "files": [
+    "dist/"
+  ],
+  "scripts": {
+    "test": "jest",
+    "prepublishOnly": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:lolopinto/ent.git",
+    "directory": "packages/ent-postgis"
+  },
+  "keywords": [
+    "snowtop",
+    "ent",
+    "postgis",
+    "geospatial"
+  ],
+  "author": "lolopinto",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/lolopinto/ent/issues"
+  },
+  "homepage": "https://github.com/lolopinto/ent#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@snowtop/ent": "file:../../dist",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "pg": "^8.16.3",
+    "ts-jest": "^29.4.6"
+  },
+  "peerDependencies": {
+    "@snowtop/ent": ">=0.2.7",
+    "pg": ">=8.0.0"
+  }
+}

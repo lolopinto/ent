@@ -46,6 +46,8 @@ type Field struct {
 	indexConcurrently        bool
 	indexWhere               string
 	dbName                   string // storage key/column name for the field
+	dbTypeOverride           string
+	dbExtension              string
 	graphQLName              string
 	exposeToActionsByDefault bool
 	disableBuilderType       bool
@@ -107,6 +109,8 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		graphQLName:                f.GraphQLName,
 		defaultValue:               f.ServerDefault,
 		unique:                     f.Unique,
+		dbTypeOverride:             f.Type.PostgresType,
+		dbExtension:                f.Type.DBExtension,
 		dbColumn:                   true,
 		exposeToActionsByDefault:   true,
 		singleFieldPrimaryKey:      f.PrimaryKey,
@@ -289,7 +293,18 @@ func (f *Field) AddForeignKeyEdgeToInverseEdgeInfo(
 }
 
 func (f *Field) GetDbTypeForField() string {
+	if f.dbTypeOverride != "" {
+		return fmt.Sprintf("auto_schema.schema_item.CustomSQLAlchemyType(%s)", strconv.Quote(f.dbTypeOverride))
+	}
 	return f.fieldType.GetDBType()
+}
+
+func (f *Field) GetDBExtension() string {
+	return f.dbExtension
+}
+
+func (f *Field) GetPostgresType() string {
+	return f.dbTypeOverride
 }
 
 func (f *Field) GetGraphQLTypeForField() string {
@@ -929,6 +944,8 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		nullable:                   f.nullable,
 		graphqlNullable:            f.graphqlNullable,
 		dbName:                     f.dbName,
+		dbTypeOverride:             f.dbTypeOverride,
+		dbExtension:                f.dbExtension,
 		hideFromGraphQL:            f.hideFromGraphQL,
 		private:                    f.private,
 		polymorphic:                f.polymorphic,

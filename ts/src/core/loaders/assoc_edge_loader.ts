@@ -1,5 +1,4 @@
 import DataLoader from "dataloader";
-import memoizee from "memoizee";
 import {
   Context,
   EdgeQueryableDataOptions,
@@ -21,8 +20,9 @@ import {
   loadTwoWayEdges,
   performRawQuery,
 } from "../ent";
-import { OrderBy } from "../query_impl";
 import { stableStringify } from "../cache_utils";
+import { memoizeNoArgs } from "../memoize";
+import { getOrderByKey, OrderBy } from "../query_impl";
 import {
   createLoaderCacheMap,
   InstrumentedDataLoader,
@@ -144,7 +144,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
     private options: EdgeQueryableDataOptions,
     public context: Context,
   ) {
-    this.loaderFn = memoizee(this.getLoader);
+    this.loaderFn = memoizeNoArgs(this.getLoader.bind(this));
   }
 
   private async getLoader() {
@@ -206,7 +206,7 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
     public context?: Context,
   ) {
     if (this.context) {
-      this.loaderFn = memoizee(this.getLoader);
+      this.loaderFn = memoizeNoArgs(this.getLoader.bind(this));
     }
   }
 
@@ -339,8 +339,8 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
     }
 
     const effectiveOptions = getEffectiveOptions(options);
-    const key = `${this.name}:limit:${effectiveOptions.limit}:orderby:${stableStringify(
-      effectiveOptions.orderby,
+    const key = `${this.name}:limit:${effectiveOptions.limit}:orderby:${getOrderByKey(
+      effectiveOptions.orderby ?? getDefaultOrderBy(),
     )}:disableTransformations:${effectiveOptions.disableTransformations}`;
     return getCustomLoader(
       key,
