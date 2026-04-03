@@ -9,7 +9,6 @@ import uuid
 import tempfile
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects import postgresql
-from dateutil import parser
 import sqlalchemy as sa
 
 from auto_schema import runner
@@ -378,7 +377,7 @@ def timestamp_decimal():
 
 
 def timestamp_decimal_python_utc():
-    return parser.parse('2022-09-19T17:07:39.654Z').isoformat()
+    return datetime.datetime.fromisoformat('2022-09-19T17:07:39.654+00:00').isoformat()
 
 
 def metadata_with_server_default_changed_timestamp_decimal(metadata):
