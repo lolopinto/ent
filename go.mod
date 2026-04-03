@@ -4,7 +4,6 @@ require (
 	github.com/alexflint/go-filemutex v1.2.0 // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/google/uuid v1.3.0
-	github.com/iancoleman/strcase v0.3.0
 	github.com/jinzhu/inflection v1.0.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.4.0
@@ -20,7 +19,6 @@ require (
 
 require (
 	github.com/mattn/go-sqlite3 v1.14.15
-	github.com/stoewer/go-strcase v1.3.0
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 )
 

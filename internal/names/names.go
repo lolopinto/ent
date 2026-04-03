@@ -5,10 +5,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
-
-	strcase2 "github.com/stoewer/go-strcase"
 )
 
 // TODO even through strcase has been updated. time to own this
@@ -17,20 +14,20 @@ import (
 // TODO need a better name for this
 
 func ToClassType(strs ...string) string {
-	// I think what I really want here is capitalize the first letter of each word
-	// instead of this
-	// woule need to audit this better tho
 	var sb strings.Builder
 	for _, s := range strs {
+		if !utf8.ValidString(s) {
+			sb.WriteString(s)
+			continue
+		}
 		for _, v := range splitCamelCase(s) {
-			// all upper, keep it that way and don't try and camel case it
-			// TODO instead of doing all this. we should probably just keep developer's input as is
-			// and append suffixes to it as opposed to this
-			// would need to do a better job of keeping track of where it's from as opposed to this
-			if v.class == upper {
+			if isSeparatorToken(v.entry) {
+				continue
+			}
+			if v.class == upper || v.class == digit {
 				sb.WriteString(v.entry)
 			} else {
-				sb.WriteString(strcase.ToCamel(v.entry))
+				sb.WriteString(titleWord(v.entry))
 			}
 		}
 	}
@@ -38,25 +35,42 @@ func ToClassType(strs ...string) string {
 }
 
 func ToTsFieldName(strs ...string) string {
-	// use strcase to handle it for now?
-	// and then we can change it later if need be
 	var sb strings.Builder
 	hasDoneLower := false
 	for idx, s := range strs {
-
 		if idx == 0 && len(s) > 0 && s[0] == '_' {
 			s = s[1:]
-			// keep the first letter lowercase
 			sb.WriteString("_")
 		}
 		if s == "" {
 			continue
 		}
-		if !hasDoneLower {
-			sb.WriteString(strcase.ToLowerCamel(s))
+		if !utf8.ValidString(s) {
+			sb.WriteString(s)
 			hasDoneLower = true
-		} else {
-			sb.WriteString(strcase.ToCamel(s))
+			continue
+		}
+
+		var prev caseType = not_returned
+		tokens := splitCamelCase(s)
+		for i, v := range tokens {
+			if isSeparatorToken(v.entry) {
+				prev = v.class
+				continue
+			}
+			if !hasDoneLower {
+				sb.WriteString(lowerWord(v.entry))
+				hasDoneLower = true
+			} else if v.class == upper || v.class == digit {
+				sb.WriteString(titleWord(v.entry))
+			} else if v.class == other && prev == upper && len(v.entry) > 2 {
+				sb.WriteString(lowerWord(v.entry))
+			} else if v.class == lower && prev == upper && i == len(tokens)-1 && v.entry == "s" {
+				sb.WriteString(v.entry)
+			} else {
+				sb.WriteString(titleWord(v.entry))
+			}
+			prev = v.class
 		}
 	}
 	return sb.String()
@@ -85,41 +99,14 @@ func ToGraphQLNameIgnoreSettings(s ...string) string {
 func ToDBColumn(strs ...string) string {
 	var sb strings.Builder
 	for idx, s := range strs {
-
 		if idx == 0 && len(s) > 0 && s[0] == '_' {
 			s = s[1:]
-			// keep the first letter lowercase
 			sb.WriteString("_")
 		}
 		if s == "" {
 			continue
 		}
-
-		// this is to handle userIDs -> user_ids
-		split := splitCamelCase(s)
-		if len(split) > 2 {
-			last := split[len(split)-1]
-			next_last := split[len(split)-2]
-			if last.entry == "s" && next_last.class == upper {
-				// get the first n-2 words
-
-				var entries []string
-				for i := 0; i < len(split)-2; i++ {
-					entries = append(entries, split[i].entry)
-				}
-
-				sb.WriteString((strcase.ToSnake(strings.Join(entries, ""))))
-				sb.WriteString("_")
-
-				// combine the last two
-				sb.WriteString(strcase2.SnakeCase(next_last.entry))
-				sb.WriteString(last.entry)
-				continue
-			}
-		}
-
-		sb.WriteString(strcase2.SnakeCase(s))
-		// sb.WriteString(strcase.ToSnake(s))
+		sb.WriteString(toSnakeWord(s))
 
 		if idx != len(strs)-1 {
 			sb.WriteString("_")

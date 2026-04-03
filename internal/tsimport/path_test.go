@@ -110,6 +110,12 @@ func TestImportPath(t *testing.T) {
 	}
 }
 
+func TestNewLocalGraphQLInputEntImportPath(t *testing.T) {
+	ip := NewLocalGraphQLInputEntImportPath("UserAuthJWT")
+	assert.Equal(t, "UserAuthJWTInputType", ip.Import)
+	assert.Equal(t, "src/graphql/generated/mutations/input/user_auth_jwt_input_type", ip.ImportPath)
+}
+
 type testCfg struct {
 	relPaths bool
 }

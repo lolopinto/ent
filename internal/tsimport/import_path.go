@@ -2,8 +2,9 @@ package tsimport
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/codepath"
 	"github.com/lolopinto/ent/internal/schema/change"
 )
@@ -102,9 +103,8 @@ func NewLocalGraphQLEntImportPath(typ string) *ImportPath {
 }
 
 func getImportPathForCustomInterfaceInputFile(gqlType string) string {
-	// return fmt.Sprintf("src/graphql/generated/mutations/input/%s_type", names.ToFilePathName(gqlType))
 	// keeping this one for now to deal with circular dependency issues
-	return fmt.Sprintf("src/graphql/generated/mutations/input/%s_type", strcase.ToSnake(gqlType))
+	return fmt.Sprintf("src/graphql/generated/mutations/input/%s_type", toSnakeFilePath(gqlType))
 }
 
 func NewLocalGraphQLInputEntImportPath(typ string) *ImportPath {
@@ -169,4 +169,34 @@ func ImportPathsEqual(l1, l2 []*ImportPath) bool {
 		}
 	}
 	return true
+}
+
+func toSnakeFilePath(s string) string {
+	if s == "" {
+		return s
+	}
+
+	var out []rune
+	for i, r := range s {
+		switch {
+		case unicode.IsUpper(r):
+			if i > 0 {
+				prev := rune(s[i-1])
+				nextLower := i+1 < len(s) && unicode.IsLower(rune(s[i+1]))
+				if unicode.IsLower(prev) || unicode.IsDigit(prev) || nextLower {
+					if len(out) > 0 && out[len(out)-1] != '_' {
+						out = append(out, '_')
+					}
+				}
+			}
+			out = append(out, unicode.ToLower(r))
+		case unicode.IsLetter(r) || unicode.IsDigit(r):
+			out = append(out, unicode.ToLower(r))
+		default:
+			if len(out) > 0 && out[len(out)-1] != '_' {
+				out = append(out, '_')
+			}
+		}
+	}
+	return strings.Trim(string(out), "_")
 }
