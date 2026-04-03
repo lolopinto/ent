@@ -21,7 +21,6 @@ classifiers = [
 dependencies = [
   "sqlalchemy==2.0.18",
   "alembic==1.12.0",
-  "datetime==4.3",
   "psycopg2==2.9.6",
   "ruff==0.0.285",
   "python-dateutil==2.8.2",
