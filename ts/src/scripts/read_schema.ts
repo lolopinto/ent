@@ -1,13 +1,13 @@
 import * as glob from "glob";
 import * as path from "path";
-import minimist from "minimist";
+const { parseArgs } = require("./parse_args");
 import { parseSchema } from "../parse_schema/parse";
 import { getCustomInfo } from "../tsc/ast";
 import { GlobalSchema } from "../schema/schema";
 import { toClassName } from "../names/names";
 
 function main() {
-  const options = minimist(process.argv.slice(2));
+  const options = parseArgs(process.argv.slice(2));
 
   if (!options.path) {
     throw new Error("path required");
