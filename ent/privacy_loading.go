@@ -1,6 +1,7 @@
 package ent
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"reflect"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/ent/viewer"
-	"github.com/pkg/errors"
 )
 
 // hmm this should be an interface...
@@ -133,7 +133,7 @@ func ApplyPrivacyPolicy(v viewer.ViewerContext, policy PrivacyPolicy, ent Entity
 			defer func() {
 				if r := recover(); r != nil {
 					// set result to indicate that the test panicked and encode what happened
-					results[i] = DenyWithReason(errors.Errorf("privacyResult panicked: %s", r))
+					results[i] = DenyWithReason(fmt.Errorf("privacyResult panicked: %s", r))
 				}
 			}()
 			results[i] = rule.Eval(v, ent)

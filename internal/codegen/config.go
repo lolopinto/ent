@@ -15,7 +15,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/tsimport"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -649,7 +648,7 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 		}
 		f, err := os.Open(p)
 		if err != nil {
-			return nil, errors.Wrap(err, "error opening file")
+			return nil, fmt.Errorf("error opening file: %w", err)
 		}
 		b, err := io.ReadAll(f)
 		if err != nil {

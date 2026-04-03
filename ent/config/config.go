@@ -13,7 +13,6 @@ import (
 	"github.com/lib/pq"
 	"github.com/lolopinto/ent/internal/devschema"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
 )
 
@@ -252,7 +251,7 @@ func parseConnectionString() (*DBConfig, error) {
 
 	url, err := pq.ParseURL(conn)
 	if err != nil {
-		return nil, errors.Wrap(err, "error parsing url")
+		return nil, fmt.Errorf("error parsing url: %w", err)
 	}
 	parts := strings.Split(url, " ")
 

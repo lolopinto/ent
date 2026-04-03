@@ -9,7 +9,6 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/khaiql/dbcleaner v2.3.0+incompatible
 	github.com/lib/pq v1.10.7
-	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.6.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
