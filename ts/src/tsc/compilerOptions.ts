@@ -1,5 +1,4 @@
 import * as fs from "fs";
-import JSON5 from "json5";
 import ts from "typescript";
 import * as path from "path";
 
@@ -15,32 +14,30 @@ function findTSConfigFile(filePath: string): string | null {
 }
 
 export function readCompilerOptions(filePath: string) {
-  let configPath = findTSConfigFile(filePath);
+  const configPath = findTSConfigFile(filePath);
   if (!configPath) {
     return {};
   }
 
-  let json: any = {};
-  try {
-    json = JSON5.parse(
-      fs.readFileSync(configPath, {
-        encoding: "utf8",
-      }),
-    );
-  } catch (e) {
+  const { config, error } = ts.readConfigFile(configPath, ts.sys.readFile);
+  if (error) {
     console.error("couldn't read tsconfig.json file");
+    return {};
   }
-  let options: ts.CompilerOptions = json["compilerOptions"] || {};
-  // @ts-ignore
-  if (options.moduleResolution === "node") {
-    options.moduleResolution = ts.ModuleResolutionKind.NodeJs;
-  }
-  options.target = getTarget(options.target as string | undefined);
-  options.module = getModule(options.module as string | undefined);
-  return options;
+
+  return ts.parseJsonConfigFileContent(
+    config,
+    ts.sys,
+    path.dirname(configPath),
+    undefined,
+    configPath,
+  ).options;
 }
 
-export function getTarget(target?: string): ts.ScriptTarget {
+export function getTarget(target?: string | number): ts.ScriptTarget {
+  if (typeof target === "number") {
+    return target;
+  }
   switch (target?.toLowerCase()) {
     case "es2015":
       return ts.ScriptTarget.ES2015;
@@ -67,7 +64,10 @@ export function getTarget(target?: string): ts.ScriptTarget {
   }
 }
 
-export function getModule(module?: string): ts.ModuleKind {
+export function getModule(module?: string | number): ts.ModuleKind {
+  if (typeof module === "number") {
+    return module;
+  }
   switch (module?.toLowerCase()) {
     case "none":
       return ts.ModuleKind.None;
@@ -98,7 +98,7 @@ export function getModule(module?: string): ts.ModuleKind {
 
 export function getTargetFromCurrentDir(): ts.ScriptTarget {
   const options = readCompilerOptions(".");
-  return getTarget(options.target?.toString());
+  return getTarget(options.target);
 }
 
 export function createSourceFile(target: ts.ScriptTarget, file: string) {
