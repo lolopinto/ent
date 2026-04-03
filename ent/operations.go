@@ -1,13 +1,13 @@
 package ent
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/sql"
-	"github.com/pkg/errors"
 )
 
 // DataOperation corresponds to an individual operation to write to the database

@@ -10,7 +10,6 @@ import (
 
 	"github.com/lolopinto/ent/internal/cmd"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 // TODO: environment variable flag for fromTest instead of passing it in
@@ -28,7 +27,7 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 	schemaPath := filepath.Join(dirPath, "src", "schema")
 	info, err := os.Stat(schemaPath)
 	if err != nil {
-		return nil, errors.Wrap(err, "no schema directory")
+		return nil, fmt.Errorf("no schema directory: %w", err)
 	}
 	if !info.IsDir() {
 		return nil, fmt.Errorf("expected schema to be a directory")
@@ -57,7 +56,7 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 
 	// flags not showing up in command but my guess is it's function of what's passed to process.argv
 	if err := execCmd.Run(); err != nil {
-		return nil, errors.Wrap(err, "error getting raw schema")
+		return nil, fmt.Errorf("error getting raw schema: %w", err)
 	}
 
 	return out.Bytes(), nil

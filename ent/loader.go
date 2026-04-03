@@ -1,6 +1,7 @@
 package ent
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -8,7 +9,6 @@ import (
 	"github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/ent/sql"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 var cacheEnabled = true

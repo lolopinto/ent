@@ -2,11 +2,11 @@ package ent
 
 import (
 	dbsql "database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/data"
-	"github.com/pkg/errors"
 )
 
 // SaveChangeset is the public API for saving a changeset
@@ -39,7 +39,7 @@ func getStmtFromTx(tx *sqlx.Tx, db *sqlx.DB, query string) (string, *sqlx.Stmt, 
 func performWrite(builder *sqlBuilder, tx *sqlx.Tx, entity Entity) error {
 	query, values, err := builder.Build()
 	if err != nil {
-		return errors.Wrap(err, "error build query")
+		return fmt.Errorf("error build query: %w", err)
 	}
 	db := data.DBConn()
 	if db == nil {

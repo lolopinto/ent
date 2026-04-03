@@ -2,6 +2,7 @@ package schema
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -23,7 +24,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 // Schema is the representation of the parsed schema. Has everything needed to
@@ -1325,7 +1325,7 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	// load all edges in db
 	result := <-ent.GenLoadAssocEdges()
 	if result.Err != nil {
-		return nil, errors.Wrap(result.Err, "error loading data. assoc_edge_config related")
+		return nil, fmt.Errorf("error loading data. assoc_edge_config related: %w", result.Err)
 	}
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)

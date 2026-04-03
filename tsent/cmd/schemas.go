@@ -9,7 +9,6 @@ import (
 	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/tsent/cmd/generateschema"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -100,7 +99,7 @@ func getBuffer() (io.Reader, error) {
 	}
 	file, err := os.Open(schemasInfo.file)
 	if err != nil {
-		return nil, errors.Wrap(err, "error opening file")
+		return nil, fmt.Errorf("error opening file: %w", err)
 	}
 
 	return file, nil
