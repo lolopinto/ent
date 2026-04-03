@@ -1,0 +1,9 @@
+globalSchemaPath: global_schema.ts
+codegen:
+  relativeImports: true
+  schemaSQLFilePath: "src/schema/schema.sql"
+  globalImportPath: "src/global_augment"
+log:
+  - query
+  - error
+  - warn

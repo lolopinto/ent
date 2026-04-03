@@ -1,0 +1,4 @@
+codegen:
+  relativeImports: true
+  schemaSQLFilePath: "src/schema/schema.sql"
+  globalImportPath: "src/global_augment"

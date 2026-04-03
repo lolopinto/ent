@@ -9,3 +9,4 @@ class Change(TypedDict):
     col: str
     index: str
     edge_type: str
+    extension: str

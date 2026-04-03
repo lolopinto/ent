@@ -1,0 +1,25 @@
+{
+  "name": "ent-semantic-notes",
+  "version": "0.0.1",
+  "description": "semantic notes example using ent and pgvector",
+  "private": true,
+  "scripts": {
+    "test": "jest",
+    "db:up": "docker compose -f docker-compose.dev.yml up -d db",
+    "db:down": "docker compose -f docker-compose.dev.yml down",
+    "codegen": "npm run db:up && LOCAL_SCRIPT_PATH=true LOCAL_AUTO_SCHEMA=true go run ../../tsent/main.go codegen",
+    "upgrade": "npm run db:up && LOCAL_SCRIPT_PATH=true LOCAL_AUTO_SCHEMA=true go run ../../tsent/main.go upgrade"
+  },
+  "dependencies": {
+    "@snowtop/ent": "file:../../ts/dist",
+    "@snowtop/ent-pgvector": "file:../../ts/packages/ent-pgvector",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.3",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "tsconfig-paths": "^4.2.0"
+  }
+}

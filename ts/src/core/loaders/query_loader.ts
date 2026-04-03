@@ -1,5 +1,4 @@
 import DataLoader from "dataloader";
-import memoizee from "memoizee";
 import {
   Context,
   Data,
@@ -7,6 +6,7 @@ import {
   Loader,
   LoaderFactory,
   PrimableLoader,
+  SelectBaseDataOptions,
 } from "../base";
 import * as clause from "../clause";
 import {
@@ -15,8 +15,9 @@ import {
   loadRows,
   performRawQuery,
 } from "../ent";
-import { OrderBy } from "../query_impl";
 import { stableStringify } from "../cache_utils";
+import { memoizeNoArgs } from "../memoize";
+import { getOrderByKey, OrderBy, orderByHasExpressions } from "../query_impl";
 import {
   createLoaderCacheMap,
   InstrumentedDataLoader,
@@ -110,6 +111,12 @@ function createLoader<K extends any>(
       }
 
       const col = options.groupCol;
+      const effectiveOrderBy = getOrderByLocal(options, queryOptions);
+      if (orderByHasExpressions(effectiveOrderBy)) {
+        throw new Error(
+          "grouped query loaders do not support computed order expressions",
+        );
+      }
       let extraClause: clause.Clause | undefined;
       if (options.clause && queryOptions?.clause) {
         extraClause = clause.And(options.clause, queryOptions.clause);
@@ -123,7 +130,7 @@ function createLoader<K extends any>(
         tableName: options.tableName,
         fields: options.fields,
         values: keys,
-        orderby: getOrderByLocal(options, queryOptions),
+        orderby: effectiveOrderBy,
         limit: queryOptions?.limit || getDefaultLimit(),
         groupColumn: col,
         clause: extraClause,
@@ -162,7 +169,7 @@ class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
     private queryOptions?: EdgeQueryableDataOptions,
     public context?: Context,
   ) {
-    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+    this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
 
   private initPrime() {
@@ -222,7 +229,7 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
     if (context) {
       this.loader = createLoader(options, queryOptions, context);
     }
-    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+    this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
 
   private initPrime() {
@@ -266,13 +273,7 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
 }
 
 interface QueryOptions {
-  fields: (
-    | string
-    | {
-        alias: string;
-        column: string;
-      }
-  )[];
+  fields: SelectBaseDataOptions["fields"];
   tableName: string; // or function for assoc_edge. come back to it
   // if provided, we'll group queries to the database via this key and this will be the unique id we're querying for
   // using window functions or not
@@ -347,7 +348,7 @@ export class QueryLoaderFactory<K extends any>
           ? `baseClause:${queryOptions.clause.instanceKey()}`
           : undefined,
         `limit:${effectiveLimit}`,
-        `orderby:${stableStringify(effectiveOrderBy)}`,
+        `orderby:${getOrderByKey(effectiveOrderBy)}`,
         `disableTransformations:${disableTransformations}`,
       ];
       const key = keyParts
@@ -363,7 +364,7 @@ export class QueryLoaderFactory<K extends any>
     const effectiveOrderBy = getOrderByLocal(queryOptions, options);
     const effectiveLimit = options.limit || getDefaultLimit();
     const disableTransformations = options.disableTransformations ?? false;
-    const key = `${name}:limit:${effectiveLimit}:orderby:${stableStringify(
+    const key = `${name}:limit:${effectiveLimit}:orderby:${getOrderByKey(
       effectiveOrderBy,
     )}:disableTransformations:${disableTransformations}`;
     return getCustomLoader(

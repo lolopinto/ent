@@ -188,6 +188,32 @@ func TestStringWithMoreCustomizationsField(t *testing.T) {
 	)
 }
 
+func TestCustomPostgresField(t *testing.T) {
+	testFieldFromInput(t,
+		&input.Field{
+			Type: &input.FieldType{
+				DBType:       input.String,
+				Type:         "Point",
+				GraphQLType:  "Point",
+				PostgresType: "point",
+				DBExtension:  "postgis",
+			},
+			Name: "location",
+		},
+		&Field{
+			FieldName:                "location",
+			dbName:                   "location",
+			graphQLName:              "location",
+			dbTypeOverride:           "point",
+			dbExtension:              "postgis",
+			exposeToActionsByDefault: true,
+			dbColumn:                 true,
+		},
+		`auto_schema.schema_item.CustomSQLAlchemyType("point")`,
+		"String!",
+	)
+}
+
 func TestHiddenGraphQLField(t *testing.T) {
 	testFieldFromInput(t,
 		&input.Field{

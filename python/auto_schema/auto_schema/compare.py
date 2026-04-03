@@ -1,21 +1,142 @@
 import functools
+import pprint
+import re
+from typing import Any
+
+import alembic.operations.ops as alembicops
+import sqlalchemy as sa
 from alembic.autogenerate import comparators
 from alembic.autogenerate.api import AutogenContext
-
-from auto_schema.schema_item import FullTextIndex
-from auto_schema.clause_text import normalize_clause_text
-from . import ops
-from alembic.operations import Operations, MigrateOperation
-import sqlalchemy as sa
+from alembic.operations import MigrateOperation, Operations
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
 
-import pprint
-import re
-from sqlalchemy.dialects import postgresql
-import alembic.operations.ops as alembicops
-from typing import Any
-import functools
+from auto_schema.clause_text import normalize_clause_text
+from auto_schema.schema_item import FullTextIndex
+
+from . import ops
+
+
+def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
+    provisioned_by = extension.get("provisioned_by")
+    if provisioned_by not in ("ent", "external", None):
+        raise ValueError(
+            f"invalid provisioned_by {provisioned_by} for db extension {extension['name']}"
+        )
+    return {
+        "name": extension["name"],
+        "provisioned_by": provisioned_by or "ent",
+        "version": extension.get("version"),
+        "install_schema": extension.get("install_schema"),
+        "runtime_schemas": list(extension.get("runtime_schemas") or []),
+        "drop_cascade": extension.get("drop_cascade", False),
+    }
+
+
+def _is_ent_provisioned(extension: dict[str, Any]) -> bool:
+    return extension["provisioned_by"] == "ent"
+
+
+def _get_metadata_extensions(autogen_context: AutogenContext) -> list[dict[str, Any]]:
+    metadata_extensions = autogen_context.metadata.info.get("db_extensions", {})
+    extensions = metadata_extensions.get("public", [])
+    if not isinstance(extensions, list):
+        raise ValueError("db_extensions['public'] needs to be a list")
+    return [_normalize_db_extension(extension) for extension in extensions]
+
+
+def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, Any]]:
+    rows = autogen_context.connection.execute(
+        sa.text(
+            """
+            SELECT
+                ext.extname AS name,
+                ext.extversion AS version,
+                ns.nspname AS install_schema
+            FROM pg_catalog.pg_extension AS ext
+            JOIN pg_catalog.pg_namespace AS ns
+                ON ns.oid = ext.extnamespace
+            """
+        )
+    )
+    return {
+        row._asdict()["name"].lower(): row._asdict()
+        for row in rows
+    }
+
+
+def _get_extension_ops(
+    metadata_extensions: list[dict[str, Any]],
+    db_extensions: dict[str, dict[str, Any]],
+) -> list[ops.MigrateOpInterface]:
+    extension_ops = []
+    for extension in metadata_extensions:
+        name = extension["name"]
+        ent_provisioned = _is_ent_provisioned(extension)
+        db_extension = db_extensions.get(name.lower())
+        version = extension.get("version")
+        install_schema = extension.get("install_schema")
+        if db_extension is None:
+            if not ent_provisioned:
+                raise ValueError(
+                    f'required externally provisioned db extension "{name}" is not installed'
+                )
+            extension_ops.append(
+                ops.CreateExtensionOp(extension)
+            )
+            continue
+
+        if version is not None and db_extension.get("version") != version:
+            if not ent_provisioned:
+                raise ValueError(
+                    f'externally provisioned db extension "{name}" is installed at version '
+                    f'"{db_extension.get("version")}" but schema requires "{version}"'
+                )
+            extension_ops.append(
+                ops.UpdateExtensionOp(
+                    name,
+                    db_extension.get("version"),
+                    version,
+                )
+            )
+
+        if install_schema is not None and db_extension.get("install_schema") != install_schema:
+            if not ent_provisioned:
+                raise ValueError(
+                    f'externally provisioned db extension "{name}" is installed in schema '
+                    f'"{db_extension.get("install_schema")}" but schema requires '
+                    f'"{install_schema}"'
+                )
+            extension_ops.append(
+                ops.SetExtensionSchemaOp(
+                    name,
+                    db_extension.get("install_schema"),
+                    install_schema,
+                )
+            )
+
+    return extension_ops
+
+
+@comparators.dispatch_for("schema")
+def compare_extensions(autogen_context, upgrade_ops, schemas):
+    metadata_extensions = _get_metadata_extensions(autogen_context)
+    if len(metadata_extensions) == 0:
+        return
+
+    dialect = _dialect_name(autogen_context)
+    if dialect != "postgresql":
+        raise ValueError("db extensions are only supported for postgres")
+
+    db_extensions = _get_db_extensions(autogen_context)
+    extension_ops = _get_extension_ops(metadata_extensions, db_extensions)
+    if len(extension_ops) == 0:
+        return
+
+    # create/update extension ops need to happen before any dependent
+    # tables, columns, or indexes are created.
+    upgrade_ops.ops[0:0] = extension_ops
 
 
 @comparators.dispatch_for("schema")
@@ -503,19 +624,23 @@ def _compare_indexes(autogen_context: AutogenContext,
                 if to_remove:
                     to_remove_list.append(op)
                 else:
-                    conn_postgresql_using = normalize_clause_text(
-                        conn_index.expressions[0], None)
+                    raw_index = all_conn_indexes.get(conn_index.name, {})
+                    full_text_info = {
+                        'postgresql_using': raw_index.get('postgresql_using')
+                        or _get_index_signature(conn_index, raw_index).get('postgresql_using')
+                        or 'gin',
+                        'postgresql_using_internals': raw_index.get('postgresql_using_internals')
+                        or normalize_clause_text(conn_index.expressions[0], None),
+                    }
+                    for key in ('postgresql_concurrently', 'postgresql_where'):
+                        value = _get_index_kwarg(conn_index, key)
+                        if value not in (None, False):
+                            full_text_info[key] = value
 
                     modify_table_ops.ops[i] = ops.DropFullTextIndexOp(
                         conn_index.name,
                         conn_index.table.name,
-                        info={
-                            # TODO get the right value of this from somewhere since it won't be in expressions
-                            'postgresql_using': 'gin',
-                            'postgresql_using_internals': conn_postgresql_using,
-
-                        },
-                        # info=index.info,
+                        info=full_text_info,
                         table=conn_table,
                     )
             continue
@@ -528,15 +653,17 @@ def _compare_indexes(autogen_context: AutogenContext,
         # if index is there and postgresql_using changes, drop the index and add it again
         # should hopefully be a one-time migration change...
         if name in conn_indexes and isinstance(index, sa.Index):
-            meta_postgresql_using = index.kwargs.get('postgresql_using')
+            meta_signature = _get_index_signature(index, all_conn_indexes.get(name, {}))
+            conn_signature = _get_index_signature(conn_indexes[name], all_conn_indexes.get(name, {}))
 
-            # TODO there's probably a better way to get this from the index now that sqlachemy is reflecting these
-            conn_postgresql_using = all_conn_indexes.get(
-                name, {}).get('postgresql_using')
-
-            if isinstance(meta_postgresql_using, str) and conn_postgresql_using is not None and meta_postgresql_using != conn_postgresql_using:
+            if _index_signatures_differ(meta_signature, conn_signature):
                 conn_index = conn_indexes[name]
-                conn_index.kwargs['postgresql_using'] = conn_postgresql_using
+                if conn_signature.get('postgresql_using') is not None:
+                    conn_index.kwargs['postgresql_using'] = conn_signature.get('postgresql_using')
+                if conn_signature.get('postgresql_ops'):
+                    conn_index.kwargs['postgresql_ops'] = conn_signature.get('postgresql_ops')
+                if conn_signature.get('postgresql_with'):
+                    conn_index.kwargs['postgresql_with'] = conn_signature.get('postgresql_with')
 
                 modify_table_ops.ops.append(
                     alembicops.DropIndexOp.from_index(conn_index))
@@ -546,15 +673,8 @@ def _compare_indexes(autogen_context: AutogenContext,
                         name,
                         index.table.name,
                         index.columns,
-                        postgresql_using=index.kwargs.get('postgresql_using'),
-                        postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
-                        postgresql_where=index.kwargs.get('postgresql_where'),
-                        sqlite_where=index.kwargs.get('sqlite_where'),
+                        **_get_create_index_kwargs(index, meta_signature),
                     ))
-
-
-index_regex = re.compile('CREATE INDEX (.+) USING (gin|btree)(.+)')
-
 # this handles computed columns changing and so drops and re-creates the column.
 
 
@@ -596,15 +716,20 @@ def _compare_generated_column(autogen_context: AutogenContext,
 
                 # this is using underlying columns so we use drop and create directly
                 if conn_info['columns'] != meta_info['columns']:
+                    modify_table_ops.ops = [
+                        op for op in modify_table_ops.ops
+                        if not (
+                            isinstance(op, (alembicops.CreateIndexOp, alembicops.DropIndexOp))
+                            and op.index_name == index.name
+                        )
+                    ]
+
                     # we'll have to change the entire beh
                     create_index = alembicops.CreateIndexOp(
                         index.name,
                         index.table.name,
                         index.columns,
-                        postgresql_using=index_type,
-                        postgresql_concurrently=index.kwargs.get('postgresql_concurrently'),
-                        postgresql_where=index.kwargs.get('postgresql_where'),
-                        sqlite_where=index.kwargs.get('sqlite_where'),
+                        **_get_create_index_kwargs(index),
                     )
 
                     modify_table_ops.ops.append(
@@ -636,55 +761,210 @@ def _compare_generated_column(autogen_context: AutogenContext,
                         create_index
                     )
 
-
-# sqlalchemy doesn't reflect postgres indexes that have expressions in them so have to manually
-# fetch these indices from pg_indices to find them
-# warning: "Skipped unsupported reflection of expression-based index accounts_full_text_idx"
+# Pull structured index metadata from pg_catalog so compare logic does not
+# depend on parsing pg_indexes.indexdef text.
 def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | None):
     if conn_table is None or _dialect_name(autogen_context) != 'postgresql':
         return {'missing': {}, 'all': {}}
 
     missing = {}
     all_indices = {}
-    # we cache the db hit but the table seems to change across the same call and so we're
-    # just paying the CPU price. can probably be fixed in some way...
     names = set([index.name for index in conn_table.indexes] +
                 [constraint.name for constraint in conn_table.constraints])
-    res = get_db_indexes_for_table(autogen_context.connection, conn_table.name)
-
-    for row in res.fetchall():
-        (
+    for row in _get_db_index_key_rows(
+        autogen_context.connection,
+        conn_table.name,
+        conn_table.schema,
+    ):
+        row_dict = row._asdict()
+        name = row_dict['index_name']
+        payload = all_indices.setdefault(
             name,
-            details
-        ) = row
-        m = index_regex.match(details)
-        if m is None:
-            continue
-        r = m.groups()
+            {
+                'postgresql_using': row_dict['access_method'],
+                'postgresql_using_internals': None,
+                'postgresql_ops': {},
+                'postgresql_with': {},
+                '_key_definitions': [],
+            },
+        )
+        key_definition = row_dict.get('key_definition')
+        if key_definition:
+            payload['_key_definitions'].append(key_definition)
+        column_name = row_dict.get('column_name')
+        operator_class = row_dict.get('operator_class')
+        if column_name and operator_class:
+            payload['postgresql_ops'][column_name] = operator_class
 
-        all_indices[name] = {
-            'postgresql_using': r[1],
-            'postgresql_using_internals': r[2],
-            # TODO don't have columns|column to pass to FullTextIndex
-        }
+    for row in _get_db_index_storage_rows(
+        autogen_context.connection,
+        conn_table.name,
+        conn_table.schema,
+    ):
+        row_dict = row._asdict()
+        name = row_dict['index_name']
+        payload = all_indices.get(name)
+        if payload is None:
+            continue
+        option_name = row_dict.get('option_name')
+        option_value = row_dict.get('option_value')
+        if option_name and option_value is not None:
+            payload['postgresql_with'][option_name] = option_value
+
+    for name, payload in all_indices.items():
+        key_definitions = payload.pop('_key_definitions', [])
+        if key_definitions:
+            payload['postgresql_using_internals'] = ', '.join(key_definitions)
 
         # missing!
         if name not in names:
-            missing[name] = {
-                'postgresql_using': r[1],
-                'postgresql_using_internals': r[2],
-                # TODO don't have columns|column to pass to FullTextIndex
-            }
+            missing[name] = payload
 
     return {'missing': missing, 'all': all_indices}
 
 
-# use a cache so we only hit the db once for each table
-# @functools.lru_cache()
-def get_db_indexes_for_table(connection: sa.engine.Connection, tname: str):
-    res = connection.execute(sa.text(
-       f"SELECT indexname, indexdef from pg_indexes where tablename = '{tname}'"))
-    return res
+def _get_db_index_key_rows(
+    connection: sa.engine.Connection, tname: str, schema_name: str | None = None
+):
+    return connection.execute(
+        sa.text(
+            """
+            SELECT
+                idx.relname AS index_name,
+                am.amname AS access_method,
+                key_parts.ord AS key_position,
+                pg_get_indexdef(i.indexrelid, key_parts.ord::int, false) AS key_definition,
+                attr.attname AS column_name,
+                CASE
+                    WHEN opc.opcdefault THEN NULL
+                    ELSE opc.opcname
+                END AS operator_class
+            FROM pg_index AS i
+            JOIN pg_class AS idx
+                ON idx.oid = i.indexrelid
+            JOIN pg_class AS tbl
+                ON tbl.oid = i.indrelid
+            JOIN pg_namespace AS ns
+                ON ns.oid = tbl.relnamespace
+            JOIN pg_am AS am
+                ON am.oid = idx.relam
+            LEFT JOIN LATERAL unnest(i.indkey) WITH ORDINALITY AS key_parts(attnum, ord)
+                ON key_parts.ord <= i.indnkeyatts
+            LEFT JOIN pg_attribute AS attr
+                ON attr.attrelid = tbl.oid AND attr.attnum = key_parts.attnum
+            LEFT JOIN LATERAL unnest(i.indclass) WITH ORDINALITY AS opclasses(opclass_oid, ord)
+                ON opclasses.ord = key_parts.ord
+            LEFT JOIN pg_opclass AS opc
+                ON opc.oid = opclasses.opclass_oid
+            WHERE tbl.relname = :table_name
+              AND ns.nspname = COALESCE(:schema_name, current_schema())
+            ORDER BY idx.relname, key_parts.ord
+            """
+        ),
+        {
+            'table_name': tname,
+            'schema_name': schema_name,
+        },
+    )
+
+
+def _get_db_index_storage_rows(
+    connection: sa.engine.Connection, tname: str, schema_name: str | None = None
+):
+    return connection.execute(
+        sa.text(
+            """
+            SELECT
+                idx.relname AS index_name,
+                opt.option_name,
+                opt.option_value
+            FROM pg_index AS i
+            JOIN pg_class AS idx
+                ON idx.oid = i.indexrelid
+            JOIN pg_class AS tbl
+                ON tbl.oid = i.indrelid
+            JOIN pg_namespace AS ns
+                ON ns.oid = tbl.relnamespace
+            LEFT JOIN LATERAL pg_options_to_table(idx.reloptions) AS opt
+                ON true
+            WHERE tbl.relname = :table_name
+              AND ns.nspname = COALESCE(:schema_name, current_schema())
+            ORDER BY idx.relname, opt.option_name
+            """
+        ),
+        {
+            'table_name': tname,
+            'schema_name': schema_name,
+        },
+    )
+
+def _normalize_index_using(using):
+    if using in (None, False, '', 'btree'):
+        return None
+    return using
+
+
+def _normalize_index_map(value) -> dict[str, str]:
+    if value in (None, False):
+        return {}
+    return {
+        str(key): str(val)
+        for key, val in dict(value).items()
+    }
+
+
+def _get_index_kwarg(index: sa.Index, key: str):
+    value = index.kwargs.get(key)
+    if value not in (None, False):
+        return value
+
+    postgres_options = index.dialect_options.get('postgresql')
+    if postgres_options is not None:
+        value = postgres_options.get(key.removeprefix('postgresql_'))
+        if value not in (None, False, [], {}):
+            return value
+    return None
+
+
+def _get_index_signature(index: sa.Index, raw_index: dict[str, Any]) -> dict[str, Any]:
+    return {
+        'postgresql_using': _normalize_index_using(
+            _get_index_kwarg(index, 'postgresql_using') or raw_index.get('postgresql_using')
+        ),
+        'postgresql_ops': _normalize_index_map(
+            _get_index_kwarg(index, 'postgresql_ops') or raw_index.get('postgresql_ops')
+        ),
+        'postgresql_with': _normalize_index_map(
+            _get_index_kwarg(index, 'postgresql_with') or raw_index.get('postgresql_with')
+        ),
+    }
+
+
+def _get_create_index_kwargs(
+    index: sa.Index, signature: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    kwargs = {}
+    for key in (
+        'postgresql_using',
+        'postgresql_concurrently',
+        'postgresql_where',
+        'sqlite_where',
+    ):
+        value = index.kwargs.get(key)
+        if value not in (None, False):
+            kwargs[key] = value
+
+    if signature is not None:
+        if signature.get('postgresql_ops'):
+            kwargs['postgresql_ops'] = signature['postgresql_ops']
+        if signature.get('postgresql_with'):
+            kwargs['postgresql_with'] = signature['postgresql_with']
+
+    return kwargs
+
+
+def _index_signatures_differ(meta_signature: dict[str, Any], conn_signature: dict[str, Any]) -> bool:
+    return meta_signature != conn_signature
 
 
 # these 2 ported and updated from https://github.com/lolopinto/ent/pull/1223/files

@@ -200,6 +200,55 @@ class OpsTest(object):
                 self)
         )
 
+    def test_create_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.CreateExtensionOp.create_db_extension(
+                operations,
+                {
+                    "name": "vector",
+                    "provisioned_by": "ent",
+                    "version": "0.4.1",
+                    "install_schema": "public",
+                    "runtime_schemas": ["public"],
+                    "drop_cascade": False,
+                },
+            ),
+            'CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA "public" VERSION \'0.4.1\';',
+        )
+
+    def test_drop_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.DropExtensionOp.drop_db_extension(
+                operations,
+                {
+                    "name": "uuid-ossp",
+                    "provisioned_by": "ent",
+                    "version": None,
+                    "install_schema": None,
+                    "runtime_schemas": [],
+                    "drop_cascade": True,
+                },
+            ),
+            'DROP EXTENSION IF EXISTS "uuid-ossp" CASCADE;',
+        )
+
+    def test_update_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations:
+            ops.UpdateExtensionOp.update_db_extension(
+                operations,
+                "vector",
+                "0.4.1",
+                "0.5.0",
+            ),
+            'ALTER EXTENSION "vector" UPDATE TO \'0.5.0\';',
+        )
+
     def test_add_rows(self, new_test_runner):
         validate_op(
             new_test_runner,
@@ -453,6 +502,64 @@ class TestPostgres(OpsTest):
                 },
             ),
             'DROP INDEX full_text_idx;'
+        )
+
+    def test_create_db_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations: ops.CreateExtensionOp.create_db_extension(
+                operations,
+                {
+                    "name": "vector",
+                    "provisioned_by": "ent",
+                    "version": "0.4.1",
+                    "install_schema": "public",
+                    "runtime_schemas": ["public"],
+                    "drop_cascade": False,
+                },
+            ),
+            'CREATE EXTENSION IF NOT EXISTS "vector" WITH SCHEMA "public" VERSION \'0.4.1\';',
+        )
+
+    def test_drop_db_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations: ops.DropExtensionOp.drop_db_extension(
+                operations,
+                {
+                    "name": "vector",
+                    "provisioned_by": "ent",
+                    "version": None,
+                    "install_schema": None,
+                    "runtime_schemas": [],
+                    "drop_cascade": True,
+                },
+            ),
+            'DROP EXTENSION IF EXISTS "vector" CASCADE;',
+        )
+
+    def test_update_db_extension(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations: ops.UpdateExtensionOp.update_db_extension(
+                operations,
+                "vector",
+                "0.4.0",
+                "0.4.1",
+            ),
+            'ALTER EXTENSION "vector" UPDATE TO \'0.4.1\';',
+        )
+
+    def test_set_db_extension_schema(self, new_test_runner):
+        validate_op(
+            new_test_runner,
+            lambda operations: ops.SetExtensionSchemaOp.set_db_extension_schema(
+                operations,
+                "hstore",
+                "public",
+                "extensions",
+            ),
+            'ALTER EXTENSION "hstore" SET SCHEMA "extensions";',
         )
 
 

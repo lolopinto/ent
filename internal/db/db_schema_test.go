@@ -2634,6 +2634,56 @@ func TestExtraEdgeCols(t *testing.T) {
 	}
 }
 
+func TestDBExtensionsTemplateData(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+					},
+				},
+			},
+			GlobalSchema: &input.GlobalSchema{
+				DBExtensions: []*input.DBExtension{
+					{
+						Name:           "postgis",
+						ProvisionedBy:  "ent",
+						InstallSchema:  "public",
+						RuntimeSchemas: []string{"public"},
+					},
+					{
+						Name:          "vector",
+						ProvisionedBy: "external",
+						DropCascade:   true,
+					},
+				},
+			},
+		},
+	)
+
+	template, err := dbSchema.getSchemaForTemplate(dbSchema.cfg)
+	require.NoError(t, err)
+	require.Len(t, template.DBExtensions, 2)
+	assert.Equal(
+		t,
+		"{\"name\":\"postgis\", \"provisioned_by\":\"ent\", \"version\":None, \"install_schema\":\"public\", \"runtime_schemas\":[\"public\"], \"drop_cascade\":False}",
+		template.DBExtensions[0],
+	)
+	assert.Equal(
+		t,
+		"{\"name\":\"vector\", \"provisioned_by\":\"external\", \"version\":None, \"install_schema\":None, \"runtime_schemas\":[], \"drop_cascade\":True}",
+		template.DBExtensions[1],
+	)
+}
+
 func TestExplicitScalarIndexBtree(t *testing.T) {
 	dbSchema := getSchemaFromInput(
 		t,
@@ -2680,6 +2730,99 @@ func TestExplicitScalarIndexBtree(t *testing.T) {
 			strconv.Quote("users_email_idx"),
 			strconv.Quote("email"),
 			strconv.Quote("btree"),
+		),
+	)
+}
+
+func TestCustomPostgresTypeColumn(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"Location": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "point",
+							Type: &input.FieldType{
+								DBType:       input.String,
+								Type:         "Point",
+								GraphQLType:  "Point",
+								PostgresType: "point",
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("Location", dbSchema, t)
+	column := getTestColumnFromTable(t, table, "point")
+	testColumn(t, column, "point", "point", "point", []string{
+		`"point"`,
+		`auto_schema.schema_item.CustomSQLAlchemyType("point")`,
+		"nullable=False",
+	})
+}
+
+func TestIndexWithOperatorClassesAndStorageParams(t *testing.T) {
+	dbSchema := getSchemaFromInput(
+		t,
+		&input.Schema{
+			Nodes: map[string]*input.Node{
+				"User": {
+					Fields: []*input.Field{
+						{
+							Name: "id",
+							Type: &input.FieldType{
+								DBType: input.UUID,
+							},
+							PrimaryKey: true,
+						},
+						{
+							Name: "email",
+							Type: &input.FieldType{
+								DBType: input.String,
+							},
+						},
+					},
+					Indices: []*input.Index{
+						{
+							Name:      "users_email_pattern_idx",
+							Columns:   []string{"email"},
+							IndexType: input.Btree,
+							Ops: map[string]string{
+								"email": "text_pattern_ops",
+							},
+							IndexParams: map[string]interface{}{
+								"fillfactor": float64(70),
+							},
+						},
+					},
+				},
+			},
+		},
+	)
+
+	table := getTestTableFromSchema("User", dbSchema, t)
+	constraint := getTestIndexedConstraintFromTable(t, table, "email")
+
+	testConstraint(
+		t,
+		constraint,
+		fmt.Sprintf("sa.Index(%s, %s, postgresql_using=%s, postgresql_ops=%s, postgresql_with=%s)",
+			strconv.Quote("users_email_pattern_idx"),
+			strconv.Quote("email"),
+			strconv.Quote("btree"),
+			`{"email":"text_pattern_ops"}`,
+			`{"fillfactor":70}`,
 		),
 	)
 }

@@ -2,7 +2,6 @@
 
 import * as glob from "glob";
 import JSON5 from "json5";
-import minimist from "minimist";
 import * as path from "path";
 import * as fs from "fs";
 import {
@@ -28,6 +27,7 @@ import { exit } from "process";
 import { Data } from "../core/base";
 import { spawn } from "child_process";
 import { GRAPHQL_PATH } from "../core/const";
+const { parseArgs } = require("./parse_args");
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
@@ -389,7 +389,7 @@ function findGraphQLPath(filePath: string): string | undefined {
 // also, there should be a way to get the list of objects here that's not manual
 //echo "User\nContact\nContactEmail\nComment" | ts-node-script --log-error --project ./tsconfig.json -r tsconfig-paths/register ../../ts/src/scripts/custom_graphql.ts --path ~/code/ent/examples/simple/src/
 async function main() {
-  const options = minimist(process.argv.slice(2));
+  const options = parseArgs(process.argv.slice(2));
 
   if (!options.path) {
     throw new Error("path required");

@@ -1,6 +1,9 @@
 package input
 
 import (
+	"fmt"
+	"reflect"
+
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
@@ -51,7 +54,34 @@ func GlobalSchemaEqual(existing, schema *GlobalSchema) bool {
 		assocEdgesEqual(existing.GlobalEdges, schema.GlobalEdges) &&
 		existing.Init == schema.Init &&
 		existing.TransformsEdges == schema.TransformsEdges &&
-		fieldsEqual(existing.GlobalFields, schema.GlobalFields)
+		fieldsEqual(existing.GlobalFields, schema.GlobalFields) &&
+		dbExtensionsEqual(existing.DBExtensions, schema.DBExtensions)
+}
+
+func dbExtensionsEqual(existing, extensions []*DBExtension) bool {
+	if len(existing) != len(extensions) {
+		return false
+	}
+	for i := range existing {
+		if !dbExtensionEqual(existing[i], extensions[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func dbExtensionEqual(existing, extension *DBExtension) bool {
+	ret := change.CompareNilVals(existing == nil, extension == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.Name == extension.Name &&
+		existing.ProvisionedBy == extension.ProvisionedBy &&
+		existing.Version == extension.Version &&
+		existing.InstallSchema == extension.InstallSchema &&
+		change.StringListEqual(existing.RuntimeSchemas, extension.RuntimeSchemas) &&
+		existing.DropCascade == extension.DropCascade
 }
 
 func fieldsEqual(existing, fields []*Field) bool {
@@ -128,6 +158,8 @@ func fieldTypeEqual(existing, fieldType *FieldType) bool {
 		existing.Type == fieldType.Type &&
 		existing.GraphQLType == fieldType.GraphQLType &&
 		existing.CustomType == fieldType.CustomType &&
+		existing.PostgresType == fieldType.PostgresType &&
+		existing.DBExtension == fieldType.DBExtension &&
 		tsimport.ImportPathEqual(existing.ImportType, fieldType.ImportType) &&
 		fieldsEqual(existing.SubFields, fieldType.SubFields) &&
 		fieldsEqual(existing.UnionFields, fieldType.UnionFields)
@@ -473,7 +505,52 @@ func indexEqual(existing, index *Index) bool {
 		fullTextEqual(existing.FullText, index.FullText) &&
 		existing.IndexType == index.IndexType &&
 		existing.Concurrently == index.Concurrently &&
-		existing.Where == index.Where
+		existing.Where == index.Where &&
+		change.StringMapEqual(existing.Ops, index.Ops) &&
+		indexParamsEqual(existing.IndexParams, index.IndexParams) &&
+		existing.DBExtension == index.DBExtension
+}
+
+func normalizeIndexParamValue(value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		return "string:" + v
+	case bool:
+		if v {
+			return "bool:true"
+		}
+		return "bool:false"
+	}
+
+	rv := reflect.ValueOf(value)
+	switch rv.Kind() {
+	case reflect.Float32, reflect.Float64:
+		return fmt.Sprintf("number:%g", rv.Float())
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return fmt.Sprintf("number:%d", rv.Int())
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return fmt.Sprintf("number:%d", rv.Uint())
+	default:
+		return fmt.Sprintf("%T:%v", value, value)
+	}
+}
+
+func indexParamsEqual(existing, params map[string]interface{}) bool {
+	if len(existing) != len(params) {
+		return false
+	}
+
+	for key, value := range existing {
+		value2, ok := params[key]
+		if !ok {
+			return false
+		}
+		if normalizeIndexParamValue(value) != normalizeIndexParamValue(value2) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func fullTextEqual(existing, fullText *FullText) bool {

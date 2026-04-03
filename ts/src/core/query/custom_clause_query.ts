@@ -150,7 +150,13 @@ export class CustomClauseQuery<
         this.options.loadEntOptions.alias;
       const fieldString =
         typeof firstRequestedField === "object"
-          ? `${firstRequestedField.alias}.${firstRequestedField.column}`
+          ? "expression" in firstRequestedField
+            ? (() => {
+                throw new Error(
+                  "join-backed raw counts do not support computed select expressions",
+                );
+              })()
+            : `${firstRequestedField.alias}.${firstRequestedField.column}`
           : alias
             ? `${alias}.${firstRequestedField}`
             : firstRequestedField;
