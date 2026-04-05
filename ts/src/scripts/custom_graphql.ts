@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 import * as glob from "glob";
-import JSON5 from "json5";
 import * as path from "path";
 import * as fs from "fs";
+import ts from "typescript";
 import {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
@@ -33,6 +33,14 @@ const { parseArgs } = require("./parse_args");
 // we're affecting the local paths as opposed to a different instance
 // life is hard
 const MODULE_PATH = GRAPHQL_PATH;
+
+function parseJSONC(fileName: string, text: string): CustomGraphQLInput {
+  const { config, error } = ts.parseConfigFileTextToJson(fileName, text);
+  if (error) {
+    throw new Error(ts.flattenDiagnosticMessageText(error.messageText, "\n"));
+  }
+  return config;
+}
 
 async function readInputs(): Promise<{
   nodes: string[];
@@ -210,7 +218,7 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
         return;
       }
 
-      let json = JSON5.parse(datas.join(""));
+      const json = parseJSONC(filePath, datas.join(""));
 
       processJSON(gqlCapture, json);
 
@@ -267,7 +275,8 @@ async function captureCustom(
   gqlCapture: typeof GQLCapture,
 ) {
   if (jsonPath !== undefined) {
-    let json = JSON5.parse(
+    const json = parseJSONC(
+      jsonPath,
       fs.readFileSync(jsonPath, {
         encoding: "utf8",
       }),
