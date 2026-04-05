@@ -31,7 +31,7 @@ func debugLogInfo(opt *Options, str string, a ...interface{}) {
 		return
 	}
 	if len(a) == 0 {
-		fmt.Printf(str + "\n")
+		fmt.Printf("%s\n", str)
 	} else {
 		fmt.Printf(str+"\n", a...)
 	}

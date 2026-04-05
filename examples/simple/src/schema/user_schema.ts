@@ -281,6 +281,47 @@ const UserSchema = new EntSchema({
         phoneNumber: PhoneNumberType(),
       },
     }),
+    // TODO convert all these to the same
+    onDemandNonNullable: StructType({
+      fetchOnDemand: true,
+      tsType: "UserOnDemandNonNullable",
+      graphQLType: "UserOnDemandNonNullable",
+      fields: {
+        secret: StringType(),
+        phoneNumber: PhoneNumberType(),
+      },
+      convert: {
+        path: "src/util/convert_user_fields",
+        function: "convertOnDemandNonNullable",
+      },
+      defaultValueOnCreate: () => ({
+        secret: "hello",
+        phoneNumber: "+14151234567",
+      }),
+    }),
+    onDemandNonNullableList: StructTypeAsList({
+      fetchOnDemand: true,
+      tsType: "UserOnDemandNonNullableList",
+      graphQLType: "UserOnDemandNonNullableList",
+      fields: {
+        secret: StringType(),
+        phoneNumber: PhoneNumberType(),
+      },
+      convert: {
+        path: "src/util/convert_user_fields",
+        function: "convertOnDemandNonNullable",
+      },
+      defaultValueOnCreate: () => [
+        {
+          secret: "hello",
+          phoneNumber: "+14151234567",
+        },
+        {
+          secret: "hello2",
+          phoneNumber: "+14151234578",
+        },
+      ],
+    }),
     nestedList: StructListType({
       nullable: true,
       tsType: "UserNestedObjectList",

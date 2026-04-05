@@ -8,6 +8,9 @@
     "module": "commonjs",
     "downlevelIteration": true,
     "baseUrl": ".",
+    "paths": {
+      "src/*": ["src/*"]
+    },
     "moduleResolution": "node",
     "esModuleInterop": true,
     "strict": true,

@@ -9,10 +9,13 @@
   {{$inputName = $action.GetActionInputName -}}
 {{ end -}}
 
-{{ reserveImport .BasePath $baseName $inputName -}}
+{{ reserveImport .BasePath $baseName -}}
+{{ if $hasInput -}}
+  {{ reserveTypeImport .BasePath $inputName -}}
+{{ end -}}
 
 {{ if $hasInput -}}
-  export { {{useImport $inputName}} };
+  export type { {{useTypeImport $inputName}} };
 {{end}}
 
 {{if  $cfg.DisableDefaultExportForActions }} 

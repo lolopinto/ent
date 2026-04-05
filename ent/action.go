@@ -1,8 +1,9 @@
 package ent
 
 import (
+	"errors"
+
 	"github.com/lolopinto/ent/ent/viewer"
-	"github.com/pkg/errors"
 )
 
 // ActionOperation is a named type that represents the different actions

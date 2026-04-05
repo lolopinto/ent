@@ -3,7 +3,13 @@ import { load } from "js-yaml";
 import DB, { Database, DBDict } from "./db";
 import * as path from "path";
 import { setLogLevels } from "./logger";
-import { ___setLogQueryErrorWithError, setDefaultLimit } from "./ent";
+import {
+  ___setLogQueryErrorWithError,
+  setDefaultLimit,
+  setEntLoaderPrivacyConcurrencyLimit,
+} from "./ent";
+import { setClauseLoaderConcurrency } from "./loaders/object_loader";
+import { setLoaderMaxBatchSize } from "./loaders/loader";
 
 type logType = "query" | "warn" | "info" | "error" | "debug";
 
@@ -26,6 +32,15 @@ enum fieldPrivacyEvaluated {
 }
 
 // runtime configurations
+export interface RuntimeDBExtension {
+  name: string;
+  provisionedBy?: "ent" | "external";
+  version?: string;
+  installSchema?: string;
+  runtimeSchemas?: string[];
+  dropCascade?: boolean;
+}
+
 export interface Config {
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
@@ -41,10 +56,26 @@ export interface Config {
   // override the default limit for edges and connections.
   // right now, it's 1000 but can be overriden to set a higher or lower limit
   defaultConnectionLimit?: number;
+
+  // cap DataLoader batch size to avoid huge queries/memory spikes
+  loaderMaxBatchSize?: number;
+
+  // limit concurrency for clause loaders
+  clauseLoaderConcurrency?: number;
+
+  // limit concurrency for ent loader privacy checks
+  entLoaderPrivacyConcurrencyLimit?: number;
+
+  // dev schema configuration
+  devSchema?: RuntimeDevSchemaConfig;
+
+  // runtime extension configuration. when omitted, ent only uses the
+  // default schemas/type parsers registered by imported extension packages.
+  extensions?: RuntimeDBExtension[];
 }
 
 // things that can be set in ent.yml
-export interface ConfigWithCodegen extends Config {
+export interface ConfigWithCodegen extends Omit<Config, "devSchema"> {
   // config for codegen
   codegen?: CodegenConfig;
 
@@ -64,6 +95,9 @@ export interface ConfigWithCodegen extends Config {
   // defaults to __global__schema.ts if not provided
   // relative to src/schema for now
   globalSchemaPath?: string;
+
+  // codegen/runtime shared config. codegen additionally supports prune.
+  devSchema?: DevSchemaConfig;
 }
 
 interface DatabaseMigrationConfig {
@@ -71,9 +105,26 @@ interface DatabaseMigrationConfig {
   custom_sql_exclude?: string[];
 }
 
+export interface DevSchemaPruneConfig {
+  enabled?: boolean;
+  days?: number;
+}
+
+export interface RuntimeDevSchemaConfig {
+  enabled?: boolean;
+  schemaName?: string;
+  includePublic?: boolean;
+  ignoreBranches?: string[];
+}
+
+export interface DevSchemaConfig extends RuntimeDevSchemaConfig {
+  prune?: DevSchemaPruneConfig;
+}
+
 interface CodegenConfig {
   defaultEntPolicy?: PrivacyConfig;
   defaultActionPolicy?: PrivacyConfig;
+  // legacy fallback only. prefer biome.json or biome.jsonc in the project root.
   prettier?: PrettierConfig;
   // use relativeImports in generated files instead of "src/ent/user" etc
   // needed for legacy scenarios or situations where the custom compiler has issues
@@ -156,6 +207,7 @@ interface CodegenConfig {
 
 interface PrettierConfig {
   // indicates you have your own custom prettier configuration and should use that instead of the ent default
+  // only relevant when forcing prettier during codegen
   // https://prettier.io/docs/en/configuration.html
   custom?: boolean;
   // default glob is 'src/**/*.ts', can override this
@@ -179,11 +231,19 @@ function setConfig(cfg: Config) {
     setLogLevels(cfg.log);
   }
 
-  if (cfg.dbConnectionString || cfg.dbFile || cfg.db) {
+  if (
+    cfg.dbConnectionString ||
+    cfg.dbFile ||
+    cfg.db ||
+    cfg.devSchema ||
+    cfg.extensions
+  ) {
     DB.initDB({
       connectionString: cfg.dbConnectionString,
       dbFile: cfg.dbFile,
       db: cfg.db,
+      devSchema: cfg.devSchema,
+      extensions: cfg.extensions,
     });
   }
 
@@ -192,13 +252,27 @@ function setConfig(cfg: Config) {
   if (cfg.defaultConnectionLimit) {
     setDefaultLimit(cfg.defaultConnectionLimit);
   }
+
+  if (cfg.loaderMaxBatchSize !== undefined) {
+    setLoaderMaxBatchSize(cfg.loaderMaxBatchSize);
+  }
+
+  if (cfg.clauseLoaderConcurrency !== undefined) {
+    setClauseLoaderConcurrency(cfg.clauseLoaderConcurrency);
+  }
+
+  if (cfg.entLoaderPrivacyConcurrencyLimit !== undefined) {
+    setEntLoaderPrivacyConcurrencyLimit(cfg.entLoaderPrivacyConcurrencyLimit);
+  }
 }
 
 function isBuffer(b: Buffer | Config): b is Buffer {
   return (b as Buffer).write !== undefined;
 }
 
-export function loadConfig(file?: string | Buffer | Config) {
+export function loadConfig(
+  file?: string | Buffer | Config | ConfigWithCodegen,
+) {
   let data: string;
   if (typeof file === "object") {
     if (!isBuffer(file)) {

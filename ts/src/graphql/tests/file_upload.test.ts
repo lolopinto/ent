@@ -14,6 +14,7 @@ import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
 import { expectMutation } from "../../testutils/ent-graphql-tests";
 
 const fileContents = ["col1,col2", "data1,data2"].join("\n");
+const tempFiles: string[] = [];
 
 function createTempFile() {
   // Generate a unique file name
@@ -25,26 +26,32 @@ function createTempFile() {
 
   // Write content to the newly created file
   fs.writeFileSync(tempFilePath, fileContents, "utf8");
+  tempFiles.push(tempFilePath);
 
   return tempFilePath;
 }
 
 async function readStream(file): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const stream = file.createReadStream();
-    let data: string[] = [];
-    stream.on("data", function (chunk) {
-      data.push(chunk.toString());
-    });
-
-    stream.on("end", function () {
-      return resolve(data.join(""));
-    });
-    stream.on("error", function (err) {
-      return reject(err);
-    });
-  });
+  const stream = file.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) {
+    if (Buffer.isBuffer(chunk)) {
+      chunks.push(chunk);
+    } else {
+      chunks.push(Buffer.from(chunk));
+    }
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
+
+afterEach(() => {
+  while (tempFiles.length > 0) {
+    const tempFilePath = tempFiles.pop()!;
+    if (fs.existsSync(tempFilePath)) {
+      fs.unlinkSync(tempFilePath);
+    }
+  }
+});
 
 const schema = new GraphQLSchema({
   query: new GraphQLObjectType({
@@ -89,6 +96,8 @@ const schema = new GraphQLSchema({
           },
         },
         async resolve(src, args) {
+          // graphql-upload resolves each promise as buffering starts, so consume
+          // multiple uploads concurrently instead of serializing the reads.
           await Promise.all(
             args.files.map(async (f) => {
               const file = await f;
@@ -96,7 +105,6 @@ const schema = new GraphQLSchema({
               if (data !== fileContents) {
                 throw new Error(`invalid file sent`);
               }
-              return data;
             }),
           );
 

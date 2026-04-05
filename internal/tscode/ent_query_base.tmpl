@@ -1,5 +1,6 @@
 {{ reserveImport .Package.TypesImportPath "EdgeType" "NodeType" }}
-{{ reserveImport .Package.PackagePath "Ent" "ID" "Data" "Viewer" "EdgeQuerySource" "BaseEdgeQuery" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "loadEnt" "LoadEntOptions" "OrderBy"}}
+{{ reserveTypeImport .Package.PackagePath "Ent" "ID" "Data" "EdgeQuerySource" "LoadEntOptions" "OrderBy"}}
+{{ reserveImport .Package.PackagePath "BaseEdgeQuery" "AssocEdgeQueryBase" "CustomEdgeQueryBase" "query" "RawCountLoaderFactory" "AssocEdgeCountLoaderFactory" "AssocEdgeLoaderFactory" "loadEnt"}}
 {{$importPath := .Package.InternalImportPath -}}
 {{reserveImport "src/ent/generated/loadAny" "getLoaderOptions" -}}
 {{ reserveImport .Package.SchemaPackagePath "getTransformedReadClause" }}
@@ -8,8 +9,8 @@
 
 {{ $cfg := .Config }}
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
+{{ reserveTypeImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useTypeImport $viewerInfo.GetImport -}}
 
 {{with .Info -}}
 
@@ -17,7 +18,7 @@
     {{reserveImportPath . false}}
   {{ end}}
 
-  {{$node := useImport .Node}}
+  {{$node := useTypeImportMaybe .Node}}
   {{$sourcePolymorphic := .SourcePolymorphic }}
 
   {{range $edge := .AssocEdges}}
@@ -51,7 +52,7 @@
   export abstract class {{$name}} extends {{useImport "AssocEdgeQueryBase"}}<{{$srcNode}}, {{$destNode}}, {{$edgeName}}, {{$viewerType}}> {
     constructor(
       viewer: {{$viewerType}}, 
-      src: {{useImport "EdgeQuerySource"}}<{{$srcNode}}, {{$destNode}}, {{$viewerType}}>,
+      src: {{useTypeImport "EdgeQuerySource"}}<{{$srcNode}}, {{$destNode}}, {{$viewerType}}>,
     ) {
       super(
         viewer, 
@@ -69,7 +70,7 @@
     static query<T extends {{$name}}>(
       this: {{$thisType}},
       viewer: {{$viewerType}},
-      src: {{useImport "EdgeQuerySource"}}<{{$srcNode}}, {{$destNode}}>,
+      src: {{useTypeImport "EdgeQuerySource"}}<{{$srcNode}}, {{$destNode}}>,
     ): T {
       return new this(viewer, src);
     }
@@ -83,10 +84,10 @@
     {{end }}
 
     {{ if $sourcePolymorphic -}}
-      protected abstract getSourceLoadEntOptions(): {{useImport "LoadEntOptions"}}<{{useImport "Ent"}}<{{$viewerType}}>, {{$viewerType}}>;
+      protected abstract getSourceLoadEntOptions(): {{useTypeImport "LoadEntOptions"}}<{{useTypeImport "Ent"}}<{{$viewerType}}>, {{$viewerType}}>;
     {{ end }}
 
-    sourceEnt(id: {{useImport "ID"}}) {
+    sourceEnt(id: {{useTypeImport "ID"}}) {
       {{if $sourcePolymorphic -}}
         return {{useImport "loadEnt"}}(this.viewer, id, this.getSourceLoadEntOptions());
       {{ else -}}
@@ -113,7 +114,7 @@
       {{$srcNode := useImport $edge.GetSourceNodeName -}}
       {{$node := useImport $edge.GetNodeInfo.Node -}}
       {{$srcPoly := $edge.SourceIsPolymorphic -}}
-      {{$srcType := printf "%s | %s " "TEnt" (useImport "ID") }}
+      {{$srcType := printf "%s | %s " "TEnt" (useTypeImport "ID") }}
       {{ if eq $srcNode "Ent" -}}
         {{$srcNode = printf "%s<%s>" $srcNode $viewerType -}}
       {{ end -}}
@@ -128,7 +129,7 @@
 
       export class {{$name}}<TEnt extends {{$srcNode}} = {{$srcNode}}> extends {{useImport "CustomEdgeQueryBase"}}<TEnt, {{$node}}, {{$viewerType}}> {
       {{ if $srcPoly -}}
-        constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string | {{useImport "OrderBy"}}) {
+        constructor(viewer: {{$viewerType}}, private srcEnt: {{$srcType }}, sortColumn?: string | {{useTypeImport "OrderBy"}}) {
           {{ if $edge.GetOrderBy }}
               if (sortColumn === undefined) {
               sortColumn = [
@@ -150,7 +151,7 @@
           super(viewer, {
             src: srcEnt, 
       {{ else -}}
-        constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string | {{useImport "OrderBy"}}) {
+        constructor(viewer: {{$viewerType}}, src: {{$srcType }}, sortColumn?: string | {{useTypeImport "OrderBy"}}) {
           {{ if $edge.GetOrderBy }}
               if (sortColumn === undefined) {
               sortColumn = [
@@ -189,10 +190,10 @@
         }
 
         {{ if $srcPoly -}}
-          async sourceEnt(_id: ID) {
+          async sourceEnt(_id: {{useTypeImport "ID"}}) {
             return this.srcEnt;
         {{ else -}}
-          async sourceEnt(id: ID) {
+          async sourceEnt(id: {{useTypeImport "ID"}}) {
             return {{$srcNode}}.load(this.viewer, id);
         {{ end -}}
         }

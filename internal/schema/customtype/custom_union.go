@@ -2,6 +2,7 @@ package customtype
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
@@ -43,6 +44,7 @@ func (cu *CustomUnion) GetTypeDeclaration() (string, error) {
 	for idx, ci := range cu.Interfaces {
 		types[idx] = ci.TSType
 	}
+	sort.Strings(types)
 
 	return fmt.Sprintf("export type %s = %s", cu.TSType, strings.Join(types, " | ")), nil
 }

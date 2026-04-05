@@ -1,4 +1,5 @@
-{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo"}}
+{{reserveImport "graphql" "GraphQLSchema" "GraphQLObjectType" "GraphQLID" "GraphQLString" "GraphQLEnumType" "GraphQLNonNull" "GraphQLList" "GraphQLFloat" "GraphQLInt"}}
+{{reserveTypeImport "graphql" "GraphQLFieldConfig" "GraphQLFieldConfigMap" "GraphQLResolveInfo"}}
 
 {{ range $field := .RootFields -}} 
   {{reserveImport $field.ImportPath $field.Type -}}

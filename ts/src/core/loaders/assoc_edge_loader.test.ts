@@ -4,7 +4,8 @@ import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { AssocEdge, getDefaultLimit } from "../ent";
-import { buildQuery } from "../query_impl";
+import { getContextCacheKey } from "../context";
+import { buildQuery, OrderBy } from "../query_impl";
 import {
   clearGlobalSchema,
   setGlobalSchema,
@@ -37,7 +38,11 @@ import {
   addEdge,
 } from "../../testutils/fake_data/test_helpers";
 
-import { AssocEdgeLoaderFactory, AssocLoader } from "./assoc_edge_loader";
+import {
+  AssocDirectEdgeLoader,
+  AssocEdgeLoaderFactory,
+  AssocLoader,
+} from "./assoc_edge_loader";
 import { testEdgeGlobalSchema } from "../../testutils/test_edge_global_schema";
 import { SimpleAction } from "../../testutils/builder";
 import { convertDate } from "../convert";
@@ -198,6 +203,58 @@ describe("sqlite global ", () => {
 });
 
 function commonTests() {
+  describe("configurable loader cache keys", () => {
+    test("defaulted options reuse the same loader", () => {
+      const localCtx = new TestContext();
+      const loader1 = userToContactsCustomLoader.createConfigurableLoader(
+        {},
+        localCtx,
+      );
+      const loader2 = userToContactsCustomLoader.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              direction: "DESC",
+              column: "time",
+            },
+          ],
+          limit: getDefaultLimit(),
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+    });
+
+    test("different orderby objects create different loaders", () => {
+      const localCtx = new TestContext();
+      const loader1 = userToContactsCustomLoader.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "time",
+              direction: "DESC",
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader2 = userToContactsCustomLoader.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "time",
+              direction: "ASC",
+            },
+          ],
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+  });
+
   test("multi-ids. with context", async () => {
     await testMultiQueryDataAvail(
       (opts) => getConfigurableContactsLoader(true, opts),
@@ -402,6 +459,26 @@ function commonTests() {
     verifyGroupedCacheHit([user.id]);
   });
 
+  test("with context. cache hit across loader paths", async () => {
+    const [user, contacts] = await createAllContacts();
+    ml.clear();
+    const loader = getNewContactsLoader();
+    const edges = await loader.load(user.id);
+    verifyUserToContactEdges(user, edges, contacts.reverse());
+    verifyMultiCountQueryCacheMiss([user.id]);
+
+    ml.clear();
+    const directLoader = new AssocDirectEdgeLoader(
+      EdgeType.UserToContacts,
+      AssocEdge,
+      undefined,
+      ctx,
+    );
+    const edges2 = await directLoader.load(user.id);
+    expect(edges2).toStrictEqual(edges);
+    verifyDefaultContextCacheHit([user.id]);
+  });
+
   test("without context. cache hit single id", async () => {
     const [user, contacts] = await createAllContacts();
     ml.clear();
@@ -465,6 +542,45 @@ function commonTests() {
     expect(edges).toStrictEqual(edges2);
 
     verifyMultiCountQueryCacheMiss([id]);
+  });
+
+  test("direct loader with clause memoizes same id", async () => {
+    const [user] = await createAllContacts({ ctx });
+    const loader = getConfigurableContactsLoader(true, {
+      clause: clause.Greater("time", new Date(0).toISOString()),
+    });
+    ml.clear();
+
+    const [edges1, edges2] = await Promise.all([
+      loader.load(user.id),
+      loader.load(user.id),
+    ]);
+
+    ml.verifyNoErrors();
+    expect(edges1.length).toBeGreaterThan(0);
+    expect(edges1).toStrictEqual(edges2);
+    const queryLogs = ml.logs.filter((log) => log.query);
+    expect(queryLogs.length).toBe(1);
+  });
+
+  test("direct loader with clause queries different ids separately", async () => {
+    const [user1] = await createAllContacts({ ctx });
+    const [user2] = await createAllContacts({ ctx });
+    const loader = getConfigurableContactsLoader(true, {
+      clause: clause.Greater("time", new Date(0).toISOString()),
+    });
+    ml.clear();
+
+    const [edges1, edges2] = await Promise.all([
+      loader.load(user1.id),
+      loader.load(user2.id),
+    ]);
+
+    ml.verifyNoErrors();
+    expect(edges1.length).toBeGreaterThan(0);
+    expect(edges2.length).toBeGreaterThan(0);
+    const queryLogs = ml.logs.filter((log) => log.query);
+    expect(queryLogs.length).toBe(2);
   });
 
   async function verifyTwoWayEdges(
@@ -1015,7 +1131,45 @@ function verifyGroupedCacheHit(ids: ID[]) {
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
       "dataloader-cache-hit": ids[idx],
-      "tableName": "user_to_contacts_table",
+      tableName: "user_to_contacts_table",
+    });
+  });
+}
+
+function verifyDefaultContextCacheHit(ids: ID[]) {
+  expect(ml.logs.length).toBe(ids.length);
+  ml.logs.forEach((log, idx) => {
+    const fields = [
+      "id1",
+      "id1_type",
+      "edge_type",
+      "id2",
+      "id2_type",
+      "time",
+      "data",
+      __hasGlobalSchema() ? "deleted_at" : "",
+    ].filter((v) => v !== "");
+    const cls = clause.AndOptional(
+      clause.Eq("id1", ids[idx]),
+      clause.Eq("edge_type", EdgeType.UserToContacts),
+      __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
+    );
+    const orderby: OrderBy = [
+      {
+        column: "time",
+        direction: "DESC",
+      },
+    ];
+    const cacheKey = getContextCacheKey({
+      tableName: "user_to_contacts_table",
+      fields,
+      clause: cls,
+      orderby,
+      limit: getDefaultLimit(),
+    });
+    expect(log).toStrictEqual({
+      "cache-hit": cacheKey,
+      tableName: "user_to_contacts_table",
     });
   });
 }
@@ -1086,11 +1240,24 @@ function verifyMultiCountQueryOffset(
       clause.Less("time", contacts[0].createdAt.toISOString()),
       __hasGlobalSchema() ? clause.Eq("deleted_at", null) : undefined,
     );
+    const orderby: OrderBy = [
+      {
+        column: "time",
+        direction: "DESC",
+      },
+    ];
     if (cachehit) {
       // have queried before. we don't hit db again
+      const cacheKey = getContextCacheKey({
+        tableName: "user_to_contacts_table",
+        fields,
+        clause: cls,
+        orderby,
+        limit: 1,
+      });
       expect(log).toStrictEqual({
-        "cache-hit": [...fields, cls.instanceKey(), "time DESC"].join(","),
-        "tableName": "user_to_contacts_table",
+        "cache-hit": cacheKey,
+        tableName: "user_to_contacts_table",
       });
 
       return;
@@ -1099,12 +1266,7 @@ function verifyMultiCountQueryOffset(
       tableName: "user_to_contacts_table",
       fields: fields,
       clause: cls,
-      orderby: [
-        {
-          column: "time",
-          direction: "DESC",
-        },
-      ],
+      orderby: orderby,
       limit: 1,
     });
     expect(log).toStrictEqual({

@@ -899,7 +899,7 @@ test("join on multiple", async () => {
       "RETURNING *",
     );
 
-    console.assert(row, "row should be created");
+    console.assert(!!row, "row should be created");
 
     await createRowForTest({
       tableName: tableName3,

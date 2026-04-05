@@ -2,16 +2,18 @@ package auto_schema
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+	"github.com/lolopinto/ent/internal/devschema"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 const WHICH_ERROR = "Warning: the which -a system utility is required for Pipenv to find Python installations properly.\n  Please install it."
@@ -32,6 +34,17 @@ func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...str
 
 	if cfg.DebugMode() {
 		args = append(args, "--debug")
+	}
+
+	schemaPath := pathToConfigs
+	if absPath, err := filepath.Abs(pathToConfigs); err == nil {
+		schemaPath = absPath
+	}
+	if res, err := devschema.Resolve(nil, devschema.Options{SchemaPath: schemaPath}); err != nil {
+		return err
+	} else if res != nil && res.Enabled && res.SchemaName != "" {
+		args = append(args, fmt.Sprintf("--db_schema=%s", res.SchemaName))
+		args = append(args, fmt.Sprintf("--db_schema_include_public=%t", res.IncludePublic))
 	}
 
 	if local {
@@ -62,7 +75,7 @@ func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...str
 	errMsg := trimErrorMsg(&berr, local)
 	if err != nil {
 		if len(errMsg) != 0 {
-			return errors.Wrap(err, errMsg)
+			return fmt.Errorf("%s: %w", errMsg, err)
 		}
 		return err
 	}

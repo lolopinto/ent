@@ -11,10 +11,10 @@ import (
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
+	"github.com/lolopinto/ent/internal/devschema"
 	"github.com/lolopinto/ent/internal/schema/change"
-	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
-	"github.com/pkg/errors"
+	"github.com/lolopinto/ent/internal/util"
 	"gopkg.in/yaml.v3"
 )
 
@@ -37,9 +37,8 @@ type Config struct {
 	dummyWrite    bool
 	changes       change.ChangeMap
 	forcePrettier bool
-	// keep track of changed ts files to pass to prettier
+	// keep track of changed ts files to pass to the formatter
 	changedTSFiles []string
-	inputConfig    *input.Config
 }
 
 // Clone doesn't clone changes and changedTSFiles
@@ -55,7 +54,6 @@ func (cfg *Config) Clone() *Config {
 		debugMode:             cfg.debugMode,
 		writeAll:              cfg.writeAll,
 		useChanges:            cfg.useChanges,
-		inputConfig:           cfg.inputConfig,
 	}
 }
 
@@ -71,10 +69,6 @@ func (cfg *Config) OverrideGraphQLMutationName(mutationName codegenapi.GraphQLMu
 	}
 }
 
-func (cfg *Config) SetInputConfig(inputCfg *input.Config) {
-	cfg.inputConfig = inputCfg
-}
-
 func NewConfig(configPath, modulePath string) (*Config, error) {
 	// TODO all this logic is dependent on passing "models/configs". TODO fix it
 	rootPath, err := filepath.Abs(configPath)
@@ -86,6 +80,31 @@ func NewConfig(configPath, modulePath string) (*Config, error) {
 	absPathToRoot := filepath.Join(rootPath, "..", "..")
 	c, err := parseConfig(absPathToRoot)
 	if err != nil {
+		return nil, err
+	}
+	var devSchemaCfg *devschema.Config
+	if c != nil && c.DevSchema != nil {
+		pruneEnabled := false
+		pruneDays := 0
+		if c.DevSchema.Prune != nil {
+			pruneEnabled = c.DevSchema.Prune.Enabled
+			pruneDays = c.DevSchema.Prune.Days
+		}
+		devSchemaCfg = &devschema.Config{
+			Enabled:        c.DevSchema.Enabled,
+			SchemaName:     c.DevSchema.SchemaName,
+			IncludePublic:  c.DevSchema.IncludePublic,
+			IgnoreBranches: c.DevSchema.IgnoreBranches,
+			PruneEnabled:   pruneEnabled,
+			PruneDays:      pruneDays,
+		}
+	} else {
+		devSchemaCfg = &devschema.Config{}
+	}
+	if _, err := devschema.WriteStateFromConfig(devSchemaCfg, devschema.Options{
+		RepoRoot:   absPathToRoot,
+		SchemaPath: rootPath,
+	}); err != nil {
 		return nil, err
 	}
 
@@ -295,11 +314,27 @@ func (cfg *Config) DummyWrite() bool {
 	return cfg.dummyWrite
 }
 
-func (cfg *Config) GetBiomeConfig() *input.BiomeConfig {
-	if cfg.inputConfig == nil {
-		return nil
+func (cfg *Config) GetBiomeConfigPath() (string, error) {
+	for _, name := range []string{"biome.json", "biome.jsonc"} {
+		p := filepath.Join(cfg.GetAbsPathToRoot(), name)
+		fi, err := os.Stat(p)
+		if err == nil && !fi.IsDir() {
+			return p, nil
+		}
+		if err != nil && !os.IsNotExist(err) {
+			return "", err
+		}
 	}
-	return cfg.inputConfig.BiomeConfig
+
+	p := util.GetAbsolutePath("../../ts/biome.json")
+	fi, err := os.Stat(p)
+	if err != nil {
+		return "", err
+	}
+	if fi.IsDir() {
+		return "", fmt.Errorf("default biome config path %s is a directory", p)
+	}
+	return p, nil
 }
 
 func (cfg *Config) SetDummyWrite(val bool) {
@@ -397,6 +432,13 @@ func (cfg *Config) DatabaseToCompareTo() string {
 		return codegen.DatabaseToCompareTo
 	}
 	return ""
+}
+
+func (cfg *Config) DevSchema() *DevSchemaConfig {
+	if cfg.config != nil {
+		return cfg.config.DevSchema
+	}
+	return nil
 }
 
 func (cfg *Config) FieldPrivacyEvaluated() codegenapi.FieldPrivacyEvaluated {
@@ -516,12 +558,6 @@ var defaultArgs = []string{
 	"--end-of-line", "lf",
 }
 
-// options: https://biomejs.dev/reference/cli/#biome
-// everything else is sticking with default...
-var defaultBiomeArgs = []string{
-	"--indent-style", "space",
-}
-
 func (cfg *Config) getPrettierArgs() [][]string {
 	// nothing to do here
 	if cfg.useChanges && len(cfg.changedTSFiles) == 0 {
@@ -612,7 +648,7 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 		}
 		f, err := os.Open(p)
 		if err != nil {
-			return nil, errors.Wrap(err, "error opening file")
+			return nil, fmt.Errorf("error opening file: %w", err)
 		}
 		b, err := io.ReadAll(f)
 		if err != nil {
@@ -633,6 +669,7 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 type ConfigurableConfig struct {
 	Codegen                            *CodegenConfig           `yaml:"codegen"`
 	DatabaseMigration                  *DatabaseMigrationConfig `yaml:"databaseMigration"`
+	DevSchema                          *DevSchemaConfig         `yaml:"devSchema"`
 	CustomGraphQLJSONPath              string                   `yaml:"customGraphQLJSONPath"`
 	DynamicScriptCustomGraphQLJSONPath string                   `yaml:"dynamicScriptCustomGraphQLJSONPath"`
 	GlobalSchemaPath                   string                   `yaml:"globalSchemaPath"`
@@ -642,6 +679,7 @@ func (cfg *ConfigurableConfig) Clone() *ConfigurableConfig {
 	return &ConfigurableConfig{
 		Codegen:                            cloneCodegen(cfg.Codegen),
 		DatabaseMigration:                  cloneDatabaseMigration(cfg.DatabaseMigration),
+		DevSchema:                          cloneDevSchema(cfg.DevSchema),
 		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
 		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
 		GlobalSchemaPath:                   cfg.GlobalSchemaPath,
@@ -688,6 +726,13 @@ func cloneCodegen(cfg *CodegenConfig) *CodegenConfig {
 }
 
 func cloneDatabaseMigration(cfg *DatabaseMigrationConfig) *DatabaseMigrationConfig {
+	if cfg == nil {
+		return nil
+	}
+	return cfg.Clone()
+}
+
+func cloneDevSchema(cfg *DevSchemaConfig) *DevSchemaConfig {
 	if cfg == nil {
 		return nil
 	}
@@ -788,5 +833,41 @@ func (cfg *DatabaseMigrationConfig) Clone() *DatabaseMigrationConfig {
 	return &DatabaseMigrationConfig{
 		CustomSQLInclude: cfg.CustomSQLInclude,
 		CustomSQLExclude: cfg.CustomSQLExclude,
+	}
+}
+
+type DevSchemaConfig struct {
+	Enabled        bool                  `yaml:"enabled"`
+	SchemaName     string                `yaml:"schemaName"`
+	IncludePublic  bool                  `yaml:"includePublic"`
+	IgnoreBranches []string              `yaml:"ignoreBranches"`
+	Prune          *DevSchemaPruneConfig `yaml:"prune"`
+}
+
+func (cfg *DevSchemaConfig) Clone() *DevSchemaConfig {
+	if cfg == nil {
+		return nil
+	}
+	return &DevSchemaConfig{
+		Enabled:        cfg.Enabled,
+		SchemaName:     cfg.SchemaName,
+		IncludePublic:  cfg.IncludePublic,
+		IgnoreBranches: cfg.IgnoreBranches,
+		Prune:          cloneDevSchemaPrune(cfg.Prune),
+	}
+}
+
+type DevSchemaPruneConfig struct {
+	Enabled bool `yaml:"enabled"`
+	Days    int  `yaml:"days"`
+}
+
+func cloneDevSchemaPrune(cfg *DevSchemaPruneConfig) *DevSchemaPruneConfig {
+	if cfg == nil {
+		return nil
+	}
+	return &DevSchemaPruneConfig{
+		Enabled: cfg.Enabled,
+		Days:    cfg.Days,
 	}
 }

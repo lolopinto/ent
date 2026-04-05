@@ -1,16 +1,13 @@
-import {
-  EditEmailAddressActionBase,
-  EditEmailAddressInput,
-} from "../../generated/user/actions/edit_email_address_action_base";
+import { EditEmailAddressActionBase } from "../../generated/user/actions/edit_email_address_action_base";
+import type { EditEmailAddressInput } from "../../generated/user/actions/edit_email_address_action_base";
 import { UserBuilder } from "../../generated/user/actions/user_builder";
 import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
 import { User } from "../..";
 import { EditUserPrivacy } from "./edit_user_privacy";
 
-export { EditEmailAddressInput };
 import { ExampleViewer } from "../../../viewer/viewer";
-import { Validator, Trigger } from "@snowtop/ent/action";
-
+import type { Validator, Trigger } from "@snowtop/ent/action";
+export type { EditEmailAddressInput };
 class NewAuthCode {
   private code: string = "";
 

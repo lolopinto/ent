@@ -26,6 +26,13 @@ func (sm *ScyncedMap[K, V]) Store(key K, value V) {
 	sm.m[key] = value
 }
 
+func (sm *ScyncedMap[K, V]) Update(key K, update func(value V, ok bool) V) {
+	sm.mutex.Lock()
+	defer sm.mutex.Unlock()
+	value, ok := sm.m[key]
+	sm.m[key] = update(value, ok)
+}
+
 func (sm *ScyncedMap[K, V]) Keys() []K {
 	sm.mutex.RLock()
 	defer sm.mutex.RUnlock()

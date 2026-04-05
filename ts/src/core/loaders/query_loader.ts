@@ -1,5 +1,4 @@
 import DataLoader from "dataloader";
-import memoizee from "memoizee";
 import {
   Context,
   Data,
@@ -7,6 +6,7 @@ import {
   Loader,
   LoaderFactory,
   PrimableLoader,
+  SelectBaseDataOptions,
 } from "../base";
 import * as clause from "../clause";
 import {
@@ -15,9 +15,16 @@ import {
   loadRows,
   performRawQuery,
 } from "../ent";
-import { logEnabled } from "../logger";
-import { OrderBy } from "../query_impl";
-import { CacheMap, getCustomLoader, getLoader } from "./loader";
+import { stableStringify } from "../cache_utils";
+import { memoizeNoArgs } from "../memoize";
+import { getOrderByKey, OrderBy, orderByHasExpressions } from "../query_impl";
+import {
+  createLoaderCacheMap,
+  InstrumentedDataLoader,
+  getCustomLoader,
+  getLoader,
+  getLoaderMaxBatchSize,
+} from "./loader";
 import { ObjectLoaderFactory } from "./object_loader";
 
 function getOrderByLocal(
@@ -39,6 +46,7 @@ async function simpleCase<K extends any>(
   options: QueryOptions,
   id: K,
   queryOptions?: EdgeQueryableDataOptions,
+  context?: Context,
 ) {
   let cls: clause.Clause;
   if (options.groupCol) {
@@ -61,74 +69,94 @@ async function simpleCase<K extends any>(
     clause: cls,
     orderby: getOrderByLocal(options, queryOptions),
     limit: queryOptions?.limit || getDefaultLimit(),
+    context,
   });
 }
 
 function createLoader<K extends any>(
   options: QueryOptions,
   queryOptions?: EdgeQueryableDataOptions,
+  context?: Context,
 ): DataLoader<K, Data[]> {
-  const loaderOptions: DataLoader.Options<K, Data[]> = {};
+  const loaderName = options.groupCol
+    ? `queryLoader:${options.tableName}:${options.groupCol}`
+    : options.clause
+      ? `queryLoader:${options.tableName}:${options.clause.instanceKey()}`
+      : `queryLoader:${options.tableName}`;
+  const loaderOptions: DataLoader.Options<K, Data[]> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+    cacheMap: createLoaderCacheMap(options),
+  };
 
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap(options);
-  }
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (keys: K[]) => {
+      if (!keys.length) {
+        return [];
+      }
 
-  return new DataLoader(async (keys: K[]) => {
-    if (!keys.length) {
-      return [];
-    }
+      // keep query simple if we're only fetching for one id
+      // or can't group because no groupCol...
+      if (keys.length == 1 || !options.groupCol) {
+        const rows = await simpleCase(options, keys[0], queryOptions, context);
+        return [rows];
+      }
 
-    // keep query simple if we're only fetching for one id
-    // or can't group because no groupCol...
-    if (keys.length == 1 || !options.groupCol) {
-      const rows = await simpleCase(options, keys[0], queryOptions);
-      return [rows];
-    }
+      let m = new Map<K, number>();
+      let result: Data[][] = [];
+      for (let i = 0; i < keys.length; i++) {
+        result.push([]);
+        // store the index....
+        m.set(keys[i], i);
+      }
 
-    let m = new Map<K, number>();
-    let result: Data[][] = [];
-    for (let i = 0; i < keys.length; i++) {
-      result.push([]);
-      // store the index....
-      m.set(keys[i], i);
-    }
-
-    const col = options.groupCol;
-    let extraClause: clause.Clause | undefined;
-    if (options.clause && queryOptions?.clause) {
-      extraClause = clause.And(options.clause, queryOptions.clause);
-    } else if (options.clause) {
-      extraClause = options.clause;
-    } else if (queryOptions?.clause) {
-      extraClause = queryOptions.clause;
-    }
-
-    const [query, cls2] = buildGroupQuery({
-      tableName: options.tableName,
-      fields: options.fields,
-      values: keys,
-      orderby: getOrderByLocal(options, queryOptions),
-      limit: queryOptions?.limit || getDefaultLimit(),
-      groupColumn: col,
-      clause: extraClause,
-    });
-
-    const rows = await performRawQuery(query, cls2.values(), cls2.logValues());
-    for (const row of rows) {
-      const srcID = row[col];
-      const idx = m.get(srcID);
-      delete row.row_num;
-      if (idx === undefined) {
+      const col = options.groupCol;
+      const effectiveOrderBy = getOrderByLocal(options, queryOptions);
+      if (orderByHasExpressions(effectiveOrderBy)) {
         throw new Error(
-          `malformed query. got ${srcID} back but didn't query for it`,
+          "grouped query loaders do not support computed order expressions",
         );
       }
-      result[idx].push(row);
-    }
-    return result;
-  }, loaderOptions);
+      let extraClause: clause.Clause | undefined;
+      if (options.clause && queryOptions?.clause) {
+        extraClause = clause.And(options.clause, queryOptions.clause);
+      } else if (options.clause) {
+        extraClause = options.clause;
+      } else if (queryOptions?.clause) {
+        extraClause = queryOptions.clause;
+      }
+
+      const [query, cls2] = buildGroupQuery({
+        tableName: options.tableName,
+        fields: options.fields,
+        values: keys,
+        orderby: effectiveOrderBy,
+        limit: queryOptions?.limit || getDefaultLimit(),
+        groupColumn: col,
+        clause: extraClause,
+      });
+
+      const rows = await performRawQuery(
+        query,
+        cls2.values(),
+        cls2.logValues(),
+      );
+      for (const row of rows) {
+        const srcID = row[col];
+        const idx = m.get(srcID);
+        delete row.row_num;
+        if (idx === undefined) {
+          throw new Error(
+            `malformed query. got ${srcID} back but didn't query for it`,
+          );
+        }
+        result[idx].push(row);
+      }
+      return result;
+    },
+    loaderOptions,
+    options.tableName,
+  );
 }
 
 class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
@@ -141,7 +169,7 @@ class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
     private queryOptions?: EdgeQueryableDataOptions,
     public context?: Context,
   ) {
-    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+    this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
 
   private initPrime() {
@@ -160,7 +188,12 @@ class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
   }
 
   async load(id: K): Promise<Data[]> {
-    const rows = await simpleCase(this.options, id, this.queryOptions);
+    const rows = await simpleCase(
+      this.options,
+      id,
+      this.queryOptions,
+      this.context,
+    );
     if (this.context) {
       this.memoizedInitPrime();
       if (this.primedLoaders) {
@@ -194,9 +227,9 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
     private queryOptions?: EdgeQueryableDataOptions,
   ) {
     if (context) {
-      this.loader = createLoader(options, queryOptions);
+      this.loader = createLoader(options, queryOptions, context);
     }
-    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+    this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
 
   private initPrime() {
@@ -231,7 +264,7 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
       return rows;
     }
 
-    return simpleCase(this.options, id, this.queryOptions);
+    return simpleCase(this.options, id, this.queryOptions, this.context);
   }
 
   clearAll() {
@@ -240,13 +273,7 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
 }
 
 interface QueryOptions {
-  fields: (
-    | string
-    | {
-        alias: string;
-        column: string;
-      }
-  )[];
+  fields: SelectBaseDataOptions["fields"];
   tableName: string; // or function for assoc_edge. come back to it
   // if provided, we'll group queries to the database via this key and this will be the unique id we're querying for
   // using window functions or not
@@ -306,11 +333,40 @@ export class QueryLoaderFactory<K extends any>
     options: EdgeQueryableDataOptions,
     context?: Context,
   ) {
-    if (options.clause || !context) {
+    if (!context) {
       return new QueryDirectLoader(queryOptions, options, context);
     }
 
-    const key = `${name}:limit:${options.limit}:orderby:${options.orderby}`;
+    if (options.clause) {
+      const effectiveOrderBy = getOrderByLocal(queryOptions, options);
+      const effectiveLimit = options.limit || getDefaultLimit();
+      const disableTransformations = options.disableTransformations ?? false;
+      const keyParts = [
+        name,
+        `clause:${options.clause.instanceKey()}`,
+        queryOptions.clause
+          ? `baseClause:${queryOptions.clause.instanceKey()}`
+          : undefined,
+        `limit:${effectiveLimit}`,
+        `orderby:${getOrderByKey(effectiveOrderBy)}`,
+        `disableTransformations:${disableTransformations}`,
+      ];
+      const key = keyParts
+        .filter((part): part is string => Boolean(part))
+        .join(":");
+      return getCustomLoader(
+        key,
+        () => new QueryDirectLoader(queryOptions, options, context),
+        context,
+      );
+    }
+
+    const effectiveOrderBy = getOrderByLocal(queryOptions, options);
+    const effectiveLimit = options.limit || getDefaultLimit();
+    const disableTransformations = options.disableTransformations ?? false;
+    const key = `${name}:limit:${effectiveLimit}:orderby:${getOrderByKey(
+      effectiveOrderBy,
+    )}:disableTransformations:${disableTransformations}`;
     return getCustomLoader(
       key,
       () => new QueryLoader(queryOptions, context, options),

@@ -1,4 +1,3 @@
-import { cosmiconfigSync } from "cosmiconfig";
 import { PACKAGE } from "../core/const";
 import {
   Pattern,
@@ -12,6 +11,7 @@ import {
 import {
   ActionField,
   Type,
+  DBExtension,
   FieldMap,
   GlobalSchema,
   EdgeIndex,
@@ -524,10 +524,6 @@ interface Result {
   schemas: schemasDict;
   patterns: patternsDict;
   globalSchema?: ProcessedGlobalSchema;
-  config?: {
-    // TODO rename this to biome eventually...
-    rome?: BiomeConfig;
-  };
 }
 
 declare type PotentialSchemas = {
@@ -664,63 +660,12 @@ export async function parseSchema(
 
     schemas[key] = processedSchema;
   }
-  const biome = translatePrettier();
-
   return {
     schemas,
     patterns: processPatterns.patternsDict,
     globalSchema: parsedGlobalSchema,
-    config: {
-      rome: biome,
-    },
   };
 }
-
-interface BiomeConfig {
-  indentStyle?: string;
-  lineWidth?: number;
-  indentSize?: number;
-  quoteStyle?: string;
-  quoteProperties?: string;
-  trailingComma?: string;
-}
-
-function translatePrettier(): BiomeConfig | undefined {
-  const r = cosmiconfigSync("prettier").search();
-  if (!r) {
-    return;
-  }
-  const ret: BiomeConfig = {};
-  if (r.config.printWidth !== undefined) {
-    ret.lineWidth = parseInt(r.config.printWidth);
-  }
-  if (r.config.useTabs) {
-    ret.indentStyle = "tab";
-  } else {
-    ret.indentStyle = "space";
-  }
-  if (r.config.tabWidth !== undefined) {
-    ret.indentSize = parseInt(r.config.tabWidth);
-  }
-  if (r.config.singleQuote) {
-    ret.quoteStyle = "single";
-  } else {
-    ret.quoteStyle = "double";
-  }
-  if (r.config.quoteProps !== undefined) {
-    if (r.config.quoteProps === "consistent") {
-      // biome doesn't support this
-      ret.quoteProperties = "as-needed";
-    } else {
-      ret.quoteProperties = r.config.quoteProps;
-    }
-  }
-  if (r.config.trailingComma !== undefined) {
-    ret.trailingComma = r.config.trailingComma;
-  }
-  return ret;
-}
-
 interface ProcessedGlobalSchema {
   globalEdges: ProcessedAssocEdge[];
   extraEdgeFields: ProcessedField[];
@@ -728,6 +673,33 @@ interface ProcessedGlobalSchema {
   init?: boolean;
   transformsEdges?: boolean;
   globalFields?: ProcessedField[];
+  dbExtensions?: DBExtension[];
+}
+
+function normalizeProvisionedBy(extension: DBExtension): "ent" | "external" {
+  if (
+    extension.provisionedBy === "ent" ||
+    extension.provisionedBy === "external"
+  ) {
+    return extension.provisionedBy;
+  }
+  if (extension.provisionedBy) {
+    throw new Error(
+      `invalid provisionedBy ${extension.provisionedBy} for db extension ${extension.name}`,
+    );
+  }
+  return "ent";
+}
+
+function processDBExtensions(src: DBExtension[]): DBExtension[] {
+  return src
+    .map((extension) => ({
+      ...extension,
+      provisionedBy: normalizeProvisionedBy(extension),
+      runtimeSchemas: extension.runtimeSchemas || [],
+      dropCascade: extension.dropCascade === true,
+    }))
+    .sort((lhs, rhs) => lhs.name.localeCompare(rhs.name));
 }
 
 async function parseGlobalSchema(
@@ -741,7 +713,8 @@ async function parseGlobalSchema(
       !!s.edgeIndices ||
       s.transformEdgeRead !== undefined ||
       s.transformEdgeWrite !== undefined ||
-      s.fields !== undefined,
+      s.fields !== undefined ||
+      !!s.dbExtensions?.length,
     transformsEdges: !!s.transformEdgeRead || !!s.transformEdgeWrite,
   };
 
@@ -759,6 +732,10 @@ async function parseGlobalSchema(
 
   if (s.fields) {
     ret.globalFields = await processFields(s.fields);
+  }
+
+  if (s.dbExtensions) {
+    ret.dbExtensions = processDBExtensions(s.dbExtensions);
   }
 
   return ret;

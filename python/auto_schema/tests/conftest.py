@@ -9,7 +9,6 @@ import uuid
 import tempfile
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects import postgresql
-from dateutil import parser
 import sqlalchemy as sa
 
 from auto_schema import runner
@@ -40,13 +39,24 @@ class Postgres:
         self._conns = []
         self._engines = []
 
+    def _connect_args(self):
+        # avoid hanging on unreachable postgres in CI/local
+        timeout = os.getenv("AUTO_SCHEMA_CONNECT_TIMEOUT", "3")
+        try:
+            timeout_val = int(timeout)
+        except ValueError:
+            timeout_val = 3
+        return {"connect_timeout": timeout_val}
+
     def _get_url(self, _schema_path):
-        return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
+        url = os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
+        return url
 
     def create_connection(self, schema_path) -> ConnInfo:
         if self._globalConnection is None:
             engine = sa.create_engine(self._get_url(schema_path),
-                                      isolation_level='AUTOCOMMIT')
+                                      isolation_level='AUTOCOMMIT',
+                                      connect_args=self._connect_args())
             self._globalEngine = engine
             self._globalConnection = engine.connect()
             self._globalConnection.execute(
@@ -58,7 +68,7 @@ class Postgres:
         url = ("%s/%s" %
                (self._get_url(schema_path), db))
 
-        engine = sa.create_engine(url)
+        engine = sa.create_engine(url, connect_args=self._connect_args())
         self._engines.append(engine)
 
         conn = engine.connect()
@@ -140,7 +150,7 @@ def new_test_runner(request):
 
     request.addfinalizer(dialect.get_finalizer())
 
-    def _make_new_test_runner(metadata, prev_runner=None, new_database=False) -> runner.Runner:
+    def _make_new_test_runner(metadata, prev_runner=None, new_database=False, args_override=None) -> runner.Runner:
         if new_database:
             assert prev_runner is None
 
@@ -172,6 +182,8 @@ def new_test_runner(request):
         args = {
             'engine': info.url,
         }
+        if args_override:
+            args.update(args_override)
         r = runner.Runner(metadata, info.engine, info.connection, schema_path, args=args)
 
         def delete_path():
@@ -365,7 +377,7 @@ def timestamp_decimal():
 
 
 def timestamp_decimal_python_utc():
-    return parser.parse('2022-09-19T17:07:39.654Z').isoformat()
+    return datetime.datetime.fromisoformat('2022-09-19T17:07:39.654+00:00').isoformat()
 
 
 def metadata_with_server_default_changed_timestamp_decimal(metadata):
@@ -1131,14 +1143,12 @@ def metadata_with_foreign_key_to_same_table(request):
 
 
 @ pytest.fixture
-@ pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_two_tables(metadata_with_table):
     messages_table(metadata_with_table)
     return metadata_with_table
 
 
 @ pytest.fixture
-@ pytest.mark.usefixtures("metadata_with_table")
 def metadata_with_foreign_key(metadata_with_table):
     contacts_table(metadata_with_table)
     return metadata_with_table

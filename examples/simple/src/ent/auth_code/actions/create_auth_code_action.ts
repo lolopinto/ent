@@ -1,21 +1,21 @@
-import {
-  CreateAuthCodeActionBase,
+import { CreateAuthCodeActionBase } from "../../generated/auth_code/actions/create_auth_code_action_base";
+import type {
   AuthCodeCreateInput,
   CreateAuthCodeActionTriggers,
   CreateAuthCodeActionObservers,
 } from "../../generated/auth_code/actions/create_auth_code_action_base";
 import { AuthCodeBuilder } from "../../generated/auth_code/actions/auth_code_builder";
 
-export { AuthCodeCreateInput };
 import { ExampleViewer } from "../../../viewer/viewer";
 import { AuthCode, UserStatistics } from "../../";
-import { Validator } from "@snowtop/ent/action";
-import { Data, UpdateOperation, query } from "@snowtop/ent";
-import { TransformedUpdateOperation } from "@snowtop/ent";
+import type { Validator } from "@snowtop/ent/action";
+import { query } from "@snowtop/ent";
+import type { Data, UpdateOperation } from "@snowtop/ent";
+import type { TransformedUpdateOperation } from "@snowtop/ent";
 import { SQLStatementOperation } from "@snowtop/ent";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
 import EditUserStatisticsAction from "src/ent/user_statistics/actions/edit_user_statistics_action";
-
+export type { AuthCodeCreateInput };
 // we're only writing this once except with --force and packageName provided
 export default class CreateAuthCodeAction extends CreateAuthCodeActionBase {
   getValidators(): Validator<

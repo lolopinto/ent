@@ -1,16 +1,13 @@
 import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
-import {
-  EditPhoneNumberActionBase,
-  EditPhoneNumberInput,
-} from "../../generated/user/actions/edit_phone_number_action_base";
+import { EditPhoneNumberActionBase } from "../../generated/user/actions/edit_phone_number_action_base";
+import type { EditPhoneNumberInput } from "../../generated/user/actions/edit_phone_number_action_base";
 import { UserBuilder } from "../../generated/user/actions/user_builder";
 import { User } from "../..";
 import { EditUserPrivacy } from "./edit_user_privacy";
 
-export { EditPhoneNumberInput };
 import { ExampleViewer } from "../../../viewer/viewer";
-import { Validator, Trigger } from "@snowtop/ent/action";
-
+import type { Validator, Trigger } from "@snowtop/ent/action";
+export type { EditPhoneNumberInput };
 class NewAuthCode {
   private code: string = "";
 

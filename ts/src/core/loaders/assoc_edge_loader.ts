@@ -1,5 +1,4 @@
 import DataLoader from "dataloader";
-import memoizee from "memoizee";
 import {
   Context,
   EdgeQueryableDataOptions,
@@ -21,84 +20,113 @@ import {
   loadTwoWayEdges,
   performRawQuery,
 } from "../ent";
-import { logEnabled } from "../logger";
-import { CacheMap, getCustomLoader } from "./loader";
+import { stableStringify } from "../cache_utils";
+import { memoizeNoArgs } from "../memoize";
+import { getOrderByKey, OrderBy } from "../query_impl";
+import {
+  createLoaderCacheMap,
+  InstrumentedDataLoader,
+  getCustomLoader,
+  getLoaderMaxBatchSize,
+} from "./loader";
+
+function getDefaultOrderBy(): OrderBy {
+  return [
+    {
+      column: "time",
+      direction: "DESC",
+    },
+  ];
+}
+
+function getEffectiveOptions(
+  options: EdgeQueryableDataOptions,
+): EdgeQueryableDataOptions {
+  return {
+    ...options,
+    orderby: options.orderby ?? getDefaultOrderBy(),
+    limit: options.limit || getDefaultLimit(),
+    disableTransformations: options.disableTransformations ?? false,
+  };
+}
 
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
   edgeType: string,
   edgeCtr: AssocEdgeConstructor<T>,
   edgeData: AssocEdgeData,
+  context?: Context,
 ) {
-  const loaderOptions: DataLoader.Options<ID, T[]> = {};
-
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap({
+  const loaderName = `assocEdgeLoader:${edgeType}`;
+  const loaderOptions: DataLoader.Options<ID, T[]> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+    cacheMap: createLoaderCacheMap({
       tableName: edgeData.edgeTable,
-    });
-  }
+    }),
+  };
 
-  return new DataLoader(async (keys: ID[]) => {
-    if (keys.length === 1) {
-      // 1 key, just be simple and move on
-      // same as AssocDirectEdgeLoader
-      const r = await loadCustomEdges({
-        id1: keys[0],
-        edgeType: edgeType,
-        queryOptions: options,
-        ctr: edgeCtr,
-      });
-      return [r];
-    }
-
-    let m = new Map<ID, number>();
-    let result: T[][] = [];
-    for (let i = 0; i < keys.length; i++) {
-      result.push([]);
-      // store the index....
-      m.set(keys[i], i);
-    }
-
-    options.orderby = options.orderby || [
-      {
-        column: "time",
-        direction: "DESC",
-      },
-    ];
-    // TODO defaultEdgeQueryOptions
-    options.limit = options.limit || getDefaultLimit();
-
-    const tableName = edgeData.edgeTable;
-    const { cls: cls1, fields } = getEdgeClauseAndFields(
-      clause.Eq("edge_type", edgeType),
-      {
-        queryOptions: options,
-      },
-    );
-    const [query, cls] = buildGroupQuery({
-      tableName: tableName,
-      fields,
-      values: keys,
-      orderby: options.orderby,
-      limit: options.limit || getDefaultLimit(),
-      groupColumn: "id1",
-      clause: cls1,
-    });
-
-    const rows = await performRawQuery(query, cls.values(), cls.logValues());
-    for (const row of rows) {
-      const srcID = row.id1;
-      const idx = m.get(srcID);
-      delete row.row_num;
-      if (idx === undefined) {
-        throw new Error(
-          `malformed query. got ${srcID} back but didn't query for it`,
-        );
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (keys: ID[]) => {
+      if (keys.length === 1) {
+        // 1 key, just be simple and move on
+        // same as AssocDirectEdgeLoader
+        const r = await loadCustomEdges({
+          id1: keys[0],
+          edgeType: edgeType,
+          queryOptions: options,
+          context,
+          ctr: edgeCtr,
+        });
+        return [r];
       }
-      result[idx].push(new edgeCtr(row));
-    }
-    return result;
-  }, loaderOptions);
+
+      let m = new Map<ID, number>();
+      let result: T[][] = [];
+      for (let i = 0; i < keys.length; i++) {
+        result.push([]);
+        // store the index....
+        m.set(keys[i], i);
+      }
+
+      const orderby = options.orderby ?? getDefaultOrderBy();
+      // TODO defaultEdgeQueryOptions
+      const limit = options.limit || getDefaultLimit();
+
+      const tableName = edgeData.edgeTable;
+      const { cls: cls1, fields } = getEdgeClauseAndFields(
+        clause.Eq("edge_type", edgeType),
+        {
+          queryOptions: options,
+        },
+      );
+      const [query, cls] = buildGroupQuery({
+        tableName: tableName,
+        fields,
+        values: keys,
+        orderby,
+        limit,
+        groupColumn: "id1",
+        clause: cls1,
+      });
+
+      const rows = await performRawQuery(query, cls.values(), cls.logValues());
+      for (const row of rows) {
+        const srcID = row.id1;
+        const idx = m.get(srcID);
+        delete row.row_num;
+        if (idx === undefined) {
+          throw new Error(
+            `malformed query. got ${srcID} back but didn't query for it`,
+          );
+        }
+        result[idx].push(new edgeCtr(row));
+      }
+      return result;
+    },
+    loaderOptions,
+    edgeData.edgeTable,
+  );
 }
 
 export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
@@ -116,7 +144,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
     private options: EdgeQueryableDataOptions,
     public context: Context,
   ) {
-    this.loaderFn = memoizee(this.getLoader);
+    this.loaderFn = memoizeNoArgs(this.getLoader.bind(this));
   }
 
   private async getLoader() {
@@ -129,6 +157,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
       this.edgeType,
       this.edgeCtr,
       edgeData,
+      this.context,
     );
     return this.loader;
   }
@@ -168,14 +197,59 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
 export class AssocDirectEdgeLoader<T extends AssocEdge>
   implements Loader<ID, T[]>
 {
+  private loader: DataLoader<ID, T[]> | undefined;
+  private loaderFn: (() => Promise<DataLoader<ID, T[]>>) | undefined;
   constructor(
     private edgeType: string,
     private edgeCtr: AssocEdgeConstructor<T>,
     private options?: EdgeQueryableDataOptions,
     public context?: Context,
-  ) {}
+  ) {
+    if (this.context) {
+      this.loaderFn = memoizeNoArgs(this.getLoader.bind(this));
+    }
+  }
+
+  private async getLoader() {
+    if (this.loader) {
+      return this.loader;
+    }
+    const edgeData = await loadEdgeData(this.edgeType);
+    if (!edgeData) {
+      throw new Error(`error loading edge data for ${this.edgeType}`);
+    }
+    const loaderName = `assocDirectEdgeLoader:${this.edgeType}`;
+    this.loader = new InstrumentedDataLoader(
+      loaderName,
+      async (keys: ID[]) => {
+        return Promise.all(
+          keys.map((id) =>
+            loadCustomEdges({
+              id1: id,
+              edgeType: this.edgeType,
+              context: this.context,
+              queryOptions: this.options,
+              ctr: this.edgeCtr,
+            }),
+          ),
+        );
+      },
+      {
+        maxBatchSize: getLoaderMaxBatchSize(),
+        cacheMap: createLoaderCacheMap({
+          tableName: edgeData.edgeTable,
+        }),
+      },
+      edgeData.edgeTable,
+    );
+    return this.loader;
+  }
 
   async load(id: ID) {
+    if (this.loaderFn) {
+      const loader = await this.loaderFn();
+      return loader.load(id);
+    }
     return loadCustomEdges({
       id1: id,
       edgeType: this.edgeType,
@@ -206,7 +280,9 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
     });
   }
 
-  clearAll() {}
+  clearAll() {
+    this.loader && this.loader.clearAll();
+  }
 }
 
 export class AssocEdgeLoaderFactory<T extends AssocEdge>
@@ -262,11 +338,13 @@ export class AssocEdgeLoaderFactory<T extends AssocEdge>
       );
     }
 
-    // we create a loader which can combine first X queries in the same fetch
-    const key = `${this.name}:limit:${options.limit}:orderby:${options.orderby?.map((orderBy) => JSON.stringify(orderBy))}:disableTransformations:${options.disableTransformations}`;
+    const effectiveOptions = getEffectiveOptions(options);
+    const key = `${this.name}:limit:${effectiveOptions.limit}:orderby:${getOrderByKey(
+      effectiveOptions.orderby ?? getDefaultOrderBy(),
+    )}:disableTransformations:${effectiveOptions.disableTransformations}`;
     return getCustomLoader(
       key,
-      () => new AssocEdgeLoader(this.edgeType, ctr, options, context),
+      () => new AssocEdgeLoader(this.edgeType, ctr, effectiveOptions, context),
       context,
     ) as AssocEdgeLoader<T>;
   }

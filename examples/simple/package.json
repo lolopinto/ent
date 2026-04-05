@@ -8,7 +8,7 @@
   },
   "scripts": {
     "test": "jest",
-    "compile": "tsc",
+    "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
     "start": "docker-compose -f docker-compose.dev.yml up --build",
     "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen",
     "upgrade": "docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade",
@@ -33,7 +33,7 @@
     "tsconfig-paths": "^3.11.0"
   },
   "dependencies": {
-    "@snowtop/ent": "^0.2.3-alpha1",
+    "@snowtop/ent": "^0.2.7",
     "@snowtop/ent-email": "^0.1.0-rc1",
     "@snowtop/ent-passport": "^0.1.0-rc1",
     "@snowtop/ent-password": "^0.1.0-rc1",
@@ -50,6 +50,7 @@
     "@types/passport-strategy": "^0.2.35",
     "@types/pg": "^8.6.1",
     "@types/uuid": "^8.3.1",
+    "camel-case": "^4.1.2",
     "csv-parse": "^4.15.4",
     "dataloader": "^2.0.0",
     "express": "^4.18.2",
@@ -66,6 +67,7 @@
     "passport-local": "^1.0.0",
     "passport-strategy": "^1.0.0",
     "pg": "^8.11.0",
+    "snake-case": "^3.0.4",
     "uuid": "^8.3.2"
   }
 }

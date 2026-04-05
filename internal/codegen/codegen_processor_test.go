@@ -10,6 +10,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema"
 	"github.com/lolopinto/ent/internal/schema/base"
 	"github.com/lolopinto/ent/internal/schema/input"
+	"github.com/lolopinto/ent/internal/util"
 	"github.com/stretchr/testify/require"
 )
 
@@ -71,4 +72,52 @@ func TestGlobalSchemaChangeForcesWriteAll(t *testing.T) {
 	processor, err := NewCodegenProcessor(currentSchema, "", ProcessorConfig(cfg))
 	require.NoError(t, err)
 	require.True(t, processor.Config.WriteAllFiles())
+}
+
+func TestBiomeConfigPathPrefersLocalConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	localConfigPath := filepath.Join(tmpDir, "biome.json")
+	require.NoError(
+		t,
+		os.WriteFile(
+			localConfigPath,
+			[]byte(`{
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 4,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "trailingCommas": "none",
+      "semicolons": "as-needed"
+    }
+  }
+}`),
+			0o644,
+		),
+	)
+
+	cfg := &Config{
+		absPathToRoot:    tmpDir,
+		absPathToConfigs: tmpDir,
+	}
+
+	configPath, err := cfg.GetBiomeConfigPath()
+	require.NoError(t, err)
+	require.Equal(t, localConfigPath, configPath)
+}
+
+func TestBiomeConfigPathFallsBackToRepoDefault(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	cfg := &Config{
+		absPathToRoot:    tmpDir,
+		absPathToConfigs: tmpDir,
+	}
+
+	configPath, err := cfg.GetBiomeConfigPath()
+	require.NoError(t, err)
+	require.Equal(t, util.GetAbsolutePath("../../ts/biome.json"), configPath)
 }

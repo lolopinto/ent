@@ -1,10 +1,8 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
-import {
-  RenameTodoInput,
-  RenameTodoStatusActionBase,
-} from "src/ent/generated/todo/actions/rename_todo_status_action_base";
+import { RenameTodoStatusActionBase } from "src/ent/generated/todo/actions/rename_todo_status_action_base";
+import type { RenameTodoInput } from "src/ent/generated/todo/actions/rename_todo_status_action_base";
 
-export { RenameTodoInput };
+export type { RenameTodoInput };
 
 export class RenameTodoStatusAction extends RenameTodoStatusActionBase {
   getPrivacyPolicy() {

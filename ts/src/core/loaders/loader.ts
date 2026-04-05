@@ -1,5 +1,43 @@
+import DataLoader from "dataloader";
 import { Loader, LoaderFactory, Context, DataOptions } from "../base";
-import { log } from "../logger";
+import { log, logEnabled } from "../logger";
+import { getOnDataLoaderBatch, getOnDataLoaderCacheHit } from "../metrics";
+
+const DEFAULT_MAX_BATCH_SIZE = 1000;
+let loaderMaxBatchSize = DEFAULT_MAX_BATCH_SIZE;
+
+const DEFAULT_MAX_CACHE_ENTRIES = 1000;
+let loaderCacheMaxEntries = DEFAULT_MAX_CACHE_ENTRIES;
+
+export function getLoaderMaxBatchSize(): number {
+  return loaderMaxBatchSize;
+}
+
+export function setLoaderMaxBatchSize(size?: number | null) {
+  if (size === undefined || size === null) {
+    loaderMaxBatchSize = DEFAULT_MAX_BATCH_SIZE;
+    return;
+  }
+  if (!Number.isFinite(size) || size <= 0) {
+    throw new Error(`maxBatchSize must be a positive number`);
+  }
+  loaderMaxBatchSize = Math.floor(size);
+}
+
+export function getLoaderCacheMaxEntries(): number {
+  return loaderCacheMaxEntries;
+}
+
+export function setLoaderCacheMaxEntries(size?: number | null) {
+  if (size === undefined || size === null) {
+    loaderCacheMaxEntries = DEFAULT_MAX_CACHE_ENTRIES;
+    return;
+  }
+  if (!Number.isFinite(size) || size < 0) {
+    throw new Error(`maxCacheEntries must be a non-negative number`);
+  }
+  loaderCacheMaxEntries = Math.floor(size);
+}
 
 // this is like factory factory FML
 // helper function to handle context vs not
@@ -34,6 +72,167 @@ export function getCustomLoader<K, V>(
   return context.cache.getLoader(key, create);
 }
 
+export type CacheMapLike<K, V> = {
+  get(key: K): V | undefined;
+  set(key: K, value: V): any;
+  delete(key: K): any;
+  clear(): any;
+};
+
+type CacheKeyFn<K> = (key: K) => any;
+
+type BatchLoadFn<K, V> = (
+  keys: readonly K[],
+) => PromiseLike<ArrayLike<V | Error>>;
+
+function instrumentCacheMap<K, V>(
+  cacheMap: CacheMapLike<K, V> | null | undefined,
+  tableName?: string,
+  cacheKeyFn?: (key: K) => unknown,
+): CacheMapLike<K, V> | null | undefined {
+  if (!cacheMap || !tableName) {
+    return cacheMap;
+  }
+
+  return {
+    get(key: K) {
+      const value = cacheMap.get(key);
+      if (value !== undefined) {
+        const hook = getOnDataLoaderCacheHit();
+        if (hook) {
+          hook({
+            tableName,
+            key: cacheKeyFn ? cacheKeyFn(key) : key,
+          });
+        }
+      }
+      return value;
+    },
+    set(key: K, value: V) {
+      return cacheMap.set(key, value);
+    },
+    delete(key: K) {
+      return cacheMap.delete(key);
+    },
+    clear() {
+      return cacheMap.clear();
+    },
+  };
+}
+
+export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
+  constructor(
+    loaderName: string,
+    batchLoadFn: BatchLoadFn<K, V>,
+    options: DataLoader.Options<K, V>,
+    tableName?: string,
+    cacheKeyFn?: (key: K) => unknown,
+  ) {
+    const wrappedBatchFn: BatchLoadFn<K, V> = async (keys) => {
+      if (keys.length) {
+        const hook = getOnDataLoaderBatch();
+        if (hook) {
+          hook({
+            loaderName,
+            batchSize: keys.length,
+          });
+        }
+      }
+      return batchLoadFn(keys);
+    };
+
+    const cacheMap = instrumentCacheMap(
+      options.cacheMap,
+      tableName,
+      cacheKeyFn,
+    );
+    const loaderOptions =
+      cacheMap === options.cacheMap ? options : { ...options, cacheMap };
+    super(wrappedBatchFn, loaderOptions);
+  }
+}
+
+export class BoundedCacheMap<K, V> {
+  private order = new Map<any, K>();
+
+  constructor(
+    private cacheMap: CacheMapLike<K, V>,
+    private maxEntries: number,
+    private cacheKeyFn?: CacheKeyFn<K>,
+  ) {}
+
+  private normalizeKey(key: K) {
+    return this.cacheKeyFn ? this.cacheKeyFn(key) : key;
+  }
+
+  private touch(normalizedKey: any, key: K) {
+    if (this.order.has(normalizedKey)) {
+      this.order.delete(normalizedKey);
+    }
+    this.order.set(normalizedKey, key);
+  }
+
+  private evictIfNeeded() {
+    while (this.order.size > this.maxEntries) {
+      const oldest = this.order.entries().next().value;
+      if (!oldest) {
+        return;
+      }
+      const [normalizedKey, key] = oldest;
+      this.order.delete(normalizedKey);
+      this.cacheMap.delete(key);
+    }
+  }
+
+  get(key: K): V | undefined {
+    const value = this.cacheMap.get(key);
+    if (value !== undefined) {
+      const normalizedKey = this.normalizeKey(key);
+      this.touch(normalizedKey, key);
+    }
+    return value;
+  }
+
+  set(key: K, value: V) {
+    const normalizedKey = this.normalizeKey(key);
+    this.touch(normalizedKey, key);
+    const result = this.cacheMap.set(key, value);
+    this.evictIfNeeded();
+    return result;
+  }
+
+  delete(key: K) {
+    const normalizedKey = this.normalizeKey(key);
+    this.order.delete(normalizedKey);
+    return this.cacheMap.delete(key);
+  }
+
+  clear() {
+    this.order.clear();
+    return this.cacheMap.clear();
+  }
+}
+
+export function createBoundedCacheMap<K, V>(
+  cacheMap: CacheMapLike<K, V>,
+  cacheKeyFn?: CacheKeyFn<K>,
+): CacheMapLike<K, V> {
+  const maxEntries = getLoaderCacheMaxEntries();
+  if (maxEntries <= 0) {
+    return cacheMap;
+  }
+  return new BoundedCacheMap(cacheMap, maxEntries, cacheKeyFn);
+}
+
+export function createLoaderCacheMap<K, V>(
+  options: DataOptions,
+): CacheMapLike<K, V> {
+  const baseMap: CacheMapLike<K, V> = logEnabled("query")
+    ? new CacheMap(options)
+    : new Map();
+  return createBoundedCacheMap(baseMap);
+}
+
 export class CacheMap {
   private m = new Map();
   constructor(private options: DataOptions) {}
@@ -46,7 +245,7 @@ export class CacheMap {
       // was designed for ObjectLoader time. Now we have different needs e.g. count, assoc etc
       log("cache", {
         "dataloader-cache-hit": key,
-        "tableName": this.options.tableName,
+        tableName: this.options.tableName,
       });
     }
     return ret;

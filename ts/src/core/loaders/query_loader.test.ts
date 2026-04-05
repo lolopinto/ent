@@ -2,7 +2,8 @@ import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
 import { getDefaultLimit } from "../ent";
-import { buildQuery } from "../query_impl";
+import { getContextCacheKey } from "../context";
+import { buildQuery, OrderBy } from "../query_impl";
 import * as clause from "../clause";
 import { Data, EdgeQueryableDataOptions, ID, Loader } from "../base";
 import { setupSqlite, TempDB } from "../../testutils/db/temp_db";
@@ -119,6 +120,227 @@ describe("sqlite", () => {
 // index_loader.test.ts tests a lof of things that this tests so we don't test every path here
 // just the "complex" ones
 function commonTests() {
+  describe("configurable loader cache keys", () => {
+    const factory = new QueryLoaderFactory({
+      groupCol: "user_id",
+      ...FakeEvent.loaderOptions(),
+    });
+
+    test("different orderby objects create different loaders", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "start_time",
+              direction: "DESC",
+            },
+          ],
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+
+    test("same logical orderby reuses the same loader", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              direction: "ASC",
+              column: "start_time",
+            },
+          ],
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+    });
+
+    test("computed orderby keys reuse the same loader", () => {
+      const localCtx = new TestContext();
+      const expression = (key: string) =>
+        clause.ParameterizedExpression(
+          key,
+          (idx, alias) =>
+            `distance(${alias ? `${alias}.location` : "location"}, $${idx}, $${idx + 1})`,
+          [12.3, 45.6],
+        );
+      const loader1 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "distance",
+              direction: "ASC",
+              expression: expression("same"),
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "distance",
+              direction: "ASC",
+              expression: expression("same"),
+            },
+          ],
+        },
+        localCtx,
+      );
+      const loader3 = factory.createConfigurableLoader(
+        {
+          orderby: [
+            {
+              column: "distance",
+              direction: "ASC",
+              expression: expression("different"),
+            },
+          ],
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+      expect(loader1).not.toBe(loader3);
+    });
+
+    test("disableTransformations changes cache keys", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          disableTransformations: true,
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          disableTransformations: false,
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+  });
+
+  describe("configurable loader cache keys with clause", () => {
+    const factory = new QueryLoaderFactory({
+      groupCol: "user_id",
+      ...FakeEvent.loaderOptions(),
+    });
+
+    test("same clause instanceKey reuses the same loader", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+
+      expect(loader1).toBe(loader2);
+    });
+
+    test("different clause instanceKeys create different loaders", () => {
+      const localCtx = new TestContext();
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-01T00:00:00Z"),
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: clause.Eq("start_time", "2020-01-02T00:00:00Z"),
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+    });
+
+    test("orderby and limit changes cache keys", () => {
+      const localCtx = new TestContext();
+      const baseClause = clause.Eq("start_time", "2020-01-01T00:00:00Z");
+      const loader1 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+          limit: 5,
+        },
+        localCtx,
+      );
+      const loader2 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "DESC",
+            },
+          ],
+          limit: 5,
+        },
+        localCtx,
+      );
+      const loader3 = factory.createConfigurableLoader(
+        {
+          clause: baseClause,
+          orderby: [
+            {
+              column: "start_time",
+              direction: "ASC",
+            },
+          ],
+          limit: 6,
+        },
+        localCtx,
+      );
+
+      expect(loader1).not.toBe(loader2);
+      expect(loader1).not.toBe(loader3);
+    });
+  });
+
   describe("groupCol passed", () => {
     test("single id. with context", async () => {
       await verifySingleIDWithContextCacheHit((id) => getNewLoader());
@@ -151,14 +373,16 @@ function commonTests() {
     });
 
     test("multi-ids. with context, offset", async () => {
-      await testMultiQueryDataOffset((options) =>
-        getConfigurableLoader(true, options),
+      await testMultiQueryDataOffset(
+        (options) => getConfigurableLoader(true, options),
+        true,
       );
     });
 
     test("multi-ids. without context, offset", async () => {
-      await testMultiQueryDataOffset((options) =>
-        getConfigurableLoader(false, options),
+      await testMultiQueryDataOffset(
+        (options) => getConfigurableLoader(false, options),
+        false,
       );
     });
 
@@ -435,7 +659,7 @@ function commonTests() {
     ml.logs.forEach((log, idx) => {
       expect(log).toStrictEqual({
         "dataloader-cache-hit": ids[idx],
-        "tableName": "fake_events",
+        tableName: "fake_events",
       });
     });
   }
@@ -546,6 +770,7 @@ function commonTests() {
 
   async function testMultiQueryDataOffset(
     loaderFn: (opts: EdgeQueryableDataOptions) => Loader<ID, Data[]>,
+    expectCacheHit: boolean,
   ) {
     const { m, ids, users } = await createData();
 
@@ -612,10 +837,14 @@ function commonTests() {
     // query again, same data
     // if context, we hit local cache. otherwise, hit db
     expect(edges).toStrictEqual(edges2);
-    verifyMultiCountQueryOffset(ids, m);
+    verifyMultiCountQueryOffset(ids, m, expectCacheHit);
   }
 
-  function verifyMultiCountQueryOffset(ids: ID[], m: Map<ID, FakeEvent[]>) {
+  function verifyMultiCountQueryOffset(
+    ids: ID[],
+    m: Map<ID, FakeEvent[]>,
+    cachehit?: boolean,
+  ) {
     expect(ml.logs.length).toBe(ids.length);
     ml.logs.forEach((log, idx) => {
       let events = m.get(ids[idx]) || [];
@@ -625,6 +854,26 @@ function commonTests() {
         getCompleteClause(ids[idx]),
         clause.Greater("start_time", events[0].startTime.toISOString()),
       );
+      if (cachehit) {
+        const orderby: OrderBy = [
+          {
+            column: "start_time",
+            direction: "ASC",
+          },
+        ];
+        const cacheKey = getContextCacheKey({
+          tableName: "fake_events",
+          fields,
+          clause: cls,
+          orderby,
+          limit: 1,
+        });
+        expect(log).toStrictEqual({
+          "cache-hit": cacheKey,
+          tableName: "fake_events",
+        });
+        return;
+      }
 
       const expQuery = buildQuery({
         tableName: "fake_events",

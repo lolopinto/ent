@@ -422,8 +422,8 @@ function commonTests() {
 
       expect(ml.logs.length).toEqual(2);
       expect(ml.logs[1]).toStrictEqual({
-        "cache-hit": "col1,col2,id=1",
-        "tableName": options.tableName,
+        "cache-hit": "fields:col1,col2,clause:id=1",
+        tableName: options.tableName,
       });
     });
 
@@ -453,8 +453,8 @@ function commonTests() {
 
       expect(ml.logs.length).toEqual(2);
       expect(ml.logs[1]).toStrictEqual({
-        "cache-hit": "col1,col2,in:id:1",
-        "tableName": options.tableName,
+        "cache-hit": "fields:col1,col2,clause:in:id:1",
+        tableName: options.tableName,
       });
     });
   });
@@ -527,7 +527,7 @@ function commonTests() {
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         "dataloader-cache-hit": 1,
-        "tableName": options.tableName,
+        tableName: options.tableName,
       });
     });
 
@@ -577,7 +577,7 @@ function commonTests() {
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         "dataloader-cache-hit": 13,
-        "tableName": options.tableName,
+        tableName: options.tableName,
       });
     });
 
@@ -638,7 +638,7 @@ function commonTests() {
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
         "dataloader-cache-hit": 13,
-        "tableName": options.tableName,
+        tableName: options.tableName,
       });
     });
 
@@ -689,7 +689,7 @@ function commonTests() {
       expect(ml.logs[0]).toStrictEqual({
         // TODO this will also change when loadEnts changes
         "dataloader-cache-hit": 1,
-        "tableName": options.tableName,
+        tableName: options.tableName,
       });
     });
   });

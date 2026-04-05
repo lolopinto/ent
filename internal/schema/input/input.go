@@ -15,57 +15,6 @@ type Schema struct {
 	Nodes        map[string]*Node    `json:"schemas,omitempty"`
 	Patterns     map[string]*Pattern `json:"patterns,omitempty"`
 	GlobalSchema *GlobalSchema       `json:"globalSchema"`
-	Config       *Config             `json:"config"`
-}
-
-type Config struct {
-	// the prettier config that's being used is parsed and sent up to format the files as needed
-	// since we're trying to use biome...
-	// for now keep this named as rome but eventually change to biome?
-	BiomeConfig *BiomeConfig `json:"rome"`
-}
-
-// indicates the biome onfig that should be used here
-// taken from the prettier config
-// https://prettier.io/docs/en/options.html#quotes
-// https://biomejs.dev/reference/cli/#biome
-type BiomeConfig struct {
-	// we always do --indent-style=space
-	IndentStyle     *string `json:"indentStyle"`
-	LineWidth       *int    `json:"lineWidth"`
-	IndentSize      *int    `json:"indentSize"`
-	QuoteStyle      *string `json:"quoteStyle"`
-	QuoteProperties *string `json:"quoteProperties"`
-	TrailingComma   *string `json:"trailingComma"`
-}
-
-func (cfg *BiomeConfig) GetArgs() []string {
-	var ret []string
-
-	if cfg.IndentStyle != nil {
-		ret = append(ret, "--indent-style", *cfg.IndentStyle)
-	}
-
-	if cfg.IndentSize != nil {
-		ret = append(ret, "--indent-size", fmt.Sprintf("%v", *cfg.IndentSize))
-	}
-
-	if cfg.LineWidth != nil {
-		ret = append(ret, "--line-width", fmt.Sprintf("%v", *cfg.LineWidth))
-	}
-
-	if cfg.QuoteStyle != nil {
-		ret = append(ret, "--quote-style", *cfg.QuoteStyle)
-	}
-
-	if cfg.QuoteProperties != nil {
-		ret = append(ret, "--quote-properties", *cfg.QuoteProperties)
-	}
-
-	if cfg.TrailingComma != nil {
-		ret = append(ret, "--trailing-comma", *cfg.TrailingComma)
-	}
-	return ret
 }
 
 type Pattern struct {
@@ -121,12 +70,22 @@ func (n *Node) AddAssocEdgeGroup(edgeGroup *AssocEdgeGroup) {
 }
 
 type GlobalSchema struct {
-	ExtraEdgeFields []*Field     `json:"extraEdgeFields,omitempty"`
-	GlobalEdges     []*AssocEdge `json:"globalEdges,omitempty"`
-	EdgeIndices     []*Index     `json:"edgeIndices,omitempty"`
-	Init            bool         `json:"init,omitempty"`
-	TransformsEdges bool         `json:"transformsEdges,omitempty"`
-	GlobalFields    []*Field     `json:"globalFields,omitempty"`
+	ExtraEdgeFields []*Field       `json:"extraEdgeFields,omitempty"`
+	GlobalEdges     []*AssocEdge   `json:"globalEdges,omitempty"`
+	EdgeIndices     []*Index       `json:"edgeIndices,omitempty"`
+	Init            bool           `json:"init,omitempty"`
+	TransformsEdges bool           `json:"transformsEdges,omitempty"`
+	GlobalFields    []*Field       `json:"globalFields,omitempty"`
+	DBExtensions    []*DBExtension `json:"dbExtensions,omitempty"`
+}
+
+type DBExtension struct {
+	Name           string   `json:"name,omitempty"`
+	ProvisionedBy  string   `json:"provisionedBy,omitempty"`
+	Version        string   `json:"version,omitempty"`
+	InstallSchema  string   `json:"installSchema,omitempty"`
+	RuntimeSchemas []string `json:"runtimeSchemas,omitempty"`
+	DropCascade    bool     `json:"dropCascade"`
 }
 
 type DBType string
@@ -182,6 +141,10 @@ type FieldType struct {
 	DisableUnknownType bool       `json:"disableUnknownType"`
 
 	GlobalType string `json:"globalType,omitempty"`
+	// raw postgres type used for extension-backed fields e.g. vector(1536)
+	PostgresType string `json:"postgresType,omitempty"`
+	// declared db extension required by this field type
+	DBExtension string `json:"dbExtension,omitempty"`
 
 	ImportType *tsimport.ImportPath `json:"importType,omitempty"`
 
@@ -270,15 +233,15 @@ func (f *Field) ApplyOverride(override *FieldOverride) {
 }
 
 type FieldOverride struct {
-	Nullable        *bool   `json:"nullable,omitempty"`
-	StorageKey      string  `json:"storageKey,omitempty"`
-	Unique          *bool   `json:"unique,omitempty"`
-	HideFromGraphQL *bool   `json:"hideFromGraphQL,omitempty"`
-	GraphQLName     string  `json:"graphqlName,omitempty"`
-	Index           *bool   `json:"index,omitempty"`
-	IndexConcurrently *bool `json:"indexConcurrently,omitempty"`
+	Nullable          *bool   `json:"nullable,omitempty"`
+	StorageKey        string  `json:"storageKey,omitempty"`
+	Unique            *bool   `json:"unique,omitempty"`
+	HideFromGraphQL   *bool   `json:"hideFromGraphQL,omitempty"`
+	GraphQLName       string  `json:"graphqlName,omitempty"`
+	Index             *bool   `json:"index,omitempty"`
+	IndexConcurrently *bool   `json:"indexConcurrently,omitempty"`
 	IndexWhere        *string `json:"indexWhere,omitempty"`
-	ServerDefault   *string `json:"serverDefault,omitempty"`
+	ServerDefault     *string `json:"serverDefault,omitempty"`
 }
 
 type ForeignKey struct {
@@ -951,9 +914,12 @@ type Index struct {
 	Unique   bool      `json:"unique,omitempty"`
 	FullText *FullText `json:"fullText,omitempty"`
 	// for regular indices. doesn't apply for full text...
-	IndexType IndexType `json:"indexType,omitempty"`
-	Concurrently bool   `json:"concurrently,omitempty"`
-	Where       string `json:"where,omitempty"`
+	IndexType    IndexType              `json:"indexType,omitempty"`
+	Concurrently bool                   `json:"concurrently,omitempty"`
+	Where        string                 `json:"where,omitempty"`
+	Ops          map[string]string      `json:"ops,omitempty"`
+	IndexParams  map[string]interface{} `json:"indexParams,omitempty"`
+	DBExtension  string                 `json:"dbExtension,omitempty"`
 }
 
 type FullTextLanguage string
@@ -972,9 +938,14 @@ const (
 type IndexType string
 
 const (
-	Gin   IndexType = "gin"
-	Gist  IndexType = "gist"
-	Btree IndexType = "btree"
+	Gin     IndexType = "gin"
+	Gist    IndexType = "gist"
+	Btree   IndexType = "btree"
+	Hash    IndexType = "hash"
+	SpGist  IndexType = "spgist"
+	Brin    IndexType = "brin"
+	HNSW    IndexType = "hnsw"
+	IVFFlat IndexType = "ivfflat"
 )
 
 type FullTextWeight struct {

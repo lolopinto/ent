@@ -2,14 +2,14 @@ package db
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strconv"
 	"strings"
-
-	"github.com/pkg/errors"
 
 	"github.com/lolopinto/ent/ent"
 	"github.com/lolopinto/ent/internal/auto_schema"
@@ -216,13 +216,15 @@ func (constraint *uniqueConstraint) getColumns() []*dbColumn {
 }
 
 type indexConstraint struct {
-	dbColumns []*dbColumn
-	tableName string
-	unique    bool
-	name      string
-	indexType input.IndexType
+	dbColumns    []*dbColumn
+	tableName    string
+	unique       bool
+	name         string
+	indexType    input.IndexType
 	concurrently bool
-	where     string
+	where        string
+	ops          map[string]string
+	indexParams  map[string]interface{}
 }
 
 func (constraint *indexConstraint) getInfo() (string, []string) {
@@ -244,6 +246,21 @@ func (constraint *indexConstraint) getInfo() (string, []string) {
 	return strconv.Quote(idxName), colNames
 }
 
+func (constraint *indexConstraint) getNameForValidation() string {
+	idxName := constraint.name
+	if idxName != "" {
+		return idxName
+	}
+	idxNameParts := []string{
+		constraint.tableName,
+	}
+	for _, col := range constraint.dbColumns {
+		idxNameParts = append(idxNameParts, col.DBColName)
+	}
+	idxNameParts = append(idxNameParts, "idx")
+	return names.ToDBColumn(idxNameParts...)
+}
+
 func (constraint *indexConstraint) getConstraintString() string {
 	quotedName, quotedColNames := constraint.getInfo()
 
@@ -254,6 +271,12 @@ func (constraint *indexConstraint) getConstraintString() string {
 	}
 	if constraint.indexType != "" {
 		args = append(args, fmt.Sprintf("postgresql_using=%s", strconv.Quote(string(constraint.indexType))))
+	}
+	if len(constraint.ops) > 0 {
+		args = append(args, fmt.Sprintf("postgresql_ops=%s", getStringMapDict(constraint.ops)))
+	}
+	if len(constraint.indexParams) > 0 {
+		args = append(args, fmt.Sprintf("postgresql_with=%s", getInterfaceMapDict(constraint.indexParams)))
 	}
 	if constraint.concurrently {
 		args = append(args, "postgresql_concurrently=True")
@@ -426,6 +449,36 @@ type dbSchema struct {
 	before         *dbFileInfo
 }
 
+func (s *dbSchema) validateConstraintName(tableName string, constraint dbConstraint) error {
+	var name string
+	switch c := constraint.(type) {
+	case *primaryKeyConstraint:
+		name = c.getName()
+	case *uniqueConstraint:
+		name = c.getName()
+	case *foreignKeyConstraint:
+		name = c.name
+	case *indexConstraint:
+		name = c.getNameForValidation()
+	case *fullTextConstraint:
+		name = c.indexConstraint.getNameForValidation()
+	case *checkConstraint:
+		name = c.name
+	}
+	if name == "" {
+		return nil
+	}
+	if len(name) > names.PostgresIdentifierMaxLen {
+		return fmt.Errorf(
+			"identifier %q exceeds maximum length of %d characters (table %s)",
+			name,
+			names.PostgresIdentifierMaxLen,
+			tableName,
+		)
+	}
+	return nil
+}
+
 func (s *dbSchema) getTableForNode(nodeData *schema.NodeData) *dbTable {
 	table := s.configTableMap[nodeData.EntConfigName]
 	if table != nil {
@@ -513,13 +566,15 @@ func (s *dbSchema) processConstraints(nodeData *schema.NodeData, columns []*dbCo
 		}
 
 		constraint := &indexConstraint{
-			dbColumns: cols,
-			tableName: nodeData.GetTableName(),
-			unique:    index.Unique,
-			name:      index.Name,
-			indexType: index.IndexType,
+			dbColumns:    cols,
+			tableName:    nodeData.GetTableName(),
+			unique:       index.Unique,
+			name:         index.Name,
+			indexType:    index.IndexType,
 			concurrently: index.Concurrently,
-			where:     index.Where,
+			where:        index.Where,
+			ops:          getIndexOps(index.Columns, cols, index.Ops),
+			indexParams:  index.IndexParams,
 		}
 		if index.IndexType == "" {
 			if len(cols) == 1 {
@@ -796,7 +851,7 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 	if err != nil {
 		return err
 	}
-	return file.Write(
+	if err := file.Write(
 		&file.TemplatedBasedFileWriter{
 			Config:            cfg,
 			Data:              data,
@@ -804,7 +859,11 @@ func (s *dbSchema) writeSchemaFile(cfg *codegen.Config) error {
 			TemplateName:      "db_schema.tmpl",
 			PathToFile:        fmt.Sprintf("%s/schema.py", s.cfg.GetRootPathToConfigs()),
 		},
-	)
+	); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplate, error) {
@@ -821,6 +880,9 @@ func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplat
 		}
 		// then constraints
 		for _, constraint := range table.Constraints {
+			if err := s.validateConstraintName(table.TableName, constraint); err != nil {
+				return nil, err
+			}
 			lines = append(lines, constraint.getConstraintString())
 		}
 
@@ -878,7 +940,7 @@ func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplat
 					b, err := json.Marshal(v)
 					val = string(b)
 					if err != nil {
-						return errors.Wrap(err, "Error unmarshalling value")
+						return fmt.Errorf("Error unmarshalling value: %w", err)
 					}
 				}
 				kvPairs = append(kvPairs, fmt.Sprintf("'%s': %v", k, val))
@@ -923,7 +985,55 @@ func (s *dbSchema) getSchemaForTemplate(cfg codegenapi.Config) (*dbSchemaTemplat
 	sort.Slice(ret.Data, func(i, j int) bool {
 		return ret.Data[i].TableName < ret.Data[j].TableName
 	})
+
+	dbExtensions := s.schema.DBExtensions()
+	if len(dbExtensions) > 0 {
+		extensions := append([]*input.DBExtension{}, dbExtensions...)
+		sort.Slice(extensions, func(i, j int) bool {
+			return extensions[i].Name < extensions[j].Name
+		})
+		for _, extension := range extensions {
+			ret.DBExtensions = append(ret.DBExtensions, getDBExtensionLine(extension))
+		}
+	}
 	return ret, nil
+}
+
+func getPythonBool(val bool) string {
+	if val {
+		return "True"
+	}
+	return "False"
+}
+
+func getPythonNullableString(val string) string {
+	if val == "" {
+		return "None"
+	}
+	return strconv.Quote(val)
+}
+
+func getPythonStringList(values []string) string {
+	if len(values) == 0 {
+		return "[]"
+	}
+	var parts []string
+	for _, value := range values {
+		parts = append(parts, strconv.Quote(value))
+	}
+	return fmt.Sprintf("[%s]", strings.Join(parts, ", "))
+}
+
+func getDBExtensionLine(extension *input.DBExtension) string {
+	kvPairs := []string{
+		getKVPair("name", strconv.Quote(extension.Name)),
+		getKVPair("provisioned_by", strconv.Quote(extension.ProvisionedBy)),
+		getKVPair("version", getPythonNullableString(extension.Version)),
+		getKVPair("install_schema", getPythonNullableString(extension.InstallSchema)),
+		getKVPair("runtime_schemas", getPythonStringList(extension.RuntimeSchemas)),
+		getKVPair("drop_cascade", getPythonBool(extension.DropCascade)),
+	}
+	return getKVDict(kvPairs)
 }
 
 func (s *dbSchema) getEdgeLine(edge *ent.AssocEdgeData) string {
@@ -944,6 +1054,93 @@ func getKVDict(kvPairs []string) string {
 
 func getKVPair(key, val string) string {
 	return strconv.Quote(key) + ":" + val
+}
+
+func formatPythonValue(value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		return strconv.Quote(v)
+	case bool:
+		if v {
+			return "True"
+		}
+		return "False"
+	default:
+		rv := reflect.ValueOf(value)
+		switch rv.Kind() {
+		case reflect.Float32:
+			f := rv.Float()
+			if f == float64(int64(f)) {
+				return strconv.FormatInt(int64(f), 10)
+			}
+			return strconv.FormatFloat(f, 'f', -1, 32)
+		case reflect.Float64:
+			f := rv.Float()
+			if f == float64(int64(f)) {
+				return strconv.FormatInt(int64(f), 10)
+			}
+			return strconv.FormatFloat(f, 'f', -1, 64)
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			return strconv.FormatInt(rv.Int(), 10)
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			return strconv.FormatUint(rv.Uint(), 10)
+		default:
+			panic(fmt.Sprintf("unsupported python value type %T", value))
+		}
+	}
+}
+
+func getStringMapDict(m map[string]string) string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	kvPairs := make([]string, 0, len(keys))
+	for _, key := range keys {
+		kvPairs = append(kvPairs, getKVPair(key, strconv.Quote(m[key])))
+	}
+	return getKVDict(kvPairs)
+}
+
+func getInterfaceMapDict(m map[string]interface{}) string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	kvPairs := make([]string, 0, len(keys))
+	for _, key := range keys {
+		kvPairs = append(kvPairs, getKVPair(key, formatPythonValue(m[key])))
+	}
+	return getKVDict(kvPairs)
+}
+
+func getIndexOps(columnNames []string, cols []*dbColumn, ops map[string]string) map[string]string {
+	if len(ops) == 0 {
+		return nil
+	}
+
+	colMap := make(map[string]string)
+	for i, col := range cols {
+		colMap[col.DBColName] = col.DBColName
+		if i < len(columnNames) {
+			colMap[columnNames[i]] = col.DBColName
+		}
+	}
+
+	ret := make(map[string]string)
+	for key, value := range ops {
+		if col, ok := colMap[key]; ok {
+			ret[col] = value
+		} else {
+			ret[key] = value
+		}
+	}
+
+	return ret
 }
 
 func (s *dbSchema) getSymmetricEdgeValInEdge(edge *ent.AssocEdgeData) string {
@@ -1061,10 +1258,15 @@ func (s *dbSchema) createEdgeTable(assocEdge *edge.AssociationEdge) *dbTable {
 	columns = append(columns, timeCol)
 	columns = append(columns, s.getDataColumn())
 
+	pkeyName := ""
+	if !s.schema.EdgeTableExists(tableName) {
+		pkeyName = base.GetPrimaryKeyName(tableName)
+	}
 	constraints := []dbConstraint{
 		&primaryKeyConstraint{
 			dbColumns: []*dbColumn{id1Col, edgeTypeCol, id2Col},
 			tableName: tableName,
+			name:      pkeyName,
 		},
 		&indexConstraint{
 			dbColumns: []*dbColumn{timeCol},
@@ -1116,13 +1318,15 @@ func (s *dbSchema) addEdgeIndices(tableName string, columns []*dbColumn, constra
 		}
 
 		constraint := &indexConstraint{
-			dbColumns: cols,
-			tableName: tableName,
-			unique:    index.Unique,
-			name:      name,
-			indexType: index.IndexType,
+			dbColumns:    cols,
+			tableName:    tableName,
+			unique:       index.Unique,
+			name:         name,
+			indexType:    index.IndexType,
 			concurrently: index.Concurrently,
-			where:     index.Where,
+			where:        index.Where,
+			ops:          getIndexOps(index.Columns, cols, index.Ops),
+			indexParams:  index.IndexParams,
 		}
 		if index.FullText != nil {
 			panic("full text indexes not supported for edge tables")
@@ -1312,10 +1516,10 @@ func (s *dbSchema) addIndexConstraint(f *field.Field, tableName string, col *dbC
 		return
 	}
 	constraint := &indexConstraint{
-		dbColumns: []*dbColumn{col},
-		tableName: tableName,
+		dbColumns:    []*dbColumn{col},
+		tableName:    tableName,
 		concurrently: f.IndexConcurrently(),
-		where:     f.IndexWhere(),
+		where:        f.IndexWhere(),
 	}
 	// default index type for lists when not specified is gin type
 	idxType := s.getDefaultIndexType(f)
@@ -1527,8 +1731,9 @@ type dbDataInfo struct {
 
 // wrapper object to represent the list of tables that will be passed to a schema template file
 type dbSchemaTemplate struct {
-	Config codegenapi.Config
-	Tables []dbSchemaTableInfo
-	Edges  []dbEdgeInfo
-	Data   []dbDataInfo
+	Config       codegenapi.Config
+	Tables       []dbSchemaTableInfo
+	Edges        []dbEdgeInfo
+	Data         []dbDataInfo
+	DBExtensions []string
 }

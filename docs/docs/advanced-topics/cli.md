@@ -15,16 +15,18 @@ Here are the current supported commands:
 
 `codegen` is the mostly commonly used command. It reads the schema, validates it and does the following changes:
 
-* updates the database if there's been any changes
-* generates the code for the Ent and GraphQL layer
+- updates the database if there's been any changes
+- generates the code for the Ent and GraphQL layer
+
+Generated TypeScript is formatted with Biome as part of codegen. If the project root contains `biome.json` or `biome.jsonc`, that config is used directly. Otherwise, ent falls back to its bundled Biome config.
 
 You can filter to only run one "step" if you don't want to run all steps.
 
 Currently, there are 3 steps:
 
-* `db`: only updates the database schema
-* `codegen`: only updates the generated Ent layer
-* `graphql`: only updates the GraphQL layer.
+- `db`: only updates the database schema
+- `codegen`: only updates the generated Ent layer
+- `graphql`: only updates the GraphQL layer.
 
 You should probably always run all steps but if you need to filter, the option is there.
 
@@ -190,21 +192,41 @@ or to show the database history:
 
 ```shell
 tsent alembic history
-tsent alembic history --verbose 
+tsent alembic history --verbose
 tsent alembic history --verbose --last 4
 tsent alembic history --verbose --rev_range rev1:current
 ```
 
 Current supported commands:
 
-* upgrade
-* downgrade
-* history
-* current
-* heads
-* branches
-* show
-* stamp
+- upgrade
+- downgrade
+- history
+- current
+- heads
+- branches
+- show
+- stamp
+
+## prune_schemas
+
+Prunes stale dev branch schemas in postgres based on `public.ent_dev_schema_registry.last_used_at`.
+The command exits with an error when `NODE_ENV=production`.
+
+`--dry-run` is enabled by default, so the command will print the schemas that would be deleted without
+dropping them. Use `--force` to actually delete schemas.
+
+`prune_schemas` connects without applying runtime dev-schema setup first, so `--dry-run` stays
+non-destructive even if `devSchema.prune` is enabled in `ent.yml`.
+
+Examples:
+
+```shell
+tsent prune_schemas
+tsent prune_schemas --days 14
+tsent prune_schemas --force
+tsent prune_schemas --prefix ent_dev --force
+```
 
 ## delete_schema
 
@@ -226,10 +248,10 @@ Squashes the last N revisions into one. It's mainly used to make it easier to ke
 
 Consider these workflows for example when iterating:
 
-* add nullable column `foo_id` and run `codegen`
-* add nullable column `bar_id` and run `codegen`
-* add nullable column `status` and run `codegen`
-* decide you don't actually need `bar_id` and run `codegen`
+- add nullable column `foo_id` and run `codegen`
+- add nullable column `bar_id` and run `codegen`
+- add nullable column `status` and run `codegen`
+- decide you don't actually need `bar_id` and run `codegen`
 
 now you have 4 changes when it'd be more ideal to just have 1 change:
 

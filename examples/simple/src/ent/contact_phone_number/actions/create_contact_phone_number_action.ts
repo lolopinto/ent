@@ -2,22 +2,13 @@
  * Copyright whaa whaa
  */
 
-import {
-  AllowIfConditionAppliesRule,
-  AllowIfEntIsVisibleRule,
-  AllowIfViewerEqualsRule,
-  AlwaysDenyRule,
-  PrivacyPolicy,
-} from "@snowtop/ent";
+import { AllowIfConditionAppliesRule, AllowIfEntIsVisibleRule, AllowIfViewerEqualsRule, AlwaysDenyRule } from "@snowtop/ent";
+import type { PrivacyPolicy } from "@snowtop/ent";
 import { AllowIfBuilder } from "@snowtop/ent/action";
 import { Contact } from "../..";
-import {
-  ContactPhoneNumberCreateInput,
-  CreateContactPhoneNumberActionBase,
-} from "../../generated/contact_phone_number/actions/create_contact_phone_number_action_base";
-
-export { ContactPhoneNumberCreateInput };
-
+import { CreateContactPhoneNumberActionBase } from "../../generated/contact_phone_number/actions/create_contact_phone_number_action_base";
+import type { ContactPhoneNumberCreateInput } from "../../generated/contact_phone_number/actions/create_contact_phone_number_action_base";
+export type { ContactPhoneNumberCreateInput };
 export default class CreateContactPhoneNumberAction extends CreateContactPhoneNumberActionBase {
   getPrivacyPolicy(): PrivacyPolicy {
     return {

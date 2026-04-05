@@ -1,4 +1,3 @@
-import memoize from "memoizee";
 import { isPromise } from "util/types";
 import {
   Data,
@@ -12,9 +11,10 @@ import {
   Viewer,
 } from "../base";
 import * as clause from "../clause";
-import { getCursor, getDefaultLimit } from "../ent";
+import { decodeCursorPayload, getCursor, getDefaultLimit } from "../ent";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
-import { OrderBy, reverseOrderBy } from "../query_impl";
+import { memoizeNoArgs } from "../memoize";
+import { OrderBy, orderByHasExpressions, reverseOrderBy } from "../query_impl";
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -104,7 +104,7 @@ function translateCursorToKeyValues(
   opts: validCursorOptions,
 ): CursorKeyValues {
   const { keys } = opts;
-  const decoded = atob(cursor);
+  const decoded = decodeCursorPayload(cursor);
   let cursorData: CursorKeyValues = [];
   try {
     cursorData = JSON.parse(decoded);
@@ -238,6 +238,11 @@ class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
     const orderBy = this.options.orderby;
 
     if (this.offset) {
+      if (orderByHasExpressions(orderBy)) {
+        throw new Error(
+          "cursor pagination does not support computed order expressions",
+        );
+      }
       const keyValuePairs: { [key: string]: string | number | null } = {};
       for (const [key, value] of this.cursorKeyValues) {
         keyValuePairs[key] = value;
@@ -327,6 +332,11 @@ class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
     const orderBy = reverseOrderBy(this.options.orderby);
 
     if (this.offset) {
+      if (orderByHasExpressions(orderBy)) {
+        throw new Error(
+          "cursor pagination does not support computed order expressions",
+        );
+      }
       const keyValuePairs: { [key: string]: string | number | null } = {};
       for (const [key, value] of this.cursorKeyValues) {
         keyValuePairs[key] = value;
@@ -410,8 +420,10 @@ export abstract class BaseEdgeQuery<
     this.cursorCol = options.cursorCol;
     this.cursorKeys = orderBy.map((orderBy) => orderBy.column);
 
-    this.memoizedloadEdges = memoize(this.loadEdges.bind(this));
-    this.genIDInfosToFetch = memoize(this.genIDInfosToFetchImpl.bind(this));
+    this.memoizedloadEdges = memoizeNoArgs(this.loadEdges.bind(this));
+    this.genIDInfosToFetch = memoizeNoArgs(
+      this.genIDInfosToFetchImpl.bind(this),
+    );
   }
 
   protected getCursorCol(): string {

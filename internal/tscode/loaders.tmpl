@@ -13,8 +13,8 @@
   export interface {{$dataType}} {
     {{range $field := .FieldInfo.EntFields -}}
       {{ range $field.GetTsTypeImports -}}
-        {{ reserveImportPath . false -}}
-        {{$typ := useImportMaybe .Import -}}
+        {{ reserveTypeImportPath . false -}}
+        {{$typ := useTypeImportMaybe .Import -}}
       {{end -}}
 
       {{$field.GetDbColName}}: {{$field.TsActualType}};

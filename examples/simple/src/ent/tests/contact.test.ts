@@ -324,18 +324,17 @@ test("multiple emails", async () => {
   const emails = await contact.loadEmails();
   const sortFn = (a: emailInfo, b: emailInfo) =>
     a.emailAddress < b.emailAddress ? -1 : 1;
-  expect(input.emails.sort(sortFn)).toStrictEqual(
-    emails
-      .map((email) => {
-        return {
-          emailAddress: email.emailAddress,
-          label: email.label,
-          extra: email.extra,
-          ownerId: email.ownerId,
-        };
-      })
-      .sort(sortFn),
+  const emailsInfo = await Promise.all(
+    emails.map(async (email) => {
+      return {
+        emailAddress: email.emailAddress,
+        label: email.label,
+        extra: await email.extra(),
+        ownerId: email.ownerId,
+      };
+    }),
   );
+  expect(input.emails.sort(sortFn)).toStrictEqual(emailsInfo.sort(sortFn));
 
   const r = await Contact.loadCustom(
     contact.viewer,
@@ -386,6 +385,57 @@ test("multiple emails", async () => {
   expect(email1Reloaded.emailAddress).toBe(newEmail);
 });
 
+test("email_ids inverse edge updates", async () => {
+  const user = await createUser();
+  const contact = await CreateContactAction.create(new ExampleViewer(user.id), {
+    emails: [
+      {
+        emailAddress: randomEmail(),
+        label: ContactLabel.Default,
+        ownerId: user.id,
+      },
+      {
+        emailAddress: randomEmail(),
+        label: ContactLabel.Work,
+        ownerId: user.id,
+      },
+    ],
+    firstName: "Arya",
+    lastName: "Stark",
+    userId: user.id,
+  }).saveX();
+
+  const emails = await contact.loadEmails();
+  expect(emails.length).toBe(2);
+  const email1 = emails[0];
+  const email2 = emails[1];
+
+  const email1Loaded = await ContactEmail.loadX(contact.viewer, email1.id);
+  const email2Loaded = await ContactEmail.loadX(contact.viewer, email2.id);
+
+  const [email1Contacts, email2Contacts] = await Promise.all([
+    email1Loaded.queryEmailsForContacts().queryEnts(),
+    email2Loaded.queryEmailsForContacts().queryEnts(),
+  ]);
+  expect(email1Contacts.length).toBe(1);
+  expect(email2Contacts.length).toBe(1);
+  expect(email1Contacts[0].id).toBe(contact.id);
+  expect(email2Contacts[0].id).toBe(contact.id);
+
+  await EditContactAction.create(contact.viewer, contact, {
+    emailIds: [email1.id],
+  }).saveX();
+
+  const email2Reloaded = await ContactEmail.loadX(contact.viewer, email2.id);
+  const [email1ContactsAfter, email2ContactsAfter] = await Promise.all([
+    email1Loaded.queryEmailsForContacts().queryEnts(),
+    email2Reloaded.queryEmailsForContacts().queryEnts(),
+  ]);
+  expect(email1ContactsAfter.length).toBe(1);
+  expect(email1ContactsAfter[0].id).toBe(contact.id);
+  expect(email2ContactsAfter.length).toBe(0);
+});
+
 test("multiple phonenumbers", async () => {
   const user = await createUser();
   const input = {
@@ -423,17 +473,18 @@ test("multiple phonenumbers", async () => {
     a.phoneNumber < b.phoneNumber ? -1 : 1;
 
   const phoneNumbers = await contact.loadPhoneNumbers();
+  const phoneNumbersInfo = await Promise.all(
+    phoneNumbers.map(async (phoneNumber) => {
+      return {
+        phoneNumber: phoneNumber.phoneNumber,
+        label: phoneNumber.label,
+        extra: await phoneNumber.extra(),
+        ownerId: phoneNumber.ownerId,
+      };
+    }),
+  );
   expect(input.phoneNumbers.sort(sortFn)).toStrictEqual(
-    phoneNumbers
-      .map((phoneNumber) => {
-        return {
-          phoneNumber: phoneNumber.phoneNumber,
-          label: phoneNumber.label,
-          extra: phoneNumber.extra,
-          ownerId: phoneNumber.ownerId,
-        };
-      })
-      .sort(sortFn),
+    phoneNumbersInfo.sort(sortFn),
   );
 
   const r = await Contact.loadCustom(

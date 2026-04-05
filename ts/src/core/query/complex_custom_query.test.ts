@@ -1180,7 +1180,7 @@ describe("joins - products", () => {
           },
           "RETURNING *",
         );
-        console.assert(order, `couldn't create order`);
+        console.assert(!!order, `couldn't create order`);
         orders.push(order!);
       }
     }
@@ -1189,7 +1189,9 @@ describe("joins - products", () => {
   // ~20
   test("query users for product", async () => {
     // find the most ordered product
-    const r = await DB.getInstance().getPool().query(`
+    const r = await DB.getInstance()
+      .getPool()
+      .query(`
           SELECT
       p.id,
           COUNT(DISTINCT o.user_id) AS num_users
@@ -1334,7 +1336,9 @@ describe("joins - products", () => {
   // ~147
   test("query products for user", async () => {
     // find the user who ordered the most products
-    const r = await DB.getInstance().getPool().query(`
+    const r = await DB.getInstance()
+      .getPool()
+      .query(`
           SELECT
       u.id,
           COUNT(DISTINCT o.product_id) AS num_products
@@ -1515,7 +1519,9 @@ describe("joins - products", () => {
 
   // ~15
   test("query products for user in given category", async () => {
-    const r = await DB.getInstance().getPool().query(`
+    const r = await DB.getInstance()
+      .getPool()
+      .query(`
 WITH UserCategoryOrders AS (
     SELECT
         u.id as uid,

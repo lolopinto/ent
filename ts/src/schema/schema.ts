@@ -18,6 +18,18 @@ export type FieldInfoMap = {
   [key: string]: FieldInfo;
 };
 
+export interface DBExtension {
+  name: string;
+  provisionedBy?: "ent" | "external";
+  version?: string;
+  installSchema?: string;
+  runtimeSchemas?: string[];
+  dropCascade?: boolean;
+
+  // allow other keys
+  [x: string]: any;
+}
+
 export interface GlobalSchema {
   // source is ¯\_(ツ)_/¯
   // this api works fine for external to int
@@ -37,6 +49,8 @@ export interface GlobalSchema {
 
   // for enum and other fields
   fields?: FieldMap;
+
+  dbExtensions?: DBExtension[];
 }
 
 // we may eventually support more properties but for now, minimal field properties
@@ -420,6 +434,10 @@ export interface Type {
   deprecatedIntEnumMap?: IntEnumMap;
   disableUnknownType?: boolean;
   globalType?: string;
+  // raw postgres type declaration used for extension-backed fields
+  postgresType?: string;
+  // declared db extension required by this field type
+  dbExtension?: string;
 
   // @deprecated eventually kill this
   importType?: DeprecatedImportType;
@@ -1041,12 +1059,20 @@ export interface Index {
   columns: string[];
   unique?: boolean; // can also create a unique constraint this way because why not...
   fulltext?: FullText;
-  // TODO support gist soon...
-  // need operator class too
-  // TODO https://github.com/lolopinto/ent/issues/1029
-  indexType?: "gin" | "btree";
+  // postgres access method e.g. gin, gist, hnsw, ivfflat
+  indexType?: string;
   concurrently?: boolean;
   where?: string;
+  // postgres operator classes keyed by field name
+  ops?: {
+    [column: string]: string;
+  };
+  // postgres WITH (...) params for the index
+  indexParams?: {
+    [key: string]: string | number | boolean;
+  };
+  // declared db extension required by this index
+  dbExtension?: string;
 
   // allow other keys
   [x: string]: any;

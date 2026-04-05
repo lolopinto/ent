@@ -1,5 +1,5 @@
 import { Orchestrator } from "./orchestrator";
-import { Viewer, Ent, Data } from "../core/base";
+import { Viewer, Ent, Data, Context } from "../core/base";
 import { AlwaysAllowPrivacyPolicy } from "../core/privacy";
 import {
   Action,
@@ -20,6 +20,10 @@ export interface ActionOptions<
   existingEnt: TExistingEnt;
   input?: TData;
   operation?: WriteOperation;
+  viewerForEntLoad?(
+    data: Data,
+    ctx?: Context<TViewer>,
+  ): TViewer | Promise<TViewer>;
 }
 
 type MaybeNull<T extends Ent> = T | null;
@@ -57,6 +61,7 @@ export class BaseAction<
 {
   builder: EntBuilder<TEnt, TViewer, TInput, TExistingEnt>;
   private input: TInput;
+  options: ActionOptions<TEnt, TViewer, TInput, TExistingEnt>;
 
   getPrivacyPolicy() {
     return AlwaysAllowPrivacyPolicy;
@@ -92,6 +97,16 @@ export class BaseAction<
     return [];
   }
 
+  viewerForEntLoad(
+    data: Data,
+    context?: Context<TViewer> | undefined,
+  ): TViewer | Promise<TViewer> {
+    if (this.options.viewerForEntLoad) {
+      return this.options.viewerForEntLoad(data, context);
+    }
+    return this.viewer;
+  }
+
   constructor(
     public viewer: TViewer,
     public builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TExistingEnt>,
@@ -107,6 +122,7 @@ export class BaseAction<
     }
     this.input = options?.input || ({} as TInput);
     this.builder = new builderCtr(viewer, operation, this, options.existingEnt);
+    this.options = options;
   }
 
   static createBuilder<
@@ -235,11 +251,16 @@ export function getSimpleEditAction<
   builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TEnt>,
   existingEnt: TEnt,
   input: TInput,
+  opts?: Omit<
+    ActionOptions<TEnt, TViewer, TInput, TEnt>,
+    "operation" | "input" | "existingEnt"
+  >,
 ): BaseAction<TEnt, TViewer, TInput, TEnt> {
   return new BaseAction(viewer, builderCtr, {
     existingEnt: existingEnt,
     operation: WriteOperation.Edit,
     input,
+    ...opts,
   });
 }
 
@@ -252,11 +273,16 @@ export function getSimpleDeleteAction<
   builderCtr: BuilderConstructor<TEnt, TViewer, TInput, TEnt>,
   existingEnt: TEnt,
   input: TInput,
+  opts?: Omit<
+    ActionOptions<TEnt, TViewer, TInput, null>,
+    "operation" | "input" | "existingEnt"
+  >,
 ): BaseAction<TEnt, TViewer, TInput, TEnt> {
   return new BaseAction(viewer, builderCtr, {
     existingEnt: existingEnt,
     operation: WriteOperation.Delete,
     input,
+    ...opts,
   });
 }
 
@@ -268,10 +294,15 @@ export function getSimpleInsertAction<
   viewer: TViewer,
   builderCtr: BuilderConstructor<TEnt, TViewer, TInput, null>,
   input: TInput,
+  opts?: Omit<
+    ActionOptions<TEnt, TViewer, TInput, null>,
+    "operation" | "input" | "existingEnt"
+  >,
 ): BaseAction<TEnt, TViewer, TInput, null> {
   return new BaseAction(viewer, builderCtr, {
     operation: WriteOperation.Insert,
     input,
     existingEnt: null,
+    ...opts,
   });
 }

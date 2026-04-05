@@ -5,15 +5,12 @@ import {
   ID,
   AlwaysAllowPrivacyPolicy,
 } from "@snowtop/ent";
-import {
-  AccountTransferCreditsActionBase,
-  AccountTransferCreditsActionTriggers,
-  AccountTransferCreditsInput,
-} from "src/ent/generated/account/actions/account_transfer_credits_action_base";
+import { AccountTransferCreditsActionBase } from "src/ent/generated/account/actions/account_transfer_credits_action_base";
+import type { AccountTransferCreditsActionTriggers, AccountTransferCreditsInput } from "src/ent/generated/account/actions/account_transfer_credits_action_base";
 import { Account } from "src/ent/internal";
 import { AccountUpdateBalanceAction } from "./account_update_balance_action";
 
-export { AccountTransferCreditsInput };
+export type { AccountTransferCreditsInput };
 
 export class AccountTransferCreditsAction extends AccountTransferCreditsActionBase {
   getPrivacyPolicy(): PrivacyPolicy<

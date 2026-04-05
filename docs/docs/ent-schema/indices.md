@@ -36,3 +36,51 @@ import PostgresIndices from "./postgres_indices.txt";
 import SqliteIndices from "./sqlite_indices.txt";
 
 <DatabaseTabs postgres={PostgresIndices} sqlite={SqliteIndices} />
+
+## Concurrent indexes
+
+Postgres only: set `concurrently: true` on the index or
+`indexConcurrently: true` on the field index to render
+`CREATE INDEX CONCURRENTLY`.
+
+```ts title="src/schema/product_item_schema.ts"
+import { EntSchema, FloatType } from "@snowtop/ent";
+
+const ProductItemSchema = new EntSchema({
+  fields: {
+    price: FloatType({ index: true, indexConcurrently: true }),
+  },
+  indices: [
+    {
+      name: "product_items_price_idx",
+      columns: ["price"],
+      concurrently: true,
+    },
+  ],
+});
+export default ProductItemSchema;
+```
+
+## Partial indexes
+
+Partial indexes use a SQL `where` clause on the index, or `indexWhere` on a
+field index. The clause is raw SQL and should reference database column names.
+
+```ts title="src/schema/product_item_schema.ts"
+import { EntSchema, FloatType } from "@snowtop/ent";
+
+const ProductItemSchema = new EntSchema({
+  fields: {
+    price: FloatType({ index: true, indexWhere: "price > 0" }),
+    discount_price: FloatType(),
+  },
+  indices: [
+    {
+      name: "product_items_discount_idx",
+      columns: ["discount_price"],
+      where: "discount_price IS NOT NULL",
+    },
+  ],
+});
+export default ProductItemSchema;
+```

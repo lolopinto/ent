@@ -1,8 +1,5 @@
-import {
-  CreateGuestGroupActionBase,
-  GuestGroupCreateInput,
-  CreateGuestGroupActionTriggers,
-} from "src/ent/generated/guest_group/actions/create_guest_group_action_base";
+import { CreateGuestGroupActionBase } from "src/ent/generated/guest_group/actions/create_guest_group_action_base";
+import type { GuestGroupCreateInput, CreateGuestGroupActionTriggers } from "src/ent/generated/guest_group/actions/create_guest_group_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 import { Event, EventToEventActivitiesQuery } from "src/ent";
 import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
@@ -10,7 +7,7 @@ import { Builder } from "@snowtop/ent/action";
 import { ID, Viewer } from "@snowtop/ent";
 import CreateGuestAction from "src/ent/guest/actions/create_guest_action";
 
-export { GuestGroupCreateInput };
+export type { GuestGroupCreateInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateGuestGroupAction extends CreateGuestGroupActionBase {

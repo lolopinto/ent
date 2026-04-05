@@ -2,6 +2,7 @@ package schema
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -10,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jinzhu/inflection"
 	"github.com/lolopinto/ent/ent"
+	entconfig "github.com/lolopinto/ent/ent/config"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/depgraph"
@@ -22,7 +24,6 @@ import (
 	"github.com/lolopinto/ent/internal/schema/enum"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 // Schema is the representation of the parsed schema. Has everything needed to
@@ -34,12 +35,14 @@ type Schema struct {
 	globalConsts                *objWithConsts
 	extraEdgeFields             []*field.Field
 	edgeIndices                 []*input.Index
+	dbExtensions                []*input.DBExtension
 	initGlobalSchema            bool
 	globalSchemaTransformsEdges bool
 	tables                      NodeMapInfo
 	edges                       map[string]*ent.AssocEdgeData
 	newEdges                    []*ent.AssocEdgeData
 	edgesToUpdate               []*ent.AssocEdgeData
+	existingEdgeTables          map[string]bool
 	Enums                       map[string]*EnumInfo
 	enumTables                  map[string]*EnumInfo
 	CustomInterfaces            map[string]*customtype.CustomInterface
@@ -73,6 +76,10 @@ func (s *Schema) ExtraEdgeFields() []*field.Field {
 
 func (s *Schema) EdgeIndices() []*input.Index {
 	return s.edgeIndices
+}
+
+func (s *Schema) DBExtensions() []*input.DBExtension {
+	return s.dbExtensions
 }
 
 func (s *Schema) GetGlobalConsts() WithConst {
@@ -316,6 +323,7 @@ func ParseFromInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base
 	s.edges = edgeData.getEdgesToRender()
 	s.newEdges = edgeData.newEdges
 	s.edgesToUpdate = edgeData.edgesToUpdate
+	s.existingEdgeTables = edgeData.dbEdgeTables
 	return s, nil
 }
 
@@ -336,6 +344,7 @@ func (s *Schema) init() {
 	}
 	s.globalCanViewerDo = map[string]action.Action{}
 	s.globalConsts = &objWithConsts{}
+	s.existingEdgeTables = map[string]bool{}
 }
 
 func (s *Schema) GetNodeDataFromTableName(tableName string) *NodeData {
@@ -403,6 +412,19 @@ func (s *Schema) GetEdges() map[string]*ent.AssocEdgeData {
 // GetEdgesToUpdate returns edges in the schema that have changed which need to be updated
 func (s *Schema) GetEdgesToUpdate() []*ent.AssocEdgeData {
 	return s.edgesToUpdate
+}
+
+// EdgeTableExists returns true if an edge table already exists in the DB.
+func (s *Schema) EdgeTableExists(tableName string) bool {
+	return s.existingEdgeTables[tableName]
+}
+
+// AddExistingEdgeTable is used in tests to mark an edge table as already existing.
+func (s *Schema) AddExistingEdgeTable(tableName string) {
+	if s.existingEdgeTables == nil {
+		s.existingEdgeTables = map[string]bool{}
+	}
+	s.existingEdgeTables[tableName] = true
 }
 
 func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
@@ -641,6 +663,14 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 func (s *Schema) parseGlobalSchemaEarly(cfg codegenapi.Config, gs *input.GlobalSchema) []error {
 	var errs []error
 
+	if len(gs.DBExtensions) > 0 {
+		if err := s.validateDBExtensions(gs.DBExtensions); err != nil {
+			errs = append(errs, err)
+		} else {
+			s.dbExtensions = gs.DBExtensions
+		}
+	}
+
 	if len(gs.GlobalFields) > 0 {
 		fi, err := field.NewFieldInfoFromInputs(cfg, "global", gs.GlobalFields, &field.Options{
 			SortFields: true,
@@ -723,20 +753,20 @@ func (s *Schema) validateEdgeIndices() error {
 	}
 
 	validColumns := map[string]bool{
-		"id1":      true,
-		"id1_type": true,
+		"id1":       true,
+		"id1_type":  true,
 		"edge_type": true,
-		"id2":      true,
-		"id2_type": true,
-		"time":     true,
-		"data":     true,
-		"ID1":      true,
-		"ID1Type":  true,
-		"EdgeType": true,
-		"ID2":      true,
-		"ID2Type":  true,
-		"Time":     true,
-		"Data":     true,
+		"id2":       true,
+		"id2_type":  true,
+		"time":      true,
+		"data":      true,
+		"ID1":       true,
+		"ID1Type":   true,
+		"EdgeType":  true,
+		"ID2":       true,
+		"ID2Type":   true,
+		"Time":      true,
+		"Data":      true,
 	}
 
 	for _, f := range s.extraEdgeFields {
@@ -750,12 +780,182 @@ func (s *Schema) validateEdgeIndices() error {
 				return fmt.Errorf("invalid edge column %s passed as col for edge index %s", col, index.Name)
 			}
 		}
-
-		if index.IndexType == input.Gist {
-			return fmt.Errorf("gist index currently only supported for full text indexes")
-		}
 		if index.FullText != nil {
 			return fmt.Errorf("full text indexes not supported for edge index %s", index.Name)
+		}
+		if err := s.validateIndexMetadata(index, func(col string) bool {
+			return validColumns[col]
+		}, fmt.Sprintf("edge index %s", index.Name)); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+
+func normalizeDBExtensionName(name string) string {
+	return strings.ToLower(strings.TrimSpace(name))
+}
+
+func (s *Schema) hasDeclaredDBExtension(name string) bool {
+	key := normalizeDBExtensionName(name)
+	if key == "" {
+		return false
+	}
+	for _, extension := range s.dbExtensions {
+		if normalizeDBExtensionName(extension.Name) == key {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Schema) validateFieldMetadata(nodeName string, inputField *input.Field) error {
+	if inputField == nil || inputField.Type == nil {
+		return nil
+	}
+
+	typ := inputField.Type
+	if typ.PostgresType != "" && strings.TrimSpace(typ.PostgresType) == "" {
+		return fmt.Errorf("postgres type for field %s on %s cannot be empty", inputField.Name, nodeName)
+	}
+	if typ.PostgresType != "" && entconfig.IsSQLiteDialect() {
+		return fmt.Errorf("field %s on %s uses postgres type %s and is only supported on postgres", inputField.Name, nodeName, strings.TrimSpace(typ.PostgresType))
+	}
+
+	if typ.DBExtension != "" {
+		extension := strings.TrimSpace(typ.DBExtension)
+		if extension == "" {
+			return fmt.Errorf("db extension for field %s on %s cannot be empty", inputField.Name, nodeName)
+		}
+		if !s.hasDeclaredDBExtension(extension) {
+			return fmt.Errorf("field %s on %s requires db extension %s to be declared in the global schema", inputField.Name, nodeName, extension)
+		}
+		if entconfig.IsSQLiteDialect() {
+			return fmt.Errorf("field %s on %s requires postgres db extension %s and is only supported on postgres", inputField.Name, nodeName, extension)
+		}
+	}
+
+	for _, derivedField := range inputField.DerivedFields {
+		if err := s.validateFieldMetadata(nodeName, derivedField); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func validateIndexParams(index *input.Index) error {
+	for key, value := range index.IndexParams {
+		if strings.TrimSpace(key) == "" {
+			return fmt.Errorf("index params contain an empty key for index %s", index.Name)
+		}
+		if value == nil {
+			return fmt.Errorf("index param %s cannot be nil for index %s", key, index.Name)
+		}
+		if str, ok := value.(string); ok && strings.TrimSpace(str) == "" {
+			return fmt.Errorf("index param %s cannot be empty for index %s", key, index.Name)
+		}
+		switch value.(type) {
+		case string, bool, float64, float32, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		default:
+			return fmt.Errorf("unsupported index param type %T for param %s on index %s", value, key, index.Name)
+		}
+	}
+	return nil
+}
+
+func (s *Schema) validateIndexMetadata(index *input.Index, validColumn func(string) bool, context string) error {
+	if index.IndexType != "" && strings.TrimSpace(string(index.IndexType)) == "" {
+		return fmt.Errorf("index type cannot be empty for %s", context)
+	}
+
+	if index.DBExtension != "" {
+		extension := strings.TrimSpace(index.DBExtension)
+		if extension == "" {
+			return fmt.Errorf("db extension cannot be empty for %s", context)
+		}
+		if !s.hasDeclaredDBExtension(extension) {
+			return fmt.Errorf("%s requires db extension %s to be declared in the global schema", context, extension)
+		}
+		if entconfig.IsSQLiteDialect() {
+			return fmt.Errorf("%s requires postgres db extension %s and is only supported on postgres", context, extension)
+		}
+	}
+
+	if len(index.Ops) > 0 {
+		if entconfig.IsSQLiteDialect() {
+			return fmt.Errorf("operator classes for %s are only supported on postgres", context)
+		}
+		if index.FullText != nil {
+			return fmt.Errorf("operator classes are not supported for full text indexes. invalid index %s", index.Name)
+		}
+		for col, operatorClass := range index.Ops {
+			if !validColumn(col) {
+				return fmt.Errorf("invalid field %s passed as operator class target for index %s", col, index.Name)
+			}
+			if strings.TrimSpace(operatorClass) == "" {
+				return fmt.Errorf("operator class for field %s cannot be empty for index %s", col, index.Name)
+			}
+		}
+	}
+
+	if len(index.IndexParams) > 0 {
+		if entconfig.IsSQLiteDialect() {
+			return fmt.Errorf("index params for %s are only supported on postgres", context)
+		}
+		if index.FullText != nil {
+			return fmt.Errorf("index params are not supported for full text indexes. invalid index %s", index.Name)
+		}
+		if err := validateIndexParams(index); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (s *Schema) validateDBExtensions(extensions []*input.DBExtension) error {
+	seenExtensions := make(map[string]bool)
+
+	for _, extension := range extensions {
+		name := strings.TrimSpace(extension.Name)
+		if name == "" {
+			return fmt.Errorf("global db extension name cannot be empty")
+		}
+		key := strings.ToLower(name)
+		if seenExtensions[key] {
+			return fmt.Errorf("duplicate db extension %s", extension.Name)
+		}
+		seenExtensions[key] = true
+
+		if extension.InstallSchema != "" && strings.TrimSpace(extension.InstallSchema) == "" {
+			return fmt.Errorf("install schema for extension %s cannot be empty", extension.Name)
+		}
+		if extension.Version != "" && strings.TrimSpace(extension.Version) == "" {
+			return fmt.Errorf("version for extension %s cannot be empty", extension.Name)
+		}
+		if extension.ProvisionedBy == "" {
+			extension.ProvisionedBy = "ent"
+		}
+		if extension.ProvisionedBy != "ent" && extension.ProvisionedBy != "external" {
+			return fmt.Errorf(
+				"provisionedBy for extension %s must be ent or external",
+				extension.Name,
+			)
+		}
+
+		seenSchemas := make(map[string]bool)
+		for _, schemaName := range extension.RuntimeSchemas {
+			trimmed := strings.TrimSpace(schemaName)
+			if trimmed == "" {
+				return fmt.Errorf("runtime schema for extension %s cannot be empty", extension.Name)
+			}
+			if seenSchemas[trimmed] {
+				return fmt.Errorf("duplicate runtime schema %s for extension %s", schemaName, extension.Name)
+			}
+			seenSchemas[trimmed] = true
 		}
 	}
 
@@ -779,10 +979,10 @@ func (s *Schema) validateIndices(nodeData *NodeData) error {
 			return err
 		}
 
-		if index.IndexType != "" {
-			if index.IndexType == input.Gist {
-				return fmt.Errorf("gist index currently only supported for full text indexes")
-			}
+		if err := s.validateIndexMetadata(index, func(col string) bool {
+			return nodeData.FieldInfo.GetFieldByName(col) != nil
+		}, fmt.Sprintf("index %s", index.Name)); err != nil {
+			return err
 		}
 
 		if index.FullText == nil {
@@ -867,6 +1067,12 @@ func (s *Schema) processFields(cfg codegenapi.Config, nodeName string, fields []
 
 	if err != nil {
 		return nil, err
+	}
+
+	for _, inputField := range fields {
+		if err := s.validateFieldMetadata(nodeName, inputField); err != nil {
+			return nil, err
+		}
 	}
 
 	for _, f := range fieldInfo.EntFields() {
@@ -1119,15 +1325,18 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	// load all edges in db
 	result := <-ent.GenLoadAssocEdges()
 	if result.Err != nil {
-		return nil, errors.Wrap(result.Err, "error loading data. assoc_edge_config related")
+		return nil, fmt.Errorf("error loading data. assoc_edge_config related: %w", result.Err)
 	}
 
 	edgeMap := make(map[string]*ent.AssocEdgeData)
+	edgeTables := make(map[string]bool)
 	for _, assocEdgeData := range result.Edges {
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
+		edgeTables[assocEdgeData.EdgeTable] = true
 	}
 	return &assocEdgeData{
 		dbEdgeMap:     edgeMap,
+		dbEdgeTables:  edgeTables,
 		edgesToRender: map[string]*ent.AssocEdgeData{},
 	}, nil
 }
@@ -1794,6 +2003,9 @@ func (s *Schema) addActionFields(container Container) error {
 			}
 
 			for _, f2 := range a2.GetNonEntFields() {
+				if excludedFields[f2.GetFieldName()] {
+					continue
+				}
 				a.AddCustomNonEntField(t, f2)
 			}
 		}

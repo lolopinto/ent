@@ -3,8 +3,8 @@
 
 {{ $cfg := .Config -}}
 {{$viewerInfo := $cfg.GetTemplatizedViewer -}}
-{{ reserveImportPath $viewerInfo.GetImportPath false -}}
-{{$viewerType := useImport $viewerInfo.GetImport -}}
+{{ reserveTypeImportPath $viewerInfo.GetImportPath false -}}
+{{$viewerType := useTypeImport $viewerInfo.GetImport -}}
 
 {{$prefix := printf "const %s" $fieldConfig.Name -}}
 {{ if $fieldConfig.Exported -}}
@@ -13,26 +13,39 @@
 
 {{ range $import := $fieldConfig.TypeImports -}}
   {{ if $baseObj.ForeignImport $import.Import -}}
-    {{ $ignored := useImport $import.Import -}}
+    {{ if $import.TypeOnly -}}
+      {{ $ignored := useTypeImport $import.Import -}}
+    {{ else -}}
+      {{ $ignored := useImport $import.Import -}}
+    {{ end -}}
   {{ end -}}
 {{ end -}}
 {{ range $import := $fieldConfig.ArgImports -}}
   {{ if $baseObj.ForeignImport $import.Import -}}
-    {{ $ignored := useImport $import.Import -}}
+    {{ if $import.TypeOnly -}}
+      {{ $ignored := useTypeImport $import.Import -}}
+    {{ else -}}
+      {{ $ignored := useImport $import.Import -}}
+    {{ end -}}
   {{ end -}}
 {{ end -}}
 {{ range $import := $fieldConfig.ReserveAndUseImports -}}
-  {{ reserveImportPath $import false }}
-  {{ $ignored := useImport $import.Import -}}
+  {{ if $import.TypeOnly -}}
+    {{ reserveTypeImportPath $import false }}
+    {{ $ignored := useTypeImport $import.Import -}}
+  {{ else -}}
+    {{ reserveImportPath $import false }}
+    {{ $ignored := useImport $import.Import -}}
+  {{ end -}}
 {{ end -}}
 
-{{$prefix}}: {{useImport "GraphQLFieldConfig"}}<
+{{$prefix}}: {{useTypeImport "GraphQLFieldConfig"}}<
   undefined,
   {{ if ne $fieldConfig.Arg "" -}}
-    {{useImport "RequestContext"}}<{{$viewerType}}>,
+    {{useTypeImport "RequestContext"}}<{{$viewerType}}>,
     {{$fieldConfig.Arg}}
   {{ else }}
-    {{useImport "RequestContext"}}<{{$viewerType}}>
+    {{useTypeImport "RequestContext"}}<{{$viewerType}}>
   {{ end -}}
 > = {
   type: {{$fieldConfig.FieldType}},
@@ -42,15 +55,15 @@
   {{ template "render_args.tmpl" (dict "Base" $baseObj "Args" $fieldConfig.Args) -}}
   {{if $fieldConfig.ReturnTypeHint -}}
     {{ if $fieldConfig.ResolveMethodArg -}}
-      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}<{{$viewerType}}>, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useTypeImport "RequestContext"}}<{{$viewerType}}>, _info: {{useTypeImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
     {{ else -}}
-      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}<{{$viewerType}}>, _info: {{useImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useTypeImport "RequestContext"}}<{{$viewerType}}>, _info: {{useTypeImport "GraphQLResolveInfo"}}): {{$fieldConfig.ReturnTypeHint}} => {
     {{end -}}
   {{ else -}}
     {{ if $fieldConfig.ResolveMethodArg -}}
-      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useImport "RequestContext"}}<{{$viewerType}}>, _info: {{useImport "GraphQLResolveInfo"}}) => {
+      resolve: async (_source, {{$fieldConfig.ResolveMethodArg}}, context:{{useTypeImport "RequestContext"}}<{{$viewerType}}>, _info: {{useTypeImport "GraphQLResolveInfo"}}) => {
     {{else -}}
-      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useImport "RequestContext"}}<{{$viewerType}}>, _info: {{useImport "GraphQLResolveInfo"}}) => {
+      resolve: async (_source, args: {{$fieldConfig.Arg}}, context:{{useTypeImport "RequestContext"}}<{{$viewerType}}>, _info: {{useTypeImport "GraphQLResolveInfo"}}) => {
     {{end -}}
   {{ end -}}
     {{range $line := $fieldConfig.FunctionContents -}}

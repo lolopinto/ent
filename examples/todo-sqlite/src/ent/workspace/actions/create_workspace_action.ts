@@ -5,13 +5,11 @@ import {
   ID,
   AllowIfViewerHasIdentityPrivacyPolicy,
 } from "@snowtop/ent";
-import {
-  CreateWorkspaceActionBase,
-  WorkspaceCreateInput,
-} from "src/ent/generated/workspace/actions/create_workspace_action_base";
+import { CreateWorkspaceActionBase } from "src/ent/generated/workspace/actions/create_workspace_action_base";
+import type { WorkspaceCreateInput } from "src/ent/generated/workspace/actions/create_workspace_action_base";
 import { Workspace } from "src/ent/workspace";
 
-export { WorkspaceCreateInput };
+export type { WorkspaceCreateInput };
 
 export class CreateWorkspaceAction extends CreateWorkspaceActionBase {
   getPrivacyPolicy(): PrivacyPolicy<

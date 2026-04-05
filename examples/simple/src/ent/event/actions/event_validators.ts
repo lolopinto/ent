@@ -1,4 +1,4 @@
-import { Validator } from "@snowtop/ent/action";
+import type { Validator } from "@snowtop/ent/action";
 import {
   EventBuilder,
   EventInput,

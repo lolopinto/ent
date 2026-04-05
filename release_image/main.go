@@ -14,26 +14,26 @@ import (
 	"github.com/lolopinto/ent/internal/file"
 	"github.com/lolopinto/ent/internal/syncerr"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 // next tag to use
-const TAG = "v0.3.0-alpha.1"
+// testing changes. nothing to be used here...
+const TAG = "v0.3.2--test-test"
 
 // current node gets latest tag...
-const CURRENT_NODE_VERSION = 18
+const CURRENT_NODE_VERSION = 22
 const REPO = "ghcr.io/lolopinto/ent"
 
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 18,
 	// 20,
-	22,
+	// 22,
+	24,
 }
 
-const AUTO_SCHEMA_VERSION = "0.0.33"
-const TSENT_VERSION = "v0.3.0-alpha.1"
+const AUTO_SCHEMA_VERSION = "0.0.34"
+const TSENT_VERSION = "v0.3.1"
 
 // TODO release notes
 
@@ -150,16 +150,16 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 	info, err := os.Stat(dir)
 	if err == nil {
 		if !info.IsDir() {
-			return errors.Wrapf(err, "path %s exists and is not a directory", dir)
+			return fmt.Errorf("path %s exists and is not a directory: %w", dir, err)
 		}
 	} else if os.IsNotExist(err) {
 		// only create if directory doesn't exist
 		err := os.Mkdir(dir, os.ModePerm)
 		if err != nil {
-			return errors.Wrap(err, "error creating directory")
+			return fmt.Errorf("error creating directory: %w", err)
 		}
 	} else {
-		return errors.Wrap(err, "unexpected error")
+		return fmt.Errorf("unexpected error: %w", err)
 	}
 
 	defer os.RemoveAll(dir)
@@ -168,7 +168,7 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 	err = createDockerfile(dockerfile, d)
 
 	if err != nil {
-		return errors.Wrap(err, "error creating docker file")
+		return fmt.Errorf("error creating docker file: %w", err)
 	}
 
 	// create new builder to user here
@@ -177,7 +177,7 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 	buildCommand.Stderr = os.Stderr
 	buildCommand.Stdout = &out
 	if err := buildCommand.Run(); err != nil {
-		return errors.Wrap(err, "error creating builder")
+		return fmt.Errorf("error creating builder: %w", err)
 	}
 	builder := strings.TrimSpace(out.String())
 
@@ -199,7 +199,7 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 	cmd.Stderr = os.Stderr
 	err = cmd.Run()
 	if err != nil {
-		return errors.Wrapf(err, "error building docker image %d-%s", d.NodeVersion, d.Suffix)
+		return fmt.Errorf("error building docker image %d-%s: %w", d.NodeVersion, d.Suffix, err)
 	}
 
 	return nil

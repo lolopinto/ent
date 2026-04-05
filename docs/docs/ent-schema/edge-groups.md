@@ -185,7 +185,7 @@ provides the ability to add one or more states to the generated enum if no edge 
 
 ### nullStateFn
 
-When one or more [nullStates](#nullStates) exist, we need a way to disambiguiate which is used for the *status* depending on the viewer. This generates a protected async function in the base class that can be overriden by the developer.
+When one or more [nullStates](#nullstates) exist, we need a way to disambiguiate which is used for the *status* depending on the viewer. This generates a protected async function in the base class that can be overriden by the developer.
 
 For example, in the example above, this is generated
 

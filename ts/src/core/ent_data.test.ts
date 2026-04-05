@@ -76,7 +76,10 @@ class User extends BaseEnt {
       rules: [AllowIfViewerRule, AlwaysDenyRule],
     };
   }
-  constructor(public viewer: Viewer, public data: Data) {
+  constructor(
+    public viewer: Viewer,
+    public data: Data,
+  ) {
     super(viewer, data);
     this.baz = data["baz"];
     this.foo = data["foo"];
@@ -114,7 +117,10 @@ class Contact extends BaseEnt {
     return AllowIfViewerPrivacyPolicy;
   }
 
-  constructor(public viewer: Viewer, public data: Data) {
+  constructor(
+    public viewer: Viewer,
+    public data: Data,
+  ) {
     super(viewer, data);
     this.baz = data["baz"];
     this.foo = data["foo"];
@@ -464,8 +470,8 @@ async function testLoadRow(addCtx?: boolean, disableWrite?: boolean) {
             queryOption,
             // cache hit on 2nd query
             {
-              "cache-hit": "bar,baz,foo,bar=1",
-              "tableName": options.tableName,
+              "cache-hit": "fields:bar,baz,foo,clause:bar=1",
+              tableName: options.tableName,
             },
           ],
         ];
@@ -506,8 +512,8 @@ function commonTests() {
               qOption,
               {
                 // cache hit on 2nd query
-                "cache-hit": "bar,baz,foo,in:bar:1,2,3",
-                "tableName": options.tableName,
+                "cache-hit": "fields:bar,baz,foo,clause:in:bar:1,2,3",
+                tableName: options.tableName,
               },
             ],
           ];
@@ -558,7 +564,7 @@ function commonTests() {
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
               "dataloader-cache-hit": 1,
-              "tableName": options.tableName,
+              tableName: options.tableName,
             };
             const entLoggedoutCacheHit: Data = {
               "ent-cache-hit": ent.getEntKey(
@@ -683,7 +689,7 @@ function commonTests() {
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
               "dataloader-cache-hit": 1,
-              "tableName": options.tableName,
+              tableName: options.tableName,
             };
             const entLoggedoutCacheHit: Data = {
               "ent-cache-hit": ent.getEntKey(
@@ -780,7 +786,7 @@ function commonTests() {
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
               "dataloader-cache-hit": 1,
-              "tableName": options.tableName,
+              tableName: options.tableName,
             };
             const entCacheHit1: Data = {
               "ent-cache-hit": ent.getEntKey(
@@ -1156,8 +1162,8 @@ function commonTests() {
             [
               qOption,
               {
-                "cache-hit": "bar,baz,foo,bar=1 AND baz=baz",
-                "tableName": options.tableName,
+                "cache-hit": "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
+                tableName: options.tableName,
               },
             ],
           ];
@@ -1199,8 +1205,8 @@ function commonTests() {
             [
               qOption,
               {
-                "cache-hit": "bar,baz,foo,bar=1 AND baz=baz",
-                "tableName": options.tableName,
+                "cache-hit": "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
+                tableName: options.tableName,
               },
             ],
           ];
@@ -1387,6 +1393,34 @@ function commonTests() {
         ]);
       }
     });
+
+    test("ent loader loadMany preserves order and errors", async () => {
+      const vc = getIDViewer(1);
+      const loader = ent.getEntLoader(vc, User.loaderOptions());
+      const prevLimit = ent.getEntLoaderPrivacyConcurrencyLimit();
+      ent.setEntLoaderPrivacyConcurrencyLimit(2);
+
+      try {
+        const results = await loader.loadMany([2, 4, 1]);
+        const privacyError = results[0] as any;
+        expect(privacyError).not.toBeInstanceOf(Error);
+        expect(privacyError.error).toBeInstanceOf(Error);
+        expect(privacyError.error.message).toBe(
+          "ent 2 of type User is not visible for privacy reasons",
+        );
+
+        const missingError = results[1] as any;
+        expect(missingError.error).toBeInstanceOf(Error);
+        expect(missingError.error.message).toBe(
+          "couldn't find row for value 4 in table users",
+        );
+
+        const entResult = results[2] as User;
+        expect(entResult.id).toBe(1);
+      } finally {
+        ent.setEntLoaderPrivacyConcurrencyLimit(prevLimit);
+      }
+    });
   });
 
   describe("loadEnts with field privacy", () => {
@@ -1559,8 +1593,8 @@ function commonTests() {
       validateQueries([
         qOption,
         {
-          "cache-hit": "bar,baz,foo,baz=baz",
-          "tableName": options.tableName,
+          "cache-hit": "fields:bar,baz,foo,clause:baz=baz",
+          tableName: options.tableName,
         },
       ]);
     });
@@ -1647,8 +1681,8 @@ function commonTests() {
       validateQueries([
         qOption,
         {
-          "cache-hit": "bar,baz,foo,baz=baz",
-          "tableName": options.tableName,
+          "cache-hit": "fields:bar,baz,foo,clause:baz=baz",
+          tableName: options.tableName,
         },
       ]);
     });
@@ -1795,7 +1829,10 @@ function commonTests() {
           } else {
             queries2 = [
               queryOption,
-              { "cache-hit": "bar,baz,foo,bar=1", "tableName": "users" },
+              {
+                "cache-hit": "fields:bar,baz,foo,clause:bar=1",
+                tableName: "users",
+              },
             ];
           }
           return [queries, queries2];

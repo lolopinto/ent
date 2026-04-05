@@ -4,17 +4,17 @@
 {{ range $interfaces -}}
   {{ range .Extends}}
     {{ if $baseObj.ForeignImport . -}}
-      {{$ignored := useImport . -}}
+      {{$ignored := useTypeImport . -}}
     {{ end -}}
   {{ end -}}
   {{.InterfaceDecl }} {
   {{ range .Fields -}}
     {{$type := .Type -}}
     {{if .UseImport -}}
-      {{$type = useImport $type -}}
+      {{$type = useTypeImport $type -}}
     {{end -}}
     {{ range .UseImports -}}
-      {{$ignore := useImport . -}}
+      {{$ignore := useTypeImport . -}}
     {{ end -}}
     {{if .Optional -}}
       {{.Name}}?: {{$type}};

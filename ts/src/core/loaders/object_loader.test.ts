@@ -1,4 +1,5 @@
 import { ObjectLoader, ObjectLoaderFactory } from "./object_loader";
+import { getLoaderMaxBatchSize, setLoaderMaxBatchSize } from "./loader";
 import { createRowForTest, editRowForTest } from "../../testutils/write";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
@@ -352,7 +353,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       "dataloader-cache-hit": 1,
-      "tableName": "users",
+      tableName: "users",
     });
   });
 
@@ -383,7 +384,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     expect(ml.logs[1]).toStrictEqual({
       "dataloader-cache-hit": 1,
-      "tableName": "users",
+      tableName: "users",
     });
   }
 
@@ -661,6 +662,37 @@ function commonTests() {
     );
   });
 
+  test("loadMany chunks by maxBatchSize", async () => {
+    const prevMaxBatchSize = getLoaderMaxBatchSize();
+    const batchSize = 2;
+    setLoaderMaxBatchSize(batchSize);
+    try {
+      const ids = [1, 2, 3, 4, 5];
+      for (const id of ids) {
+        await createRowForTest({
+          tableName: "users",
+          fields: {
+            id,
+            first_name: `Jon${id}`,
+          },
+        });
+      }
+
+      const orderedIds = [5, 1, 3, 2, 4];
+      for (const useContext of [true, false]) {
+        ml.clear();
+        const loader = getNewLoader(useContext);
+        const rows = await loader.loadMany(orderedIds);
+        expect(rows.map((row) => row?.id)).toEqual(orderedIds);
+
+        const queryLogs = ml.logs.filter((log) => log?.query);
+        expect(queryLogs.length).toBe(Math.ceil(orderedIds.length / batchSize));
+      }
+    } finally {
+      setLoaderMaxBatchSize(prevMaxBatchSize);
+    }
+  });
+
   test("multi-ids. without context", async () => {
     await verifyMultiIDsDataAvail(
       () => getNewLoader(false),
@@ -816,7 +848,7 @@ function commonTests() {
         expect.arrayContaining([
           {
             "dataloader-cache-hit": user.phoneNumber,
-            "tableName": "fake_users",
+            tableName: "fake_users",
           },
         ]),
       );
@@ -844,7 +876,7 @@ function commonTests() {
         expect.arrayContaining([
           {
             "dataloader-cache-hit": user.emailAddress,
-            "tableName": "fake_users",
+            tableName: "fake_users",
           },
         ]),
       );
@@ -890,7 +922,7 @@ function commonTests() {
         expect.arrayContaining([
           {
             "dataloader-cache-hit": user.id,
-            "tableName": "fake_users",
+            tableName: "fake_users",
           },
         ]),
       );
@@ -921,7 +953,7 @@ function commonTests() {
         expect.arrayContaining([
           {
             "dataloader-cache-hit": user.emailAddress,
-            "tableName": "fake_users",
+            tableName: "fake_users",
           },
         ]),
       );
@@ -1069,7 +1101,7 @@ function commonTests() {
         },
         {
           "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
-          "tableName": "users",
+          tableName: "users",
         },
       ]);
     });
@@ -1137,6 +1169,41 @@ function commonTests() {
       }
     });
 
+    test("loadMany preserves clause order with counts", async () => {
+      await Promise.all(
+        Array.from({ length: 30 }, (_, idx) => create(idx + 1)),
+      );
+
+      ml.clear();
+
+      const loader = getNewLoader(true);
+      const countLoader = getNewCountLoader(true);
+
+      const clauses: clause.Clause<LoaderRow>[] = [
+        clause.Greater("id", 10),
+        clause.LessEq("id", 5),
+        clause.Greater("id", 20),
+      ];
+
+      const [rows, counts] = await Promise.all([
+        loader.loadMany(clauses),
+        countLoader.loadMany(clauses),
+      ]);
+
+      expect(rows.map((rowSet) => rowSet?.length ?? 0)).toStrictEqual([
+        20, 5, 10,
+      ]);
+      expect(counts).toStrictEqual([20, 5, 10]);
+
+      const first = rows[0] as LoaderRow[];
+      const second = rows[1] as LoaderRow[];
+      const third = rows[2] as LoaderRow[];
+
+      expect(first.every((row) => Number(row.id) > 10)).toBe(true);
+      expect(second.every((row) => Number(row.id) <= 5)).toBe(true);
+      expect(third.every((row) => Number(row.id) > 20)).toBe(true);
+    });
+
     test("cache hit with custom clause", async () => {
       await Promise.all(
         Array.from({ length: 30 }, (_, idx) =>
@@ -1173,7 +1240,7 @@ function commonTests() {
         },
         {
           "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
-          "tableName": "users",
+          tableName: "users",
         },
       ]);
     });
@@ -1283,7 +1350,7 @@ function commonTests() {
           "dataloader-cache-hit": `${clause
             .Greater("id", 10)
             .instanceKey()}:count`,
-          "tableName": "users",
+          tableName: "users",
         },
       ]);
     });
@@ -1389,7 +1456,7 @@ function commonTests() {
           "dataloader-cache-hit": `${clause
             .Greater("id", 10)
             .instanceKey()}:count`,
-          "tableName": "users",
+          tableName: "users",
         },
       ]);
     });
@@ -1548,13 +1615,13 @@ function commonTests() {
     expect(ml.logs).toStrictEqual([
       {
         "dataloader-cache-hit": clause.Greater("id", 10).instanceKey(),
-        "tableName": "users",
+        tableName: "users",
       },
       {
         "dataloader-cache-hit": `${clause
           .Greater("id", 10)
           .instanceKey()}:count`,
-        "tableName": "users",
+        tableName: "users",
       },
     ]);
   });
@@ -1682,7 +1749,7 @@ function verifyMultiIDsCacheHit(ids: ID[]) {
   ids.forEach((id, idx) => {
     expect(ml.logs[idx]).toStrictEqual({
       "dataloader-cache-hit": id,
-      "tableName": "users",
+      tableName: "users",
     });
   });
 }

@@ -3,6 +3,13 @@ import { load } from "js-yaml";
 import { DateTime } from "luxon";
 import pg, { Pool, PoolClient, PoolConfig } from "pg";
 import { log } from "./logger";
+import type { RuntimeDBExtension, RuntimeDevSchemaConfig } from "./config";
+import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema";
+import {
+  buildExtensionSearchPath,
+  initializeExtensions,
+  resolveExtensions,
+} from "./extensions";
 
 export interface Database extends PoolConfig {
   database?: string;
@@ -66,6 +73,8 @@ interface DatabaseInfo {
   config: PoolConfig;
   /// filePath for sqlite
   filePath?: string;
+  devSchema?: RuntimeDevSchemaConfig;
+  extensions?: RuntimeDBExtension[];
 }
 
 interface clientConfigArgs {
@@ -73,6 +82,8 @@ interface clientConfigArgs {
   dbFile?: string;
   db?: Database | DBDict;
   cfg?: PoolConfig;
+  devSchema?: RuntimeDevSchemaConfig;
+  extensions?: RuntimeDBExtension[];
 }
 // order
 // env variable
@@ -81,16 +92,24 @@ interface clientConfigArgs {
 // database file in yml file
 // database/config.yml
 function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
+  const extensions = resolveExtensions(args?.extensions);
+
   // if there's a db connection string, use that first
   const str = process.env.DB_CONNECTION_STRING;
   if (str) {
-    return parseConnectionString(str, args);
+    const info = parseConnectionString(str, args);
+    info.devSchema = args?.devSchema;
+    info.extensions = extensions;
+    return info;
   }
 
   let file = "config/database.yml";
   if (args) {
     if (args.connectionString) {
-      return parseConnectionString(args.connectionString, args);
+      const info = parseConnectionString(args.connectionString, args);
+      info.devSchema = args?.devSchema;
+      info.extensions = extensions;
+      return info;
     }
 
     if (args.db) {
@@ -106,6 +125,8 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
       return {
         dialect: Dialect.Postgres,
         config: db,
+        devSchema: args?.devSchema,
+        extensions,
       };
     }
 
@@ -137,6 +158,8 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
           // max, min, etc
           ...cfg,
         },
+        devSchema: args?.devSchema,
+        extensions,
       };
     }
     throw new Error(`invalid yaml configuration in file`);
@@ -153,9 +176,53 @@ export default class DB {
   private pool: Pool;
   private q: Connection;
   private constructor(public db: DatabaseInfo) {
+    const devSchemaEnabled = isDevSchemaEnabled(db.devSchema);
+    if (devSchemaEnabled && db.dialect === Dialect.SQLite) {
+      throw new Error("dev branch schemas are only supported for postgres");
+    }
+    const resolvedDevSchema = devSchemaEnabled
+      ? resolveDevSchema(db.devSchema)
+      : { enabled: false };
+    const extensions = db.extensions || [];
+
     if (db.dialect === Dialect.Postgres) {
+      const searchPath = buildExtensionSearchPath(
+        resolvedDevSchema,
+        extensions,
+      );
+      if (searchPath) {
+        const option = `-c search_path=${searchPath}`;
+        db.config = {
+          ...db.config,
+          options: db.config.options
+            ? `${db.config.options} ${option}`
+            : option,
+        };
+      }
+
       this.pool = new Pool(db.config);
-      this.q = new Postgres(this.pool);
+      const schemaName = resolvedDevSchema.schemaName;
+      const readyTasks: Promise<void>[] = [];
+      if (resolvedDevSchema.enabled && schemaName) {
+        readyTasks.push(
+          validateDevSchema(this.pool, schemaName).then(() =>
+            touchDevSchemaRegistry(
+              this.pool,
+              schemaName,
+              resolvedDevSchema.branchName,
+            ).catch(() => {}),
+          ),
+        );
+      }
+      readyTasks.push(initializeExtensions(this.pool, extensions));
+      const ready =
+        readyTasks.length > 0
+          ? Promise.all(readyTasks).then(() => undefined)
+          : undefined;
+      if (ready) {
+        ready.catch(() => {});
+      }
+      this.q = new Postgres(this.pool, ready);
 
       this.pool.on("error", (err, client) => {
         log("error", err);
@@ -226,6 +293,10 @@ export default class DB {
   static initDB(args?: clientConfigArgs) {
     const config = getClientConfig(args);
     if (config) {
+      const existing = DB.instance;
+      if (existing) {
+        void existing.endPool().catch(() => {});
+      }
       DB.instance = new DB(config);
       DB.dialect = DB.instance.db.dialect;
     }
@@ -437,7 +508,18 @@ export class Sqlite implements Connection, SyncClient {
 }
 
 export class Postgres implements Connection {
-  constructor(private pool: Pool) {}
+  private closePromise?: Promise<void>;
+
+  constructor(
+    private pool: Pool,
+    private ready?: Promise<void>,
+  ) {}
+
+  private async ensureReady() {
+    if (this.ready) {
+      await this.ready;
+    }
+  }
 
   self() {
     return this;
@@ -445,17 +527,19 @@ export class Postgres implements Connection {
 
   // returns new Pool client
   async newClient() {
+    await this.ensureReady();
     const client = await this.pool.connect();
     if (!client) {
       throw new Error(`couldn't get new client`);
     }
-    return new PostgresClient(client);
+    return new PostgresClient(client, this.ready);
   }
 
   async query(
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
+    await this.ensureReady();
     const r = await this.pool.query(query, values);
     return r as QueryResult<QueryResultRow>;
   }
@@ -464,11 +548,13 @@ export class Postgres implements Connection {
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
+    await this.ensureReady();
     const r = await this.pool.query(query, values);
     return r as QueryResult<QueryResultRow>;
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
+    await this.ensureReady();
     const r = await this.pool.query(query, values);
     return {
       rowCount: r?.rowCount || 0,
@@ -477,17 +563,30 @@ export class Postgres implements Connection {
   }
 
   async close() {
-    return this.pool.end();
+    if (!this.closePromise) {
+      this.closePromise = this.pool.end();
+    }
+    return this.closePromise;
   }
 }
 
 export class PostgresClient implements Client {
-  constructor(private client: PoolClient) {}
+  constructor(
+    private client: PoolClient,
+    private ready?: Promise<void>,
+  ) {}
+
+  private async ensureReady() {
+    if (this.ready) {
+      await this.ready;
+    }
+  }
 
   async query(
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
+    await this.ensureReady();
     const r = await this.client.query(query, values);
     return r as QueryResult<QueryResultRow>;
   }
@@ -496,11 +595,13 @@ export class PostgresClient implements Client {
     query: string,
     values?: any[],
   ): Promise<QueryResult<QueryResultRow>> {
+    await this.ensureReady();
     const r = await this.client.query(query, values);
     return r as QueryResult<QueryResultRow>;
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
+    await this.ensureReady();
     const r = await this.client.query(query, values);
     return {
       rowCount: r?.rowCount || 0,
@@ -510,5 +611,46 @@ export class PostgresClient implements Client {
 
   async release(err?: Error | boolean) {
     return this.client.release(err);
+  }
+}
+
+async function validateDevSchema(pool: Pool, schemaName: string) {
+  const res = await pool.query(
+    "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = $1) AS ok",
+    [schemaName],
+  );
+  if (!res.rows?.[0]?.ok) {
+    throw new Error(
+      `dev branch schema \"${schemaName}\" does not exist. Run auto_schema or migrations to create it.`,
+    );
+  }
+}
+
+async function touchDevSchemaRegistry(
+  pool: Pool,
+  schemaName: string,
+  branchName?: string,
+) {
+  const branch = branchName ?? null;
+  try {
+    // Avoid DDL at runtime; registry table should be created by auto_schema/prune.
+    await pool.query(
+      `
+      INSERT INTO public.ent_dev_schema_registry (schema_name, branch_name, created_at, last_used_at)
+      VALUES ($1, $2, now(), now())
+      ON CONFLICT (schema_name)
+      DO UPDATE SET last_used_at = now(), branch_name = EXCLUDED.branch_name
+      `,
+      [schemaName, branch],
+    );
+  } catch (err) {
+    if (
+      err &&
+      typeof err.message === "string" &&
+      err.message.includes("ent_dev_schema_registry")
+    ) {
+      return;
+    }
+    log("debug", err);
   }
 }

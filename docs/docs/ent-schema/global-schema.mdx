@@ -129,10 +129,40 @@ export const GlobalDeletedEdge = {
 
 Spreading that object inside your global schema (as the todo-sqlite example does) means every edge created through actions, loaders, or queries respects the soft-delete contract without touching individual schemas.
 
+## Database extensions
+
+`dbExtensions` declares database-level Postgres extensions that your schema depends on. This is the source of truth for codegen and migrations, and it is how extension-backed field/index helpers prove that the required extension is actually part of the schema.
+
+```ts title="src/schema/global_schema.ts"
+import type { GlobalSchema } from "@snowtop/ent";
+import { PostGISExtension } from "@snowtop/ent-postgis";
+import { PgVectorExtension } from "@snowtop/ent-pgvector";
+
+const globalSchema: GlobalSchema = {
+  dbExtensions: [
+    PostGISExtension(),
+    PgVectorExtension({ provisionedBy: "external" }),
+  ],
+};
+
+export default globalSchema;
+```
+
+Each entry supports the following options:
+
+* `name`: the Postgres extension name, for example `postgis` or `vector`.
+* `provisionedBy`: who owns the extension lifecycle. The default is `"ent"`, which lets migrations create, upgrade, move, and drop the extension as needed. Set `"external"` when the database service or DBA installs the extension and Ent should only validate that it already exists.
+* `version`: optional version pin for migrations and validation.
+* `installSchema`: optional install schema for extensions that support schema moves.
+* `runtimeSchemas`: schemas that should be part of the runtime `search_path` when extension types or functions live outside the app schema. Most packages default this to `["public"]`.
+* `dropCascade`: whether downgrade should use `CASCADE` when dropping the extension.
+
+Use `provisionedBy: "external"` for hosted Postgres setups where `CREATE EXTENSION` is not allowed but the extension is already present. Ent will not try to install or move it, and `auto_schema` will fail if the required extension, version, or install schema is missing.
+
 ## Putting it all together
 
 1. Create a `GlobalSchema` file (either at `src/schema/__global__schema.ts` or whatever you set as `globalSchemaPath`).
-2. Describe shared structs/enums in the `fields` map and optionally set up edge-wide behavior via `edges`, `extraEdgeFields`, `transformEdgeRead`, or `transformEdgeWrite`.
+2. Describe shared structs/enums in the `fields` map, declare any required Postgres extensions in `dbExtensions`, and optionally set up edge-wide behavior via `edges`, `extraEdgeFields`, `transformEdgeRead`, or `transformEdgeWrite`.
 3. Reference the shared types with `globalType` wherever you need them. You can still tweak per-field options to fit each schema.
 4. Run the CLI (`tsent codegen` or whichever wrapper you use in your project) so the new global definitions show up in the generated Ent, GraphQL schema, and SQL migrations.
 

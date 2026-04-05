@@ -9,14 +9,28 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- fix types for struct list for on demand types (#1911)
+- exclude action-only fields when embedding action inputs (#1914)
+- fix builder codegen for list inverse edges (#1915)
+- fix action custom inputs to use public field names when field privacy is enabled (#1874)
+- fix generation of union types to be deterministic (#1919)
+- fix bug which lead to union types to be missing sometimes (#1920)
+- dev schema config + pruning updates (#1946, #1947)
+
+## [0.3.0]
+
 ### Added
 
+- DateType as string (#1887)
 - add global edge composite indices for extra edge fields (#1897)
 - support concurrent index creation in auto_schema migrations (#1901)
 - support partial indexes with WHERE clauses in schema indices (#1903)
 
 ### Fixed
 
+- Fix optionality for default-provided action fields #1890
 - fix struct fields that are fetchOnDemand and have a privacy policy (#1893)
 - treat global schema changes as full codegen changes (#1898)
 

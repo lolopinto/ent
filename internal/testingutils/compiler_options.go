@@ -2,8 +2,7 @@ package testingutils
 
 import (
 	"encoding/json"
-
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 func DefaultCompilerOptions() string {
@@ -16,7 +15,7 @@ func DefaultCompilerOptions() string {
 		"esModuleInterop":    true,
 	})
 	if err != nil {
-		panic(errors.Wrap(err, "error creating json compiler options"))
+		panic(fmt.Errorf("error creating json compiler options: %w", err))
 	}
 	return string(opts)
 }

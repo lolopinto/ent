@@ -3,14 +3,11 @@ import {
   AllowIfViewerHasIdentityPrivacyPolicy,
 } from "@snowtop/ent";
 
-import {
-  CreateEventActionBase,
-  EventCreateInput,
-  CreateEventActionTriggers,
-} from "src/ent/generated/event/actions/create_event_action_base";
+import { CreateEventActionBase } from "src/ent/generated/event/actions/create_event_action_base";
+import type { EventCreateInput, CreateEventActionTriggers } from "src/ent/generated/event/actions/create_event_action_base";
 import CreateEventActivityAction from "src/ent/event_activity/actions/create_event_activity_action";
 
-export { EventCreateInput };
+export type { EventCreateInput };
 
 export default class CreateEventAction extends CreateEventActionBase {
   getPrivacyPolicy(): PrivacyPolicy {

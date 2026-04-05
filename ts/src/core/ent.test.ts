@@ -12,6 +12,7 @@ import { createRowForTest } from "../testutils/write";
 import { Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
 import {
   AssocEdge,
+  assocEdgeLoader,
   getEdgeTypeInGroup,
   loadCustomEdges,
   loadEdges,
@@ -21,6 +22,8 @@ import {
   loadEntX,
   loadEntViaKey,
   loadEntXViaKey,
+  decodeCursorPayload,
+  getCursor,
 } from "./ent";
 import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
 import { TestContext } from "../testutils/context/test_context";
@@ -118,6 +121,73 @@ class DerivedUser extends BaseEnt {
 }
 
 function commonTests() {
+  test("assocEdgeLoader loadMany preserves order and nulls", async () => {
+    assocEdgeLoader.clearAll();
+    await createEdgeRows(["edge_order_a", "edge_order_b"]);
+
+    const [row1, missingRow, row2] = await assocEdgeLoader.loadMany([
+      "edge_order_a",
+      "missing_edge_order",
+      "edge_order_b",
+    ]);
+    expect(row1).not.toBeNull();
+    expect((row1 as Data).edge_type).toBe("edge_order_a");
+    expect(missingRow).toBeNull();
+    expect(row2).not.toBeNull();
+    expect((row2 as Data).edge_type).toBe("edge_order_b");
+    assocEdgeLoader.clearAll();
+  });
+
+  describe("getCursor UTF-8 encoding", () => {
+    test("round-trips sort values with trademark, em dash, and non-Latin1 text", () => {
+      const row = {
+        name: "Clowntown™ — 展示",
+        start_date: "2024-01-15",
+        id: "550e8400-e29b-41d4-a716-446655440000",
+      };
+      const encoded = getCursor({
+        row,
+        cursorKeys: ["name", "start_date", "id"],
+      });
+      const decoded = JSON.parse(decodeCursorPayload(encoded)) as [
+        string,
+        string | number | null,
+      ][];
+      expect(decoded).toEqual([
+        ["name", "Clowntown™ — 展示"],
+        ["start_date", "2024-01-15"],
+        ["id", "550e8400-e29b-41d4-a716-446655440000"],
+      ]);
+    });
+  
+    test("ASCII-only cursor matches legacy btoa base64 (backward compatible)", () => {
+      const row = { name: "Plain ASCII", id: "a" };
+      const encoded = getCursor({ row, cursorKeys: ["name", "id"] });
+      const legacy = btoa(
+        JSON.stringify([
+          ["name", "Plain ASCII"],
+          ["id", "a"],
+        ]),
+      );
+      expect(encoded).toBe(legacy);
+    });
+  
+    test("Date columns are ISO strings in the cursor payload", () => {
+      const d = new Date("2024-06-01T12:00:00.000Z");
+      const row = { created_at: d, id: "x" };
+      const encoded = getCursor({
+        row,
+        cursorKeys: ["created_at", "id"],
+      });
+      const decoded = JSON.parse(decodeCursorPayload(encoded)) as [
+        string,
+        string | number | null,
+      ][];
+      expect(decoded[0]).toEqual(["created_at", d.toISOString()]);
+      expect(decoded[1]).toEqual(["id", "x"]);
+    });
+  });
+
   describe("loadDerivedEnt", () => {
     test("loggedout", async () => {
       const user = await DerivedUser.load(loggedOutViewer, { id: "1" });

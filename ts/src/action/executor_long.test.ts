@@ -24,10 +24,6 @@ jest.setTimeout(30 * 1000);
 setupPostgres(getTables);
 
 test("nested + Promise.all with lots of actions", async () => {
-  // TODO eventually figure out how to make this run in ci
-  if (process.env.GITHUB_ACTION !== undefined) {
-    return;
-  }
   const NUM_USERS = 500;
   const host = await createUser();
   const users: User[] = [];
@@ -55,24 +51,29 @@ test("nested + Promise.all with lots of actions", async () => {
           const host = builder.getStoredData("host") as User;
           const users = builder.getStoredData("users") as User[];
 
-          await Promise.all(
-            users.map(async (user) => {
-              // create welcome message to each user from host
-              const action = new CreateMessageAction(
-                builder.viewer,
-                new Map<string, any>([
-                  ["sender", host.id],
-                  ["recipient", user.id],
-                  ["message", "Welcome to the group!"],
-                  ["transient", false],
-                  ["expiresAt", new Date()],
-                ]),
-                WriteOperation.Insert,
-                null,
-              );
-              await action.saveX();
-            }),
-          );
+          // Batch to avoid saturating local DB connections with 500 parallel writes.
+          const BATCH_SIZE = 25;
+          for (let i = 0; i < users.length; i += BATCH_SIZE) {
+            const batch = users.slice(i, i + BATCH_SIZE);
+            await Promise.all(
+              batch.map(async (user) => {
+                // create welcome message to each user from host
+                const action = new CreateMessageAction(
+                  builder.viewer,
+                  new Map<string, any>([
+                    ["sender", host.id],
+                    ["recipient", user.id],
+                    ["message", "Welcome to the group!"],
+                    ["transient", false],
+                    ["expiresAt", new Date()],
+                  ]),
+                  WriteOperation.Insert,
+                  null,
+                );
+                await action.saveX();
+              }),
+            );
+          }
         },
       },
     ];

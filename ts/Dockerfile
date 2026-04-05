@@ -1,10 +1,10 @@
-ARG GOLANG_VERSION=v0.2.0-alpha.13
-ARG AUTO_SCHEMA_VERSION=0.0.32
-ARG NODE_VERSION=18
-ARG DOCKER_TAG=v0.2.0-alpha.13-test
+ARG GOLANG_VERSION=v0.3.1
+ARG AUTO_SCHEMA_VERSION=0.0.34
+ARG NODE_VERSION=24
+ARG DOCKER_TAG=v0.3.1
 
 # get and install tsent
-FROM --platform=$BUILDPLATFORM golang:1.23.3-bullseye As golang-image
+FROM --platform=$BUILDPLATFORM golang:1.25-trixie As golang-image
 ARG GOLANG_VERSION
 ARG DOCKER_TAG
 ENV GOPATH=$HOME/go
@@ -18,7 +18,7 @@ ARG TARGETOS TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
-FROM python:3.11.0-bullseye AS python-image
+FROM python:3.12-trixie AS python-image
 ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv
@@ -58,7 +58,7 @@ RUN \
 
 RUN apt update && apt --assume-yes install zsh && \
   rm -rf /var/lib/apt/lists/*
-RUN npm install -g typescript@5.3.2 prettier@3.1.0 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@1.4.1
+RUN npm install -g typescript@5.3.2 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@2.4.7
 
 WORKDIR /app
 RUN npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.8
@@ -71,4 +71,3 @@ COPY --from=python-image /opt/venv /opt/venv
 COPY --from=golang-image /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION /go/pkg/mod/github.com/lolopinto/ent@$GOLANG_VERSION
 
 CMD ["node"]
-

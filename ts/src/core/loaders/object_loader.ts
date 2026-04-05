@@ -11,12 +11,33 @@ import {
   DataOptions,
 } from "../base";
 import { loadRow, loadRows } from "../ent";
+import { mapWithConcurrency } from "../async_utils";
 import * as clause from "../clause";
-import { log, logEnabled } from "../logger";
+import { log } from "../logger";
 import { getCombinedClause } from "../clause";
 
-import { getLoader, CacheMap, getCustomLoader } from "./loader";
-import memoizee from "memoizee";
+import {
+  getLoader,
+  InstrumentedDataLoader,
+  createBoundedCacheMap,
+  createLoaderCacheMap,
+  getCustomLoader,
+  getLoaderMaxBatchSize,
+} from "./loader";
+import { memoizeNoArgs } from "../memoize";
+
+const DEFAULT_CLAUSE_LOADER_CONCURRENCY = 10;
+let clauseLoaderConcurrency = DEFAULT_CLAUSE_LOADER_CONCURRENCY;
+
+export function setClauseLoaderConcurrency(limit: number) {
+  if (!Number.isFinite(limit) || limit < 1) {
+    clauseLoaderConcurrency = DEFAULT_CLAUSE_LOADER_CONCURRENCY;
+    return;
+  }
+  clauseLoaderConcurrency = Math.floor(limit);
+}
+
+export { mapWithConcurrency };
 
 async function loadRowsForIDLoader<K, V = Data>(
   options: SelectDataOptions,
@@ -24,16 +45,16 @@ async function loadRowsForIDLoader<K, V = Data>(
   context?: Context,
 ) {
   let col = options.key;
-  const cls = getCombinedClause(
-    options,
-    clause.DBTypeIn(col, ids, options.keyType || "uuid"),
-  );
-
-  const rowOptions: LoadRowOptions = {
-    ...options,
-    clause: cls,
-    context,
-  };
+  const typ = options.keyType || "uuid";
+  const maxBatchSize = getLoaderMaxBatchSize();
+  const batches: K[][] = [];
+  if (maxBatchSize > 0 && ids.length > maxBatchSize) {
+    for (let i = 0; i < ids.length; i += maxBatchSize) {
+      batches.push(ids.slice(i, i + maxBatchSize));
+    }
+  } else {
+    batches.push(ids);
+  }
 
   let m = new Map<K, number>();
   let result: (V | null)[] = [];
@@ -43,21 +64,30 @@ async function loadRowsForIDLoader<K, V = Data>(
     m.set(ids[i], i);
   }
 
-  const rows = (await loadRows(rowOptions)) as V[];
-  for (const row of rows) {
-    const id = row[col];
-    if (id === undefined) {
-      throw new Error(
-        `need to query for column ${col} when using an object loader because the query may not be sorted and we need the id to maintain sort order`,
-      );
+  for (const batch of batches) {
+    const cls = getCombinedClause(options, clause.DBTypeIn(col, batch, typ));
+    const rowOptions: LoadRowOptions = {
+      ...options,
+      clause: cls,
+      context,
+    };
+
+    const rows = (await loadRows(rowOptions)) as V[];
+    for (const row of rows) {
+      const id = row[col];
+      if (id === undefined) {
+        throw new Error(
+          `need to query for column ${col} when using an object loader because the query may not be sorted and we need the id to maintain sort order`,
+        );
+      }
+      const idx = m.get(id);
+      if (idx === undefined) {
+        throw new Error(
+          `malformed query. got ${id} back but didn't query for it`,
+        );
+      }
+      result[idx] = row;
     }
-    const idx = m.get(id);
-    if (idx === undefined) {
-      throw new Error(
-        `malformed query. got ${id} back but didn't query for it`,
-      );
-    }
-    result[idx] = row;
   }
   return result;
 }
@@ -69,11 +99,13 @@ async function loadRowsForClauseLoader<
 >(
   options: SelectDataOptions,
   clause: clause.Clause<TQueryData, K>,
+  context?: Context,
 ): Promise<TResultData[]> {
   const rowOptions: LoadRowOptions = {
     ...options,
     // @ts-expect-error clause in LoadRowOptions doesn't take templatized version of Clause
     clause: getCombinedClause(options, clause, true),
+    context,
   };
 
   return (await loadRows(rowOptions)) as TResultData[];
@@ -82,11 +114,13 @@ async function loadRowsForClauseLoader<
 async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
   options: SelectDataOptions,
   clause: clause.Clause<V, K>,
+  context?: Context,
 ): Promise<number> {
   const rowOptions: LoadRowOptions = {
     ...options,
     // @ts-expect-error clause in LoadRowOptions doesn't take templatized version of Clause
     clause: getCombinedClause(options, clause, true),
+    context,
   };
 
   const row = await loadRow({
@@ -102,49 +136,58 @@ async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
 // optional clause...
 // so ObjectLoaderFactory and createDataLoader need to take a new optional field which is a clause that's always added here
 // and we need a disableTransform which skips loader completely and uses loadRow...
-function createDataLoader(options: SelectDataOptions) {
-  const loaderOptions: DataLoader.Options<any, any> = {};
+function createDataLoader(options: SelectDataOptions, context?: Context) {
+  const loaderName = `objectLoader:${options.tableName}:${options.key}`;
+  const loaderOptions: DataLoader.Options<any, any> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+    cacheMap: createLoaderCacheMap(options),
+  };
 
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap(options);
-  }
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (ids: ID[]) => {
+      if (!ids.length) {
+        return [];
+      }
 
-  return new DataLoader(async (ids: ID[]) => {
-    if (!ids.length) {
-      return [];
-    }
-
-    // context not needed because we're creating a loader which has its own cache which is being used here
-    return loadRowsForIDLoader(options, ids);
-  }, loaderOptions);
+      // pass context along so ContextCache is primed alongside DataLoader caching
+      return loadRowsForIDLoader(options, ids, context);
+    },
+    loaderOptions,
+    options.tableName,
+  );
 }
 
-class clauseCacheMap {
-  private m = new Map();
+class clauseCacheMap<
+  TQueryData extends Data = Data,
+  K = keyof TQueryData,
+  V = any,
+> implements DataLoader.CacheMap<clause.Clause<TQueryData, K>, Promise<V>>
+{
+  private m = new Map<string, Promise<V>>();
 
   constructor(
     private options: DataOptions,
     private count?: boolean,
   ) {}
 
-  get(key: clause.Clause) {
+  get(key: clause.Clause<TQueryData, K>) {
     const key2 = key.instanceKey();
     const ret = this.m.get(key2);
     if (ret) {
       log("cache", {
         "dataloader-cache-hit": key2 + (this.count ? ":count" : ""),
-        "tableName": this.options.tableName,
+        tableName: this.options.tableName,
       });
     }
     return ret;
   }
 
-  set(key: clause.Clause, value: any) {
+  set(key: clause.Clause<TQueryData, K>, value: Promise<V>) {
     return this.m.set(key.instanceKey(), value);
   }
 
-  delete(key: clause.Clause) {
+  delete(key: clause.Clause<TQueryData, K>) {
     return this.m.delete(key.instanceKey());
   }
 
@@ -153,59 +196,80 @@ class clauseCacheMap {
   }
 }
 
+function createClauseCacheMap<
+  TQueryData extends Data = Data,
+  K = keyof TQueryData,
+  V = any,
+>(options: DataOptions, count?: boolean) {
+  return createBoundedCacheMap(
+    new clauseCacheMap<TQueryData, K, V>(options, count),
+    (key) => key.instanceKey(),
+  ) as DataLoader.CacheMap<clause.Clause<TQueryData, K>, Promise<V>>;
+}
+
 function createClauseDataLoder<
   TQueryData extends Data = Data,
   TResultData extends Data = TQueryData,
   K = keyof TQueryData,
->(options: SelectDataOptions) {
-  return new DataLoader(
+>(options: SelectDataOptions, context?: Context) {
+  const loaderName = `objectLoader:clause:${options.tableName}`;
+  return new InstrumentedDataLoader(
+    loaderName,
     async (clauses: clause.Clause<TQueryData, K>[]) => {
       if (!clauses.length) {
         return [];
       }
-      const ret: TResultData[][] = [];
-      for await (const clause of clauses) {
-        const data = await loadRowsForClauseLoader<TQueryData, TResultData, K>(
-          options,
-          clause,
-        );
-        ret.push(data);
-      }
-      return ret;
+      return mapWithConcurrency(
+        clauses,
+        clauseLoaderConcurrency,
+        (clauseItem) =>
+          loadRowsForClauseLoader<TQueryData, TResultData, K>(
+            options,
+            clauseItem,
+            context,
+          ),
+      );
     },
     {
-      cacheMap: new clauseCacheMap(options),
+      cacheMap: createClauseCacheMap<TQueryData, K, TResultData[]>(options),
+      maxBatchSize: getLoaderMaxBatchSize(),
     },
+    options.tableName,
+    (key) => key.instanceKey(),
   );
 }
 
 function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
   options: SelectDataOptions,
+  context?: Context,
 ) {
-  return new DataLoader(
+  const loaderName = `objectLoader:count:${options.tableName}`;
+  return new InstrumentedDataLoader(
+    loaderName,
     async (clauses: clause.Clause<V, K>[]) => {
       if (!clauses.length) {
         return [];
       }
-      const ret: number[] = [];
-      for await (const clause of clauses) {
-        const data = await loadCountForClauseLoader(options, clause);
-        ret.push(data);
-      }
-      return ret;
+      return mapWithConcurrency(
+        clauses,
+        clauseLoaderConcurrency,
+        (clauseItem) => loadCountForClauseLoader(options, clauseItem, context),
+      );
     },
     {
-      cacheMap: new clauseCacheMap(options, true),
+      cacheMap: createClauseCacheMap<V, K, number>(options, true),
+      maxBatchSize: getLoaderMaxBatchSize(),
     },
+    options.tableName,
+    (key) => `${key.instanceKey()}:count`,
   );
 }
 
 export class ObjectLoader<
-    TQueryData extends Data = Data,
-    TResultData extends Data = TQueryData,
-    K = keyof TQueryData,
-  >
-  implements
+  TQueryData extends Data = Data,
+  TResultData extends Data = TQueryData,
+  K = keyof TQueryData,
+> implements
     Loader<ID, TResultData | null>,
     Loader<clause.Clause<TQueryData, K>, TResultData[] | null>
 {
@@ -229,10 +293,10 @@ export class ObjectLoader<
       console.trace();
     }
     if (context) {
-      this.idLoader = createDataLoader(options);
-      this.clauseLoader = createClauseDataLoder(options);
+      this.idLoader = createDataLoader(options, context);
+      this.clauseLoader = createClauseDataLoder(options, context);
     }
-    this.memoizedInitPrime = memoizee(this.initPrime.bind(this));
+    this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
 
   getOptions(): SelectDataOptions {
@@ -303,7 +367,7 @@ export class ObjectLoader<
     if (this.clauseLoader) {
       return this.clauseLoader.load(key);
     }
-    return loadRowsForClauseLoader(this.options, key);
+    return loadRowsForClauseLoader(this.options, key, this.context);
   }
 
   clearAll() {
@@ -345,16 +409,13 @@ export class ObjectLoader<
       return this.clauseLoader.loadMany(keys);
     }
 
-    const res: TResultData[][] = [];
-    for await (const key of keys) {
-      const rows = await loadRowsForClauseLoader<TQueryData, TResultData, K>(
+    return mapWithConcurrency(keys, clauseLoaderConcurrency, (key) =>
+      loadRowsForClauseLoader<TQueryData, TResultData, K>(
         this.options,
         key,
-      );
-      res.push(rows);
-    }
-
-    return res;
+        this.context,
+      ),
+    );
   }
 
   prime(data: TResultData) {
@@ -390,7 +451,7 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
     public context?: Context,
   ) {
     if (context) {
-      this.loader = createClauseCountDataLoader(options);
+      this.loader = createClauseCountDataLoader(options, context);
     }
   }
 
@@ -402,7 +463,7 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
     if (this.loader) {
       return this.loader.load(key);
     }
-    return loadCountForClauseLoader(this.options, key);
+    return loadCountForClauseLoader(this.options, key, this.context);
   }
 
   clearAll() {
@@ -418,13 +479,9 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
       return this.loader.loadMany(keys);
     }
 
-    const res: number[] = [];
-    for await (const key of keys) {
-      const r = await loadCountForClauseLoader(this.options, key);
-      res.push(r);
-    }
-
-    return res;
+    return mapWithConcurrency(keys, clauseLoaderConcurrency, (key) =>
+      loadCountForClauseLoader(this.options, key, this.context),
+    );
   }
 }
 

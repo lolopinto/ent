@@ -5,7 +5,7 @@ import ts, { SourceFile, Node, isClassDeclaration } from "typescript";
 class FixActionExports implements TransformFile {
   glob = "src/ent/**/actions/*_action.ts";
 
-  prettierGlob = "src/ent/**/actions/*_action.ts";
+  formatGlob = "src/ent/**/actions/*_action.ts";
 
   traverseChild(
     sourceFile: SourceFile,

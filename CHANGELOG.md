@@ -7,11 +7,57 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
-## [Unreleased]
+## [0.2.7]
+
+### Added
+
+- allow configuring clause loader and ent loader privacy concurrency limits
+- add loader/cache metrics hooks (#1939)
+- make Biome the default formatter for generated TypeScript, using project-root `biome.json` or `biome.jsonc` when present and falling back to ent's bundled config
+
+### Fixed
+
+- avoid context cache collisions by including query shape options in cache keys (#1934)
+- cap DataLoader caches and discarded loader list (#1935)
+- pass context through batch loader paths to prime ContextCache (#1936)
+- memoize assoc direct edge loader clause queries to avoid duplicate hits (#1940)
+- reuse QueryDirectLoader cache entries for identical clauses (#1937)
+- stop persisting formatter settings in `.ent/schema.json`; Biome config files are now the source of truth
+
+## [0.2.6]
+
+### Added
+
+- avoid O(N^2) scan in assoc edge config loader (#1926)
+- stabilize loader cache keys for orderby objects (#1927)
+- load clause loaders concurrently with a configurable limit (#1928)
+- support configuring DataLoader max batch size via `loaderMaxBatchSize` (#1929)
+- parallelize ent loader per-row privacy checks with a configurable concurrency cap (#1930)
+
+### Fixed
+
+- cap DataLoader batches and chunk large loadMany ID queries to avoid oversized IN clauses
+
+## [0.2.5]
+
+### Fixed
+
+- fix bug from format default values before saving (#1917)
+
+## [0.2.4]
+
+### Added
+
+- DateType as string (#1887)
 - support offset in QueryDataOptions for loadCustomData/loadCustomEnts (#1895)
 - add global edge composite indices for extra edge fields (#1897)
-- fix loadCustomCount custom clause query field aliasing (#1899)
 - allow overrideAlias to be null to skip aliasing in clauses (#1901)
+- concurrent index support (#1901)
+- add partial indices (#1903)
+- format default values before saving (#1912)
+
+### Fixed 
+- fix loadCustomCount custom clause query field aliasing (#1899)
 
 ## [0.2.2] - 2025-02-22
 - ability to customize default ordering for an indexed edge (#1878)

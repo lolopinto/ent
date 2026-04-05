@@ -1,5 +1,5 @@
 import { advanceBy } from "jest-date-mock";
-import { DB, Viewer } from "@snowtop/ent";
+import { Data, DB, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import {
@@ -87,6 +87,26 @@ function getUserConfig(
     },
     ...partialConfig,
   };
+}
+
+async function getDataForUserCreation(extra: Data) {
+  const action = getSimpleInsertAction(
+    loggedOutViewer,
+    // @ts-ignore
+    UserBuilder,
+    {
+      firstName: "Jon",
+      lastName: "Snow",
+      emailAddress: randomEmail(),
+      password: "pa$$w0rd",
+      phoneNumber: randomPhoneNumber(),
+    },
+  );
+  const orchestrator = action.builder.orchestrator;
+  await orchestrator.validX();
+
+  const validatedFields = action.builder.orchestrator.getValidatedFields();
+  return { ...validatedFields, ...extra };
 }
 
 test("query user", async () => {
@@ -1346,16 +1366,8 @@ test("custom connection. comments", async () => {
 });
 
 test("create user with deprecated account_status", async () => {
-  // @ts-ignore
-  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
-    firstName: "Jon",
-    lastName: "Snow",
-    accountStatus: "hello",
-    emailAddress: randomEmail(),
-    password: "pa$$w0rd",
-    phoneNumber: randomPhoneNumber(),
-  });
-  const data = await action.builder.orchestrator.getEditedData();
+  const data = await getDataForUserCreation({ account_status: "hello" });
+
   const [query, values] = buildInsertQuery({
     tableName: "users",
     fields: data,
@@ -1378,16 +1390,10 @@ test("create user with deprecated account_status", async () => {
 });
 
 test("create user with invalid days off value", async () => {
-  // @ts-ignore
-  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: randomEmail(),
-    password: "pa$$w0rd",
-    phoneNumber: randomPhoneNumber(),
-    daysOff: [UserDaysOff.Monday, "hello"],
+  const data = await getDataForUserCreation({
+    days_off: [UserDaysOff.Monday, "hello"],
   });
-  const data = await action.builder.orchestrator.getEditedData();
+
   const [query, values] = buildInsertQuery({
     tableName: "users",
     fields: data,
@@ -1416,16 +1422,10 @@ test("create user with invalid days off value", async () => {
 });
 
 test("create user with invalid days off value", async () => {
-  // @ts-ignore
-  const action = getSimpleInsertAction(loggedOutViewer, UserBuilder, {
-    firstName: "Jon",
-    lastName: "Snow",
-    emailAddress: randomEmail(),
-    password: "pa$$w0rd",
-    phoneNumber: randomPhoneNumber(),
-    preferredShift: [UserPreferredShift.Morning, "hello"],
+  const data = await getDataForUserCreation({
+    preferred_shift: [UserPreferredShift.Morning, "hello"],
   });
-  const data = await action.builder.orchestrator.getEditedData();
+
   const [query, values] = buildInsertQuery({
     tableName: "users",
     fields: data,

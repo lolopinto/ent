@@ -1,7 +1,6 @@
-import each from "jest-each";
 import { toFieldName, toDBColumnOrTable, _splitCamelCase } from "./names";
 
-each([
+test.each([
   ["ID", "id"],
   ["id", "id"],
   ["foo", "foo"],
@@ -22,11 +21,11 @@ each([
   ["cover_photo", "coverPhoto"],
   ["coverPhoto", "coverPhoto"],
   ["cover_photo2", "coverPhoto2"],
-]).test("fieldName", (input: string, expected: string) => {
+])("fieldName", (input: string, expected: string) => {
   expect(toFieldName(input)).toBe(expected);
 });
 
-each([
+test.each([
   ["ID", "id"],
   ["id", "id"],
   ["idFoo", "id_foo"],
@@ -47,11 +46,11 @@ each([
   ["cover_photo", "cover_photo"],
   ["coverPhoto", "cover_photo"],
   ["cover_photo2", "cover_photo2"],
-]).test("dbColumn", (input: string, expected: string) => {
+])("dbColumn", (input: string, expected: string) => {
   expect(toDBColumnOrTable(input)).toBe(expected);
 });
 
-each([
+test.each([
   ["", []],
   ["lowercase", ["lowercase"]],
   ["Class", ["Class"]],
@@ -70,7 +69,7 @@ each([
   ["192ndDay", ["192nd", "Day"]],
   ["userIDs", ["user", "ID", "s"]],
   ["Ms", ["Ms"]],
-]).test("splitCameCase", (input: string, expected: string[]) => {
+])("splitCameCase", (input: string, expected: string[]) => {
   // doesn't handle or test the unicode cases
   expect(_splitCamelCase(input).map((r) => r.s)).toEqual(expected);
 });

@@ -17,6 +17,7 @@ import {
   PrimableLoader,
   PrivacyPolicy,
   QueryDataOptions,
+  SelectBaseDataOptions,
   SelectCustomDataOptions,
   SelectDataOptions,
   Viewer,
@@ -30,13 +31,24 @@ import DB, {
 } from "./db";
 
 import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
+import { mapWithConcurrency } from "./async_utils";
 
 import DataLoader from "dataloader";
 import * as clause from "./clause";
 import { __getGlobalSchema } from "./global_schema";
-import { CacheMap } from "./loaders/loader";
+import {
+  createBoundedCacheMap,
+  createLoaderCacheMap,
+  InstrumentedDataLoader,
+  getLoaderMaxBatchSize,
+} from "./loaders/loader";
 import { log, logEnabled, logTrace } from "./logger";
-import { OrderBy, buildQuery, getOrderByPhrase } from "./query_impl";
+import {
+  OrderBy,
+  buildQueryData,
+  getOrderByPhrase,
+  orderByHasExpressions,
+} from "./query_impl";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();
@@ -73,41 +85,44 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
 }
 
 function createAssocEdgeConfigLoader(options: SelectDataOptions) {
-  const loaderOptions: DataLoader.Options<ID, Data | null> = {};
-
-  // if query logging is enabled, we should log what's happening with loader
-  if (logEnabled("query")) {
-    loaderOptions.cacheMap = new CacheMap(options);
-  }
+  const loaderName = `assocEdgeConfigLoader:${options.tableName}`;
+  const loaderOptions: DataLoader.Options<ID, Data | null> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+    cacheMap: createLoaderCacheMap(options),
+  };
 
   // something here brokwn with strict:true
-  return new DataLoader<ID, Data | null>(async (ids: ID[]) => {
-    if (!ids.length) {
-      return [];
-    }
-    let col = options.key;
-    // defaults to uuid
-    let typ = options.keyType || "uuid";
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (ids: ID[]) => {
+      if (!ids.length) {
+        return [];
+      }
+      let col = options.key;
+      // defaults to uuid
+      let typ = options.keyType || "uuid";
 
-    const rowOptions: LoadRowOptions = {
-      ...options,
-      clause: clause.DBTypeIn(col, ids, typ),
-    };
+      const rowOptions: LoadRowOptions = {
+        ...options,
+        clause: clause.DBTypeIn(col, ids, typ),
+      };
 
-    // TODO is there a better way of doing this?
-    // context not needed because we're creating a loader which has its own cache which is being used here
-    const nodes = await loadRows(rowOptions);
-    let result: (Data | null)[] = ids.map((id) => {
+      // TODO is there a better way of doing this?
+      // context not needed because we're creating a loader which has its own cache which is being used here
+      const nodes = await loadRows(rowOptions);
+      const rowMap = new Map<ID, Data>();
       for (const node of nodes) {
-        if (node[col] === id) {
-          return node;
+        const key = node[col] as ID;
+        if (!rowMap.has(key)) {
+          rowMap.set(key, node);
         }
       }
-      return null;
-    });
 
-    return result;
-  }, loaderOptions);
+      return ids.map((id) => rowMap.get(id) ?? null);
+    },
+    loaderOptions,
+    options.tableName,
+  );
 }
 
 // used to wrap errors that would eventually be thrown in ents
@@ -123,64 +138,77 @@ export function rowIsError(row: any): row is Error {
   return row instanceof Error || row?.constructor?.name === "SqliteError";
 }
 
+let entLoaderPrivacyConcurrencyLimit = 20;
+
+export function setEntLoaderPrivacyConcurrencyLimit(limit: number) {
+  entLoaderPrivacyConcurrencyLimit = limit;
+}
+
+export function getEntLoaderPrivacyConcurrencyLimit() {
+  return entLoaderPrivacyConcurrencyLimit;
+}
+
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: Viewer,
   options: LoadEntOptions<TEnt, TViewer>,
   map: entCacheMap<TViewer, TEnt>,
 ): DataLoader<ID, TEnt | ErrorWrapper> {
+  const loaderName = `entLoader:${options.loaderFactory.name}`;
+  const tableName = options.loaderFactory.options?.tableName;
   // share the cache across loaders even if we create a new instance
-  const loaderOptions: DataLoader.Options<any, any> = {};
-  loaderOptions.cacheMap = map;
+  const loaderOptions: DataLoader.Options<any, any> = {
+    maxBatchSize: getLoaderMaxBatchSize(),
+  };
+  loaderOptions.cacheMap = createBoundedCacheMap(map);
 
-  return new DataLoader(async (ids: ID[]) => {
-    if (!ids.length) {
-      return [];
-    }
-
-    let result: (TEnt | ErrorWrapper | Error)[] = [];
-
-    const tableName = options.loaderFactory.options?.tableName;
-    const loader = options.loaderFactory.createLoader(viewer.context);
-    const rows = await loader.loadMany(ids);
-    // this is a loader which should return the same order based on passed-in ids
-    // so let's depend on that...
-
-    for (let idx = 0; idx < rows.length; idx++) {
-      const row = rows[idx];
-
-      // db error
-      if (rowIsError(row)) {
-        if (row instanceof Error) {
-          result[idx] = row;
-        } else {
-          // @ts-ignore SqliteError
-          result[idx] = new Error(row.message);
-        }
-        continue;
-      } else if (!row) {
-        if (tableName) {
-          result[idx] = new ErrorWrapper(
-            new Error(
-              `couldn't find row for value ${ids[idx]} in table ${tableName}`,
-            ),
-          );
-        } else {
-          result[idx] = new ErrorWrapper(
-            new Error(`couldn't find row for value ${ids[idx]}`),
-          );
-        }
-      } else {
-        const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
-        if (rowIsError(r)) {
-          result[idx] = new ErrorWrapper(r);
-        } else {
-          result[idx] = r;
-        }
+  return new InstrumentedDataLoader(
+    loaderName,
+    async (ids: ID[]) => {
+      if (!ids.length) {
+        return [];
       }
-    }
 
-    return result;
-  }, loaderOptions);
+      const loader = options.loaderFactory.createLoader(viewer.context);
+      const rows = await loader.loadMany(ids);
+      // this is a loader which should return the same order based on passed-in ids
+      // so let's depend on that...
+
+      return mapWithConcurrency(
+        rows,
+        getEntLoaderPrivacyConcurrencyLimit(),
+        async (row, idx) => {
+          // db error
+          if (rowIsError(row)) {
+            if (row instanceof Error) {
+              return row;
+            }
+            // @ts-ignore SqliteError
+            return new Error(row.message);
+          }
+          if (!row) {
+            if (tableName) {
+              return new ErrorWrapper(
+                new Error(
+                  `couldn't find row for value ${ids[idx]} in table ${tableName}`,
+                ),
+              );
+            }
+            return new ErrorWrapper(
+              new Error(`couldn't find row for value ${ids[idx]}`),
+            );
+          }
+
+          const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
+          if (rowIsError(r)) {
+            return new ErrorWrapper(r);
+          }
+          return r;
+        },
+      );
+    },
+    loaderOptions,
+    tableName,
+  );
 }
 
 class EntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>
@@ -851,14 +879,14 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
     }
   }
 
-  const query = buildQuery(options);
-  logQuery(query, options.clause.logValues());
+  const queryData = buildQueryData(options);
+  logQuery(queryData.query, queryData.logValues);
   const pool = DB.getInstance().getPool();
 
-  const res = await pool.query(query, options.clause.values());
+  const res = await pool.query(queryData.query, queryData.values);
   if (res.rowCount != 1) {
     if (res.rowCount > 1) {
-      log("error", "got more than one row for query " + query);
+      log("error", "got more than one row for query " + queryData.query);
     }
     return null;
   }
@@ -910,11 +938,11 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
     }
   }
 
-  const query = buildQuery(options);
+  const queryData = buildQueryData(options);
   const r = await performRawQuery(
-    query,
-    options.clause.values(),
-    options.clause.logValues(),
+    queryData.query,
+    queryData.values,
+    queryData.logValues,
   );
   if (cache) {
     // put the rows in the cache...
@@ -929,13 +957,7 @@ interface GroupQueryOptions<T extends Data, K = keyof T> {
   // extra clause to join
   clause?: clause.Clause<T, K>;
   groupColumn: K;
-  fields: (
-    | K
-    | {
-        alias: string;
-        column: K;
-      }
-  )[];
+  fields: SelectBaseDataOptions["fields"];
   values: any[];
   orderby?: OrderBy;
   limit: number;
@@ -945,6 +967,16 @@ interface GroupQueryOptions<T extends Data, K = keyof T> {
 export function buildGroupQuery<T extends Data = Data, K = keyof T>(
   options: GroupQueryOptions<T, K>,
 ): [string, clause.Clause<T, K>] {
+  if (
+    options.fields.some(
+      (field) => typeof field === "object" && "expression" in field,
+    )
+  ) {
+    throw new Error("group queries do not support computed select expressions");
+  }
+  if (options.orderby && orderByHasExpressions(options.orderby)) {
+    throw new Error("group queries do not support computed order expressions");
+  }
   const fields = [...options.fields, "row_number()"];
 
   let cls = clause.In<T, K>(options.groupColumn, ...options.values);
@@ -1284,6 +1316,16 @@ export interface cursorOptions {
   rowKeys?: string[];
 }
 
+// UTF-8-safe cursor encoding (btoa only supports Latin-1 code units).
+function encodeCursorPayload(json: string): string {
+  return Buffer.from(json, "utf8").toString("base64");
+}
+// Inverse of encodeCursorPayload; exported for pagination decode in query.ts
+export function decodeCursorPayload(encoded: string): string {
+  return Buffer.from(encoded, "base64").toString("utf8");
+}
+
+
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
   const { row, cursorKeys, rowKeys } = opts;
@@ -1302,7 +1344,7 @@ export function getCursor(opts: cursorOptions) {
     const rowKey = rowKeys?.[i] || cursorKey;
     parts.push([cursorKey, convert(row[rowKey])]);
   }
-  return btoa(JSON.stringify(parts));
+  return encodeCursorPayload(JSON.stringify(parts));
 }
 
 export class AssocEdgeData {

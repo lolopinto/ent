@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/iancoleman/strcase"
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
@@ -116,7 +115,7 @@ func (p *PatternInfo) GetMixinName() string {
 }
 
 func (p *PatternInfo) GetMixinBaseName() string {
-	return fmt.Sprintf("%sBaseMixin", strcase.ToCamel(p.Name))
+	return names.ToClassType(p.Name, "BaseMixin")
 }
 
 func (p *PatternInfo) GetPatternMethod() string {
@@ -164,7 +163,7 @@ func (p *PatternInfo) GetImportsForMixin(s *Schema, cfg codegenapi.Config) []*ts
 // https://github.com/lolopinto/ent/issues/911
 
 func (p *PatternInfo) GetImportPathForMixinBase() string {
-	return fmt.Sprintf("src/ent/generated/mixins/%s", strcase.ToSnake(p.GetMixinBaseFile()))
+	return fmt.Sprintf("src/ent/generated/mixins/%s", names.ToFilePathName(p.GetMixinBaseFile()))
 }
 
 func (p *PatternInfo) GetEdgeInfo() *edge.EdgeInfo {

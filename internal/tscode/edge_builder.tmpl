@@ -1,17 +1,17 @@
-{{reserveImport .Package.ActionPackagePath "AssocEdgeOptions" }}
+{{reserveTypeImport .Package.ActionPackagePath "AssocEdgeOptions" }}
 
 {{ $edgeInfos := edgeInfos .Edges -}}
 {{ $schema := .Schema -}}
 
 {{/* if the logic in here changes, also have to update mixin_builder.tmpl */ -}}
 {{ range $edge := $edgeInfos -}}  
-  {{ $node := useImport .Node -}}
+  {{ $node := useTypeImportMaybe .Node -}}
   {{ $polymorphicEdge := $edge.Edge.PolymorphicEdge -}}
   {{ if $polymorphicEdge -}}
-    {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | Builder<{{$node}}, any>)[]): this {
+      {{$edge.TSAddMethodName}}(...nodes: ({{$node}} | {{useTypeImport "Builder"}}<{{$node}}, any>)[]): this {
   {{ else -}}
   {{/* for PolymorphicEdges, this API doesn't work since we don't know the type. callers should call addLikerID in a map */}}  
-    {{$edge.TSAddMethodName}}(...nodes: (ID | {{$node}} | Builder<{{$node}}, any>)[]): this {
+    {{$edge.TSAddMethodName}}(...nodes: ({{useTypeImport "ID"}} | {{$node}} | {{useTypeImport "Builder"}}<{{$node}}, any>)[]): this {
   {{ end -}}
   for (const node of nodes) {
     {{ if $polymorphicEdge -}}
@@ -43,11 +43,11 @@
 }
 
   {{$edge.TSAddIDMethodName}}(
-    id: {{useImport "ID"}} | Builder<{{$node}}, any>, 
+    id: {{useTypeImport "ID"}} | {{useTypeImport "Builder"}}<{{$node}}, any>, 
     {{ if $polymorphicEdge -}}
       nodeType: {{useImport "NodeType"}},
     {{ end -}}
-    options?: {{useImport "AssocEdgeInputOptions"}}
+    options?: {{useTypeImport "AssocEdgeInputOptions"}}
   ): this {
     {{/* TODO need inbound edges also */}}
     this.orchestrator.addOutboundEdge(
@@ -64,7 +64,7 @@
   }
 
   {{ if $schema.GlobalSchemaTransformsEdges -}}
-    {{$edge.TSRemoveIDMethodName}}(id: ID, opts?: {{useImport "AssocEdgeOptions"}}): this {
+    {{$edge.TSRemoveIDMethodName}}(id: {{useTypeImport "ID"}}, opts?: {{useTypeImport "AssocEdgeOptions"}}): this {
       this.orchestrator.removeOutboundEdge(id, {{useImport "EdgeType"}}.{{$edge.TSEdgeConst}}, opts);
       return this;
     }

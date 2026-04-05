@@ -79,7 +79,7 @@ import {
 } from "../core/convert";
 import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
-import { StructType, BooleanType } from "../schema";
+import { StructType, StructTypeAsList, BooleanType } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import { toDBColumnOrTable } from "../names/names";
 
@@ -151,6 +151,83 @@ const UserSchemaDefaultValueOnCreateJSON = getBuilderSchemaFromFields(
     }),
   },
   UserDefaultValueOnCreate,
+);
+
+class UserDefaultStructList extends User {}
+
+const UserSchemaDefaultStructList = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    prefsList: StructTypeAsList({
+      tsType: "PrefsList",
+      fields: {
+        foo: StringType(),
+        bar: StringType(),
+      },
+      defaultValueOnCreate: () => [
+        { foo: "hello", bar: "world" },
+        { foo: "hi", bar: "there" },
+      ],
+    }),
+  },
+  UserDefaultStructList,
+);
+
+function convertPref({ foo, bar, hello_world }: any) {
+  return {
+    foo: foo ?? null,
+    bar: bar ?? null,
+    helloWorld: hello_world ?? null,
+  };
+}
+
+function convertPrefList(val) {
+  return val.map((item) => convertPref(item));
+}
+
+class UserWithConvertableEmptyList extends User {
+  prefsList: Array<{
+    foo: string | null;
+    bar: string | null;
+    helloWorld: number | null;
+  }>;
+
+  constructor(viewer: Viewer, data: Data) {
+    super(viewer, data);
+    // this is similar to what generated code does.
+    // TODO why doesn't generated (postgres) code use convertList lol?
+    if (DB.getDialect() === Dialect.Postgres) {
+      this.prefsList = convertPrefList(data.prefs_list);
+    } else {
+      // convertList needed because it doesn't come back as array from sqlite
+      // see account_base constructor for examples of this...
+      this.prefsList = convertPrefList(convertList(data.prefs_list));
+    }
+  }
+}
+
+const UserSchemaWithConvertableEmptyList = getBuilderSchemaFromFields(
+  {
+    FirstName: StringType(),
+    LastName: StringType(),
+    prefsList: StructTypeAsList({
+      tsType: "PrefsList",
+      fields: {
+        foo: StringType({
+          nullable: true,
+        }),
+        bar: StringType({
+          nullable: true,
+        }),
+        helloWorld: IntegerType({
+          nullable: true,
+        }),
+      },
+      defaultValueOnCreate: () => [],
+    }),
+  },
+  UserWithConvertableEmptyList,
 );
 
 const UserSchemaDefaultValueOnCreateInvalidJSON = getBuilderSchemaFromFields(
@@ -454,6 +531,8 @@ const getTables = () => {
     UserSchemaServerDefault,
     UserSchemaDefaultValueOnCreate,
     UserSchemaDefaultValueOnCreateJSON,
+    UserSchemaDefaultStructList,
+    UserSchemaWithConvertableEmptyList,
     UserSchemaDefaultValueOnCreateInvalidJSON,
     UserWithPrefsSchema,
     UserWithBalanceSchema,
@@ -634,6 +713,54 @@ function commonTests() {
     );
 
     await builder.build();
+  });
+
+  test("default struct list formatted", async () => {
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      UserSchemaDefaultStructList,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+
+    const orchestrator = builder.orchestrator;
+
+    await builder.validX();
+
+    const data = await orchestrator.getEditedData();
+    expect(typeof data.prefs_list).toBe("object");
+    expect(data.prefs_list).toStrictEqual([
+      { foo: "hello", bar: "world" },
+      { foo: "hi", bar: "there" },
+    ]);
+
+    const validated = orchestrator.getValidatedFields();
+
+    expect(typeof validated.prefs_list).toBe("string");
+    expect(JSON.parse(validated.prefs_list)).toStrictEqual([
+      { foo: "hello", bar: "world" },
+      { foo: "hi", bar: "there" },
+    ]);
+  });
+
+  test("default struct list empty list converted properly", async () => {
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchemaWithConvertableEmptyList,
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      WriteOperation.Insert,
+      null,
+    );
+
+    const user = await action.saveX();
+    expect(user.prefsList).toStrictEqual([]);
   });
 
   test("required field when default value on create json wrong", async () => {
@@ -1299,7 +1426,7 @@ function commonTests() {
         return AlwaysDenyPrivacyPolicy;
       };
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "Logged out Viewer does not have permission to create DenyAllUser",
       );
     });
@@ -1385,7 +1512,7 @@ function commonTests() {
         },
       ];
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "thou shall not pass. DenyUser",
       );
     });
@@ -1462,7 +1589,7 @@ function commonTests() {
         },
       ];
 
-      await expect(action.saveX()).rejects.toThrowError(
+      await expect(action.saveX()).rejects.toThrow(
         "thou shall not pass. DenyAccount",
       );
     });
@@ -1622,7 +1749,7 @@ function commonTests() {
             };
           },
         ),
-      ).rejects.toThrowError(
+      ).rejects.toThrow(
         /does not have permission to create EventWithEditPrivacy/,
       );
     });
@@ -1654,7 +1781,7 @@ function commonTests() {
             delete action.viewerForEntLoad;
           },
         ),
-      ).rejects.toThrowError(/host_ids/);
+      ).rejects.toThrow(/host_ids/);
     });
 
     // works on either field
@@ -1685,7 +1812,7 @@ function commonTests() {
             delete action.viewerForEntLoad;
           },
         ),
-      ).rejects.toThrowError(/slug/);
+      ).rejects.toThrow(/slug/);
     });
 
     test("host_ids and slug set. non-owner cannot create", async () => {
@@ -1717,7 +1844,7 @@ function commonTests() {
           },
         ),
         // fails with one of them
-      ).rejects.toThrowError(/slug|host_ids/);
+      ).rejects.toThrow(/slug|host_ids/);
     });
 
     test("host_ids set in trigger by person who can't edit. goes through", async () => {
@@ -1833,7 +1960,7 @@ function commonTests() {
         WriteOperation.Edit,
         event,
       );
-      await expect(action2.saveX()).rejects.toThrowError(/host_ids/);
+      await expect(action2.saveX()).rejects.toThrow(/host_ids/);
     });
 
     test("host_ids set in trigger by host who cannot edit. goes through", async () => {
@@ -1916,7 +2043,7 @@ function commonTests() {
         WriteOperation.Edit,
         event,
       );
-      await expect(action2.saveX()).rejects.toThrowError(/show_guest_list/);
+      await expect(action2.saveX()).rejects.toThrow(/show_guest_list/);
     });
   });
 

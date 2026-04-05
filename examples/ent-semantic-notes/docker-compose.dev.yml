@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "54330:5432"
+    environment:
+      POSTGRES_DB: ent_semantic_notes
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres

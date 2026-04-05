@@ -330,7 +330,7 @@ function verifySingleIDCacheHit(id) {
   expect(ml.logs.length).toBe(1);
   expect(ml.logs[0]).toStrictEqual({
     "dataloader-cache-hit": id,
-    "tableName": "user_to_contacts_table",
+    tableName: "user_to_contacts_table",
   });
 }
 
@@ -621,7 +621,7 @@ function verifyGroupedCacheHit(ids: ID[]) {
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
       "dataloader-cache-hit": ids[idx],
-      "tableName": "user_to_contacts_table",
+      tableName: "user_to_contacts_table",
     });
   });
 }

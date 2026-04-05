@@ -23,7 +23,10 @@ export class JSONField extends BaseField implements Field {
     dbType: DBType.JSON,
   };
 
-  constructor(jsonb: boolean, private options?: allJSONOptions) {
+  constructor(
+    jsonb: boolean,
+    private options?: allJSONOptions,
+  ) {
     super();
     if (jsonb) {
       this.type.dbType = DBType.JSONB;

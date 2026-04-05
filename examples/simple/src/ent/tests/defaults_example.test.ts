@@ -35,9 +35,11 @@ test("create defaults example relies on generated defaults", async () => {
   expect(defaultsExample.creatorId).toBe(viewerUser.id);
   expect(defaultsExample.perHour).toBe(1);
   expect(defaultsExample.hourlyLimit).toBe(5);
+  expect(defaultsExample.payloads).toEqual([]);
 
   const loaded = await DefaultsExample.loadX(viewer, defaultsExample.id);
   expect(loaded.creatorId).toBe(viewerUser.id);
   expect(loaded.perHour).toBe(1);
   expect(loaded.hourlyLimit).toBe(5);
+  expect(loaded.payloads).toEqual([]);
 });

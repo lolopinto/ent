@@ -1020,22 +1020,24 @@ func processCustomStructType(processor *codegen.Processor, s *gqlSchema, typ *Cu
 		}
 		objType.Imports = append(objType.Imports, gqlField.FieldImports...)
 
-		var useImports []string
-		imps := field.GetTsTypeImports()
-		if len(imps) != 0 {
-			objType.Imports = append(objType.Imports, imps...)
-			for _, v := range imps {
-				useImports = append(useImports, v.Import)
-			}
-		}
-		intField := &interfaceField{
-			Name:       field.GetGraphQLName(),
-			Optional:   field.Nullable(),
-			Type:       field.GetTsType(),
-			UseImports: useImports,
-		}
-
 		if customInt != nil {
+			var useImports []string
+			imps := field.GetTsTypeImports()
+			if len(imps) != 0 {
+				for _, v := range imps {
+					imp := *v
+					imp.TypeOnly = true
+					objType.Imports = append(objType.Imports, &imp)
+					useImports = append(useImports, v.Import)
+				}
+			}
+			intField := &interfaceField{
+				Name:       field.GetGraphQLName(),
+				Optional:   field.Nullable(),
+				Type:       field.GetTsType(),
+				UseImports: useImports,
+			}
+
 			if err := customInt.addField(intField); err != nil {
 				return err
 			}

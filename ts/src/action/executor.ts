@@ -1,4 +1,3 @@
-import { Graph } from "graph-data-structure";
 import { ID, Ent, Viewer, Context, Data } from "../core/base";
 import { logQuery } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
@@ -6,6 +5,7 @@ import { Builder, WriteOperation } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
+import { TopologicalGraph } from "./topological_sort";
 import {
   ConditionalNodeOperation,
   ConditionalOperation,
@@ -167,7 +167,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   ) {
     this.builder = options?.builder;
 
-    let graph = Graph();
+    const graph = new TopologicalGraph();
 
     const changesetMap: Map<string, Changeset> = new Map();
 
@@ -181,7 +181,6 @@ export class ComplexExecutor<T extends Ent> implements Executor {
           graph.addEdge(
             builder.placeholderID.toString(),
             c.placeholderID.toString(),
-            1,
           );
         }
       }
@@ -216,7 +215,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     let nodeOps: Set<DataOperation<Ent>> = new Set();
     let remainOps: Set<DataOperation<Ent>> = new Set();
 
-    let sorted = graph.topologicalSort(graph.nodes());
+    const sorted = graph.topologicalSort();
     sorted.forEach((node) => {
       let c = changesetMap.get(node);
 

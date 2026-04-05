@@ -11,6 +11,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type testCustomInterfaceGetter struct{}
+
+func (testCustomInterfaceGetter) GetCustomTypeByTSName(name string) CustomTypeWithHasConvertFunction {
+	return nil
+}
+
+type testSchemaType struct{}
+
+func (testSchemaType) IsGlobalEnumWithDisableUnknownType(typ string) bool {
+	return false
+}
+
 // this is to test the different field type APIs introduced with https://github.com/lolopinto/ent/pull/867/files
 // maybe simpler in the future
 type expected struct {
@@ -76,6 +88,30 @@ func TestNonNullableField(t *testing.T) {
 		fieldTypeType:   &enttype.StringType{},
 		tsFieldTypeType: &enttype.StringType{},
 	})
+}
+
+func TestGetImportsForTypesDoesNotMutateImportDepsType(t *testing.T) {
+	cfg := &codegenapi.DummyConfig{}
+	importPath := &tsimport.ImportPath{
+		ImportPath: "src/ent/generated/types",
+		Import:     "EmployeePTOSettings",
+	}
+	f := NewFieldFromNameAndType("ptoSettings", &enttype.JSONBType{
+		CommonJSONType: enttype.CommonJSONType{
+			CustomTsInterface: "EmployeePTOSettings",
+			ImportType:        importPath,
+		},
+	})
+
+	imports := f.GetImportsForTypes(cfg, testCustomInterfaceGetter{}, testSchemaType{})
+	require.Len(t, imports, 1)
+	require.True(t, imports[0].TypeOnly)
+	require.False(t, importPath.TypeOnly)
+
+	imports = f.GetImportsForTypes(cfg, testCustomInterfaceGetter{}, testSchemaType{})
+	require.Len(t, imports, 1)
+	require.True(t, imports[0].TypeOnly)
+	require.False(t, importPath.TypeOnly)
 }
 
 func TestNullableField(t *testing.T) {

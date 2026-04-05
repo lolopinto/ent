@@ -82,14 +82,18 @@ export class FakeUser implements Ent {
           }
 
           return viewer.hasToken("allow_outbound_friend_request");
-        }, new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToFriendRequests)),
+        }, new AllowIfViewerInboundEdgeExistsRule(
+          EdgeType.UserToFriendRequests,
+        )),
         new AllowIfConditionAppliesRule((viewer: Viewer, ent: Ent) => {
           if (!(viewer instanceof ViewerWithAccessToken)) {
             return false;
           }
 
           return viewer.hasToken("allow_incoming_friend_request");
-        }, new AllowIfViewerInboundEdgeExistsRule(EdgeType.UserToIncomingFriendRequests)),
+        }, new AllowIfViewerInboundEdgeExistsRule(
+          EdgeType.UserToIncomingFriendRequests,
+        )),
         AlwaysDenyRule,
       ],
     };

@@ -282,4 +282,4 @@ const UserSchema = new EntSchema({
 
 ## optionalField
 
-Inverse of [requiredField](#requiredField) above. Want to make a field which would be required optional. Usually means that a default value is set in a [trigger](/docs/actions/triggers)
+Inverse of [requiredField](#requiredfield) above. Want to make a field which would be required optional. Usually means that a default value is set in a [trigger](/docs/actions/triggers)

@@ -62,5 +62,5 @@ export class TransformEnt implements TransformFile {
     };
   }
 
-  prettierGlob = "src/ent/*.ts";
+  formatGlob = "src/ent/*.ts";
 }

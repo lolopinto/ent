@@ -80,17 +80,17 @@ function makeGraphQLRequest(
   config: queryConfig,
   query: string,
   fieldArgs: Readonly<GraphQLArgument[]>,
-): [supertest.SuperTest<supertest.Test>, supertest.Test] {
-  let test: supertest.SuperTest<supertest.Test>;
+): [supertest.Agent, supertest.Test] {
+  let agent: supertest.Agent;
 
   if (config.test) {
     if (typeof config.test === "function") {
-      test = config.test(config.server ? config.server : server(config));
+      agent = config.test(config.server ? config.server : server(config));
     } else {
-      test = config.test;
+      agent = config.test;
     }
   } else {
-    test = supertest(config.server ? config.server : server(config));
+    agent = supertest(config.server ? config.server : server(config));
   }
 
   let files = new Map();
@@ -126,7 +126,7 @@ function makeGraphQLRequest(
   }
 
   if (files.size) {
-    let ret = test
+    let ret = agent
       .post(config.graphQLPath || "/graphql")
       .set((config.headers || {}) as IncomingHttpHeaders);
 
@@ -156,11 +156,11 @@ function makeGraphQLRequest(
       idx++;
     }
 
-    return [test, ret];
+    return [agent, ret];
   } else {
     return [
-      test,
-      test
+      agent,
+      agent
         .post(config.graphQLPath || "/graphql")
         .set((config.headers || {}) as IncomingHttpHeaders)
         .send({
@@ -308,9 +308,7 @@ interface queryConfig {
   viewer?: Viewer;
   // to init express e.g. session, passport initialize etc
   init?: (app: Express) => void;
-  test?:
-    | supertest.SuperTest<supertest.Test>
-    | ((express: Express) => supertest.SuperTest<supertest.Test>);
+  test?: supertest.Agent | ((express: Express) => supertest.Agent);
   // TODO
   // if none indicated, defaults to logged out viewer
   schema: GraphQLSchema;
@@ -345,7 +343,7 @@ export interface queryRootConfig extends queryConfig {
 export async function expectQueryFromRoot(
   config: queryRootConfig,
   ...options: Option[] // TODO queries? expected values
-): Promise<supertest.SuperTest<supertest.Test>> {
+): Promise<supertest.Agent> {
   return expectFromRoot(
     {
       ...config,
@@ -367,7 +365,7 @@ export interface mutationRootConfig extends queryConfig {
 export async function expectMutation(
   config: mutationRootConfig,
   ...options: Option[]
-): Promise<supertest.SuperTest<supertest.Test>> {
+): Promise<supertest.Agent> {
   // wrap args in input because we simplify the args for mutations
   // and don't require the input
   let args = config.args;
@@ -415,7 +413,7 @@ function splitPath(path: string) {
 async function expectFromRoot(
   config: rootConfig,
   ...options: Option[]
-): Promise<supertest.SuperTest<supertest.Test>> {
+): Promise<supertest.Agent> {
   let query = config.queryFN;
   let fields = query?.getFields();
   if (!fields) {

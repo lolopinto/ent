@@ -1,10 +1,8 @@
-import {
-  EditGuestGroupActionBase,
-  GuestGroupEditInput,
-} from "src/ent/generated/guest_group/actions/edit_guest_group_action_base";
+import { EditGuestGroupActionBase } from "src/ent/generated/guest_group/actions/edit_guest_group_action_base";
+import type { GuestGroupEditInput } from "src/ent/generated/guest_group/actions/edit_guest_group_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 
-export { GuestGroupEditInput };
+export type { GuestGroupEditInput };
 
 // we're only writing this once except with --force and packageName provided
 export default class EditGuestGroupAction extends EditGuestGroupActionBase {

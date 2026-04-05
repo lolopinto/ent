@@ -14,14 +14,18 @@ import (
 
 // Imports keeps track of imports in a generated typescript file
 type Imports struct {
-	importMap   map[string]*importInfo
-	pathMap     map[string]*importInfo
-	usedImports map[string]bool
-	imports     []*importInfo
-	exports     []*exportInfo
-	filePath    string
-	errorPath   string
-	cfg         Config
+	importMap       map[string]*importInfo
+	pathMap         map[string]*importInfo
+	usedImports     map[string]bool
+	imports         []*importInfo
+	typeImportMap   map[string]*importInfo
+	typePathMap     map[string]*importInfo
+	usedTypeImports map[string]bool
+	typeImports     []*importInfo
+	exports         []*exportInfo
+	filePath        string
+	errorPath       string
+	cfg             Config
 }
 
 type Config interface {
@@ -34,12 +38,15 @@ type Config interface {
 // filePath is path that's currently being written
 func NewImports(cfg Config, filePath string) *Imports {
 	return &Imports{
-		importMap:   make(map[string]*importInfo),
-		usedImports: make(map[string]bool),
-		pathMap:     make(map[string]*importInfo),
-		filePath:    filePath,
-		errorPath:   getErrorPath(cfg, filePath),
-		cfg:         cfg,
+		importMap:       make(map[string]*importInfo),
+		usedImports:     make(map[string]bool),
+		pathMap:         make(map[string]*importInfo),
+		typeImportMap:   make(map[string]*importInfo),
+		usedTypeImports: make(map[string]bool),
+		typePathMap:     make(map[string]*importInfo),
+		filePath:        filePath,
+		errorPath:       getErrorPath(cfg, filePath),
+		cfg:             cfg,
 	}
 }
 
@@ -48,6 +55,15 @@ func (imps *Imports) Reserve(path string, imports ...string) (string, error) {
 	return imps.reserve(&importInfoInput{
 		path:    path,
 		imports: imports,
+	})
+}
+
+// ReserveType reserves a type-only import from a path.
+func (imps *Imports) ReserveType(path string, imports ...string) (string, error) {
+	return imps.reserve(&importInfoInput{
+		path:     path,
+		imports:  imports,
+		typeOnly: true,
 	})
 }
 
@@ -73,7 +89,16 @@ func (imps *Imports) ReserveAll(path, as string) (string, error) {
 // ReserveImportPath takes an instance of importPath and reserves importing from it
 // should be default eventually
 func (imps *Imports) ReserveImportPath(imp *ImportPath, external bool) (string, error) {
-	return imps.reserve(imps.getImportInfoInput(imp, external))
+	input := imps.getImportInfoInput(imp, external)
+	input.typeOnly = imp.TypeOnly
+	return imps.reserve(input)
+}
+
+// ReserveTypeImportPath takes an instance of importPath and reserves importing it as type-only.
+func (imps *Imports) ReserveTypeImportPath(imp *ImportPath, external bool) (string, error) {
+	input := imps.getImportInfoInput(imp, external)
+	input.typeOnly = true
+	return imps.reserve(input)
 }
 
 func (imps *Imports) getImportInfoInput(imp *ImportPath, external bool) *importInfoInput {
@@ -108,6 +133,31 @@ func (imps *Imports) getImportInfoInput(imp *ImportPath, external bool) *importI
 // ConditionallyReserveImportPath skips importing when the import path is same as file path
 func (imps *Imports) ConditionallyReserveImportPath(imp *ImportPath, external bool) (string, error) {
 	input := imps.getImportInfoInput(imp, external)
+	input.typeOnly = imp.TypeOnly
+
+	relPath := imps.filePath
+	if path.IsAbs(relPath) {
+		var err error
+		relPath, err = filepath.Rel(imps.cfg.GetAbsPathToRoot(), imps.filePath)
+		if err != nil {
+			return "", err
+		}
+	}
+	relPath = strings.TrimSuffix(relPath, ".ts")
+
+	// if importing file from same file, ignore
+	if relPath == input.path {
+		return "", nil
+	}
+
+	return imps.reserve(input)
+}
+
+// ConditionallyReserveTypeImportPath skips importing when the import path is same as file path
+// and reserves the import as type-only.
+func (imps *Imports) ConditionallyReserveTypeImportPath(imp *ImportPath, external bool) (string, error) {
+	input := imps.getImportInfoInput(imp, external)
+	input.typeOnly = true
 
 	relPath := imps.filePath
 	if path.IsAbs(relPath) {
@@ -135,6 +185,7 @@ type importInfoInput struct {
 	// only works when there's 1 import
 	alias      string
 	sideEffect bool
+	typeOnly   bool
 }
 
 func (imps *Imports) reserve(input *importInfoInput) (string, error) {
@@ -144,6 +195,50 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 
 	if input.alias != "" && input.defaultImport != "" {
 		return "", fmt.Errorf("cannot have an alias and default import at the sme time")
+	}
+
+	if input.typeOnly && input.sideEffect {
+		return "", fmt.Errorf("cannot have a type-only side-effect import for %s", input.path)
+	}
+
+	importMap := imps.importMap
+	pathMap := imps.pathMap
+	importsList := &imps.imports
+	otherImportMap := imps.typeImportMap
+	if input.typeOnly {
+		importMap = imps.typeImportMap
+		pathMap = imps.typePathMap
+		importsList = &imps.typeImports
+		otherImportMap = imps.importMap
+	}
+
+	filteredImports := make([]string, 0, len(input.imports))
+	for _, v := range input.imports {
+		ident := v
+		if input.alias != "" {
+			ident = input.alias
+		}
+		if other := otherImportMap[ident]; other != nil && other.path != input.path {
+			return "", fmt.Errorf("%s is already imported as a different import type from path %s @ file %s", ident, other.path, getErrorPath(imps.cfg, imps.filePath))
+		}
+		if otherImportMap[ident] != nil && otherImportMap[ident].path == input.path && input.typeOnly {
+			continue
+		}
+		filteredImports = append(filteredImports, v)
+	}
+	input.imports = filteredImports
+	if input.defaultImport != "" {
+		ident := input.defaultImport
+		if other := otherImportMap[ident]; other != nil && other.path != input.path {
+			return "", fmt.Errorf("%s is already imported as a different import type from path %s @ file %s", ident, other.path, getErrorPath(imps.cfg, imps.filePath))
+		}
+		if otherImportMap[ident] != nil && otherImportMap[ident].path == input.path && input.typeOnly {
+			input.defaultImport = ""
+		}
+	}
+
+	if len(input.imports) == 0 && input.defaultImport == "" && !input.importAll && !input.sideEffect {
+		return "", nil
 	}
 
 	var imports []importedItem
@@ -159,7 +254,7 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 		})
 	}
 
-	imp := imps.pathMap[input.path]
+	imp := pathMap[input.path]
 
 	// not there, create a new one...
 	if imp == nil {
@@ -169,10 +264,11 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 			importAll:     input.importAll,
 			defaultExport: input.defaultImport,
 			sideEffect:    input.sideEffect,
+			typeOnly:      input.typeOnly,
 		}
 
-		imps.pathMap[input.path] = imp
-		imps.imports = append(imps.imports, imp)
+		pathMap[input.path] = imp
+		*importsList = append(*importsList, imp)
 
 	} else {
 		// update existing one...
@@ -190,11 +286,14 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 
 	for _, item := range imports {
 		ident := item.getIdent()
-		existingImport := imps.importMap[ident]
+		existingImport := importMap[ident]
 		if existingImport != nil && existingImport != imp {
 			return "", fmt.Errorf("%s is already imported from path %s. duplicate path: %s @ file %s", ident, existingImport.path, imp.path, getErrorPath(imps.cfg, imps.filePath))
 		}
-		imps.importMap[ident] = imp
+		if other := otherImportMap[ident]; other != nil && other.path != imp.path {
+			return "", fmt.Errorf("%s is already imported as a different import type from path %s @ file %s", ident, other.path, getErrorPath(imps.cfg, imps.filePath))
+		}
+		importMap[ident] = imp
 	}
 	return "", nil
 }
@@ -211,6 +310,11 @@ func (imps *Imports) Export(path string, exports ...string) (string, error) {
 	return imps.export(path, "", exports...)
 }
 
+// ExportType exports type-only bindings from a path.
+func (imps *Imports) ExportType(path string, exports ...string) (string, error) {
+	return imps.exportType(path, "", exports...)
+}
+
 func (imps *Imports) export(path string, as string, exports ...string) (string, error) {
 	// for now just keep it simple and don't deal with duplicate paths
 	imps.exports = append(imps.exports, &exportInfo{
@@ -221,19 +325,38 @@ func (imps *Imports) export(path string, as string, exports ...string) (string, 
 	return "", nil
 }
 
+func (imps *Imports) exportType(path string, as string, exports ...string) (string, error) {
+	if as != "" {
+		return "", fmt.Errorf("export type namespace not supported for %s", path)
+	}
+	imps.exports = append(imps.exports, &exportInfo{
+		path:     path,
+		as:       as,
+		exports:  exports,
+		typeOnly: true,
+	})
+	return "", nil
+}
+
 // FuncMap returns the FuncMap to be passed to a template
 func (imps *Imports) FuncMap() template.FuncMap {
 	return template.FuncMap{
 		"reserveImport":                  imps.Reserve,
+		"reserveTypeImport":              imps.ReserveType,
 		"reserveDefaultImport":           imps.ReserveDefault,
 		"reserveAllImport":               imps.ReserveAll,
 		"reserveImportPath":              imps.ReserveImportPath,
+		"reserveTypeImportPath":          imps.ReserveTypeImportPath,
 		"conditionallyReserveImportPath": imps.ConditionallyReserveImportPath,
+		"conditionallyReserveTypeImportPath": imps.ConditionallyReserveTypeImportPath,
 		"useImport":                      imps.Use,
 		"useImportMaybe":                 imps.UseMaybe,
+		"useTypeImport":                  imps.UseType,
+		"useTypeImportMaybe":             imps.UseTypeMaybe,
 		"exportAll":                      imps.ExportAll,
 		"exportAllAs":                    imps.ExportAllAs,
 		"export":                         imps.Export,
+		"exportType":                     imps.ExportType,
 		"dict":                           dict,
 	}
 }
@@ -280,6 +403,41 @@ func (imps *Imports) UseMaybe(export string) (string, error) {
 	}
 
 	imps.usedImports[export] = true
+	return export, nil
+}
+
+// UseType makes use of a type-only import and ensures it's imported
+func (imps *Imports) UseType(impItem string) (string, error) {
+	if imps.typeImportMap[impItem] == nil {
+		if imps.importMap[impItem] != nil {
+			imps.usedImports[impItem] = true
+			return impItem, nil
+		}
+		if imps.cfg.DebugMode() {
+			var imports []string
+			for k := range imps.typeImportMap {
+				imports = append(imports, k)
+			}
+			sort.Strings(imports)
+			fmt.Printf("type imports at path %s are %v \n", imps.filePath, imports)
+		}
+		return "", fmt.Errorf("tried to use type import %s at path %s even though it was never reserved", impItem, imps.errorPath)
+	}
+
+	imps.usedTypeImports[impItem] = true
+	return impItem, nil
+}
+
+// UseTypeMaybe makes use of a type-only import if it exists.
+func (imps *Imports) UseTypeMaybe(export string) (string, error) {
+	if imps.typeImportMap[export] == nil {
+		if imps.importMap[export] != nil {
+			imps.usedImports[export] = true
+		}
+		return export, nil
+	}
+
+	imps.usedTypeImports[export] = true
 	return export, nil
 }
 
@@ -333,14 +491,31 @@ func (imps *Imports) String() (string, error) {
 		}
 	}
 
+	sort.Slice(imps.typeImports, func(i, j int) bool {
+		return cmp(imps.typeImports[i].path, imps.typeImports[j].path)
+	})
+
+	for _, imp := range imps.typeImports {
+		str, err := imp.String(imps.cfg, imps.filePath, imps.usedTypeImports)
+		if err != nil {
+			return "", err
+		}
+		if str == "" {
+			continue
+		}
+		_, err = sb.WriteString(str)
+		if err != nil {
+			return "", err
+		}
+		sb.WriteString("\n")
+	}
+
 	sort.Slice(imps.imports, func(i, j int) bool {
 		return cmp(imps.imports[i].path, imps.imports[j].path)
 	})
 
 	for _, imp := range imps.imports {
-
 		str, err := imp.String(imps.cfg, imps.filePath, imps.usedImports)
-
 		if err != nil {
 			return "", err
 		}
@@ -383,10 +558,14 @@ type importInfo struct {
 	importAll     bool
 	// import just for side effect
 	sideEffect bool
+	typeOnly   bool
 }
 
 func (imp *importInfo) String(cfg Config, filePath string, usedExportsMap map[string]bool) (string, error) {
 	if imp.sideEffect {
+		if imp.typeOnly {
+			return "", fmt.Errorf("cannot have a type-only side-effect import for %s", imp.path)
+		}
 		impPath, err := getImportPath(cfg, filePath, imp.path)
 		if err != nil {
 			return "", err
@@ -459,22 +638,41 @@ func (imp *importInfo) String(cfg Config, filePath string, usedExportsMap map[st
 		return "", err
 	}
 
+	kw := "import"
+	if imp.typeOnly {
+		kw = "import type"
+	}
 	return fmt.Sprintf(
-		"import %s from %s;",
-		strings.Join(imports, ", "), strconv.Quote(impPath),
+		"%s %s from %s;",
+		kw, strings.Join(imports, ", "), strconv.Quote(impPath),
 	), nil
 }
 
 type exportInfo struct {
-	path    string
-	as      string   // as "" means exportAll
-	exports []string // empty means ecportAll
+	path     string
+	as       string   // as "" means exportAll
+	exports  []string // empty means ecportAll
+	typeOnly bool
 }
 
 func (exp *exportInfo) String(cfg Config, filePath string) (string, error) {
 	impPath, err := getImportPath(cfg, filePath, exp.path)
 	if err != nil {
 		return "", err
+	}
+	if exp.typeOnly {
+		if exp.as != "" {
+			return "", fmt.Errorf("export type namespace not supported for %s", exp.path)
+		}
+		if len(exp.exports) == 0 {
+			return fmt.Sprintf("export type * from %s;", strconv.Quote(impPath)), nil
+		}
+		sort.Strings(exp.exports)
+		return fmt.Sprintf(
+			"export type {%s} from %s;",
+			strings.Join(exp.exports, ", "),
+			strconv.Quote(impPath),
+		), nil
 	}
 	if exp.as == "" && len(exp.exports) == 0 {
 		return fmt.Sprintf("export * from %s;", strconv.Quote(impPath)), nil

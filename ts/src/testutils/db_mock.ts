@@ -320,10 +320,22 @@ export class QueryRecorder {
         totalCount: 1,
         idleCount: 1,
         waitingCount: 1,
+        expiredCount: 0,
+        ending: false,
+        ended: false,
+        options: {
+          max: 0,
+          maxUses: 0,
+          allowExitOnIdle: false,
+          maxLifetimeSeconds: 0,
+          idleTimeoutMillis: 0,
+        },
         connect: async (): Promise<PoolClient> => {
           return {
             connect: jest.fn(),
             release: jest.fn(),
+            setTypeParser: jest.fn(),
+            getTypeParser: jest.fn(),
             query: jest
               .fn()
               .mockImplementation((query: string, values: any[]) => {

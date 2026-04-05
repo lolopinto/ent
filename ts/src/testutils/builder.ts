@@ -254,8 +254,9 @@ export class SimpleBuilder<
     // create dynamic placeholder
     // TODO: do we need to use this as the node when there's an existingEnt
     // same for generated builders.
-    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-${schema.ent
-      ?.name}`;
+    this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-${
+      schema.ent?.name
+    }`;
 
     if (this.operation === WriteOperation.Insert) {
       for (const [key, value] of fields) {

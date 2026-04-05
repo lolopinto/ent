@@ -27,6 +27,8 @@ export {
   loadEdgeForID2,
   loadNodesByEdge,
   getEdgeTypeInGroup,
+  setEntLoaderPrivacyConcurrencyLimit,
+  getEntLoaderPrivacyConcurrencyLimit,
 } from "./core/ent";
 // TODO should these even be exported from the root?
 export {
@@ -40,6 +42,7 @@ export {
   AssocEdgeInput,
 } from "./action/operations";
 export { setGlobalSchema } from "./core/global_schema";
+export { registerExtensionRuntime } from "./core/extensions";
 import DB from "./core/db";
 export * from "./core/loaders";
 export { DB };
@@ -87,10 +90,11 @@ export {
 } from "./core/privacy";
 export * from "./core/query";
 export * from "./core/query_impl";
+export type { QueryExpression } from "./core/query_expression";
 
 export * from "./schema/";
 import * as q from "./core/clause";
-export { Clause } from "./core/clause";
+export { Clause, Expression, ParameterizedExpression } from "./core/clause";
 const query = {
   Eq: q.Eq,
   NotEq: q.NotEq,
@@ -130,6 +134,8 @@ const query = {
   TsVectorPlainToTsQuery: q.TsVectorPlainToTsQuery,
   TsVectorPhraseToTsQuery: q.TsVectorPhraseToTsQuery,
   TsVectorWebsearchToTsQuery: q.TsVectorWebsearchToTsQuery,
+  Expression: q.Expression,
+  ParameterizedExpression: q.ParameterizedExpression,
 };
 
 export { query };
@@ -141,5 +147,6 @@ export { IDViewer, LoggedOutViewer, IDViewerOptions } from "./core/viewer";
 export { loadConfig } from "./core/config";
 
 export { setLogLevels } from "./core/logger";
+export * from "./core/metrics";
 
 export * from "./core/convert";

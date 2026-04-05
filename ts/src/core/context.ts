@@ -3,7 +3,27 @@ import { Data, Loader, LoaderWithLoadMany, QueryOptions, Viewer } from "./base";
 
 import { Context } from "./base";
 import { log } from "./logger";
-import { getJoinInfo, getOrderByPhrase } from "./query_impl";
+import { stableStringify } from "./cache_utils";
+import { getOnQueryCacheHit } from "./metrics";
+import { getOrderByKey, getSelectFieldsKey } from "./query_impl";
+
+const DEFAULT_MAX_DISCARDED_LOADERS = 1000;
+let maxDiscardedLoaders = DEFAULT_MAX_DISCARDED_LOADERS;
+
+export function getContextCacheMaxDiscardedLoaders(): number {
+  return maxDiscardedLoaders;
+}
+
+export function setContextCacheMaxDiscardedLoaders(size?: number | null) {
+  if (size === undefined || size === null) {
+    maxDiscardedLoaders = DEFAULT_MAX_DISCARDED_LOADERS;
+    return;
+  }
+  if (!Number.isFinite(size) || size < 0) {
+    throw new Error(`maxDiscardedLoaders must be a non-negative number`);
+  }
+  maxDiscardedLoaders = Math.floor(size);
+}
 
 // RequestBasedContext e.g. from an HTTP request with a server/response conponent
 export interface RequestContext<TViewer extends Viewer = Viewer>
@@ -12,6 +32,52 @@ export interface RequestContext<TViewer extends Viewer = Viewer>
   logout(): Promise<void>;
   request: IncomingMessage;
   response: ServerResponse;
+}
+
+export function getContextCacheKey(options: QueryOptions): string {
+  const parts: string[] = [
+    `fields:${getSelectFieldsKey(options.fields)}`,
+    `clause:${options.clause.instanceKey()}`,
+  ];
+  if (options.distinct !== undefined) {
+    parts.push(`distinct:${options.distinct}`);
+  }
+  if (options.alias !== undefined) {
+    parts.push(`alias:${options.alias}`);
+  }
+  if (options.fieldsAlias !== undefined) {
+    parts.push(`fieldsAlias:${options.fieldsAlias}`);
+  }
+  if (options.disableFieldsAlias !== undefined) {
+    parts.push(`disableFieldsAlias:${options.disableFieldsAlias}`);
+  }
+  if (options.disableDefaultOrderByAlias !== undefined) {
+    parts.push(
+      `disableDefaultOrderByAlias:${options.disableDefaultOrderByAlias}`,
+    );
+  }
+  if (options.groupby !== undefined) {
+    parts.push(`groupby:${options.groupby}`);
+  }
+  if (options.orderby) {
+    parts.push(`orderby:${getOrderByKey(options.orderby)}`);
+  }
+  if (options.join) {
+    const joinKey = options.join.map((join) => ({
+      type: join.type ?? "inner",
+      tableName: join.tableName,
+      alias: join.alias,
+      clause: join.clause.instanceKey(),
+    }));
+    parts.push(`join:${stableStringify(joinKey)}`);
+  }
+  if (options.limit !== undefined) {
+    parts.push(`limit:${options.limit}`);
+  }
+  if (options.offset !== undefined) {
+    parts.push(`offset:${options.offset}`);
+  }
+  return parts.join(",");
 }
 
 export class ContextCache {
@@ -55,38 +121,24 @@ export class ContextCache {
   // tableName is ignored bcos already indexed on that
   // maybe we just want to store sql queries???
 
-  private getkey(options: QueryOptions): string {
-    let parts: string[] = [
-      options.fields
-        .map((f) => {
-          if (typeof f === "object") {
-            return `${f.alias}.${f.column}`;
-          }
-          return f;
-        })
-        .join(","),
-      options.clause.instanceKey(),
-    ];
-    if (options.orderby) {
-      parts.push(getOrderByPhrase(options.orderby));
-    }
-    if (options.join) {
-      parts.push(getJoinInfo(options.join).phrase);
-    }
-    return parts.join(",");
-  }
-
   getCachedRows(options: QueryOptions): Data[] | null {
     let m = this.listMap.get(options.tableName);
     if (!m) {
       return null;
     }
-    const key = this.getkey(options);
+    const key = getContextCacheKey(options);
     let rows = m.get(key);
     if (rows) {
+      const hook = getOnQueryCacheHit();
+      if (hook) {
+        hook({
+          tableName: options.tableName,
+          key,
+        });
+      }
       log("cache", {
         "cache-hit": key,
-        "tableName": options.tableName,
+        tableName: options.tableName,
       });
     }
     return rows || null;
@@ -97,12 +149,19 @@ export class ContextCache {
     if (!m) {
       return null;
     }
-    const key = this.getkey(options);
+    const key = getContextCacheKey(options);
     let row = m.get(key);
     if (row) {
+      const hook = getOnQueryCacheHit();
+      if (hook) {
+        hook({
+          tableName: options.tableName,
+          key,
+        });
+      }
       log("cache", {
         "cache-hit": key,
-        "tableName": options.tableName,
+        tableName: options.tableName,
       });
     }
     return row || null;
@@ -113,11 +172,11 @@ export class ContextCache {
   primeCache(options: QueryOptions, rows: Data[] | Data): void {
     if (Array.isArray(rows)) {
       let m = this.listMap.get(options.tableName) || new Map();
-      m.set(this.getkey(options), rows);
+      m.set(getContextCacheKey(options), rows);
       this.listMap.set(options.tableName, m);
     } else {
       let m = this.itemMap.get(options.tableName) || new Map();
-      m.set(this.getkey(options), rows);
+      m.set(getContextCacheKey(options), rows);
       this.itemMap.set(options.tableName, m);
     }
   }
@@ -137,6 +196,14 @@ export class ContextCache {
     this.loaderWithLoadMany.clear();
     this.itemMap.clear();
     this.listMap.clear();
+
+    if (maxDiscardedLoaders === 0) {
+      this.discardedLoaders = [];
+      return;
+    }
+    if (this.discardedLoaders.length > maxDiscardedLoaders) {
+      this.discardedLoaders = this.discardedLoaders.slice(-maxDiscardedLoaders);
+    }
   }
 
   /**

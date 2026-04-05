@@ -1,12 +1,12 @@
 package ent
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/util"
-	"github.com/pkg/errors"
 )
 
 type processRawData struct {
@@ -69,7 +69,7 @@ func (q *dbQuery) query(processor *processRawData) error {
 	}
 	query, values, err := builder.Build()
 	if err != nil {
-		err = errors.Wrap(err, "error building query")
+		err = fmt.Errorf("error building query: %w", err)
 		fmt.Println(err)
 		return err
 	}

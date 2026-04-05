@@ -46,9 +46,9 @@ import {
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "../core/privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
+import { memoizeNoArgs } from "../core/memoize";
 import { log } from "../core/logger";
 import { Trigger } from "./action";
-import memoize from "memoizee";
 import * as clause from "../core/clause";
 import { isPromise } from "util/types";
 import { RawQueryOperation } from "./operations";
@@ -240,7 +240,7 @@ export class Orchestrator<
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap<TViewer> = new Map();
   private conditionalEdges: EdgeMap<TViewer> = new Map();
-  private validatedFields: Data | null;
+  private validatedFields: Data | null = null;
   private logValues: Data | null;
   private changesets: Changeset[] = [];
   private dependencies: Map<ID, Builder<TEnt>> = new Map();
@@ -264,7 +264,7 @@ export class Orchestrator<
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
-    this.memoizedGetFields = memoize(this.getFieldsInfo.bind(this));
+    this.memoizedGetFields = memoizeNoArgs(this.getFieldsInfo.bind(this));
   }
 
   // don't type this because we don't care
@@ -697,10 +697,14 @@ export class Orchestrator<
     );
   }
 
-  // this gets the fields that were explicitly set plus any default or transformed values
-  // mainly exists to get default fields e.g. default id to be used in triggers
-  // NOTE: this API may change in the future
-  // doesn't work to get ids for autoincrement keys
+  /**
+   * This gets the fields that were explicitly set plus any default or transformed values
+   * mainly exists to get default fields e.g. default id to be used in triggers
+   * NOTE: this API may change in the future
+   * doesn't work to get ids for autoincrement keys
+   * PS contrasted with getValidatedFields() which returns the format that would be written to the db
+   * i.e. includes lists which have been converted to JSON strings, etc
+   */
   async getEditedData() {
     const { editedData } = await this.memoizedGetFields();
     return editedData;
@@ -879,7 +883,7 @@ export class Orchestrator<
       | Array<Trigger<TEnt, Builder<TEnt, TViewer>>>
     >,
   ): Promise<void> {
-    let groups: Trigger<TEnt, Builder<TEnt, TViewer>>[][] = [];
+    const groups: Trigger<TEnt, Builder<TEnt, TViewer>>[][] = [];
     let lastArray = 0;
     let prevWasArray = false;
     for (let i = 0; i < triggers.length; i++) {
@@ -962,7 +966,7 @@ export class Orchestrator<
     schemaFields: Map<string, Field>,
     editedFields: Map<string, any>,
     action?: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput> | undefined,
-  ): Promise<Data> {
+  ): Promise<{ data: Data; userDefinedKeys: Set<string> }> {
     let data: Data = {};
     let defaultData: Data = {};
 

@@ -255,7 +255,7 @@ function getConstructorElementInfo(
   return {
     key: "patterns",
     // remove this.addPatterns at the front, remove trailing ) at the end
-    // if there's a trailing comma, it'll be handled by prettier
+    // if there's a trailing comma, it'll be handled by the formatter
     value: `[${line.slice(addPatterns.length, -1)}]`,
     comment: "",
   };
@@ -542,5 +542,5 @@ export class TransformSchema implements TransformFile {
     fs.rmSync(file);
   }
 
-  prettierGlob = "src/schema/*.ts";
+  formatGlob = "src/schema/*.ts";
 }

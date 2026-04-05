@@ -104,3 +104,106 @@ And the `Viewer` is authenticated in an endpoint with that same package via
   );
   // return whatever you want to client
 ```
+
+## Custom auth without registerAuthHandler
+
+If you want full control, you can skip `registerAuthHandler` and `buildContext` and instead return a custom `RequestContext` that performs auth directly. This can be useful when you want to own the request lifecycle or plug in custom auth flows.
+
+### Shared context
+
+```ts title="src/context/context.ts"
+import { IncomingMessage, ServerResponse } from "http";
+import { Ent, ID, RequestContext, Viewer, LoggedOutViewer } from "@snowtop/ent";
+
+export class OurContext
+  implements RequestContext<Viewer<Ent<any> | null, ID | null>>
+{
+  private viewer: Viewer<Ent<any> | null, ID | null>;
+
+  constructor(
+    public request: IncomingMessage,
+    public response: ServerResponse,
+  ) {
+    this.viewer = new LoggedOutViewer();
+    this.viewer.context = this;
+  }
+
+  async authViewer(viewer: Viewer<Ent<any> | null, ID | null>): Promise<void> {
+    this.viewer = viewer;
+  }
+
+  async logout(): Promise<void> {
+    this.viewer = new LoggedOutViewer();
+  }
+
+  getViewer(): Viewer<Ent<any> | null, ID | null> {
+    return this.viewer;
+  }
+
+  // add createFromRequest below with your auth logic
+  static async createFromRequest(
+    request: IncomingMessage,
+    response: ServerResponse,
+  ): Promise<OurContext> {
+    return new OurContext(request, response);
+  }
+}
+```
+
+### Passport-based createFromRequest
+
+```ts title="src/context/context.ts"
+import { PassportStrategyHandler } from "@snowtop/ent-passport";
+import { User } from "src/ent";
+
+export class OurContext {
+  static async createFromRequest(
+    request: IncomingMessage,
+    response: ServerResponse,
+  ): Promise<OurContext> {
+    const handler = PassportStrategyHandler.jwtHandler({
+      secretOrKey: "secret",
+      loaderOptions: User.loaderOptions(),
+    });
+    const ctx = new OurContext(request, response);
+    const viewer = await handler.authViewer(ctx);
+    if (viewer) {
+      ctx.authViewer(viewer);
+    }
+    return ctx;
+  }
+}
+```
+
+### Non-passport createFromRequest
+
+```ts title="src/context/context.ts"
+import { User } from "src/ent";
+import { getUserIDFromRequest } from "src/auth/get_user_id_from_request";
+
+export class OurContext {
+  static async createFromRequest(
+    request: IncomingMessage,
+    response: ServerResponse,
+  ): Promise<OurContext> {
+    const ctx = new OurContext(request, response);
+    const userID = await getUserIDFromRequest(request);
+    if (userID) {
+      const viewer = await User.loadX(userID);
+      ctx.authViewer(viewer);
+    }
+    return ctx;
+  }
+}
+```
+
+### Using the custom context
+
+```ts title="src/graphql/index.ts"
+import { OurContext } from "src/context/context";
+
+// ...
+contextFactory: async () => {
+  return OurContext.createFromRequest(req, res);
+},
+```
