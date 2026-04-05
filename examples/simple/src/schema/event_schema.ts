@@ -15,10 +15,13 @@ import {
   StructTypeAsList,
 } from "@snowtop/ent/schema/";
 import { EdgeType } from "../ent/generated/types";
+import AttachmentInputPattern from "./patterns/attachment_input";
 
 /// explicit schema
 const EventSchema = new EntSchema({
   showCanViewerSee: true,
+
+  patterns: [new AttachmentInputPattern()],
 
   // pre-fields comment. intentionally doesn't parse decorators since we don't need it
   fields: {
