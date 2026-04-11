@@ -1,0 +1,12 @@
+[environment]
+python-version = "3.11"
+
+[src]
+include = [
+  "auto_schema/change.py",
+  "auto_schema/change_type.py",
+  "auto_schema/clearable_string_io.py",
+  "auto_schema/config.py",
+  "auto_schema/csv.py",
+  "auto_schema/util/os.py",
+]
