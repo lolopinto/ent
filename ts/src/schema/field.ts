@@ -51,6 +51,15 @@ export abstract class BaseField {
     }
     return val;
   }
+
+  // default input normalization: apply format if available
+  formatInput(val: any): any {
+    const format = (this as unknown as Field).format;
+    if (typeof format === "function") {
+      return format.call(this, val, true);
+    }
+    return val;
+  }
 }
 
 export class UUIDField extends BaseField implements Field {
@@ -903,6 +912,16 @@ export class ListField extends BaseField {
 
   __getElemField() {
     return this.field;
+  }
+
+  formatInput(val: any): any {
+    if (!Array.isArray(val)) {
+      return val;
+    }
+    if (this.field.formatInput) {
+      return val.map((v) => this.field.formatInput!(v));
+    }
+    return val;
   }
 
   validate(validator: (val: any[]) => boolean): this {
