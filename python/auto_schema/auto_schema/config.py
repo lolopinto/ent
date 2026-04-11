@@ -1,8 +1,10 @@
+from typing import Any, TextIO
+
 # set in runner.Runner.__init__
-metadata = None
-connection = None
+metadata: Any | None = None
+connection: Any | None = None
 # set in Runner.progressive_sql
-output_buffer = None
+output_buffer: TextIO | None = None
 # dev branch schema support (set in Runner.__init__)
-schema_name = None
-include_public = None
+schema_name: str | None = None
+include_public: bool | None = None
