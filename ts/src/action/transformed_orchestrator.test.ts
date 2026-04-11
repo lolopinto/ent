@@ -615,6 +615,84 @@ function commonTests() {
     expect(row3).toBe(null);
   });
 
+  test("transformWrite keeps struct input in trigger shape", async () => {
+    const loader = getAccountNewLoader();
+    const initialPrefs = {
+      notfisEnabled: true,
+      finishedNux: false,
+      locale: "en_US",
+    };
+    const action = getInsertAccountAction(
+      new Map<string, any>([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+        ["prefs", initialPrefs],
+      ]),
+      loader.context,
+    );
+    const account = await action.saveX();
+
+    const transformedPrefs = {
+      notfisEnabled: false,
+      finishedNux: true,
+      locale: "en_US",
+    };
+
+    let triggerInput: Data | undefined;
+    let triggerBuilderInput: Data | undefined;
+
+    const action2 = getInsertAccountAction(
+      new Map<string, any>([
+        ["FirstName", "Aegon"],
+        ["LastName", "Targaryen"],
+        ["prefs", transformedPrefs],
+      ]),
+      loader.context,
+    );
+    action2.getTriggers = () => [
+      {
+        changeset(builder, input) {
+          triggerInput = input;
+          triggerBuilderInput = builder.getInput();
+        },
+      },
+    ];
+
+    const transformAegon = (
+      stmt: UpdateOperation<Account>,
+    ): TransformedUpdateOperation<Account> | undefined => {
+      if (stmt.op != SQLStatementOperation.Insert || !stmt.data) {
+        return;
+      }
+
+      const firstName = stmt.data.get("FirstName");
+      const lastName = stmt.data.get("LastName");
+      const prefs = stmt.data.get("prefs");
+
+      if (firstName === "Aegon" && lastName === "Targaryen") {
+        return {
+          op: SQLStatementOperation.Update,
+          existingEnt: account,
+          data: {
+            FirstName: "Aegon",
+            LastName: "Targaryen",
+            prefs,
+          },
+        };
+      }
+    };
+
+    // @ts-ignore
+    action2.transformWrite = transformAegon;
+
+    await action2.validX();
+
+    expect(triggerInput?.prefs).toEqual(transformedPrefs);
+    expect(triggerBuilderInput?.prefs).toEqual(transformedPrefs);
+    expect(triggerBuilderInput?.prefs).not.toHaveProperty("notfis_enabled");
+    expect(action2.builder.getInput().prefs).toEqual(transformedPrefs);
+  });
+
   test("insert -> update", async () => {
     const verifyRows = async (ct: number) => {
       // hmm, not sure why this is still needed...
