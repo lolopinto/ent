@@ -5,6 +5,8 @@ make changes to code and then run as following:
 * `pipenv shell` to get into virtual environment.
 * run a test: `python -m pytest -k test_enum_type`
 * run all tests: `python -m pytest`
+* install the incremental type checker once: `python -m pip install ty==0.0.28`
+* run the incremental type check: `ty check --python "$(pipenv --py)"`
 
 * `pip3 install pipenv` to install `pipenv`
 * `pipenv install --dev` to install dependencies from `Pipfile`

@@ -63,6 +63,14 @@ jobs:
       run: |
         pipenv install --deploy --dev
 
+    - name: Install ty
+      run: |
+        python -m pip install ty==0.0.28
+
+    - name: Run ty
+      run: |
+        ty check --python "$(pipenv --py)"
+
     - name: run test suite
       run: |
         pipenv run pytest -svv
