@@ -1011,19 +1011,20 @@ export class Orchestrator<
         for (const [k, field] of schemaFields) {
           const inputKey = this.getInputKey(k);
           const storageKey = this.getStorageKey(k);
-          let val = transformed.data[inputKey];
-          if (val === undefined) {
-            val = transformed.data[storageKey];
+          let inputVal = transformed.data[inputKey];
+          if (inputVal === undefined) {
+            inputVal = transformed.data[storageKey];
           }
-          if (val === undefined) {
+          if (inputVal === undefined) {
             continue;
           }
+          let dbVal = inputVal;
           if (field.format) {
-            val = field.format(transformed.data[k], true);
+            dbVal = field.format(inputVal, true);
           }
-          data[this.getStorageKey(k)] = val;
+          data[this.getStorageKey(k)] = dbVal;
           if (!field.immutable) {
-            this.defaultFieldsByTSName[this.getInputKey(k)] = val;
+            this.defaultFieldsByTSName[this.getInputKey(k)] = inputVal;
           }
           // hmm do we need this?
           // TODO how to do this for local tests?

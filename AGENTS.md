@@ -3,6 +3,50 @@
 This file documents behavior expectations for dev branch schema support.
 It is intended for contributors and automation working on this repo.
 
+## Local testing
+
+When changing code in `ts/`, validate in this order:
+
+1. Run targeted package tests in `ts/` first.
+2. If the change affects runtime behavior consumed by examples, rebuild `ts/dist`
+   via `cd ts && npm run compile`.
+3. Run only the relevant example tests while iterating.
+4. Before landing broader runtime changes, run the full example matrix below.
+
+Package-level commands:
+
+- `cd ts && npm test -- --runInBand`
+- `cd ts && npm test -- src/action/orchestrator.test.ts --runInBand`
+- `cd ts && npm test -- src/action/transformed_orchestrator.test.ts --runInBand`
+- `cd ts && npm run compile`
+
+Example test matrix:
+
+- `examples/simple`
+  `cd examples/simple && POSTGRES_USER=postgres POSTGRES_PASSWORD=postgres npm test -- --runInBand`
+- `examples/ent-local-guide`
+  `cd examples/ent-local-guide && npm run db:up && POSTGRES_TEST_DB=ent-local-guide POSTGRES_PORT=54329 npm test -- --runInBand`
+- `examples/ent-semantic-notes`
+  `cd examples/ent-semantic-notes && npm run db:up && POSTGRES_TEST_DB=ent_semantic_notes POSTGRES_PORT=54330 npm test -- --runInBand`
+- `examples/todo-sqlite`
+  `cd examples/todo-sqlite && npm test -- --runInBand`
+
+How examples pick up local `@snowtop/ent` changes:
+
+- `examples/ent-local-guide` and `examples/ent-semantic-notes` already map
+  `@snowtop/ent` to local `../../ts/src` in Jest, so their tests exercise local
+  TS changes directly.
+- `examples/simple` and `examples/todo-sqlite` still use the installed package
+  by default. Their normal `npm test` runs do not prove local `ts/` changes.
+- When validating local `ts/` changes against `simple` or `todo-sqlite`, use a
+  temporary Jest override (or equivalent local-only config change) that maps:
+  - `^@snowtop/ent$` -> `<rootDir>/../../ts/src/index.ts`
+  - `^@snowtop/ent/(.*)$` -> `<rootDir>/../../ts/src/$1`
+- Do not rely on a published package version for local validation of runtime
+  fixes. If a temporary example-only test override is added for local
+  verification, revert it before finishing unless updating the example test
+  wiring is part of the intended change.
+
 ## Dev schema isolation (Postgres only)
 
 Default contract:
