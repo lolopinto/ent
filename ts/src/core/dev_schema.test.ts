@@ -142,6 +142,27 @@ describe("dev schema resolution", () => {
     expect(res.schemaName).toBe("schema_123bad");
   });
 
+  test("collapses separators and trims boundary underscores", () => {
+    const repo = makeRepo("main");
+    process.chdir(repo);
+    process.env.NODE_ENV = "development";
+
+    const res = resolveDevSchema({
+      enabled: true,
+      schemaName: "---Feature___Branch---",
+    });
+    expect(res.schemaName).toBe("feature_branch");
+  });
+
+  test("falls back when explicit schemaName sanitizes to empty", () => {
+    const repo = makeRepo("main");
+    process.chdir(repo);
+    process.env.NODE_ENV = "development";
+
+    const res = resolveDevSchema({ enabled: true, schemaName: "---___---" });
+    expect(res.schemaName).toBe("schema");
+  });
+
   test("runtime config derives schema without state", () => {
     const repo = makeRepo("feature/add-dev-schema");
     process.chdir(repo);

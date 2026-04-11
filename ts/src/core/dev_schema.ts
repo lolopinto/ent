@@ -163,7 +163,21 @@ function slugify(input: string): string {
       lastUnderscore = true;
     }
   }
-  return out.replace(/^_+|_+$/g, "");
+  return trimBoundaryUnderscores(out);
+}
+
+function trimBoundaryUnderscores(input: string): string {
+  let start = 0;
+  let end = input.length;
+
+  while (start < end && input[start] === "_") {
+    start++;
+  }
+  while (end > start && input[end - 1] === "_") {
+    end--;
+  }
+
+  return input.slice(start, end);
 }
 
 function sanitizeIdentifier(input: string): string {
