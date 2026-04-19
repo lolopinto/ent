@@ -1,4 +1,6 @@
-require("ts-node/register");
+if (!process.versions.bun) {
+  require("ts-node/register");
+}
 import { Client as PGClient } from "pg";
 
 async function teardown() {

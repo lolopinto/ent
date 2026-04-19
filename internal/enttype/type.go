@@ -656,15 +656,15 @@ func (t *DateType) GetTSType() string {
 }
 
 func (t *DateType) Convert(s SchemaType) ConvertDataTypeRet {
-	return nil
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertDBDate"))
 }
 
 func (t *DateType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
-	return nil
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertDBDateList"))
 }
 
 func (t *DateType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
-	return nil
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertNullableDBDateList"))
 }
 
 type NullableTimestampType struct {
@@ -740,7 +740,7 @@ func (t *NullableDateType) GetTSType() string {
 }
 
 func (t *NullableDateType) Convert(s SchemaType) ConvertDataTypeRet {
-	return nil
+	return getAllDialectsImportMap(tsimport.NewEntImportPath("convertNullableDBDate"))
 }
 
 type TimeType struct {
@@ -1421,8 +1421,7 @@ func (t *ArrayListType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 func (t *ArrayListType) Convert(s SchemaType) ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
-		// NB: this is intentionally only sqlite because postgres automatically returns as a list but sqlite doesn't
-		return getSqliteImportMap(tsimport.NewEntImportPath("convertList"))
+		return getAllDialectsImportMap(tsimport.NewEntImportPath("convertList"))
 	}
 	return elem.convertListWithItem(s)
 }
@@ -1519,7 +1518,7 @@ func (t *NullableArrayListType) GetTSGraphQLImports(input bool) []*tsimport.Impo
 func (t *NullableArrayListType) Convert(s SchemaType) ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
-		return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableList"))
+		return getAllDialectsImportMap(tsimport.NewEntImportPath("convertNullableList"))
 	}
 	return elem.convertNullableListWithItem(s)
 }

@@ -6,6 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/testingutils"
 	"github.com/lolopinto/ent/internal/util"
+	"gopkg.in/yaml.v3"
 )
 
 func GetTsconfigPaths() string {
@@ -28,15 +29,96 @@ func GetArgsForTsNodeScript(rootPath string) []string {
 	}
 }
 
+const (
+	runtimeNode       = "node"
+	runtimeBun        = "bun"
+	postgresDriverPG  = "pg"
+	postgresDriverBun = "bun"
+)
+
+type runtimeConfig struct {
+	Runtime        string `yaml:"runtime"`
+	PostgresDriver string `yaml:"postgresDriver"`
+}
+
+func normalizeRuntime(runtime string) string {
+	if runtime == runtimeBun {
+		return runtimeBun
+	}
+	return runtimeNode
+}
+
+func normalizePostgresDriver(driver string) string {
+	if driver == postgresDriverBun {
+		return postgresDriverBun
+	}
+	return postgresDriverPG
+}
+
+func readRuntimeConfig(dirPath string) *runtimeConfig {
+	paths := []string{
+		"ent.yml",
+		"src/ent.yml",
+		"src/graphql/ent.yml",
+	}
+
+	for _, relPath := range paths {
+		path := filepath.Join(dirPath, relPath)
+		fi, err := os.Stat(path)
+		if err != nil || fi.IsDir() {
+			continue
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var cfg runtimeConfig
+		if err := yaml.Unmarshal(b, &cfg); err != nil {
+			continue
+		}
+		return &cfg
+	}
+	return nil
+}
+
+func getRuntime(dirPath string, fromTest bool) string {
+	if runtime, ok := os.LookupEnv("ENT_RUNTIME"); ok {
+		return normalizeRuntime(runtime)
+	}
+	if fromTest {
+		return runtimeNode
+	}
+	cfg := readRuntimeConfig(dirPath)
+	if cfg == nil {
+		return runtimeNode
+	}
+	return normalizeRuntime(cfg.Runtime)
+}
+
+func getPostgresDriver(dirPath string, fromTest bool) string {
+	if driver, ok := os.LookupEnv("ENT_POSTGRES_DRIVER"); ok {
+		return normalizePostgresDriver(driver)
+	}
+	if fromTest {
+		return postgresDriverPG
+	}
+	cfg := readRuntimeConfig(dirPath)
+	if cfg == nil {
+		return postgresDriverPG
+	}
+	return normalizePostgresDriver(cfg.PostgresDriver)
+}
+
 func UseSwc() bool {
 	return util.EnvIsTrue("ENABLE_SWC")
 }
 
 type CommandInfo struct {
-	Name   string
-	Args   []string
-	Env    []string
-	UseSwc bool
+	Name    string
+	Args    []string
+	Env     []string
+	UseSwc  bool
+	Runtime string
 }
 
 func (cmdInfo *CommandInfo) MaybeSetupSwcrc(dirPath string) func() {
@@ -80,43 +162,52 @@ func (cmdInfo *CommandInfo) MaybeSetupSwcrc(dirPath string) func() {
 
 func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	env := os.Environ()
+	runtime := getRuntime(dirPath, fromTest)
+	postgresDriver := getPostgresDriver(dirPath, fromTest)
 	cmdName := "ts-node"
 	var cmdArgs []string
 	useSwc := UseSwc()
 
-	// no swc with tests right now because we need -r configured locally
-	// we'll always use ts-node
-	if fromTest {
-		cmdArgs = []string{
-			"--compiler-options",
-			testingutils.DefaultCompilerOptions(),
-			"--transpileOnly",
-		}
+	if runtime == runtimeBun {
+		cmdName = "bun"
+		useSwc = false
 	} else {
-		cmdName = "ts-node-script"
-
-		if useSwc {
-			// if using swc, skip ts-node and use node directly
-			// we're going to do: node -r @swc-node/register -r tsconfig-paths/register
-			cmdName = "node"
-			cmdArgs = append(
-				cmdArgs,
-				"-r",
-				"@swc-node/register",
-			)
-
-			env = append(env, "SWCRC=true")
+		// no swc with tests right now because we need -r configured locally
+		// we'll always use ts-node
+		if fromTest {
+			cmdArgs = []string{
+				"--compiler-options",
+				testingutils.DefaultCompilerOptions(),
+				"--transpileOnly",
+			}
 		} else {
-			cmdArgs = append(cmdArgs, GetArgsForTsNodeScript(dirPath)...)
-		}
+			cmdName = "ts-node-script"
 
-		// for paths like src/ent/generated/types.ts
-		cmdArgs = append(cmdArgs, "-r", GetTsconfigPaths())
+			if useSwc {
+				// if using swc, skip ts-node and use node directly
+				// we're going to do: node -r @swc-node/register -r tsconfig-paths/register
+				cmdName = "node"
+				cmdArgs = append(
+					cmdArgs,
+					"-r",
+					"@swc-node/register",
+				)
+
+				env = append(env, "SWCRC=true")
+			} else {
+				cmdArgs = append(cmdArgs, GetArgsForTsNodeScript(dirPath)...)
+			}
+
+			// for paths like src/ent/generated/types.ts
+			cmdArgs = append(cmdArgs, "-r", GetTsconfigPaths())
+		}
 	}
 
 	if useSwc {
 		env = append(env, "ENABLE_SWC=true")
 	}
+	env = append(env, "ENT_RUNTIME="+runtime)
+	env = append(env, "ENT_POSTGRES_DRIVER="+postgresDriver)
 
 	// append LOCAL_SCRIPT_PATH so we know. in typescript...
 	if util.EnvIsTrue("LOCAL_SCRIPT_PATH") {
@@ -124,9 +215,10 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 	}
 
 	return &CommandInfo{
-		Name:   cmdName,
-		Args:   cmdArgs,
-		Env:    env,
-		UseSwc: useSwc,
+		Name:    cmdName,
+		Args:    cmdArgs,
+		Env:     env,
+		UseSwc:  useSwc,
+		Runtime: runtime,
 	}
 }

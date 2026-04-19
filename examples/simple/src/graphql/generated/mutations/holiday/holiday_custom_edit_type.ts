@@ -75,7 +75,9 @@ export const HolidayCustomEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customCustomEditHolidayInput }
 > = {
-  type: new GraphQLNonNull(CustomEditHolidayPayloadType),
+  get type() {
+    return new GraphQLNonNull(CustomEditHolidayPayloadType);
+  },
   args: {
     input: {
       description: "",

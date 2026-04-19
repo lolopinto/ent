@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { DefaultsExample } from "../../../ent";
+import { DefaultsExample } from "../../../ent/defaults_example";
 import { DefaultsExampleType } from "../../resolvers/internal";
 
 interface DefaultsExampleListDeprecatedArgs {
@@ -31,9 +31,11 @@ export const DefaultsExampleListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   DefaultsExampleListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(
-    new GraphQLList(new GraphQLNonNull(DefaultsExampleType)),
-  ),
+  get type() {
+    return new GraphQLNonNull(
+      new GraphQLList(new GraphQLNonNull(DefaultsExampleType)),
+    );
+  },
   description: "custom query for defaults_example. list",
   args: {
     id: {
@@ -69,10 +71,19 @@ export const DefaultsExampleListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return DefaultsExample.loadCustom(
+    const rows = await DefaultsExample.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map(args.ids.map((id, index) => [id, index]));
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

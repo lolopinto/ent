@@ -94,17 +94,18 @@ function createAssocEdgeConfigLoader(options: SelectDataOptions) {
   // something here brokwn with strict:true
   return new InstrumentedDataLoader(
     loaderName,
-    async (ids: ID[]) => {
+    async (ids: readonly ID[]) => {
       if (!ids.length) {
         return [];
       }
+      const keys = Array.from(ids);
       let col = options.key;
       // defaults to uuid
       let typ = options.keyType || "uuid";
 
       const rowOptions: LoadRowOptions = {
         ...options,
-        clause: clause.DBTypeIn(col, ids, typ),
+        clause: clause.DBTypeIn(col, keys, typ),
       };
 
       // TODO is there a better way of doing this?
@@ -118,7 +119,7 @@ function createAssocEdgeConfigLoader(options: SelectDataOptions) {
         }
       }
 
-      return ids.map((id) => rowMap.get(id) ?? null);
+      return keys.map((id) => rowMap.get(id) ?? null);
     },
     loaderOptions,
     options.tableName,
@@ -149,7 +150,7 @@ export function getEntLoaderPrivacyConcurrencyLimit() {
 }
 
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
-  viewer: Viewer,
+  viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
   map: entCacheMap<TViewer, TEnt>,
 ): DataLoader<ID, TEnt | ErrorWrapper> {
@@ -163,13 +164,14 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
 
   return new InstrumentedDataLoader(
     loaderName,
-    async (ids: ID[]) => {
+    async (ids: readonly ID[]) => {
       if (!ids.length) {
         return [];
       }
+      const keys = Array.from(ids);
 
       const loader = options.loaderFactory.createLoader(viewer.context);
-      const rows = await loader.loadMany(ids);
+      const rows = await loader.loadMany(keys);
       // this is a loader which should return the same order based on passed-in ids
       // so let's depend on that...
 
@@ -189,12 +191,12 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
             if (tableName) {
               return new ErrorWrapper(
                 new Error(
-                  `couldn't find row for value ${ids[idx]} in table ${tableName}`,
+                  `couldn't find row for value ${keys[idx]} in table ${tableName}`,
                 ),
               );
             }
             return new ErrorWrapper(
-              new Error(`couldn't find row for value ${ids[idx]}`),
+              new Error(`couldn't find row for value ${keys[idx]}`),
             );
           }
 

@@ -41,6 +41,13 @@ type Config struct {
 	changedTSFiles []string
 }
 
+const (
+	RuntimeNode       = "node"
+	RuntimeBun        = "bun"
+	PostgresDriverPG  = "pg"
+	PostgresDriverBun = "bun"
+)
+
 // Clone doesn't clone changes and changedTSFiles
 func (cfg *Config) Clone() *Config {
 	return &Config{
@@ -67,6 +74,20 @@ func (cfg *Config) OverrideGraphQLMutationName(mutationName codegenapi.GraphQLMu
 			DefaultGraphQLMutationName: mutationName,
 		},
 	}
+}
+
+func normalizeRuntime(runtime string) string {
+	if runtime == RuntimeBun {
+		return RuntimeBun
+	}
+	return RuntimeNode
+}
+
+func normalizePostgresDriver(driver string) string {
+	if driver == PostgresDriverBun {
+		return PostgresDriverBun
+	}
+	return PostgresDriverPG
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -221,6 +242,20 @@ func (cfg *Config) getDatabaseMigrationConfig() *DatabaseMigrationConfig {
 		return cfg.config.DatabaseMigration
 	}
 	return nil
+}
+
+func (cfg *Config) Runtime() string {
+	if cfg.config != nil {
+		return cfg.config.RuntimeValue()
+	}
+	return RuntimeNode
+}
+
+func (cfg *Config) PostgresDriver() string {
+	if cfg.config != nil {
+		return cfg.config.PostgresDriverValue()
+	}
+	return PostgresDriverPG
 }
 
 func (cfg *Config) ShouldUseRelativePaths() bool {
@@ -666,10 +701,16 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 	return nil, nil
 }
 
+func ReadConfig(absPathToRoot string) (*ConfigurableConfig, error) {
+	return parseConfig(absPathToRoot)
+}
+
 type ConfigurableConfig struct {
 	Codegen                            *CodegenConfig           `yaml:"codegen"`
 	DatabaseMigration                  *DatabaseMigrationConfig `yaml:"databaseMigration"`
 	DevSchema                          *DevSchemaConfig         `yaml:"devSchema"`
+	Runtime                            string                   `yaml:"runtime"`
+	PostgresDriver                     string                   `yaml:"postgresDriver"`
 	CustomGraphQLJSONPath              string                   `yaml:"customGraphQLJSONPath"`
 	DynamicScriptCustomGraphQLJSONPath string                   `yaml:"dynamicScriptCustomGraphQLJSONPath"`
 	GlobalSchemaPath                   string                   `yaml:"globalSchemaPath"`
@@ -680,10 +721,26 @@ func (cfg *ConfigurableConfig) Clone() *ConfigurableConfig {
 		Codegen:                            cloneCodegen(cfg.Codegen),
 		DatabaseMigration:                  cloneDatabaseMigration(cfg.DatabaseMigration),
 		DevSchema:                          cloneDevSchema(cfg.DevSchema),
+		Runtime:                            cfg.Runtime,
+		PostgresDriver:                     cfg.PostgresDriver,
 		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
 		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
 		GlobalSchemaPath:                   cfg.GlobalSchemaPath,
 	}
+}
+
+func (cfg *ConfigurableConfig) RuntimeValue() string {
+	if cfg == nil {
+		return RuntimeNode
+	}
+	return normalizeRuntime(cfg.Runtime)
+}
+
+func (cfg *ConfigurableConfig) PostgresDriverValue() string {
+	if cfg == nil {
+		return PostgresDriverPG
+	}
+	return normalizePostgresDriver(cfg.PostgresDriver)
 }
 
 func cloneConfig(cfg *ConfigurableConfig) *ConfigurableConfig {

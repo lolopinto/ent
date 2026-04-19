@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Holiday } from "../../../ent";
+import { Holiday } from "../../../ent/holiday";
 import { HolidayType } from "../../resolvers/internal";
 
 interface HolidayListDeprecatedArgs {
@@ -31,7 +31,9 @@ export const HolidayListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   HolidayListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(HolidayType))),
+  get type() {
+    return new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(HolidayType)));
+  },
   description: "custom query for holiday. list",
   args: {
     id: {
@@ -67,10 +69,19 @@ export const HolidayListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return Holiday.loadCustom(
+    const rows = await Holiday.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map(args.ids.map((id, index) => [id, index]));
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

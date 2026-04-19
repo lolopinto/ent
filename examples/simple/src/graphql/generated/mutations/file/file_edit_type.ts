@@ -72,7 +72,9 @@ export const FileEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customFileEditInput }
 > = {
-  type: new GraphQLNonNull(FileEditPayloadType),
+  get type() {
+    return new GraphQLNonNull(FileEditPayloadType);
+  },
   args: {
     input: {
       description: "",

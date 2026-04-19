@@ -85,7 +85,9 @@ export const CommentCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customCommentCreateInput }
 > = {
-  type: new GraphQLNonNull(CommentCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(CommentCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

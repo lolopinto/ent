@@ -66,7 +66,9 @@ export const ConfirmPhoneNumberEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customConfirmEditPhoneNumberInput }
 > = {
-  type: new GraphQLNonNull(ConfirmEditPhoneNumberPayloadType),
+  get type() {
+    return new GraphQLNonNull(ConfirmEditPhoneNumberPayloadType);
+  },
   args: {
     input: {
       description: "",

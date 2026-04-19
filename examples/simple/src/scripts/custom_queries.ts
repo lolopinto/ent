@@ -73,7 +73,7 @@ async function main() {
 
     const listImports: any = [
       {
-        importPath: "src/ent",
+        importPath: `src/ent/${query}`,
         import: node,
       },
       {
@@ -83,7 +83,7 @@ async function main() {
     ];
     const connectionImports: any = [
       {
-        importPath: "src/ent",
+        importPath: `src/ent/${query}`,
         import: node,
       },
       {
@@ -151,11 +151,20 @@ async function main() {
       throw new Error('invalid query. must provid id or ids');
     }
 
-    return ${node}.loadCustom(
+    const rows = await ${node}.loadCustom(
       context.getViewer(), 
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map(args.ids.map((id, index) => [id, index]));
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
     `;
 
     const connectionContent = `

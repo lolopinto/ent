@@ -32,7 +32,9 @@ export const PhoneAvailableType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: PhoneAvailableInput }
 > = {
-  type: new GraphQLNonNull(GraphQLBoolean),
+  get type() {
+    return new GraphQLNonNull(GraphQLBoolean);
+  },
   args: {
     input: {
       description: "",

@@ -48,7 +48,9 @@
     {{useTypeImport "RequestContext"}}<{{$viewerType}}>
   {{ end -}}
 > = {
-  type: {{$fieldConfig.FieldType}},
+  get type() {
+    return {{$fieldConfig.FieldType}};
+  },
   {{ if $fieldConfig.Description -}}
     description: "{{$fieldConfig.Description}}",
   {{ end -}}

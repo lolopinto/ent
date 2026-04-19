@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { UserStatistics } from "../../../ent";
+import { UserStatistics } from "../../../ent/user_statistics";
 import { UserStatisticsType } from "../../resolvers/internal";
 
 interface UserStatisticsListDeprecatedArgs {
@@ -31,9 +31,11 @@ export const UserStatisticsListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   UserStatisticsListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(
-    new GraphQLList(new GraphQLNonNull(UserStatisticsType)),
-  ),
+  get type() {
+    return new GraphQLNonNull(
+      new GraphQLList(new GraphQLNonNull(UserStatisticsType)),
+    );
+  },
   description: "custom query for user_statistics. list",
   args: {
     id: {
@@ -69,10 +71,19 @@ export const UserStatisticsListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return UserStatistics.loadCustom(
+    const rows = await UserStatistics.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map(args.ids.map((id, index) => [id, index]));
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

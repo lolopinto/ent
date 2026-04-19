@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { File } from "../../../ent";
+import { File } from "../../../ent/file";
 import { FileType } from "../../resolvers/internal";
 
 interface FileListDeprecatedArgs {
@@ -31,7 +31,9 @@ export const FileListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   FileListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(FileType))),
+  get type() {
+    return new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(FileType)));
+  },
   description: "custom query for file. list",
   args: {
     id: {
@@ -67,10 +69,19 @@ export const FileListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return File.loadCustom(
+    const rows = await File.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map(args.ids.map((id, index) => [id, index]));
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

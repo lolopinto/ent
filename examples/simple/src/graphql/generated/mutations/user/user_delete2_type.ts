@@ -60,7 +60,9 @@ export const UserDelete2Type: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customDeleteUserInput2 }
 > = {
-  type: new GraphQLNonNull(DeleteUserInput2PayloadType),
+  get type() {
+    return new GraphQLNonNull(DeleteUserInput2PayloadType);
+  },
   args: {
     input: {
       description: "",

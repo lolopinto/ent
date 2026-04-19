@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Holiday } from "../../../ent";
+import { Holiday } from "../../../ent/holiday";
 import { HolidayArgInputType } from "../mutations/input/holiday_arg_input_type";
 import { HolidaySortColumnType } from "./enums_type";
 import { RootToHolidayConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,9 @@ export const HolidayConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   HolidayConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToHolidayConnectionType()),
+  get type() {
+    return new GraphQLNonNull(RootToHolidayConnectionType());
+  },
   description: "custom query for holiday. connection",
   args: {
     ids: {

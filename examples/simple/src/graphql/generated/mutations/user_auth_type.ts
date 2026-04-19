@@ -55,7 +55,9 @@ export const UserAuthType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: UserAuthInput }
 > = {
-  type: new GraphQLNonNull(UserAuthPayloadType),
+  get type() {
+    return new GraphQLNonNull(UserAuthPayloadType);
+  },
   description: "authenticate a user",
   args: {
     input: {

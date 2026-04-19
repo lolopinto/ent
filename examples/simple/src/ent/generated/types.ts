@@ -36,47 +36,47 @@ export enum NodeType {
 
 export enum EdgeType {
   // AddressToHostedEvents is the edgeType for the address to hostedevents edge.
-  AddressToHostedEvents = "d1979d4b-d033-4562-b078-cc528fec25bb",
+  AddressToHostedEvents = "b6517a24-0fda-4ffb-af26-5857893eccfb",
   // CommentToPost is the edgeType for the comment to post edge.
-  CommentToPost = "f430af94-d38a-4aaa-a92f-cfc56b6f811b",
+  CommentToPost = "f0c16e97-7bcb-405b-8795-7ac89bfc469f",
   // ContactEmailToEmailsForContacts is the edgeType for the contactEmail to emailsforcontacts edge.
-  ContactEmailToEmailsForContacts = "daee7f0d-264f-44da-b2ff-5481e4143b22",
+  ContactEmailToEmailsForContacts = "19cfef03-2d83-42a4-8f38-b261771fed02",
   // ContactToSelfContactForUser is the edgeType for the contact to selfcontactforuser edge.
-  ContactToSelfContactForUser = "71483ce5-06f3-4468-bf05-afecd3a430e2",
+  ContactToSelfContactForUser = "822eddf5-3e1f-4944-bcee-40419b2d2af9",
   // EventToAttending is the edgeType for the event to attending edge.
-  EventToAttending = "6ebc0c47-ea29-4635-b991-95e44162174d",
+  EventToAttending = "0475b4c4-edc4-4708-abc3-3cecf3cec634",
   // EventToDeclined is the edgeType for the event to declined edge.
-  EventToDeclined = "db8d2454-f7b2-4147-aae1-e666daf3f3c3",
+  EventToDeclined = "9e168ed0-3534-4922-8a0e-a206890394db",
   // EventToHosts is the edgeType for the event to hosts edge.
-  EventToHosts = "ebe3e709-845c-4723-ac9c-29f983f2b8ea",
+  EventToHosts = "350f9f1b-d51b-4acd-b156-b9e6169e9fa4",
   // EventToInvited is the edgeType for the event to invited edge.
-  EventToInvited = "a72f5f64-3580-44fd-9bd0-d1335b803a46",
+  EventToInvited = "f1cce35b-3247-460f-a7e6-d892e5f61391",
   // EventToMaybe is the edgeType for the event to maybe edge.
-  EventToMaybe = "b0f6311b-fdab-4c26-b6bf-b751e0997735",
+  EventToMaybe = "528c9f6f-094d-412c-b3d7-5220138884de",
   // GlobalToLoginAuth is the edgeType for the  to loginauth edge.
-  GlobalToLoginAuth = "13eb6687-d226-4272-ba65-d5e33e00954c",
+  GlobalToLoginAuth = "bbd8ab41-682c-42be-8c56-c2ef89b1b241",
   // ObjectToComments is the edgeType for the object to comments edge.
-  ObjectToComments = "8caba9c4-8035-447f-9eb1-4dd09a2d250c",
+  ObjectToComments = "d61f70cf-a9b6-49e8-bcd3-40266b628e91",
   // ObjectToLikers is the edgeType for the object to likers edge.
-  ObjectToLikers = "c9ccdad9-7aff-40e4-9a69-2c29cfa19763",
+  ObjectToLikers = "4a9de17b-1434-4d72-9b09-431e95076f63",
   // UserToCreatedEvents is the edgeType for the user to createdevents edge.
-  UserToCreatedEvents = "daa3b2a3-8245-40ca-ae77-25bfb82578a7",
+  UserToCreatedEvents = "ce85ae45-fd9c-4ca3-922b-17d3271a487f",
   // UserToDeclinedEvents is the edgeType for the user to declinedevents edge.
-  UserToDeclinedEvents = "1c7c173b-63ce-4002-b121-4a87f82047dd",
+  UserToDeclinedEvents = "68e4b06e-c8b4-45f5-945a-54d03a5e7b80",
   // UserToEventsAttending is the edgeType for the user to eventsattending edge.
-  UserToEventsAttending = "2a98ba02-e342-4bb4-93f6-5d7ed02f5c48",
+  UserToEventsAttending = "cf6016f0-ce40-4185-810c-188cfea5a88d",
   // UserToFriends is the edgeType for the user to friends edge.
-  UserToFriends = "d1a9316d-090f-4b02-b393-fd9372e2c905",
+  UserToFriends = "356f636d-5f0d-4d38-8b79-c2c94b37cc0e",
   // UserToHostedEvents is the edgeType for the user to usertohostedevents edge.
-  UserToHostedEvents = "cf6542a4-8bae-427f-8a1f-01194047afb3",
+  UserToHostedEvents = "be98aac4-af16-4ed9-8c26-b5392b70f8d7",
   // UserToInvitedEvents is the edgeType for the user to invitedevents edge.
-  UserToInvitedEvents = "e439f2b2-d93a-4d1a-83f0-865bda5c8337",
+  UserToInvitedEvents = "930a73c4-c239-49d9-afb7-2a707164e98e",
   // UserToLikes is the edgeType for the user to likes edge.
-  UserToLikes = "745a20bf-4fdc-4862-b39f-569c4451db8f",
+  UserToLikes = "d111b653-0354-4c12-aa54-a9ac3ec7c1fd",
   // UserToMaybeEvents is the edgeType for the user to maybeevents edge.
-  UserToMaybeEvents = "8d5b1dee-ce65-452e-9f8d-78eca1993800",
+  UserToMaybeEvents = "fe0eed2f-249a-4164-8bb7-a4b4a4ac6076",
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
-  UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
+  UserToSelfContact = "e45759bc-4492-4797-a472-3d46b19bf4c1",
 }
 
 export enum CatBreed {
@@ -116,7 +116,8 @@ export function convertNullableCatBreed(val: string | null): CatBreed | null {
 }
 
 export function convertCatBreedList(val: string[]): CatBreed[] {
-  return val.map((v) => convertCatBreed(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertCatBreed(v));
 }
 
 export function convertNullableCatBreedList(
@@ -159,7 +160,8 @@ export function convertNullableContactInfoSource(
 export function convertContactInfoSourceList(
   val: string[],
 ): ContactInfoSource[] {
-  return val.map((v) => convertContactInfoSource(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertContactInfoSource(v));
 }
 
 export function convertNullableContactInfoSourceList(
@@ -202,7 +204,8 @@ export function convertNullableContactLabel(
 }
 
 export function convertContactLabelList(val: string[]): ContactLabel[] {
-  return val.map((v) => convertContactLabel(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertContactLabel(v));
 }
 
 export function convertNullableContactLabelList(
@@ -249,7 +252,8 @@ export function convertNullableDayOfWeek(val: string | null): DayOfWeek | null {
 }
 
 export function convertDayOfWeekList(val: string[]): DayOfWeek[] {
-  return val.map((v) => convertDayOfWeek(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertDayOfWeek(v));
 }
 
 export function convertNullableDayOfWeekList(
@@ -298,7 +302,8 @@ export function convertNullableDayOfWeekAlt(
 }
 
 export function convertDayOfWeekAltList(val: string[]): DayOfWeekAlt[] {
-  return val.map((v) => convertDayOfWeekAlt(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertDayOfWeekAlt(v));
 }
 
 export function convertNullableDayOfWeekAltList(
@@ -345,7 +350,8 @@ export function convertNullableDogBreed(val: string | null): DogBreed | null {
 }
 
 export function convertDogBreedList(val: string[]): DogBreed[] {
-  return val.map((v) => convertDogBreed(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertDogBreed(v));
 }
 
 export function convertNullableDogBreedList(
@@ -394,7 +400,8 @@ export function convertNullableDogBreedGroup(
 }
 
 export function convertDogBreedGroupList(val: string[]): DogBreedGroup[] {
-  return val.map((v) => convertDogBreedGroup(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertDogBreedGroup(v));
 }
 
 export function convertNullableDogBreedGroupList(
@@ -437,7 +444,8 @@ export function convertNullableEventRsvpStatus(
 }
 
 export function convertEventRsvpStatusList(val: string[]): EventRsvpStatus[] {
-  return val.map((v) => convertEventRsvpStatus(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertEventRsvpStatus(v));
 }
 
 export function convertNullableEventRsvpStatusList(
@@ -480,7 +488,8 @@ export function convertNullableIntEnumUsedInList(
 export function convertIntEnumUsedInListList(
   val: number[],
 ): IntEnumUsedInList[] {
-  return val.map((v) => convertIntEnumUsedInList(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertIntEnumUsedInList(v));
 }
 
 export function convertNullableIntEnumUsedInListList(
@@ -519,7 +528,8 @@ export function convertNullableNotifType(val: string | null): NotifType | null {
 }
 
 export function convertNotifTypeList(val: string[]): NotifType[] {
-  return val.map((v) => convertNotifType(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertNotifType(v));
 }
 
 export function convertNullableNotifTypeList(
@@ -570,7 +580,8 @@ export function convertNullableRabbitBreed(
 }
 
 export function convertRabbitBreedList(val: string[]): RabbitBreed[] {
-  return val.map((v) => convertRabbitBreed(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertRabbitBreed(v));
 }
 
 export function convertNullableRabbitBreedList(
@@ -611,7 +622,8 @@ export function convertNullableResponseType(
 }
 
 export function convertResponseTypeList(val: string[]): ResponseType[] {
-  return val.map((v) => convertResponseType(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertResponseType(v));
 }
 
 export function convertNullableResponseTypeList(
@@ -656,7 +668,8 @@ export function convertNullableUserAccountStatus(
 export function convertUserAccountStatusList(
   val: string[],
 ): UserAccountStatus[] {
-  return val.map((v) => convertUserAccountStatus(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertUserAccountStatus(v));
 }
 
 export function convertNullableUserAccountStatusList(
@@ -719,7 +732,8 @@ export function convertNullableUserPreferredShift(
 export function convertUserPreferredShiftList(
   val: string[],
 ): UserPreferredShift[] {
-  return val.map((v) => convertUserPreferredShift(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertUserPreferredShift(v));
 }
 
 export function convertNullableUserPreferredShiftList(
@@ -743,15 +757,16 @@ export interface Attachment {
 }
 
 export function convertAttachment(input: any): Attachment {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    fileId: input.file_id,
-    dupeFileId: input.dupe_file_id,
-    note: input.note,
-    date: input.date,
-    phoneNumber: input.phone_number,
-    emailAddress: input.email_address,
-    creatorId: input.creator_id,
-    creatorType: input.creator_type,
+    fileId: data.file_id,
+    dupeFileId: data.dupe_file_id,
+    note: data.note,
+    date: data.date,
+    phoneNumber: data.phone_number,
+    emailAddress: data.email_address,
+    creatorId: data.creator_id,
+    creatorType: data.creator_type,
   };
 }
 
@@ -763,7 +778,8 @@ export function convertNullableAttachment(input: any): Attachment | null {
 }
 
 export function convertAttachmentList(input: any[]): Attachment[] {
-  return input.map((v) => convertAttachment(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertAttachment(v));
 }
 
 export function convertNullableAttachmentList(
@@ -772,12 +788,30 @@ export function convertNullableAttachmentList(
   if (input === null || input === undefined) {
     return null;
   }
-  return input.map((v) => convertAttachment(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertAttachment(v));
 }
 
 export interface ContactInfoExtra {
   default: boolean;
   source: ContactInfoSource;
+}
+
+export function convertContactInfoExtra(input: any): ContactInfoExtra {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
+  return {
+    default: data.default,
+    source: data.source,
+  };
+}
+
+export function convertNullableContactInfoExtra(
+  input: any,
+): ContactInfoExtra | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertContactInfoExtra(input);
 }
 
 export interface DefaultsPayload {
@@ -787,10 +821,11 @@ export interface DefaultsPayload {
 }
 
 export function convertDefaultsPayload(input: any): DefaultsPayload {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    data: input.data,
-    firstName: input.first_name,
-    lastName: input.last_name,
+    data: data.data,
+    firstName: data.first_name,
+    lastName: data.last_name,
   };
 }
 
@@ -804,7 +839,8 @@ export function convertNullableDefaultsPayload(
 }
 
 export function convertDefaultsPayloadList(input: any[]): DefaultsPayload[] {
-  return input.map((v) => convertDefaultsPayload(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertDefaultsPayload(v));
 }
 
 export function convertNullableDefaultsPayloadList(
@@ -813,7 +849,8 @@ export function convertNullableDefaultsPayloadList(
   if (input === null || input === undefined) {
     return null;
   }
-  return input.map((v) => convertDefaultsPayload(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertDefaultsPayload(v));
 }
 
 export interface ImportantDates {
@@ -822,9 +859,10 @@ export interface ImportantDates {
 }
 
 export function convertImportantDates(input: any): ImportantDates {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    firstMet: input.first_met,
-    lastSpoken: input.last_spoken,
+    firstMet: data.first_met,
+    lastSpoken: data.last_spoken,
   };
 }
 
@@ -841,6 +879,41 @@ export interface UserNestedNestedObjectList {
   int: number;
 }
 
+export function convertUserNestedNestedObjectList(
+  input: any,
+): UserNestedNestedObjectList {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
+  return {
+    int: data.int,
+  };
+}
+
+export function convertNullableUserNestedNestedObjectList(
+  input: any,
+): UserNestedNestedObjectList | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserNestedNestedObjectList(input);
+}
+
+export function convertUserNestedNestedObjectListList(
+  input: any[],
+): UserNestedNestedObjectList[] {
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertUserNestedNestedObjectList(v));
+}
+
+export function convertNullableUserNestedNestedObjectListList(
+  input: any[] | null,
+): UserNestedNestedObjectList[] | null {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertUserNestedNestedObjectList(v));
+}
+
 export interface UserNestedObjectList {
   type: string;
   enum: ResponseType;
@@ -849,11 +922,12 @@ export interface UserNestedObjectList {
 }
 
 export function convertUserNestedObjectList(input: any): UserNestedObjectList {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    type: input.type,
-    enum: input.enum,
-    objects: input.objects,
-    enumList: input.enum_list,
+    type: data.type,
+    enum: data.enum,
+    objects: convertUserNestedNestedObjectListList(data.objects),
+    enumList: data.enum_list,
   };
 }
 
@@ -869,7 +943,8 @@ export function convertNullableUserNestedObjectList(
 export function convertUserNestedObjectListList(
   input: any[],
 ): UserNestedObjectList[] {
-  return input.map((v) => convertUserNestedObjectList(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertUserNestedObjectList(v));
 }
 
 export function convertNullableUserNestedObjectListList(
@@ -878,7 +953,8 @@ export function convertNullableUserNestedObjectListList(
   if (input === null || input === undefined) {
     return null;
   }
-  return input.map((v) => convertUserNestedObjectList(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertUserNestedObjectList(v));
 }
 
 export interface UserOnDemandNonNullable {
@@ -889,9 +965,10 @@ export interface UserOnDemandNonNullable {
 export function convertUserOnDemandNonNullable(
   input: any,
 ): UserOnDemandNonNullable {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    secret: input.secret,
-    phoneNumber: input.phone_number,
+    secret: data.secret,
+    phoneNumber: data.phone_number,
   };
 }
 
@@ -912,9 +989,10 @@ export interface UserOnDemandNonNullableList {
 export function convertUserOnDemandNonNullableList(
   input: any,
 ): UserOnDemandNonNullableList {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    secret: input.secret,
-    phoneNumber: input.phone_number,
+    secret: data.secret,
+    phoneNumber: data.phone_number,
   };
 }
 
@@ -930,7 +1008,8 @@ export function convertNullableUserOnDemandNonNullableList(
 export function convertUserOnDemandNonNullableListList(
   input: any[],
 ): UserOnDemandNonNullableList[] {
-  return input.map((v) => convertUserOnDemandNonNullableList(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertUserOnDemandNonNullableList(v));
 }
 
 export function convertNullableUserOnDemandNonNullableListList(
@@ -939,7 +1018,8 @@ export function convertNullableUserOnDemandNonNullableListList(
   if (input === null || input === undefined) {
     return null;
   }
-  return input.map((v) => convertUserOnDemandNonNullableList(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertUserOnDemandNonNullableList(v));
 }
 
 export interface UserOnDemandWithPrivacy {
@@ -950,9 +1030,10 @@ export interface UserOnDemandWithPrivacy {
 export function convertUserOnDemandWithPrivacy(
   input: any,
 ): UserOnDemandWithPrivacy {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    secret: input.secret,
-    phoneNumber: input.phone_number,
+    secret: data.secret,
+    phoneNumber: data.phone_number,
   };
 }
 
@@ -969,6 +1050,20 @@ export interface UserPrefsDiff {
   type: string;
 }
 
+export function convertUserPrefsDiff(input: any): UserPrefsDiff {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
+  return {
+    type: data.type,
+  };
+}
+
+export function convertNullableUserPrefsDiff(input: any): UserPrefsDiff | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertUserPrefsDiff(input);
+}
+
 export interface UserPrefsStruct {
   finishedNux?: boolean | null;
   enableNotifs?: boolean | null;
@@ -978,12 +1073,13 @@ export interface UserPrefsStruct {
 }
 
 export function convertUserPrefsStruct(input: any): UserPrefsStruct {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    finishedNux: input.finished_nux,
-    enableNotifs: input.enable_notifs,
-    notifTypes: input.notif_types,
-    homeAddressId: input.home_address_id,
-    allAddressIds: input.all_address_ids,
+    finishedNux: data.finished_nux,
+    enableNotifs: data.enable_notifs,
+    notifTypes: data.notif_types,
+    homeAddressId: data.home_address_id,
+    allAddressIds: data.all_address_ids,
   };
 }
 
@@ -997,7 +1093,8 @@ export function convertNullableUserPrefsStruct(
 }
 
 export function convertUserPrefsStructList(input: any[]): UserPrefsStruct[] {
-  return input.map((v) => convertUserPrefsStruct(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertUserPrefsStruct(v));
 }
 
 export function convertNullableUserPrefsStructList(
@@ -1006,7 +1103,8 @@ export function convertNullableUserPrefsStructList(
   if (input === null || input === undefined) {
     return null;
   }
-  return input.map((v) => convertUserPrefsStruct(v));
+  const list = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v) => convertUserPrefsStruct(v));
 }
 
 export interface UserNestedObject {
@@ -1022,16 +1120,17 @@ export interface UserNestedObject {
 }
 
 export function convertUserNestedObject(input: any): UserNestedObject {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    nestedUuid: input.nested_uuid,
-    nestedInt: input.nested_int,
-    nestedString: input.nested_string,
-    nestedBool: input.nested_bool,
-    nestedFloat: input.nested_float,
-    nestedEnum: input.nested_enum,
-    nestedStringList: input.nested_string_list,
-    nestedIntList: input.nested_int_list,
-    nestedObj: convertNullableUserNestedNestedObject(input.nested_obj),
+    nestedUuid: data.nested_uuid,
+    nestedInt: data.nested_int,
+    nestedString: data.nested_string,
+    nestedBool: data.nested_bool,
+    nestedFloat: data.nested_float,
+    nestedEnum: data.nested_enum,
+    nestedStringList: data.nested_string_list,
+    nestedIntList: data.nested_int_list,
+    nestedObj: convertNullableUserNestedNestedObject(data.nested_obj),
   };
 }
 
@@ -1058,15 +1157,16 @@ export interface UserNestedNestedObject {
 export function convertUserNestedNestedObject(
   input: any,
 ): UserNestedNestedObject {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    nestedNestedUuid: input.nested_nested_uuid,
-    nestedNestedInt: input.nested_nested_int,
-    nestedNestedString: input.nested_nested_string,
-    nestedNestedBool: input.nested_nested_bool,
-    nestedNestedFloat: input.nested_nested_float,
-    nestedNestedEnum: input.nested_nested_enum,
-    nestedNestedStringList: input.nested_nested_string_list,
-    nestedNestedIntList: input.nested_nested_int_list,
+    nestedNestedUuid: data.nested_nested_uuid,
+    nestedNestedInt: data.nested_nested_int,
+    nestedNestedString: data.nested_nested_string,
+    nestedNestedBool: data.nested_nested_bool,
+    nestedNestedFloat: data.nested_nested_float,
+    nestedNestedEnum: data.nested_nested_enum,
+    nestedNestedStringList: data.nested_nested_string_list,
+    nestedNestedIntList: data.nested_nested_int_list,
   };
 }
 
@@ -1086,6 +1186,23 @@ export interface CatType {
   kitten: boolean;
 }
 
+export function convertCatType(input: any): CatType {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
+  return {
+    name: data.name,
+    birthday: data.birthday,
+    breed: data.breed,
+    kitten: data.kitten,
+  };
+}
+
+export function convertNullableCatType(input: any): CatType | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertCatType(input);
+}
+
 export interface DogType {
   name: string;
   birthday: Date;
@@ -1095,12 +1212,13 @@ export interface DogType {
 }
 
 export function convertDogType(input: any): DogType {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    name: input.name,
-    birthday: input.birthday,
-    breed: input.breed,
-    breedGroup: input.breed_group,
-    puppy: input.puppy,
+    name: data.name,
+    birthday: data.birthday,
+    breed: data.breed,
+    breedGroup: data.breed_group,
+    puppy: data.puppy,
   };
 }
 
@@ -1117,13 +1235,33 @@ export interface RabbitType {
   breed: RabbitBreed;
 }
 
+export function convertRabbitType(input: any): RabbitType {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
+  return {
+    name: data.name,
+    birthday: data.birthday,
+    breed: data.breed,
+  };
+}
+
+export function convertNullableRabbitType(input: any): RabbitType | null {
+  if (input === undefined || input === null) {
+    return null;
+  }
+  return convertRabbitType(input);
+}
+
 export type PetUnionType = CatType | DogType | RabbitType;
 
 function convertPetUnionType(input: any): PetUnionType {
-  if (input.breed_group !== undefined) {
-    return convertDogType(input);
+  const data = typeof input === "string" ? JSON.parse(input) : input;
+  if (data.kitten !== undefined) {
+    return convertCatType(data);
   }
-  return input;
+  if (data.breed_group !== undefined) {
+    return convertDogType(data);
+  }
+  return convertRabbitType(data);
 }
 
 function convertNullablePetUnionType(input: any): PetUnionType | null {
@@ -1149,17 +1287,18 @@ export interface UserSuperNestedObject {
 export function convertUserSuperNestedObject(
   input: any,
 ): UserSuperNestedObject {
+  const data = typeof input === "string" ? JSON.parse(input) : input;
   return {
-    uuid: input.uuid,
-    int: input.int,
-    string: input.string,
-    bool: input.bool,
-    float: input.float,
-    enum: input.enum,
-    stringList: input.string_list,
-    intList: input.int_list,
-    obj: convertNullableUserNestedObject(input.obj),
-    union: convertNullablePetUnionType(input.union),
+    uuid: data.uuid,
+    int: data.int,
+    string: data.string,
+    bool: data.bool,
+    float: data.float,
+    enum: data.enum,
+    stringList: data.string_list,
+    intList: data.int_list,
+    obj: convertNullableUserNestedObject(data.obj),
+    union: convertNullablePetUnionType(data.union),
   };
 }
 

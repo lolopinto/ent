@@ -55,7 +55,9 @@ export const ContactEmailDeleteType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactEmailDeleteInput }
 > = {
-  type: new GraphQLNonNull(ContactEmailDeletePayloadType),
+  get type() {
+    return new GraphQLNonNull(ContactEmailDeletePayloadType);
+  },
   args: {
     input: {
       description: "",

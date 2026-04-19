@@ -66,7 +66,9 @@ export const EventRsvpStatusEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customEventRsvpStatusEditInput }
 > = {
-  type: new GraphQLNonNull(EventRsvpStatusEditPayloadType),
+  get type() {
+    return new GraphQLNonNull(EventRsvpStatusEditPayloadType);
+  },
   args: {
     input: {
       description: "",

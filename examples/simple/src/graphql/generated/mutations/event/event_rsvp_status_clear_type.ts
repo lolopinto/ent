@@ -62,7 +62,9 @@ export const EventRsvpStatusClearType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customClearEventRsvpStatusInput }
 > = {
-  type: new GraphQLNonNull(ClearEventRsvpStatusPayloadType),
+  get type() {
+    return new GraphQLNonNull(ClearEventRsvpStatusPayloadType);
+  },
   args: {
     input: {
       description: "",

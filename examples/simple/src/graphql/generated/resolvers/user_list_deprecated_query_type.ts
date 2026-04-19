@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { User } from "../../../ent";
+import { User } from "../../../ent/user";
 import { UserType } from "../../resolvers/internal";
 
 interface UserListDeprecatedArgs {
@@ -31,7 +31,9 @@ export const UserListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   UserListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(UserType))),
+  get type() {
+    return new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(UserType)));
+  },
   description: "custom query for user. list",
   args: {
     id: {
@@ -67,10 +69,19 @@ export const UserListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return User.loadCustom(
+    const rows = await User.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map(args.ids.map((id, index) => [id, index]));
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

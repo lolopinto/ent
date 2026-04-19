@@ -1,4 +1,51 @@
+import pg from "pg";
 import { DateTime } from "luxon";
+
+const TEXT_ARRAY_OID = 1009;
+const parseTextArray = pg.types.getTypeParser(TEXT_ARRAY_OID as any);
+
+function normalizeArrayLikeObject(val: any): any[] {
+  const keys = Object.keys(val);
+  if (!keys.length) {
+    return [];
+  }
+  if (keys.every((key) => /^\d+$/.test(key))) {
+    return keys
+      .sort((a, b) => parseInt(a, 10) - parseInt(b, 10))
+      .map((key) => val[key]);
+  }
+  throw new Error(`got a non-array from the db: ${JSON.stringify(val)}`);
+}
+
+export function convertDBDate(val: any): string {
+  if (typeof val === "string") {
+    return val.slice(0, 10);
+  }
+  const dt = DateTime.fromJSDate(new Date(val), { zone: "utc" });
+  if (dt.isValid) {
+    const date = dt.toISODate();
+    if (date) {
+      return date;
+    }
+  }
+  return new Date(val).toISOString().slice(0, 10);
+}
+
+export function convertNullableDBDate(val: any): string | null {
+  if (val === null || val === undefined) {
+    return null;
+  }
+  return convertDBDate(val);
+}
+
+export function convertDBDateList(val: any): string[] {
+  return convertList(val, convertDBDate);
+}
+
+export function convertNullableDBDateList(val: any): string[] | null {
+  return convertNullableList(val, convertDBDate);
+}
+
 // these are needed to deal with SQLite having different types stored in the db vs the representation
 // gotten back from the db/needed in ent land
 // see Sqlite.execSync
@@ -39,11 +86,25 @@ export function convertNullableBool(val: any): boolean | null {
 }
 
 export function convertList<T>(val: any, conv?: (val: any) => T): T[] {
+  let res: any;
   if (Array.isArray(val)) {
-    return val;
+    res = [...val];
+  } else if (val && typeof val === "object") {
+    res = normalizeArrayLikeObject(val);
+  } else {
+    try {
+      res = JSON.parse(val);
+    } catch (err) {
+      if (typeof val === "string" && val.startsWith("{") && val.endsWith("}")) {
+        res = parseTextArray(val);
+      } else {
+        throw err;
+      }
+    }
   }
-
-  let res = JSON.parse(val);
+  if (res && typeof res === "object" && !Array.isArray(res)) {
+    res = normalizeArrayLikeObject(res);
+  }
   if (!conv) {
     return res;
   }

@@ -105,7 +105,9 @@ export const ContactEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactEditInput }
 > = {
-  type: new GraphQLNonNull(ContactEditPayloadType),
+  get type() {
+    return new GraphQLNonNull(ContactEditPayloadType);
+  },
   args: {
     input: {
       description: "",

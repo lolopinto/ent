@@ -63,12 +63,7 @@ type ConvertMethodInfo struct {
 }
 
 func (cu *CustomUnion) HasConvertFunction(cfg codegenapi.Config) bool {
-	for _, inter := range cu.Interfaces {
-		if inter.HasConvertFunction(cfg) {
-			return true
-		}
-	}
-	return false
+	return true
 }
 
 func (cu *CustomUnion) GetConvertMethod() string {

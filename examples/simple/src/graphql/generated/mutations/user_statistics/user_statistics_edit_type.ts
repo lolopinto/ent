@@ -62,7 +62,9 @@ export const UserStatisticsEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customUserStatisticsEditInput }
 > = {
-  type: new GraphQLNonNull(UserStatisticsEditPayloadType),
+  get type() {
+    return new GraphQLNonNull(UserStatisticsEditPayloadType);
+  },
   args: {
     input: {
       description: "",

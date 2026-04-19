@@ -9,17 +9,12 @@ import {
 import { Viewer } from "@snowtop/ent";
 import {
   GraphQLSchema,
-  GraphQLObjectType,
-  GraphQLScalarType,
-  isWrappingType,
   GraphQLArgument,
-  GraphQLList,
-  isScalarType,
   GraphQLType,
   GraphQLFieldMap,
-  isEnumType,
   GraphQLField,
 } from "graphql";
+import type { GraphQLObjectType } from "graphql";
 import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
 import supertest from "supertest";
 import * as fs from "fs";
@@ -27,6 +22,8 @@ import { inspect } from "util";
 
 // TODO need to make it obvious that jest-expect-message is a peer?dependency and setupFilesAfterEnv is a requirement to use this
 // or change the usage here.
+
+const bunAgentServerClose = Symbol("bunAgentServerClose");
 
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
@@ -64,9 +61,43 @@ function server(config: queryConfig): Express {
   return app;
 }
 
+function isWrappingTypeLike(typ: any): typ is { ofType: any } {
+  return !!typ && typeof typ === "object" && "ofType" in typ;
+}
+
+function isListTypeLike(typ: any): boolean {
+  return (
+    isWrappingTypeLike(typ) &&
+    (typ.constructor?.name === "GraphQLList" || /^\[.*\]$/.test(String(typ)))
+  );
+}
+
+function isObjectTypeLike(typ: any): typ is { getFields: () => GraphQLFieldMap<any, any> } {
+  return !!typ && typeof typ === "object" && typeof typ.getFields === "function";
+}
+
+function isScalarTypeLike(typ: any): boolean {
+  return (
+    !!typ &&
+    typeof typ === "object" &&
+    typeof typ.serialize === "function" &&
+    typeof typ.parseValue === "function" &&
+    typeof typ.parseLiteral === "function"
+  );
+}
+
+function isEnumTypeLike(typ: any): boolean {
+  return (
+    !!typ &&
+    typeof typ === "object" &&
+    typeof typ.getValues === "function" &&
+    typeof typ.toConfig === "function"
+  );
+}
+
 function getInnerType(typ, list) {
-  if (isWrappingType(typ)) {
-    if (typ instanceof GraphQLList) {
+  if (isWrappingTypeLike(typ)) {
+    if (isListTypeLike(typ)) {
       return getInnerType(typ.ofType, true);
     }
     return getInnerType(typ.ofType, list);
@@ -74,19 +105,54 @@ function getInnerType(typ, list) {
   return [typ, list];
 }
 
-function makeGraphQLRequest(
+async function makeGraphQLRequest(
   config: queryConfig,
   query: string,
   fieldArgs: Readonly<GraphQLArgument[]>,
-): [supertest.SuperTest<supertest.Test>, supertest.Test] {
+): Promise<{
+  test: supertest.SuperTest<supertest.Test>;
+  request: supertest.Test;
+  cleanup?: () => Promise<void>;
+}> {
   let test: supertest.SuperTest<supertest.Test>;
+  let cleanup: (() => Promise<void>) | undefined;
 
   if (config.test) {
     if (typeof config.test === "function") {
-      test = config.test(config.server ? config.server : server(config));
+      if (process.versions.bun) {
+        const app = config.server ? config.server : server(config);
+        const httpServer = await new Promise<any>((resolve) => {
+          const srv = app.listen(0, () => resolve(srv));
+        });
+        const address = httpServer.address();
+        if (!address || typeof address === "string") {
+          throw new Error("could not determine test server address");
+        }
+        test = supertest.agent(`http://127.0.0.1:${address.port}`) as any;
+        (test as any)[bunAgentServerClose] = () =>
+          new Promise<void>((resolve, reject) => {
+            httpServer.close((err?: Error) => (err ? reject(err) : resolve()));
+          });
+      } else {
+        test = config.test(config.server ? config.server : server(config));
+      }
     } else {
       test = config.test;
     }
+  } else if (process.versions.bun) {
+    const app = config.server ? config.server : server(config);
+    const httpServer = await new Promise<any>((resolve) => {
+      const srv = app.listen(0, () => resolve(srv));
+    });
+    const address = httpServer.address();
+    if (!address || typeof address === "string") {
+      throw new Error("could not determine test server address");
+    }
+    test = supertest(`http://127.0.0.1:${address.port}`);
+    cleanup = () =>
+      new Promise<void>((resolve, reject) => {
+        httpServer.close((err?: Error) => (err ? reject(err) : resolve()));
+      });
   } else {
     test = supertest(config.server ? config.server : server(config));
   }
@@ -97,7 +163,7 @@ function makeGraphQLRequest(
   fieldArgs.forEach((fieldArg) => {
     let [typ, list] = getInnerType(fieldArg.type, false);
 
-    if (typ instanceof GraphQLScalarType && typ.name == "Upload") {
+    if (isScalarTypeLike(typ) && typ.name == "Upload") {
       let value = config.args[fieldArg.name];
       if (list) {
         expect(Array.isArray(value)).toBe(true);
@@ -154,18 +220,19 @@ function makeGraphQLRequest(
       idx++;
     }
 
-    return [test, ret];
+    return { test, request: ret, cleanup };
   } else {
-    return [
+    return {
       test,
-      test
+      request: test
         .post(config.graphQLPath || "/graphql")
         .set(config.headers || {})
         .send({
           query: query,
-          variables: JSON.stringify(variables),
+          variables,
         }),
-    ];
+      cleanup,
+    };
   }
 }
 
@@ -176,7 +243,7 @@ function buildTreeFromQueryPaths(
 ) {
   let fields: GraphQLFieldMap<any, any>;
   const [typ] = getInnerType(fieldType, false);
-  if (typ instanceof GraphQLObjectType) {
+  if (isObjectTypeLike(typ)) {
     fields = typ.getFields();
   }
   let topLevelTree = {};
@@ -192,7 +259,7 @@ function buildTreeFromQueryPaths(
       if (!typ) {
         throw new Error(`can't find type for ${match[1]} in schema`);
       }
-      if (typ instanceof GraphQLObjectType) {
+      if (isObjectTypeLike(typ)) {
         fields = typ.getFields();
       }
     } else {
@@ -248,7 +315,7 @@ function buildTreeFromQueryPaths(
           subField = root?.[p];
           if (subField) {
             [subField] = getInnerType(subField.type, false);
-            if (subField instanceof GraphQLObjectType) {
+            if (isObjectTypeLike(subField)) {
               root = subField.getFields();
             }
           }
@@ -257,7 +324,7 @@ function buildTreeFromQueryPaths(
         if (!subField) {
           return false;
         }
-        return isScalarType(subField) || isEnumType(subField);
+        return isScalarTypeLike(subField) || isEnumTypeLike(subField);
       }
 
       if (i === parts.length - 1 && typeof option[1] === "object") {
@@ -482,8 +549,15 @@ async function expectFromRoot(
   if (config.debugMode) {
     console.log(q);
   }
-  let [st, temp] = makeGraphQLRequest(config, q, fieldArgs);
-  const res = await temp.expect("Content-Type", /json/);
+  const { test: st, request, cleanup } = await makeGraphQLRequest(
+    config,
+    q,
+    fieldArgs,
+  );
+  const res = await request.expect("Content-Type", /json/);
+  if (cleanup) {
+    await cleanup();
+  }
   if (config.debugMode) {
     console.log(inspect(res.body, false, 3));
   }

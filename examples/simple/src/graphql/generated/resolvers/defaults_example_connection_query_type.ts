@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { DefaultsExample } from "../../../ent";
+import { DefaultsExample } from "../../../ent/defaults_example";
 import { DefaultsExampleArgInputType } from "../mutations/input/defaults_example_arg_input_type";
 import { DefaultsExampleSortColumnType } from "./enums_type";
 import { RootToDefaultsExampleConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,9 @@ export const DefaultsExampleConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   DefaultsExampleConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToDefaultsExampleConnectionType()),
+  get type() {
+    return new GraphQLNonNull(RootToDefaultsExampleConnectionType());
+  },
   description: "custom query for defaults_example. connection",
   args: {
     ids: {

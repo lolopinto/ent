@@ -73,7 +73,9 @@ export const DefaultsExampleCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customDefaultsExampleCreateInput }
 > = {
-  type: new GraphQLNonNull(DefaultsExampleCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(DefaultsExampleCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

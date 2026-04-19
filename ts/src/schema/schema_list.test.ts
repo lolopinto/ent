@@ -22,7 +22,7 @@ import {
   JSONListType,
   JSONTypeAsList,
 } from "./json_field";
-import Schema from "./schema";
+import type { Schema } from "./schema";
 import { User, SimpleAction, BuilderSchema } from "../testutils/builder";
 import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
 import DB, { Dialect } from "../core/db";

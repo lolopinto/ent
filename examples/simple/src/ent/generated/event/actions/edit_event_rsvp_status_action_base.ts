@@ -50,7 +50,8 @@ export function convertNullableEventRsvpStatusInput(
 export function convertEventRsvpStatusInputList(
   val: string[],
 ): EventRsvpStatusInput[] {
-  return val.map((v) => convertEventRsvpStatusInput(v));
+  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
+  return input.map((v) => convertEventRsvpStatusInput(v));
 }
 
 export function convertNullableEventRsvpStatusInputList(

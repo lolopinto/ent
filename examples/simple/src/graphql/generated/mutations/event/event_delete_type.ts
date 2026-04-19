@@ -55,7 +55,9 @@ export const EventDeleteType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customEventDeleteInput }
 > = {
-  type: new GraphQLNonNull(EventDeletePayloadType),
+  get type() {
+    return new GraphQLNonNull(EventDeletePayloadType);
+  },
   args: {
     input: {
       description: "",

@@ -1,5 +1,5 @@
-import { types as pgTypes, type Pool } from "pg";
-import type { RuntimeDBExtension } from "./config";
+import { types as pgTypes } from "pg";
+import type { PostgresDriver, RuntimeDBExtension } from "./config";
 import type { ResolvedDevSchema } from "./dev_schema";
 
 const TEXT_ARRAY_OID = 1009;
@@ -27,6 +27,13 @@ export interface ExtensionRuntimeHandler {
 
 const runtimeHandlers = new Map<string, ExtensionRuntimeHandler>();
 const registeredTypeOIDs = new Set<number>();
+
+interface Queryable {
+  query<R extends Record<string, any> = any>(
+    query: string,
+    values?: any[],
+  ): Promise<{ rows: R[] }>;
+}
 
 function normalizeProvisionedBy(
   extension: RuntimeDBExtension,
@@ -193,7 +200,7 @@ export function buildExtensionSearchPath(
 }
 
 async function getInstalledExtensions(
-  pool: Pick<Pool, "query">,
+  pool: Queryable,
   extensions: RuntimeDBExtension[],
 ): Promise<Map<string, InstalledDBExtension>> {
   if (extensions.length === 0) {
@@ -246,7 +253,7 @@ function registerArrayParser(
 }
 
 async function initializeRegisteredTypeParsers(
-  pool: Pick<Pool, "query">,
+  pool: Queryable,
   configuredExtensions: Map<string, RuntimeDBExtension>,
 ) {
   const registeredTypes = new Map<
@@ -304,8 +311,9 @@ async function initializeRegisteredTypeParsers(
 }
 
 export async function initializeExtensions(
-  pool: Pick<Pool, "query">,
+  pool: Queryable,
   extensions: RuntimeDBExtension[],
+  postgresDriver: PostgresDriver = "pg",
 ) {
   const normalizedExtensions = normalizeExtensions(extensions);
   const configuredExtensions = new Map(
@@ -340,6 +348,20 @@ export async function initializeExtensions(
 
     const handler = runtimeHandlers.get(extension.name);
     await handler?.validate?.(installed, extension);
+  }
+
+  if (postgresDriver === "bun") {
+    const unsupportedExtensions = normalizedExtensions
+      .filter((extension) => (runtimeHandlers.get(extension.name)?.types || []).length > 0)
+      .map((extension) => extension.name);
+    if (unsupportedExtensions.length > 0) {
+      throw new Error(
+        `postgresDriver "bun" does not support extension runtime type parsers for: ${unsupportedExtensions.join(
+          ", ",
+        )}`,
+      );
+    }
+    return;
   }
 
   await initializeRegisteredTypeParsers(pool, configuredExtensions);

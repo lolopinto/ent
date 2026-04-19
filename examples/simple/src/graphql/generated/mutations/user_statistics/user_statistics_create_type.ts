@@ -61,7 +61,9 @@ export const UserStatisticsCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customUserStatisticsCreateInput }
 > = {
-  type: new GraphQLNonNull(UserStatisticsCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(UserStatisticsCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

@@ -170,6 +170,40 @@ describe("postgres", () => {
     expect(db.db.dialect).toBe(Dialect.Postgres);
   });
 
+  test("config object. runtime and postgres driver", () => {
+    const connStr = `postgres://:@localhost/ent_test`;
+
+    loadConfig({
+      runtime: "bun",
+      postgresDriver: "pg",
+      dbConnectionString: connStr,
+    });
+    const db = DB.getInstance();
+    expect(db.db.runtime).toBe("bun");
+    expect(db.db.postgresDriver).toBe("pg");
+  });
+
+  test("config object. runtime only still initializes db config flow", () => {
+    const spy = jest.spyOn(DB, "initDB").mockImplementation(() => {});
+
+    loadConfig({
+      runtime: "bun",
+      postgresDriver: "bun",
+    });
+
+    expect(spy).toHaveBeenCalledWith({
+      runtime: "bun",
+      postgresDriver: "bun",
+      connectionString: undefined,
+      dbFile: undefined,
+      db: undefined,
+      devSchema: undefined,
+      extensions: undefined,
+    });
+
+    spy.mockRestore();
+  });
+
   test("reinitializing db closes the previous instance", () => {
     loadConfig({
       dbConnectionString: `postgres://:@localhost/ent_test`,

@@ -3,7 +3,12 @@ import { load } from "js-yaml";
 import { DateTime } from "luxon";
 import pg, { Pool, PoolClient, PoolConfig } from "pg";
 import { log } from "./logger";
-import type { RuntimeDBExtension, RuntimeDevSchemaConfig } from "./config";
+import type {
+  PostgresDriver,
+  RuntimeDBExtension,
+  RuntimeDevSchemaConfig,
+  RuntimeMode,
+} from "./config";
 import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema";
 import {
   buildExtensionSearchPath,
@@ -24,22 +29,69 @@ export interface Database extends PoolConfig {
 // depends on NODE_ENV values.
 export type env = "production" | "test" | "development";
 export declare type DBDict = Partial<Record<env, Database>>;
+const knownEnvs: readonly env[] = ["production", "development", "test"];
+
+function isEnv(value: string): value is env {
+  return knownEnvs.includes(value as env);
+}
 
 function isDbDict(v: Database | DBDict): v is DBDict {
-  return (
-    v["production"] !== undefined ||
-    v["development"] !== undefined ||
-    v["test"] !== undefined
-  );
+  return knownEnvs.some((key) => key in v);
 }
 
 interface customPoolConfig extends PoolConfig {
   sslmode?: string;
 }
 
+interface BunSQLConfig {
+  url?: string;
+  hostname?: string;
+  port?: number;
+  database?: string;
+  username?: string;
+  password?: string;
+  max?: number;
+  tls?: boolean | Record<string, any>;
+  onconnect?: (client: BunSQLClientLike) => void | Promise<void>;
+  onclose?: (client: BunSQLClientLike, err?: Error) => void;
+}
+
+interface BunSQLResult extends Array<QueryResultRow> {
+  count?: number;
+  affectedRows?: number;
+}
+
+interface BunSQLClientLike {
+  unsafe(query: string, values?: any[]): Promise<BunSQLResult>;
+  array?(values: any[]): any;
+}
+
+interface BunSQLReservedClient extends BunSQLClientLike {
+  release(): void | Promise<void>;
+}
+
+interface BunSQLPool extends BunSQLClientLike {
+  reserve(): Promise<BunSQLReservedClient>;
+  close(options?: { timeout?: number }): Promise<void>;
+}
+
+type BunSQLConstructor = new (
+  options?: string | BunSQLConfig,
+) => BunSQLPool;
+
 export enum Dialect {
   Postgres = "postgres",
   SQLite = "sqlite",
+}
+
+function normalizeRuntimeMode(runtime?: RuntimeMode): RuntimeMode {
+  return runtime === "bun" ? "bun" : "node";
+}
+
+function normalizePostgresDriver(
+  driver?: PostgresDriver,
+): PostgresDriver {
+  return driver === "bun" ? "bun" : "pg";
 }
 
 function parseConnectionString(
@@ -71,6 +123,8 @@ function parseConnectionString(
 interface DatabaseInfo {
   dialect: Dialect;
   config: PoolConfig;
+  runtime?: RuntimeMode;
+  postgresDriver?: PostgresDriver;
   /// filePath for sqlite
   filePath?: string;
   devSchema?: RuntimeDevSchemaConfig;
@@ -78,6 +132,8 @@ interface DatabaseInfo {
 }
 
 interface clientConfigArgs {
+  runtime?: RuntimeMode;
+  postgresDriver?: PostgresDriver;
   connectionString?: string;
   dbFile?: string;
   db?: Database | DBDict;
@@ -93,11 +149,20 @@ interface clientConfigArgs {
 // database/config.yml
 function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
   const extensions = resolveExtensions(args?.extensions);
+  const runtime = normalizeRuntimeMode(
+    args?.runtime ?? (process.env.ENT_RUNTIME as RuntimeMode | undefined),
+  );
+  const postgresDriver = normalizePostgresDriver(
+    args?.postgresDriver ??
+      (process.env.ENT_POSTGRES_DRIVER as PostgresDriver | undefined),
+  );
 
   // if there's a db connection string, use that first
   const str = process.env.DB_CONNECTION_STRING;
   if (str) {
     const info = parseConnectionString(str, args);
+    info.runtime = runtime;
+    info.postgresDriver = postgresDriver;
     info.devSchema = args?.devSchema;
     info.extensions = extensions;
     return info;
@@ -107,6 +172,8 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
   if (args) {
     if (args.connectionString) {
       const info = parseConnectionString(args.connectionString, args);
+      info.runtime = runtime;
+      info.postgresDriver = postgresDriver;
       info.devSchema = args?.devSchema;
       info.extensions = extensions;
       return info;
@@ -115,16 +182,26 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
     if (args.db) {
       let db: Database;
       if (isDbDict(args.db)) {
-        if (!process.env.NODE_ENV) {
+        const nodeEnv = process.env.NODE_ENV;
+        if (!nodeEnv) {
           throw new Error(`process.env.NODE_ENV is undefined`);
         }
-        db = args.db[process.env.NODE_ENV];
+        if (!isEnv(nodeEnv)) {
+          throw new Error(`unsupported process.env.NODE_ENV value: ${nodeEnv}`);
+        }
+        const envDB = args.db[nodeEnv];
+        if (!envDB) {
+          throw new Error(`database config missing for environment ${nodeEnv}`);
+        }
+        db = envDB;
       } else {
         db = args.db;
       }
       return {
         dialect: Dialect.Postgres,
         config: db,
+        runtime,
+        postgresDriver,
         devSchema: args?.devSchema,
         extensions,
       };
@@ -158,22 +235,183 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
           // max, min, etc
           ...cfg,
         },
+        runtime,
+        postgresDriver,
         devSchema: args?.devSchema,
         extensions,
       };
     }
     throw new Error(`invalid yaml configuration in file`);
   } catch (e) {
-    console.error("error reading file" + e.message);
+    const message = e instanceof Error ? e.message : String(e);
+    console.error("error reading file" + message);
     return null;
   }
+}
+
+function getBunSQLConstructor(): BunSQLConstructor {
+  const BunRuntime = (globalThis as typeof globalThis & {
+    Bun?: { SQL?: BunSQLConstructor };
+  }).Bun;
+  const SQL = BunRuntime?.SQL;
+  if (!SQL) {
+    throw new Error(`postgresDriver "bun" requires running under Bun`);
+  }
+  return SQL;
+}
+
+function createBunSQLConfig(
+  config: PoolConfig,
+  searchPath?: string,
+): BunSQLConfig {
+  const cfg = config as Database;
+  const bunConfig: BunSQLConfig = {};
+
+  if (config.connectionString) {
+    bunConfig.url = config.connectionString;
+  } else {
+    if (cfg.host) {
+      bunConfig.hostname = cfg.host;
+    }
+    if (cfg.port) {
+      bunConfig.port = cfg.port;
+    }
+    if (cfg.database) {
+      bunConfig.database = cfg.database;
+    }
+    if (cfg.user) {
+      bunConfig.username = cfg.user;
+    }
+    if (cfg.password) {
+      bunConfig.password = cfg.password;
+    }
+  }
+
+  if (typeof config.max === "number") {
+    bunConfig.max = config.max;
+  }
+
+  if (cfg.sslmode) {
+    bunConfig.tls = cfg.sslmode !== "disable";
+  } else if (config.ssl !== undefined) {
+    bunConfig.tls = config.ssl as boolean | Record<string, any>;
+  }
+
+  if (searchPath) {
+    bunConfig.onconnect = async (client) => {
+      await client.unsafe(
+        "SELECT set_config('search_path', $1, false)",
+        [searchPath],
+      );
+    };
+  }
+
+  return bunConfig;
+}
+
+function normalizeBunResult(result: BunSQLResult): QueryResult<QueryResultRow> {
+  const rows = Array.isArray(result)
+    ? result.map((row) => normalizeBunRow(row))
+    : [];
+  const rowCount =
+    typeof result?.count === "number"
+      ? result.count
+      : typeof result?.affectedRows === "number"
+        ? result.affectedRows
+        : rows.length;
+  return {
+    rows,
+    rowCount,
+  };
+}
+
+function isPlainObject(value: any): value is Record<string, any> {
+  if (value === null || typeof value !== "object") {
+    return false;
+  }
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function isPrimitiveArray(value: any[]): boolean {
+  return value.every(
+    (entry) =>
+      entry === null ||
+      typeof entry === "string" ||
+      typeof entry === "number" ||
+      typeof entry === "boolean" ||
+      typeof entry === "bigint" ||
+      entry instanceof Date,
+  );
+}
+
+function serializeBunValue(sql: BunSQLClientLike, value: any): any {
+  if (Array.isArray(value)) {
+    if (isPrimitiveArray(value) && typeof sql.array === "function") {
+      return sql.array(
+        value.map((entry) =>
+          entry instanceof Date ? entry.toISOString() : entry,
+        ),
+      );
+    }
+    return JSON.stringify(value);
+  }
+
+  if (isPlainObject(value)) {
+    return JSON.stringify(value);
+  }
+
+  return value;
+}
+
+function serializeBunValues(sql: BunSQLClientLike, values?: any[]): any[] | undefined {
+  return values?.map((value) => serializeBunValue(sql, value));
+}
+
+function normalizeBunArrayValue(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map((entry) => normalizeBunArrayValue(entry));
+  }
+
+  if (
+    typeof value === "string" &&
+    value.startsWith('"') &&
+    value.endsWith('"')
+  ) {
+    try {
+      return JSON.parse(value);
+    } catch {}
+  }
+
+  return value;
+}
+
+function normalizeBunRow(row: QueryResultRow): QueryResultRow {
+  const normalized: QueryResultRow = {};
+  for (const key in row) {
+    const value = row[key];
+    normalized[key] = Array.isArray(value) ? normalizeBunArrayValue(value) : value;
+  }
+  return normalized;
+}
+
+function createBunQueryable(sql: BunSQLClientLike): PostgresQueryable {
+  return {
+    async query<R extends QueryResultRow = any>(
+      query: string,
+      values?: any[],
+    ): Promise<QueryResult<R>> {
+      return normalizeBunResult(
+        await sql.unsafe(query, serializeBunValues(sql, values)),
+      ) as QueryResult<R>;
+    },
+  };
 }
 
 export default class DB {
   static instance: DB;
   static dialect: Dialect;
 
-  private pool: Pool;
   private q: Connection;
   private constructor(public db: DatabaseInfo) {
     const devSchemaEnabled = isDevSchemaEnabled(db.devSchema);
@@ -190,7 +428,11 @@ export default class DB {
         resolvedDevSchema,
         extensions,
       );
-      if (searchPath) {
+      const postgresDriver = normalizePostgresDriver(db.postgresDriver);
+      db.runtime = normalizeRuntimeMode(db.runtime);
+      db.postgresDriver = postgresDriver;
+
+      if (postgresDriver === "pg" && searchPath) {
         const option = `-c search_path=${searchPath}`;
         db.config = {
           ...db.config,
@@ -199,34 +441,63 @@ export default class DB {
             : option,
         };
       }
-
-      this.pool = new Pool(db.config);
       const schemaName = resolvedDevSchema.schemaName;
-      const readyTasks: Promise<void>[] = [];
-      if (resolvedDevSchema.enabled && schemaName) {
-        readyTasks.push(
-          validateDevSchema(this.pool, schemaName).then(() =>
-            touchDevSchemaRegistry(
-              this.pool,
-              schemaName,
-              resolvedDevSchema.branchName,
-            ).catch(() => {}),
-          ),
-        );
-      }
-      readyTasks.push(initializeExtensions(this.pool, extensions));
-      const ready =
-        readyTasks.length > 0
-          ? Promise.all(readyTasks).then(() => undefined)
-          : undefined;
-      if (ready) {
-        ready.catch(() => {});
-      }
-      this.q = new Postgres(this.pool, ready);
 
-      this.pool.on("error", (err, client) => {
-        log("error", err);
-      });
+      if (postgresDriver === "bun") {
+        const SQL = getBunSQLConstructor();
+        const sql = new SQL(createBunSQLConfig(db.config, searchPath));
+        const queryable = createBunQueryable(sql);
+        const readyTasks: Promise<void>[] = [];
+        if (resolvedDevSchema.enabled && schemaName) {
+          readyTasks.push(
+            validateDevSchema(queryable, schemaName).then(() =>
+              touchDevSchemaRegistry(
+                queryable,
+                schemaName,
+                resolvedDevSchema.branchName,
+              ).catch(() => {}),
+            ),
+          );
+        }
+        readyTasks.push(
+          initializeExtensions(queryable, extensions, postgresDriver),
+        );
+        const ready =
+          readyTasks.length > 0
+            ? Promise.all(readyTasks).then(() => undefined)
+            : undefined;
+        if (ready) {
+          ready.catch(() => {});
+        }
+        this.q = new BunPostgres(sql, ready);
+      } else {
+        const pool = new Pool(db.config);
+        const readyTasks: Promise<void>[] = [];
+        if (resolvedDevSchema.enabled && schemaName) {
+          readyTasks.push(
+            validateDevSchema(pool, schemaName).then(() =>
+              touchDevSchemaRegistry(
+                pool,
+                schemaName,
+                resolvedDevSchema.branchName,
+              ).catch(() => {}),
+            ),
+          );
+        }
+        readyTasks.push(initializeExtensions(pool, extensions, postgresDriver));
+        const ready =
+          readyTasks.length > 0
+            ? Promise.all(readyTasks).then(() => undefined)
+            : undefined;
+        if (ready) {
+          ready.catch(() => {});
+        }
+        this.q = new Postgres(pool, ready);
+
+        pool.on("error", (err) => {
+          log("error", err);
+        });
+      }
     } else {
       let sqlite = require("better-sqlite3");
       const dbb = sqlite(db.filePath || "");
@@ -350,7 +621,7 @@ export interface Connection extends Queryer {
   self(): Queryer;
   newClient(): Promise<Client>;
   close(): Promise<void>;
-  runInTransaction?(cb: () => void | Promise<void>);
+  runInTransaction?(cb: () => void | Promise<void>): void | Promise<void>;
 }
 
 export interface QueryResultRow {
@@ -614,7 +885,120 @@ export class PostgresClient implements Client {
   }
 }
 
-async function validateDevSchema(pool: Pool, schemaName: string) {
+export class BunPostgres implements Connection {
+  private closePromise?: Promise<void>;
+
+  constructor(
+    private sql: BunSQLPool,
+    private ready?: Promise<void>,
+  ) {}
+
+  private async ensureReady() {
+    if (this.ready) {
+      await this.ready;
+    }
+  }
+
+  self() {
+    return this;
+  }
+
+  async newClient() {
+    await this.ensureReady();
+    const client = await this.sql.reserve();
+    return new BunPostgresClient(client, this.ready);
+  }
+
+  async query(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    await this.ensureReady();
+    return normalizeBunResult(
+      await this.sql.unsafe(query, serializeBunValues(this.sql, values)),
+    );
+  }
+
+  async queryAll(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    await this.ensureReady();
+    return normalizeBunResult(
+      await this.sql.unsafe(query, serializeBunValues(this.sql, values)),
+    );
+  }
+
+  async exec(query: string, values?: any[]): Promise<ExecResult> {
+    await this.ensureReady();
+    return normalizeBunResult(
+      await this.sql.unsafe(query, serializeBunValues(this.sql, values)),
+    );
+  }
+
+  async close() {
+    if (!this.closePromise) {
+      this.closePromise = this.sql.close();
+    }
+    return this.closePromise;
+  }
+}
+
+export class BunPostgresClient implements Client {
+  constructor(
+    private client: BunSQLReservedClient,
+    private ready?: Promise<void>,
+  ) {}
+
+  private async ensureReady() {
+    if (this.ready) {
+      await this.ready;
+    }
+  }
+
+  async query(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    await this.ensureReady();
+    return normalizeBunResult(
+      await this.client.unsafe(query, serializeBunValues(this.client, values)),
+    );
+  }
+
+  async queryAll(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<QueryResultRow>> {
+    await this.ensureReady();
+    return normalizeBunResult(
+      await this.client.unsafe(query, serializeBunValues(this.client, values)),
+    );
+  }
+
+  async exec(query: string, values?: any[]): Promise<ExecResult> {
+    await this.ensureReady();
+    return normalizeBunResult(
+      await this.client.unsafe(query, serializeBunValues(this.client, values)),
+    );
+  }
+
+  async release(err?: Error | boolean) {
+    await this.client.release();
+  }
+}
+
+interface PostgresQueryable {
+  query<R extends QueryResultRow = any>(
+    query: string,
+    values?: any[],
+  ): Promise<QueryResult<R>>;
+}
+
+async function validateDevSchema(
+  pool: PostgresQueryable,
+  schemaName: string,
+) {
   const res = await pool.query(
     "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = $1) AS ok",
     [schemaName],
@@ -627,7 +1011,7 @@ async function validateDevSchema(pool: Pool, schemaName: string) {
 }
 
 async function touchDevSchemaRegistry(
-  pool: Pool,
+  pool: PostgresQueryable,
   schemaName: string,
   branchName?: string,
 ) {
@@ -645,8 +1029,7 @@ async function touchDevSchemaRegistry(
     );
   } catch (err) {
     if (
-      err &&
-      typeof err.message === "string" &&
+      err instanceof Error &&
       err.message.includes("ent_dev_schema_registry")
     ) {
       return;

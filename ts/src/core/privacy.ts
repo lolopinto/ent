@@ -171,7 +171,7 @@ export class AllowIfViewerIsRule implements PrivacyPolicyRule {
   async apply(v: Viewer, ent?: Ent): Promise<PrivacyResult> {
     let result: undefined;
     if (ent) {
-      result = ent[this.property];
+      result = (ent as any)[this.property];
     }
     if (result === v.viewerID) {
       return Allow();
@@ -271,12 +271,17 @@ export class AllowIfEntIsVisiblePolicy<
   TViewer extends Viewer,
 > implements PrivacyPolicy<TEnt, TViewer>
 {
+  rules: PrivacyPolicyRule[];
+
   constructor(
     private id: ID,
     private options: LoadEntOptions<TEnt, TViewer>,
-  ) {}
-
-  rules = [new AllowIfEntIsVisibleRule(this.id, this.options), AlwaysDenyRule];
+  ) {
+    this.rules = [
+      new AllowIfEntIsVisibleRule(this.id, this.options),
+      AlwaysDenyRule,
+    ];
+  }
 }
 
 export class DenyIfEntIsVisiblePolicy<
@@ -284,12 +289,17 @@ export class DenyIfEntIsVisiblePolicy<
   TViewer extends Viewer,
 > implements PrivacyPolicy<TEnt, TViewer>
 {
+  rules: PrivacyPolicyRule[];
+
   constructor(
     private id: ID,
     private options: LoadEntOptions<TEnt, TViewer>,
-  ) {}
-
-  rules = [new DenyIfEntIsVisibleRule(this.id, this.options), AlwaysAllowRule];
+  ) {
+    this.rules = [
+      new DenyIfEntIsVisibleRule(this.id, this.options),
+      AlwaysAllowRule,
+    ];
+  }
 }
 
 export class DenyIfEntIsVisibleRule<

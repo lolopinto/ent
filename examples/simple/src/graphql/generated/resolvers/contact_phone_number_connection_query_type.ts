@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { ContactPhoneNumber } from "../../../ent";
+import { ContactPhoneNumber } from "../../../ent/contact_phone_number";
 import { ContactPhoneNumberArgInputType } from "../mutations/input/contact_phone_number_arg_input_type";
 import { ContactPhoneNumberSortColumnType } from "./enums_type";
 import { RootToContactPhoneNumberConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,9 @@ export const ContactPhoneNumberConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   ContactPhoneNumberConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToContactPhoneNumberConnectionType()),
+  get type() {
+    return new GraphQLNonNull(RootToContactPhoneNumberConnectionType());
+  },
   description: "custom query for contact_phone_number. connection",
   args: {
     ids: {
