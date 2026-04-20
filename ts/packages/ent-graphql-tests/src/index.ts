@@ -61,6 +61,8 @@ function server(config: queryConfig): Express {
   return app;
 }
 
+// Bun can load GraphQL types from a different module realm than the schema under test,
+// so constructor identity checks are not reliable here.
 function isWrappingTypeLike(typ: any): typ is { ofType: any } {
   return !!typ && typeof typ === "object" && "ofType" in typ;
 }
@@ -105,6 +107,38 @@ function getInnerType(typ, list) {
   return [typ, list];
 }
 
+async function createBunTestHarness(
+  config: queryConfig,
+  persistentAgent: boolean,
+): Promise<{
+  test: supertest.SuperTest<supertest.Test>;
+  cleanup?: () => Promise<void>;
+}> {
+  const app = config.server ? config.server : server(config);
+  const httpServer = await new Promise<any>((resolve) => {
+    const srv = app.listen(0, () => resolve(srv));
+  });
+  const address = httpServer.address();
+  if (!address || typeof address === "string") {
+    throw new Error("could not determine test server address");
+  }
+  const url = `http://127.0.0.1:${address.port}`;
+  const close = () =>
+    new Promise<void>((resolve, reject) => {
+      httpServer.close((err?: Error) => (err ? reject(err) : resolve()));
+    });
+
+  if (persistentAgent) {
+    const test = supertest.agent(url) as any;
+    test[bunAgentServerClose] = close;
+    return { test };
+  }
+  return {
+    test: supertest(url),
+    cleanup: close,
+  };
+}
+
 async function makeGraphQLRequest(
   config: queryConfig,
   query: string,
@@ -120,19 +154,7 @@ async function makeGraphQLRequest(
   if (config.test) {
     if (typeof config.test === "function") {
       if (process.versions.bun) {
-        const app = config.server ? config.server : server(config);
-        const httpServer = await new Promise<any>((resolve) => {
-          const srv = app.listen(0, () => resolve(srv));
-        });
-        const address = httpServer.address();
-        if (!address || typeof address === "string") {
-          throw new Error("could not determine test server address");
-        }
-        test = supertest.agent(`http://127.0.0.1:${address.port}`) as any;
-        (test as any)[bunAgentServerClose] = () =>
-          new Promise<void>((resolve, reject) => {
-            httpServer.close((err?: Error) => (err ? reject(err) : resolve()));
-          });
+        ({ test } = await createBunTestHarness(config, true));
       } else {
         test = config.test(config.server ? config.server : server(config));
       }
@@ -140,19 +162,7 @@ async function makeGraphQLRequest(
       test = config.test;
     }
   } else if (process.versions.bun) {
-    const app = config.server ? config.server : server(config);
-    const httpServer = await new Promise<any>((resolve) => {
-      const srv = app.listen(0, () => resolve(srv));
-    });
-    const address = httpServer.address();
-    if (!address || typeof address === "string") {
-      throw new Error("could not determine test server address");
-    }
-    test = supertest(`http://127.0.0.1:${address.port}`);
-    cleanup = () =>
-      new Promise<void>((resolve, reject) => {
-        httpServer.close((err?: Error) => (err ? reject(err) : resolve()));
-      });
+    ({ test, cleanup } = await createBunTestHarness(config, false));
   } else {
     test = supertest(config.server ? config.server : server(config));
   }

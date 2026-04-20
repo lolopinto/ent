@@ -118,6 +118,8 @@ export const CanViewerDoQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   {}
 > = {
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
   get type() {
     return GlobalCanViewerDoType;
   },

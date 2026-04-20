@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -29,33 +30,39 @@ func GetArgsForTsNodeScript(rootPath string) []string {
 	}
 }
 
-const (
-	runtimeNode       = "node"
-	runtimeBun        = "bun"
-	postgresDriverPG  = "pg"
-	postgresDriverBun = "bun"
-)
+type runtimeSelection struct {
+	Runtime        string
+	PostgresDriver string
+}
 
 type runtimeConfig struct {
 	Runtime        string `yaml:"runtime"`
 	PostgresDriver string `yaml:"postgresDriver"`
 }
 
-func normalizeRuntime(runtime string) string {
-	if runtime == runtimeBun {
-		return runtimeBun
+func parseRuntimeValue(runtime string) (string, error) {
+	switch runtime {
+	case "", "node":
+		return "node", nil
+	case "bun":
+		return "bun", nil
+	default:
+		return "", fmt.Errorf("invalid runtime %q. valid values: node, bun", runtime)
 	}
-	return runtimeNode
 }
 
-func normalizePostgresDriver(driver string) string {
-	if driver == postgresDriverBun {
-		return postgresDriverBun
+func parsePostgresDriverValue(driver string) (string, error) {
+	switch driver {
+	case "", "pg":
+		return "pg", nil
+	case "bun":
+		return "bun", nil
+	default:
+		return "", fmt.Errorf("invalid postgresDriver %q. valid values: pg, bun", driver)
 	}
-	return postgresDriverPG
 }
 
-func readRuntimeConfig(dirPath string) *runtimeConfig {
+func readRuntimeConfig(dirPath string) (*runtimeConfig, error) {
 	paths := []string{
 		"ent.yml",
 		"src/ent.yml",
@@ -76,37 +83,53 @@ func readRuntimeConfig(dirPath string) *runtimeConfig {
 		if err := yaml.Unmarshal(b, &cfg); err != nil {
 			continue
 		}
-		return &cfg
+		if _, err := parseRuntimeValue(cfg.Runtime); err != nil {
+			return nil, err
+		}
+		if _, err := parsePostgresDriverValue(cfg.PostgresDriver); err != nil {
+			return nil, err
+		}
+		return &cfg, nil
 	}
-	return nil
+	return nil, nil
 }
 
-func getRuntime(dirPath string, fromTest bool) string {
+func getRuntimeSelection(dirPath string, fromTest bool) (*runtimeSelection, error) {
+	ret := &runtimeSelection{
+		Runtime:        "node",
+		PostgresDriver: "pg",
+	}
+
+	var cfg *runtimeConfig
+	if !fromTest {
+		var err error
+		cfg, err = readRuntimeConfig(dirPath)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	if runtime, ok := os.LookupEnv("ENT_RUNTIME"); ok {
-		return normalizeRuntime(runtime)
+		val, err := parseRuntimeValue(runtime)
+		if err != nil {
+			return nil, err
+		}
+		ret.Runtime = val
+	} else if cfg != nil {
+		ret.Runtime, _ = parseRuntimeValue(cfg.Runtime)
 	}
-	if fromTest {
-		return runtimeNode
-	}
-	cfg := readRuntimeConfig(dirPath)
-	if cfg == nil {
-		return runtimeNode
-	}
-	return normalizeRuntime(cfg.Runtime)
-}
 
-func getPostgresDriver(dirPath string, fromTest bool) string {
 	if driver, ok := os.LookupEnv("ENT_POSTGRES_DRIVER"); ok {
-		return normalizePostgresDriver(driver)
+		val, err := parsePostgresDriverValue(driver)
+		if err != nil {
+			return nil, err
+		}
+		ret.PostgresDriver = val
+	} else if cfg != nil {
+		ret.PostgresDriver, _ = parsePostgresDriverValue(cfg.PostgresDriver)
 	}
-	if fromTest {
-		return postgresDriverPG
-	}
-	cfg := readRuntimeConfig(dirPath)
-	if cfg == nil {
-		return postgresDriverPG
-	}
-	return normalizePostgresDriver(cfg.PostgresDriver)
+
+	return ret, nil
 }
 
 func UseSwc() bool {
@@ -160,15 +183,19 @@ func (cmdInfo *CommandInfo) MaybeSetupSwcrc(dirPath string) func() {
 	return cleanup
 }
 
-func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
+func GetCommandInfo(dirPath string, fromTest bool) (*CommandInfo, error) {
 	env := os.Environ()
-	runtime := getRuntime(dirPath, fromTest)
-	postgresDriver := getPostgresDriver(dirPath, fromTest)
+	selection, err := getRuntimeSelection(dirPath, fromTest)
+	if err != nil {
+		return nil, err
+	}
+	runtime := string(selection.Runtime)
+	postgresDriver := string(selection.PostgresDriver)
 	cmdName := "ts-node"
 	var cmdArgs []string
 	useSwc := UseSwc()
 
-	if runtime == runtimeBun {
+	if selection.Runtime == "bun" {
 		cmdName = "bun"
 		useSwc = false
 	} else {
@@ -220,5 +247,5 @@ func GetCommandInfo(dirPath string, fromTest bool) *CommandInfo {
 		Env:     env,
 		UseSwc:  useSwc,
 		Runtime: runtime,
-	}
+	}, nil
 }

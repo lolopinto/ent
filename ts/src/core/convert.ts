@@ -5,6 +5,8 @@ const TEXT_ARRAY_OID = 1009;
 const parseTextArray = pg.types.getTypeParser(TEXT_ARRAY_OID as any);
 
 function normalizeArrayLikeObject(val: any): any[] {
+  // This only runs for list-typed fields. Bun's native Postgres client can return
+  // some arrays as `{0: ..., 1: ...}` objects instead of real JS arrays.
   const keys = Object.keys(val);
   if (!keys.length) {
     return [];

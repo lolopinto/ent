@@ -421,8 +421,8 @@ const getType = (
     return;
   }
   // GraphQLScalarType or GraphQLEnumType or ClassType
-  result.scalarType = isGraphQLScalarType(typ);
   result.enumType = isGraphQLEnumType(typ);
+  result.scalarType = !result.enumType && isGraphQLScalarType(typ);
   result.type = typ.name;
   return;
 };

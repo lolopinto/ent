@@ -29,7 +29,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.StringType{},
 				},
-				convertSqliteFns: []string{"convertList"},
+				convertSqliteFns:   []string{"convertList"},
+				convertPostgresFns: []string{"convertList"},
 			},
 		},
 		"nullable string list": {
@@ -49,7 +50,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.StringType{},
 				},
-				convertSqliteFns: []string{"convertNullableList"},
+				convertSqliteFns:   []string{"convertNullableList"},
+				convertPostgresFns: []string{"convertNullableList"},
 			},
 		},
 		"int list": {
@@ -70,7 +72,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.IntegerType{},
 				},
-				convertSqliteFns: []string{"convertList"},
+				convertSqliteFns:   []string{"convertList"},
+				convertPostgresFns: []string{"convertList"},
 			},
 		},
 		"nullable int list": {
@@ -90,7 +93,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.IntegerType{},
 				},
-				convertSqliteFns: []string{"convertNullableList"},
+				convertSqliteFns:   []string{"convertNullableList"},
+				convertPostgresFns: []string{"convertNullableList"},
 			},
 		},
 		"bool list": {
@@ -111,7 +115,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.BoolType{},
 				},
-				convertSqliteFns: []string{"convertBoolList"},
+				convertSqliteFns:   []string{"convertBoolList"},
+				convertPostgresFns: []string{"convertList"},
 			},
 		},
 		"nullable bool list": {
@@ -131,7 +136,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.BoolType{},
 				},
-				convertSqliteFns: []string{"convertNullableBoolList"},
+				convertSqliteFns:   []string{"convertNullableBoolList"},
+				convertPostgresFns: []string{"convertNullableList"},
 			},
 		},
 		"float list": {
@@ -152,7 +158,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.FloatType{},
 				},
-				convertSqliteFns: []string{"convertList"},
+				convertSqliteFns:   []string{"convertList"},
+				convertPostgresFns: []string{"convertList"},
 			},
 		},
 		"nullable float list": {
@@ -172,7 +179,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.FloatType{},
 				},
-				convertSqliteFns: []string{"convertNullableList"},
+				convertSqliteFns:   []string{"convertNullableList"},
+				convertPostgresFns: []string{"convertNullableList"},
 			},
 		},
 		"date list": {
@@ -193,6 +201,7 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.DateType{},
 				},
+				convertPostgresFns: []string{"convertDBDateList"},
 			},
 		},
 		"nullable date list": {
@@ -212,6 +221,7 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.DateType{},
 				},
+				convertPostgresFns: []string{"convertNullableDBDateList"},
 			},
 		},
 		"time list": {
@@ -232,7 +242,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimeType{},
 				},
-				convertSqliteFns: []string{"convertList"},
+				convertSqliteFns:   []string{"convertList"},
+				convertPostgresFns: []string{"convertList"},
 			},
 		},
 		"nullable time list": {
@@ -252,7 +263,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimeType{},
 				},
-				convertSqliteFns: []string{"convertNullableList"},
+				convertSqliteFns:   []string{"convertNullableList"},
+				convertPostgresFns: []string{"convertNullableList"},
 			},
 		},
 		"timetz list": {
@@ -273,7 +285,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimetzType{},
 				},
-				convertSqliteFns: []string{"convertList"},
+				convertSqliteFns:   []string{"convertList"},
+				convertPostgresFns: []string{"convertList"},
 			},
 		},
 		"nullable timetz list": {
@@ -293,7 +306,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimetzType{},
 				},
-				convertSqliteFns: []string{"convertNullableList"},
+				convertSqliteFns:   []string{"convertNullableList"},
+				convertPostgresFns: []string{"convertNullableList"},
 			},
 		},
 		"timestamp list": {
@@ -314,7 +328,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimestampType{},
 				},
-				convertSqliteFns: []string{"convertDateList"},
+				convertSqliteFns:   []string{"convertDateList"},
+				convertPostgresFns: []string{"convertList"},
 			},
 		},
 		"nullable timestamp list": {
@@ -334,7 +349,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimestampType{},
 				},
-				convertSqliteFns: []string{"convertNullableDateList"},
+				convertSqliteFns:   []string{"convertNullableDateList"},
+				convertPostgresFns: []string{"convertNullableList"},
 			},
 		},
 		"timestamptz list": {
@@ -355,7 +371,8 @@ func TestArrayListType(t *testing.T) {
 				nullableType: &enttype.NullableArrayListType{
 					ElemType: &enttype.TimestamptzType{},
 				},
-				convertSqliteFns: []string{"convertDateList"},
+				convertSqliteFns:   []string{"convertDateList"},
+				convertPostgresFns: []string{"convertList"},
 			},
 		},
 		"nullable timestamptz list": {
@@ -375,7 +392,8 @@ func TestArrayListType(t *testing.T) {
 				nonNullableType: &enttype.ArrayListType{
 					ElemType: &enttype.TimestamptzType{},
 				},
-				convertSqliteFns: []string{"convertNullableDateList"},
+				convertSqliteFns:   []string{"convertNullableDateList"},
+				convertPostgresFns: []string{"convertNullableList"},
 			},
 		},
 		"enum list": {

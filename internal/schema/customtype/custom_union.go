@@ -63,6 +63,8 @@ type ConvertMethodInfo struct {
 }
 
 func (cu *CustomUnion) HasConvertFunction(cfg codegenapi.Config) bool {
+	// See CustomInterface.HasConvertFunction. Unions need the same always-on converter
+	// so Bun/native SQL string payloads are narrowed after parsing.
 	return true
 }
 

@@ -131,6 +131,9 @@ func (ci *CustomInterface) IsCustomUnion() bool {
 }
 
 func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
+	// Always emit a converter. Bun's native Postgres path can surface JSON-backed custom
+	// types as serialized strings, and the generated converter is where we normalize
+	// string and object inputs into the declared TypeScript shape.
 	return true
 }
 

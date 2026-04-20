@@ -18,25 +18,21 @@ TODO: Need to apparently run `docker-sync stop` and `docker-sync start` periodic
 
 ## Bun mode
 
-This example is checked in as Bun-first for codegen/runtime config:
+This example is Bun-first for codegen, runtime, and tests:
 
 - `runtime: bun`
 - `postgresDriver: bun`
 
-Node remains directly testable via explicit override scripts.
-
-Docker now uses the shared [`ts/Dockerfile`](/Users/ola/code/ent/ts/Dockerfile:1) image directly and overrides the container command to Bun for this example. That means:
-
-- `npm run start` runs the app in Docker with `bun src/graphql/index.bun.ts`
 - `npm run codegen` runs the local Bun-backed codegen path against the code in this repo
-- `npm run codegen:docker` runs `tsent codegen` in the shared Docker image as a container smoke path
-- the image still contains `node`, `bun`, `yarn`, and `tsent`, so the same base can be reused with different commands
+- `npm test` runs the example test suite with `bun test`
+- `npm run runtime:smoke` runs a Bun runtime smoke test against a temporary database using Bun's native Postgres driver
+- `npm run start-fast` starts the GraphQL server locally through `bun`
 
-Bun-specific entry points are additive:
+Docker still uses a local example Dockerfile. Build the shared base image first from [`ts/Dockerfile`](/Users/ola/code/ent/ts/Dockerfile:1):
 
-- `npm run codegen:node` runs codegen through the default Node path
-- `npm run codegen:bun` runs the full Bun-backed codegen pass, including custom GraphQL discovery
-- `npm test` runs the full example test suite with `bun test`
-- `npm run runtime:node` runs a Node runtime smoke test using the default runtime and Postgres driver selection
-- `npm run start-fast:bun` starts the GraphQL server through `bun`
-- `npm run runtime:bun` runs a Bun runtime smoke test against a temporary database using Bun's native Postgres driver
+```shell
+cd ../../ts
+docker build -t ent .
+```
+
+Then `npm run start` will build the example image on top of that shared base and boot the app with Bun.

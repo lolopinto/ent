@@ -50,6 +50,7 @@ export function convertNullableEventRsvpStatusInput(
 export function convertEventRsvpStatusInputList(
   val: string[],
 ): EventRsvpStatusInput[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertEventRsvpStatusInput(v));
 }

@@ -23,7 +23,10 @@ var runScriptCmd = &cobra.Command{
 			return err
 		}
 
-		cmdInfo := cmd2.GetCommandInfo(cfg.GetAbsPathToRoot(), false)
+		cmdInfo, err := cmd2.GetCommandInfo(cfg.GetAbsPathToRoot(), false)
+		if err != nil {
+			return err
+		}
 		if cmdInfo.UseSwc {
 			cleanup := cmdInfo.MaybeSetupSwcrc(cfg.GetAbsPathToRoot())
 			defer cleanup()

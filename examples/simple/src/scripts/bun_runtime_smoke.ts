@@ -1,6 +1,6 @@
 import { DB } from "@snowtop/ent";
 import { loadExampleRuntimeConfig } from "../testsetup/example_runtime_config";
-import { createDB } from "../testsetup/globalSetup";
+import { createDB } from "../testsetup/db_setup";
 
 async function main() {
   const { db, user, password, client } = await createDB();

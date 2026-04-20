@@ -13,7 +13,8 @@ import (
 func TestGetCommandInfoDefaultsToNodeLauncher(t *testing.T) {
 	dir := t.TempDir()
 
-	info := GetCommandInfo(dir, false)
+	info, err := GetCommandInfo(dir, false)
+	require.NoError(t, err)
 	require.Equal(t, "ts-node-script", info.Name)
 	require.Equal(t, "node", info.Runtime)
 
@@ -26,7 +27,8 @@ func TestGetCommandInfoUsesBunRuntimeFromConfig(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "ent.yml"), []byte("runtime: bun\npostgresDriver: pg\n"), 0o644))
 
-	info := GetCommandInfo(dir, false)
+	info, err := GetCommandInfo(dir, false)
+	require.NoError(t, err)
 	require.Equal(t, "bun", info.Name)
 	require.Equal(t, "bun", info.Runtime)
 	require.Contains(t, info.Env, "ENT_RUNTIME=bun")
@@ -56,9 +58,25 @@ func TestGetCommandInfoEnvOverridesConfig(t *testing.T) {
 	t.Setenv("ENT_RUNTIME", "node")
 	t.Setenv("ENT_POSTGRES_DRIVER", "pg")
 
-	info := GetCommandInfo(dir, false)
+	info, err := GetCommandInfo(dir, false)
+	require.NoError(t, err)
 	require.Equal(t, "ts-node-script", info.Name)
 	require.Equal(t, "node", info.Runtime)
 	require.Contains(t, info.Env, "ENT_RUNTIME=node")
 	require.Contains(t, info.Env, "ENT_POSTGRES_DRIVER=pg")
+}
+
+func TestGetCommandInfoRejectsInvalidEnvRuntime(t *testing.T) {
+	t.Setenv("ENT_RUNTIME", "deno")
+
+	_, err := GetCommandInfo(t.TempDir(), false)
+	require.EqualError(t, err, "invalid runtime \"deno\". valid values: node, bun")
+}
+
+func TestGetCommandInfoRejectsInvalidConfigDriver(t *testing.T) {
+	dir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "ent.yml"), []byte("postgresDriver: jdbc\n"), 0o644))
+
+	_, err := GetCommandInfo(dir, false)
+	require.EqualError(t, err, "invalid postgresDriver \"jdbc\". valid values: pg, bun")
 }

@@ -73,6 +73,7 @@ type Config interface {
 	DefaultGraphQLFieldFormat() GraphQLFieldFormat
 	FieldPrivacyEvaluated() FieldPrivacyEvaluated
 	GetRootPathToConfigs() string
+	GetAbsPathToRoot() string
 	DebugMode() bool
 	DebugFilesMode() bool
 	// doesn't actually writes the files, just keeps track of which files were going to be written
@@ -98,6 +99,10 @@ func (cfg *DummyConfig) DefaultGraphQLFieldFormat() GraphQLFieldFormat {
 
 func (cfg *DummyConfig) GetRootPathToConfigs() string {
 	return "src/schema"
+}
+
+func (cfg *DummyConfig) GetAbsPathToRoot() string {
+	return ""
 }
 
 func (cfg *DummyConfig) DebugMode() bool {

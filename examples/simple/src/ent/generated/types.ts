@@ -36,47 +36,47 @@ export enum NodeType {
 
 export enum EdgeType {
   // AddressToHostedEvents is the edgeType for the address to hostedevents edge.
-  AddressToHostedEvents = "b6517a24-0fda-4ffb-af26-5857893eccfb",
+  AddressToHostedEvents = "d1979d4b-d033-4562-b078-cc528fec25bb",
   // CommentToPost is the edgeType for the comment to post edge.
-  CommentToPost = "f0c16e97-7bcb-405b-8795-7ac89bfc469f",
+  CommentToPost = "f430af94-d38a-4aaa-a92f-cfc56b6f811b",
   // ContactEmailToEmailsForContacts is the edgeType for the contactEmail to emailsforcontacts edge.
-  ContactEmailToEmailsForContacts = "19cfef03-2d83-42a4-8f38-b261771fed02",
+  ContactEmailToEmailsForContacts = "daee7f0d-264f-44da-b2ff-5481e4143b22",
   // ContactToSelfContactForUser is the edgeType for the contact to selfcontactforuser edge.
-  ContactToSelfContactForUser = "822eddf5-3e1f-4944-bcee-40419b2d2af9",
+  ContactToSelfContactForUser = "71483ce5-06f3-4468-bf05-afecd3a430e2",
   // EventToAttending is the edgeType for the event to attending edge.
-  EventToAttending = "0475b4c4-edc4-4708-abc3-3cecf3cec634",
+  EventToAttending = "6ebc0c47-ea29-4635-b991-95e44162174d",
   // EventToDeclined is the edgeType for the event to declined edge.
-  EventToDeclined = "9e168ed0-3534-4922-8a0e-a206890394db",
+  EventToDeclined = "db8d2454-f7b2-4147-aae1-e666daf3f3c3",
   // EventToHosts is the edgeType for the event to hosts edge.
-  EventToHosts = "350f9f1b-d51b-4acd-b156-b9e6169e9fa4",
+  EventToHosts = "ebe3e709-845c-4723-ac9c-29f983f2b8ea",
   // EventToInvited is the edgeType for the event to invited edge.
-  EventToInvited = "f1cce35b-3247-460f-a7e6-d892e5f61391",
+  EventToInvited = "a72f5f64-3580-44fd-9bd0-d1335b803a46",
   // EventToMaybe is the edgeType for the event to maybe edge.
-  EventToMaybe = "528c9f6f-094d-412c-b3d7-5220138884de",
+  EventToMaybe = "b0f6311b-fdab-4c26-b6bf-b751e0997735",
   // GlobalToLoginAuth is the edgeType for the  to loginauth edge.
-  GlobalToLoginAuth = "bbd8ab41-682c-42be-8c56-c2ef89b1b241",
+  GlobalToLoginAuth = "13eb6687-d226-4272-ba65-d5e33e00954c",
   // ObjectToComments is the edgeType for the object to comments edge.
-  ObjectToComments = "d61f70cf-a9b6-49e8-bcd3-40266b628e91",
+  ObjectToComments = "8caba9c4-8035-447f-9eb1-4dd09a2d250c",
   // ObjectToLikers is the edgeType for the object to likers edge.
-  ObjectToLikers = "4a9de17b-1434-4d72-9b09-431e95076f63",
+  ObjectToLikers = "c9ccdad9-7aff-40e4-9a69-2c29cfa19763",
   // UserToCreatedEvents is the edgeType for the user to createdevents edge.
-  UserToCreatedEvents = "ce85ae45-fd9c-4ca3-922b-17d3271a487f",
+  UserToCreatedEvents = "daa3b2a3-8245-40ca-ae77-25bfb82578a7",
   // UserToDeclinedEvents is the edgeType for the user to declinedevents edge.
-  UserToDeclinedEvents = "68e4b06e-c8b4-45f5-945a-54d03a5e7b80",
+  UserToDeclinedEvents = "1c7c173b-63ce-4002-b121-4a87f82047dd",
   // UserToEventsAttending is the edgeType for the user to eventsattending edge.
-  UserToEventsAttending = "cf6016f0-ce40-4185-810c-188cfea5a88d",
+  UserToEventsAttending = "2a98ba02-e342-4bb4-93f6-5d7ed02f5c48",
   // UserToFriends is the edgeType for the user to friends edge.
-  UserToFriends = "356f636d-5f0d-4d38-8b79-c2c94b37cc0e",
+  UserToFriends = "d1a9316d-090f-4b02-b393-fd9372e2c905",
   // UserToHostedEvents is the edgeType for the user to usertohostedevents edge.
-  UserToHostedEvents = "be98aac4-af16-4ed9-8c26-b5392b70f8d7",
+  UserToHostedEvents = "cf6542a4-8bae-427f-8a1f-01194047afb3",
   // UserToInvitedEvents is the edgeType for the user to invitedevents edge.
-  UserToInvitedEvents = "930a73c4-c239-49d9-afb7-2a707164e98e",
+  UserToInvitedEvents = "e439f2b2-d93a-4d1a-83f0-865bda5c8337",
   // UserToLikes is the edgeType for the user to likes edge.
-  UserToLikes = "d111b653-0354-4c12-aa54-a9ac3ec7c1fd",
+  UserToLikes = "745a20bf-4fdc-4862-b39f-569c4451db8f",
   // UserToMaybeEvents is the edgeType for the user to maybeevents edge.
-  UserToMaybeEvents = "fe0eed2f-249a-4164-8bb7-a4b4a4ac6076",
+  UserToMaybeEvents = "8d5b1dee-ce65-452e-9f8d-78eca1993800",
   // UserToSelfContact is the edgeType for the user to selfcontact edge.
-  UserToSelfContact = "e45759bc-4492-4797-a472-3d46b19bf4c1",
+  UserToSelfContact = "d504201d-cf3f-4eef-b6a0-0b46a7ae186b",
 }
 
 export enum CatBreed {
@@ -116,6 +116,7 @@ export function convertNullableCatBreed(val: string | null): CatBreed | null {
 }
 
 export function convertCatBreedList(val: string[]): CatBreed[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertCatBreed(v));
 }
@@ -160,6 +161,7 @@ export function convertNullableContactInfoSource(
 export function convertContactInfoSourceList(
   val: string[],
 ): ContactInfoSource[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertContactInfoSource(v));
 }
@@ -204,6 +206,7 @@ export function convertNullableContactLabel(
 }
 
 export function convertContactLabelList(val: string[]): ContactLabel[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertContactLabel(v));
 }
@@ -252,6 +255,7 @@ export function convertNullableDayOfWeek(val: string | null): DayOfWeek | null {
 }
 
 export function convertDayOfWeekList(val: string[]): DayOfWeek[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertDayOfWeek(v));
 }
@@ -302,6 +306,7 @@ export function convertNullableDayOfWeekAlt(
 }
 
 export function convertDayOfWeekAltList(val: string[]): DayOfWeekAlt[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertDayOfWeekAlt(v));
 }
@@ -350,6 +355,7 @@ export function convertNullableDogBreed(val: string | null): DogBreed | null {
 }
 
 export function convertDogBreedList(val: string[]): DogBreed[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertDogBreed(v));
 }
@@ -400,6 +406,7 @@ export function convertNullableDogBreedGroup(
 }
 
 export function convertDogBreedGroupList(val: string[]): DogBreedGroup[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertDogBreedGroup(v));
 }
@@ -444,6 +451,7 @@ export function convertNullableEventRsvpStatus(
 }
 
 export function convertEventRsvpStatusList(val: string[]): EventRsvpStatus[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertEventRsvpStatus(v));
 }
@@ -488,6 +496,7 @@ export function convertNullableIntEnumUsedInList(
 export function convertIntEnumUsedInListList(
   val: number[],
 ): IntEnumUsedInList[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertIntEnumUsedInList(v));
 }
@@ -528,6 +537,7 @@ export function convertNullableNotifType(val: string | null): NotifType | null {
 }
 
 export function convertNotifTypeList(val: string[]): NotifType[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertNotifType(v));
 }
@@ -580,6 +590,7 @@ export function convertNullableRabbitBreed(
 }
 
 export function convertRabbitBreedList(val: string[]): RabbitBreed[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertRabbitBreed(v));
 }
@@ -622,6 +633,7 @@ export function convertNullableResponseType(
 }
 
 export function convertResponseTypeList(val: string[]): ResponseType[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertResponseType(v));
 }
@@ -668,6 +680,7 @@ export function convertNullableUserAccountStatus(
 export function convertUserAccountStatusList(
   val: string[],
 ): UserAccountStatus[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertUserAccountStatus(v));
 }
@@ -732,6 +745,7 @@ export function convertNullableUserPreferredShift(
 export function convertUserPreferredShiftList(
   val: string[],
 ): UserPreferredShift[] {
+  // Bun's native Postgres driver can surface enum arrays as serialized strings.
   const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
   return input.map((v) => convertUserPreferredShift(v));
 }

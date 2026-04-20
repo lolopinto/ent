@@ -129,7 +129,10 @@ func fullCodegen(s *schema.Schema) error {
 }
 
 func runNodeJSMigrateStep(p *codegen.Processor, step string) error {
-	cmdInfo := cmd2.GetCommandInfo(p.Config.GetAbsPathToRoot(), false)
+	cmdInfo, err := cmd2.GetCommandInfo(p.Config.GetAbsPathToRoot(), false)
+	if err != nil {
+		return err
+	}
 	if cmdInfo.UseSwc {
 		cleanup := cmdInfo.MaybeSetupSwcrc(p.Config.GetAbsPathToRoot())
 		defer cleanup()

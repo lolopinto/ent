@@ -98,7 +98,9 @@ function createAssocEdgeConfigLoader(options: SelectDataOptions) {
       if (!ids.length) {
         return [];
       }
-      const keys = Array.from(ids);
+      // DataLoader exposes readonly batch keys; clone once so downstream query helpers
+      // can keep their mutable-array signatures.
+      const keys = [...ids];
       let col = options.key;
       // defaults to uuid
       let typ = options.keyType || "uuid";
@@ -168,7 +170,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       if (!ids.length) {
         return [];
       }
-      const keys = Array.from(ids);
+      const keys = [...ids];
 
       const loader = options.loaderFactory.createLoader(viewer.context);
       const rows = await loader.loadMany(keys);

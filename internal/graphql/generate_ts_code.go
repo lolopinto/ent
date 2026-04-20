@@ -761,7 +761,10 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		buf.WriteString("\n")
 	}
 
-	cmdInfo := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), fromTest)
+	cmdInfo, err := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), fromTest)
+	if err != nil {
+		return nil, err
+	}
 	scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", processor.Config.GetAbsPathToRoot(), fromTest, cmdInfo.Runtime)
 
 	if cmdInfo.UseSwc {
@@ -1911,12 +1914,12 @@ type resolverExportLine struct {
 	ExportAll bool
 }
 
-func getSortedLines(_ *gqlSchema, cfg *codegen.Config) []resolverExportLine {
+func getSortedLines(_ *gqlSchema, cfg *codegen.Config) ([]resolverExportLine, error) {
 	lines, err := getSortedResolverLinesFromDisk(cfg)
 	if err != nil {
-		return nil
+		return nil, err
 	}
-	return lines
+	return lines, nil
 }
 
 func getResolverExportLine(path string) resolverExportLine {
@@ -2034,10 +2037,14 @@ func getSortedResolverLinesFromDisk(cfg *codegen.Config) ([]resolverExportLine, 
 func writeInternalGQLResolversFile(s *gqlSchema, processor *codegen.Processor) error {
 	filePath := filepath.Join(processor.Config.GetAbsPathToRoot(), codepath.GetFilePathForInternalGQLFile())
 	imps := tsimport.NewImports(processor.Config, filePath)
+	lines, err := getSortedLines(s, processor.Config)
+	if err != nil {
+		return err
+	}
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config:            processor.Config,
-		Data:              getSortedLines(s, processor.Config),
+		Data:              lines,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_internal.tmpl"),
 		TemplateName:      "resolver_internal.tmpl",
 		PathToFile:        filePath,
@@ -4270,7 +4277,10 @@ func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {
 		return fmt.Errorf("error writing temporary schema file: %w", err)
 	}
 
-	cmdInfo := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), false)
+	cmdInfo, err := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), false)
+	if err != nil {
+		return err
+	}
 	if cmdInfo.UseSwc {
 		cleanup := cmdInfo.MaybeSetupSwcrc(processor.Config.GetAbsPathToRoot())
 		defer cleanup()

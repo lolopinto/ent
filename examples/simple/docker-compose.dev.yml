@@ -1,16 +1,14 @@
 services:
   app:
-    build:
-      context: ../..
-      dockerfile: ts/Dockerfile
+    build: 
+      context: .
+      dockerfile: develop.Dockerfile
     container_name: example_app
-    working_dir: /repo/examples/simple
-    command: ["bun", "src/graphql/index.bun.ts"]
-    ports:
+    ports: 
       - 4000:4000
       - 9229:9229 # for debugger
-    volumes:
-      - ../..:/repo:rw,delegated
+    volumes: 
+      - .:/app:rw,delegated
     environment:
       - DB_CONNECTION_STRING=postgres://$USER:@host.docker.internal/tsent_test
       # - ENABLE_SWC=true
