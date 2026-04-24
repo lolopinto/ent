@@ -26,7 +26,7 @@
     "tsconfig-paths": "^4.2.0"
   },
   "dependencies": {
-    "@snowtop/ent": "file:../../ts/dist",
+    "@snowtop/ent": "0.2.8",
     "@snowtop/ent-postgis": "file:../../ts/packages/ent-postgis",
     "pg": "^8.16.3"
   }

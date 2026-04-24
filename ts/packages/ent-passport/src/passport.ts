@@ -27,6 +27,11 @@ import jwt from "jsonwebtoken";
 import { Express } from "express";
 import session from "express-session";
 
+type JwtStrategyOptionsWithoutRequest = Extract<
+  StrategyOptions,
+  { passReqToCallback?: false }
+>;
+
 interface UserToViewerFunc {
   (context: RequestContext, user: any): Viewer | Promise<Viewer>;
 }
@@ -165,7 +170,7 @@ export class PassportStrategyHandler implements AuthHandler {
   }
 
   static jwtHandler(opts: JwtHandlerOptions) {
-    let strategyOpts: StrategyOptions;
+    let strategyOpts: JwtStrategyOptionsWithoutRequest;
     if (opts.strategyOpts) {
       strategyOpts = opts.strategyOpts;
     } else {
@@ -184,10 +189,14 @@ export class PassportStrategyHandler implements AuthHandler {
     let reqToViewer: UserToViewerFunc =
       opts.reqToViewer || defaultReqToViewer(opts.loaderOptions);
 
-    return new PassportStrategyHandler(
-      new JWTStrategy(strategyOpts, function (jwt_payload: {}, next) {
+    const verifyFn =
+      opts.verifyFn ||
+      function (jwt_payload: {}, next) {
         return next(null, jwt_payload["viewerID"].toString(), {});
-      }),
+      };
+
+    return new PassportStrategyHandler(
+      new JWTStrategy(strategyOpts, verifyFn),
       opts.authOptions,
       reqToViewer,
     );
@@ -205,7 +214,7 @@ interface JwtHandlerOptions {
   loaderOptions?: LoadEntOptions<Ent, any>;
   authOptions?: AuthenticateOptions;
   verifyFn?: VerifyCallback; // if not provided, a default one which takes viewerID from payload is used
-  strategyOpts?: StrategyOptions;
+  strategyOpts?: JwtStrategyOptionsWithoutRequest;
   secretOrKey?: string | Buffer; // if strategyOpts not provided, can just pass this and we'd pass this along with ExtractJwt.fromAuthHeaderAsBearerToken to take it from request
   jwtFromRequest?: JwtFromRequestFunction;
   reqToViewer?: UserToViewerFunc;

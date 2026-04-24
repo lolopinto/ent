@@ -1,11 +1,11 @@
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import { AccountTransferCreditsAction } from "src/ent/account/actions/account_transfer_credits_action";
 import { EditAccountTodoStatusAction } from "src/ent/account/actions/edit_account_todo_status_action";
-import type { AccountTodoStatusInput } from "src/ent/generated/account/actions/edit_account_todo_status_action_base";
+import { AccountTodoStatusInput } from "src/ent/generated/account/actions/edit_account_todo_status_action_base";
 import { ChangeTodoStatusActionBase } from "src/ent/generated/todo/actions/change_todo_status_action_base";
 import type { ChangeTodoStatusActionTriggers, ChangeTodoStatusInput } from "src/ent/generated/todo/actions/change_todo_status_action_base";
 
-export type { AccountTodoStatusInput };
+export { AccountTodoStatusInput };
 export type { ChangeTodoStatusInput };
 
 export class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {
