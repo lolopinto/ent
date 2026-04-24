@@ -11,8 +11,8 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ### Fixed
 
-- align Python build and runtime images on Debian bookworm so native `auto_schema` dependencies do not require a newer glibc than the final image provides.
-- include `/go/bin` and `/opt/venv/bin` in the image `PATH` so `tsent` and `auto_schema` are available without per-project Dockerfile workarounds.
+- align Python build and runtime images on Debian bookworm so native `auto_schema` dependencies do not require a newer glibc than the final image provides (#1981).
+- include `/go/bin` and `/opt/venv/bin` in the image `PATH` so `tsent` and `auto_schema` are available without per-project Dockerfile workarounds (#1981).
 
 ## [0.3.2]
 

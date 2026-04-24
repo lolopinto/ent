@@ -11,7 +11,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- include the shared `parse_args` helper in the published package so CLI scripts can load without `MODULE_NOT_FOUND`.
+- include the shared `parse_args` helper in the published package so CLI scripts can load without `MODULE_NOT_FOUND` (#1981).
 
 ## [0.2.7]
 
