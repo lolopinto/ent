@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
+## [0.3.3]
+
+### Fixed
+
+- align Python build and runtime images on Debian bookworm so native `auto_schema` dependencies do not require a newer glibc than the final image provides.
+- include `/go/bin` and `/opt/venv/bin` in the image `PATH` so `tsent` and `auto_schema` are available without per-project Dockerfile workarounds.
+
 ## [0.3.2]
 
 ### Added

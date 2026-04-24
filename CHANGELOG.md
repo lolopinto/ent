@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
+## [0.2.9]
+
+### Fixed
+
+- include the shared `parse_args` helper in the published package so CLI scripts can load without `MODULE_NOT_FOUND`.
+
 ## [0.2.7]
 
 ### Added
