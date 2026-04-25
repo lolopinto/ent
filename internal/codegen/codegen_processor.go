@@ -212,7 +212,7 @@ func (p *Processor) FormatTS() error {
 func (p *Processor) formatWithBiome() error {
 	var nonGenerated []string
 	root := p.Config.GetAbsPathToRoot()
-	for _, f := range p.Config.changedTSFiles {
+	for _, f := range p.Config.GetChangedTSFiles() {
 		if !strings.Contains(f, "generated") {
 			if path.IsAbs(f) {
 				p, err := filepath.Rel(root, f)
@@ -327,20 +327,18 @@ func postProcess(p *Processor) error {
 		return nil
 	}
 
-	return fns.RunVarargs(
-		func() error {
-			return p.WriteSchema()
-		},
-		func() error {
-			return p.FormatTS()
-		},
-		func() error {
-			if p.buildInfo != nil {
-				return p.buildInfo.PostProcess(p.Config)
-			}
-			return nil
-		},
-	)
+	// RunVarargs is parallel; keep these final writes ordered so follow-up
+	// codegen passes observe a completed schema/format/build-info state.
+	if err := p.WriteSchema(); err != nil {
+		return err
+	}
+	if err := p.FormatTS(); err != nil {
+		return err
+	}
+	if p.buildInfo != nil {
+		return p.buildInfo.PostProcess(p.Config)
+	}
+	return nil
 }
 
 func runAndLog(p *Processor, fn func(p *Processor) error, logDiff func(d time.Duration)) error {

@@ -361,7 +361,7 @@ func (mfcg *mutationFieldConfigBuilder) getReturnTypeHint() string {
 		if mfcg.cd.Objects[obj.Type] == nil {
 			return ""
 		}
-		typ := names.ToClassType(mfcg.field.GraphQLName, "Payload")
+		typ := obj.Type
 		return fmt.Sprintf("Promise<%s>", typ)
 	}
 	return ""
@@ -796,7 +796,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 		for _, field := range fields {
 			if field.Connection {
 				customEdge := getGQLEdge(processor.Config, field, nodeName)
-				nodeInfo.connections = append(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
+				nodeInfo.connections = appendGqlConnection(nodeInfo.connections, getGqlConnection(nodeData.PackageName, customEdge, processor))
 				if err := addConnection(processor, nodeData, customEdge, obj, &field, s); err != nil {
 					return err
 				}

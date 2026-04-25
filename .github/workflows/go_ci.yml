@@ -7,6 +7,7 @@ on:
       - 'ent/**.go'
       - 'internal/**.go'
       - 'internal/**.tmpl'
+      - 'testdata/codegen_matrix/**'
       - 'ts/src/**'
       - .github/workflows/go_ci.yml
 

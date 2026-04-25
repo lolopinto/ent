@@ -416,6 +416,7 @@ async function main() {
   if (process.env.LOCAL_SCRIPT_PATH) {
     const r = require("../graphql/graphql");
     gqlCapture = r.GQLCapture;
+    gqlCapture.enable(true);
   } else {
     const r = require(gqlPath);
     if (!r.GQLCapture) {

@@ -308,7 +308,7 @@ func getNonEntFieldsFromAssocGroup(
 ) ([]*field.NonEntField, error) {
 	var fields []*field.NonEntField
 
-	inputName := getActionInputNameForEdgeActionType(cfg, typ, assocGroup, nodeName, "")
+	inputName := getActionInputNameForEdgeActionType(cfg, typ, assocGroup, nodeName, action.CustomInputName)
 
 	for _, f := range action.ActionOnlyFields {
 		// TODO we may want different names for graphql vs actions
@@ -349,7 +349,7 @@ func processEdgeActions(cfg codegenapi.Config, nodeName string, assocEdge *edge.
 			return nil, err
 		}
 
-		inputName := getActionInputNameForEdgeActionType(cfg, typ, assocEdge, nodeName, "")
+		inputName := getActionInputNameForEdgeActionType(cfg, typ, assocEdge, nodeName, edgeAction.CustomInputName)
 		nonEntFields, err := getNonEntFieldsFromActionOnlyFields(cfg, inputName, edgeAction.ActionOnlyFields)
 		if err != nil {
 			return nil, err
@@ -545,8 +545,8 @@ func getCommonInfoForEdgeAction(
 	return commonActionInfo{
 		ActionName:       getActionNameForEdgeActionType(cfg, typ, nodeName, assocEdge, edgeAction.CustomActionName, lang),
 		GraphQLName:      graphqlName,
-		ActionInputName:  typ.getDefaultActionInputName(cfg, nodeName, assocEdge),
-		GraphQLInputName: typ.getDefaultGraphQLInputName(cfg, nodeName, assocEdge),
+		ActionInputName:  getActionInputNameForEdgeActionType(cfg, typ, assocEdge, nodeName, edgeAction.CustomInputName),
+		GraphQLInputName: getGraphQLInputNameForEdgeActionType(cfg, typ, assocEdge, nodeName, edgeAction.CustomInputName),
 		ExposeToGraphQL:  edgeAction.ExposeToGraphQL,
 		Edges: []*edge.AssociationEdge{
 			assocEdge,
@@ -580,8 +580,8 @@ func getCommonInfoForGroupEdgeAction(
 	return commonActionInfo{
 		ActionName:       actionName,
 		GraphQLName:      graphqlName,
-		ActionInputName:  typ.getDefaultActionInputName(cfg, nodeName, assocEdgeGroup),
-		GraphQLInputName: typ.getDefaultGraphQLInputName(cfg, nodeName, assocEdgeGroup),
+		ActionInputName:  getActionInputNameForEdgeActionType(cfg, typ, assocEdgeGroup, nodeName, edgeAction.CustomInputName),
+		GraphQLInputName: getGraphQLInputNameForEdgeActionType(cfg, typ, assocEdgeGroup, nodeName, edgeAction.CustomInputName),
 		ExposeToGraphQL:  edgeAction.ExposeToGraphQL,
 		NonEntFields:     fields,
 		NodeInfo:         nodeinfo.GetNodeInfo(nodeName),

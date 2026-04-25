@@ -466,6 +466,8 @@ implements {{useTypeImport "Ent"}}<{{$viewerType}}>
       {{ if $group.ViewerBased -}}
         // this should be overwritten by subclasses as needed. 
         protected async {{$group.NullStateFn}}() {
+          return {{$group.DefaultNullState}};
+        }
       {{ else -}}
         // this should be overwritten by subclasses as needed. 
         protected async {{$group.NullStateFn}}({{$group.DestNodeInfo.NodeInstance}}: {{useImport $group.DestNodeInfo.Node}}) {

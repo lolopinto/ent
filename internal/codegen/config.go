@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/codepath"
@@ -38,7 +39,8 @@ type Config struct {
 	changes       change.ChangeMap
 	forcePrettier bool
 	// keep track of changed ts files to pass to the formatter
-	changedTSFiles []string
+	changedTSFilesMu sync.Mutex
+	changedTSFiles   []string
 }
 
 // Clone doesn't clone changes and changedTSFiles
@@ -288,12 +290,16 @@ func (cfg *Config) GetAbsPathToGraphQL() string {
 
 func (cfg *Config) AddChangedFile(filePath string) {
 	if strings.HasSuffix(filePath, ".ts") {
+		cfg.changedTSFilesMu.Lock()
+		defer cfg.changedTSFilesMu.Unlock()
 		cfg.changedTSFiles = append(cfg.changedTSFiles, filePath)
 	}
 }
 
 func (cfg *Config) GetChangedTSFiles() []string {
-	return cfg.changedTSFiles
+	cfg.changedTSFilesMu.Lock()
+	defer cfg.changedTSFilesMu.Unlock()
+	return append([]string(nil), cfg.changedTSFiles...)
 }
 
 func (cfg *Config) GetCustomGraphQLJSONPath() string {
@@ -559,8 +565,9 @@ var defaultArgs = []string{
 }
 
 func (cfg *Config) getPrettierArgs() [][]string {
+	changedTSFiles := cfg.GetChangedTSFiles()
 	// nothing to do here
-	if cfg.useChanges && len(cfg.changedTSFiles) == 0 {
+	if cfg.useChanges && len(changedTSFiles) == 0 {
 		return nil
 	}
 
@@ -595,7 +602,7 @@ func (cfg *Config) getPrettierArgs() [][]string {
 	// else break up into chunks and run each on its own
 
 	var ret [][]string
-	l := len(cfg.changedTSFiles)
+	l := len(changedTSFiles)
 	iters := l / PRETTIER_FILE_CHUNKS
 	if l%PRETTIER_FILE_CHUNKS > 0 {
 		iters++
@@ -605,9 +612,9 @@ func (cfg *Config) getPrettierArgs() [][]string {
 		var files []string
 		end := start + PRETTIER_FILE_CHUNKS
 		if end > l {
-			files = cfg.changedTSFiles[start:]
+			files = changedTSFiles[start:]
 		} else {
-			files = cfg.changedTSFiles[start:end]
+			files = changedTSFiles[start:end]
 		}
 		curr := append(args, "--write")
 		curr = append(curr, files...)
