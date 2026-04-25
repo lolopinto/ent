@@ -2,6 +2,7 @@
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import auto_schema
 from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
@@ -375,6 +376,7 @@ metadata.info["custom_sql_include"] = {
       '63ec20382c27',
       ],
   }
+
 
 
 def get_metadata():

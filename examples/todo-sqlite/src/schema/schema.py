@@ -2,6 +2,7 @@
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import auto_schema
 from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
@@ -171,6 +172,7 @@ metadata.info["edges"] = {
     'WorkspaceToMembersEdge': {"edge_name":"WorkspaceToMembersEdge", "edge_type":"1c8f1e5c-4bab-4ab5-8a31-1ac71688bbb0", "edge_table":"workspace_members_edges", "symmetric_edge":False, "inverse_edge_type":"b27492cd-a064-4e74-a3af-59256352ed91"},
   }
 }
+
 
 
 

@@ -123,7 +123,7 @@ metadata.info["edges"] = {
 
 metadata.info["db_extensions"] = {
   'public': [
-    {'name': "postgis", 'managed': True, 'version': None, 'install_schema': None, 'runtime_schemas': ["public"], 'drop_cascade': False},
+    {"name":"postgis", "provisioned_by":"ent", "version":None, "install_schema":None, "runtime_schemas":["public"], "drop_cascade":False},
     ],
 }
 

@@ -34,7 +34,7 @@ export class NoteToNoteChunksQueryBase<
   }
 }
 
-export class WorkspaceToNoteChunksQueryBase<
+export class WorkspaceToNoteChunksByWorkspaceIDQueryBase<
   TEnt extends WorkspaceBase = WorkspaceBase,
 > extends CustomEdgeQueryBase<TEnt, NoteChunk, Viewer> {
   constructor(
@@ -46,14 +46,14 @@ export class WorkspaceToNoteChunksQueryBase<
       src: srcEnt,
       groupCol: "workspace_id",
       loadEntOptions: NoteChunk.loaderOptions(),
-      name: "WorkspaceToNoteChunksQuery",
+      name: "WorkspaceToNoteChunksByWorkspaceIDQuery",
       sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
       orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
   static query<
-    T extends WorkspaceToNoteChunksQueryBase,
+    T extends WorkspaceToNoteChunksByWorkspaceIDQueryBase,
     TEnt extends WorkspaceBase = WorkspaceBase,
   >(this: new (viewer: Viewer, src: TEnt) => T, viewer: Viewer, src: TEnt): T {
     return new this(viewer, src);
