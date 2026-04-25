@@ -9,10 +9,10 @@
   "scripts": {
     "test": "jest",
     "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
-    "start": "docker-compose -f docker-compose.dev.yml up --build",
-    "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen",
-    "upgrade": "docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade",
-    "rebuild-image": "docker-compose -f docker-compose.dev.yml build",
+    "start": "docker compose -f docker-compose.dev.yml up --build",
+    "codegen": "docker compose -f docker-compose.dev.yml run --rm app tsent codegen",
+    "upgrade": "docker compose -f docker-compose.dev.yml run --rm app tsent upgrade",
+    "rebuild-image": "docker compose -f docker-compose.dev.yml build",
     "start-fast": "npm run compile && node dist/graphql/index.js"
   },
   "author": "",
@@ -30,10 +30,11 @@
     "jest-expect-message": "^1.1.3",
     "supertest": "^6.1.3",
     "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.2",
     "tsconfig-paths": "^3.11.0"
   },
   "dependencies": {
-    "@snowtop/ent": "0.2.8",
+    "@snowtop/ent": "0.2.9",
     "@snowtop/ent-email": "^0.1.0-rc1",
     "@snowtop/ent-passport": "^0.1.0-rc1",
     "@snowtop/ent-password": "^0.1.0-rc1",

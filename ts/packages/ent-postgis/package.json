@@ -30,7 +30,7 @@
   "homepage": "https://github.com/lolopinto/ent#readme",
   "dependencies": {},
   "devDependencies": {
-    "@snowtop/ent": "0.2.8",
+    "@snowtop/ent": "0.2.9",
     "@types/jest": "^30.0.0",
     "jest": "^30.2.0",
     "pg": "^8.16.3",

@@ -70,7 +70,7 @@ export abstract class TagToNotesQueryBase extends AssocEdgeQueryBase<
   }
 }
 
-export class WorkspaceToTagsQueryBase<
+export class WorkspaceToTagsByWorkspaceIDQueryBase<
   TEnt extends WorkspaceBase = WorkspaceBase,
 > extends CustomEdgeQueryBase<TEnt, Tag, Viewer> {
   constructor(
@@ -82,14 +82,14 @@ export class WorkspaceToTagsQueryBase<
       src: srcEnt,
       groupCol: "workspace_id",
       loadEntOptions: Tag.loaderOptions(),
-      name: "WorkspaceToTagsQuery",
+      name: "WorkspaceToTagsByWorkspaceIDQuery",
       sortColumn: typeof sortColumn === "string" ? sortColumn : undefined,
       orderby: typeof sortColumn === "string" ? undefined : sortColumn,
     });
   }
 
   static query<
-    T extends WorkspaceToTagsQueryBase,
+    T extends WorkspaceToTagsByWorkspaceIDQueryBase,
     TEnt extends WorkspaceBase = WorkspaceBase,
   >(this: new (viewer: Viewer, src: TEnt) => T, viewer: Viewer, src: TEnt): T {
     return new this(viewer, src);

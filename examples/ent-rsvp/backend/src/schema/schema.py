@@ -2,6 +2,7 @@
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+import auto_schema
 from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
@@ -174,6 +175,7 @@ metadata.info["edges"] = {
     'GuestToDeclinedEventsEdge': {"edge_name":"GuestToDeclinedEventsEdge", "edge_type":"5798e422-75d3-42ac-9ef8-30bd35e34f9f", "edge_table":"event_rsvps", "symmetric_edge":False, "inverse_edge_type":"f3ff6b74-c055-4562-b5dd-07e4e2d8c8e3"},
   }
 }
+
 
 
 

@@ -22,6 +22,7 @@ const NoteChunkSchema = new EntSchema({
       fieldEdge: {
         schema: "Workspace",
         inverseEdge: "noteChunks",
+        edgeConstName: "WorkspaceToNoteChunksByWorkspaceID",
       },
       index: true,
     }),

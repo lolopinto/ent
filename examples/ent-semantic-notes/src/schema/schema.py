@@ -45,7 +45,7 @@ sa.Table("note_chunks_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_chunks_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_chunks_edges_id1_edge_type_id2_pkey"),
     sa.Index("note_chunks_edges_time_idx", "time"),
 )
    
@@ -57,7 +57,7 @@ sa.Table("note_saved_by_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_saved_by_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_saved_by_edges_id1_edge_type_id2_pkey"),
     sa.Index("note_saved_by_edges_time_idx", "time"),
 )
    
@@ -69,7 +69,7 @@ sa.Table("note_tags_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_tags_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_tags_edges_id1_edge_type_id2_pkey"),
     sa.Index("note_tags_edges_time_idx", "time"),
 )
    
@@ -109,7 +109,7 @@ sa.Table("user_created_workspaces_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_created_workspaces_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_created_workspaces_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_created_workspaces_edges_time_idx", "time"),
 )
    
@@ -121,7 +121,7 @@ sa.Table("user_notes_authored_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_notes_authored_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_notes_authored_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_notes_authored_edges_time_idx", "time"),
 )
    
@@ -144,7 +144,7 @@ sa.Table("workspace_members_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_members_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_members_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_members_edges_time_idx", "time"),
 )
    
@@ -156,7 +156,7 @@ sa.Table("workspace_note_chunks_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_note_chunks_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_note_chunks_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_note_chunks_edges_time_idx", "time"),
 )
    
@@ -168,7 +168,7 @@ sa.Table("workspace_notes_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_notes_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_notes_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_notes_edges_time_idx", "time"),
 )
    
@@ -180,7 +180,7 @@ sa.Table("workspace_tags_edges", metadata,
     sa.Column("id2_type", sa.Text(), nullable=False),
     sa.Column("time", sa.TIMESTAMP(), nullable=False),
     sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_tags_edges_pkey"),
+    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_tags_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_tags_edges_time_idx", "time"),
 )
    
@@ -221,7 +221,7 @@ metadata.info["edges"] = {
 
 metadata.info["db_extensions"] = {
   'public': [
-    {'name': "vector", 'provisioned_by': "ent", 'version': None, 'install_schema': None, 'runtime_schemas': ["public"], 'drop_cascade': False},
+    {"name":"vector", "provisioned_by":"ent", "version":None, "install_schema":None, "runtime_schemas":["public"], "drop_cascade":False},
     ],
 }
 
