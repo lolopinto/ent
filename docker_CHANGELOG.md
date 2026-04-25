@@ -25,6 +25,8 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ### Fixed
 
+- align Python build and runtime images on Debian bookworm so native `auto_schema` dependencies do not require a newer glibc than the final image provides (#1981).
+- include `/go/bin` and `/opt/venv/bin` in the image `PATH` so `tsent` and `auto_schema` are available without per-project Dockerfile workarounds (#1981).
 - fix types for struct list for on demand types (#1911)
 - validate generated edge-table primary key names against identifier length limits (#1916)
 - exclude action-only fields when embedding action inputs (#1914)

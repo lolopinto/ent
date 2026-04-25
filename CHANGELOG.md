@@ -7,13 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
+## [0.2.9]
+
+### Fixed
+
+- include the shared `parse_args` helper in the published package so CLI scripts can load without `MODULE_NOT_FOUND` (#1981).
+
+## [0.2.8]
+
+### Added
+
+- add dev branch schema runtime configuration and state-file support for isolated Postgres dev schemas (#1947, #1951).
+- make Biome the default formatter for generated TypeScript, using project-root `biome.json` or `biome.jsonc` when present and falling back to ent's bundled config.
+- add Postgres type and computed query primitives, plus pgvector and PostGIS package support (#1956, #1957, #1958).
+- add runtime metadata support for database extensions (#1953, #1954).
+
+### Changed
+
+- emit type-only imports and exports from generated action and GraphQL code for better Bun compatibility (#1943, #1944, #1945).
+- reduce package dependencies by removing `graph-data-structure`, `memoizee`, `minimist`, `object-path`, and `json5` usage (#1960, #1961, #1962, #1963, #1968, #1969).
+- stop persisting formatter settings in `.ent/schema.json`; Biome config files are now the source of truth.
+
+### Fixed
+
+- support UTF-8 pagination cursors (#1959).
+- fix nondeterministic type imports in generated code.
+- fix `transformWrite` handling for struct inputs (#1974).
+- preserve significant underscores when sanitizing dev schema names (#1975).
+
 ## [0.2.7]
 
 ### Added
 
 - allow configuring clause loader and ent loader privacy concurrency limits
 - add loader/cache metrics hooks (#1939)
-- make Biome the default formatter for generated TypeScript, using project-root `biome.json` or `biome.jsonc` when present and falling back to ent's bundled config
 
 ### Fixed
 
@@ -22,7 +49,6 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - pass context through batch loader paths to prime ContextCache (#1936)
 - memoize assoc direct edge loader clause queries to avoid duplicate hits (#1940)
 - reuse QueryDirectLoader cache entries for identical clauses (#1937)
-- stop persisting formatter settings in `.ent/schema.json`; Biome config files are now the source of truth
 
 ## [0.2.6]
 

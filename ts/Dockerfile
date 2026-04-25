@@ -1,15 +1,15 @@
-ARG GOLANG_VERSION=v0.3.1
+ARG GOLANG_VERSION=v0.3.3
 ARG AUTO_SCHEMA_VERSION=0.0.34
 ARG NODE_VERSION=24
-ARG DOCKER_TAG=v0.3.1
+ARG DOCKER_TAG=v0.3.2
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.25-trixie As golang-image
 ARG GOLANG_VERSION
 ARG DOCKER_TAG
 ENV GOPATH=$HOME/go
-ENV GOBIN $GOPATH/bin
-ENV PATH $PATH:$GOPATH/bin
+ENV GOBIN=$GOPATH/bin
+ENV PATH=$PATH:$GOPATH/bin
 ARG TARGETOS TARGETARCH
 # TODO go install works on its own but not the mounts with "read-only file system"
 # RUN --mount=target=. \
@@ -18,22 +18,21 @@ ARG TARGETOS TARGETARCH
 RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
 
 # get and install auto_schema
-FROM python:3.12-trixie AS python-image
+FROM python:3.12-bookworm AS python-image
 ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv
-ENV PATH /opt/venv/bin:$PATH
+ENV PATH=/opt/venv/bin:$PATH
 
 RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
 #RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ auto_schema_test==$AUTO_SCHEMA_VERSION
 
 # final image needs to be python-based to have auto-schema work
-FROM python:3.11.0-slim AS final-image
+FROM python:3.12-slim-bookworm AS final-image
 ARG GOLANG_VERSION
 ARG NODE_VERSION
 
-ENV PATH /opt/venv/bin:$PATH
-ENV PATH /go/bin:$PATH
+ENV PATH=/go/bin:/opt/venv/bin:$PATH
 
 # this is associating this image with this repo
 LABEL org.opencontainers.image.source https://github.com/lolopinto/ent

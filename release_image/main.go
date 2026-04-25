@@ -26,13 +26,13 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 20,
-	// 22,
+	20,
+	22,
 	24,
 }
 
 const AUTO_SCHEMA_VERSION = "0.0.34"
-const TSENT_VERSION = "v0.3.2"
+const TSENT_VERSION = "v0.3.3"
 
 // TODO release notes
 
