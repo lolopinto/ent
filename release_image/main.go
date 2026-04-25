@@ -26,8 +26,8 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	// 20,
-	// 22,
+	20,
+	22,
 	24,
 }
 
