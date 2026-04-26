@@ -9,6 +9,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [0.2.9]
 
+### Added
+
+- add a codegen feature matrix smoke suite for generated TypeScript, GraphQL, DB schema, and idempotence coverage (#1984).
+
 ### Fixed
 
 - include the shared `parse_args` helper in the published package so CLI scripts can load without `MODULE_NOT_FOUND` (#1981).

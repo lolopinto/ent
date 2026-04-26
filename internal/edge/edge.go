@@ -1156,6 +1156,7 @@ type EdgeAction struct {
 	Action            string
 	CustomActionName  string
 	CustomGraphQLName string
+	CustomInputName   string
 	ExposeToGraphQL   bool
 	ActionOnlyFields  []*input.ActionField
 	CanViewerDo       *input.CanViewerDo
@@ -1335,6 +1336,7 @@ func edgeActionsFromInput(actions []*input.EdgeAction) ([]*EdgeAction, error) {
 			ExposeToGraphQL:   !action.HideFromGraphQL,
 			CustomActionName:  action.CustomActionName,
 			CustomGraphQLName: action.CustomGraphQLName,
+			CustomInputName:   action.CustomInputName,
 			Action:            a,
 			ActionOnlyFields:  action.ActionOnlyFields,
 			CanViewerDo:       action.CanViewerDo,

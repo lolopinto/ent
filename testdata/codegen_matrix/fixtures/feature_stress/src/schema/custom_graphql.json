@@ -1,0 +1,44 @@
+{
+  "inputs": [
+    {
+      "name": "LoginInput",
+      "graphQLName": "RenamedLoginInput",
+      "fields": [
+        {
+          "name": "identityToken",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "name": "ThirdPartyLogin",
+      "fields": [
+        {
+          "name": "token",
+          "fieldType": "FIELD",
+          "resultType": "String"
+        },
+        {
+          "name": "newAccount",
+          "fieldType": "FIELD",
+          "resultType": "Boolean"
+        }
+      ]
+    }
+  ],
+  "mutations": [
+    {
+      "class": "RootResolver",
+      "name": "loginWithApple",
+      "fieldType": "ASYNC_FUNCTION",
+      "args": [
+        { "name": "context", "type": "Context", "isContextArg": true },
+        { "name": "input", "type": "LoginInput" }
+      ],
+      "resultType": "ThirdPartyLogin"
+    }
+  ]
+}

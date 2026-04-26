@@ -339,7 +339,7 @@ func (nodeData *NodeData) GetUpsertInfo(actionName string) *UpsertInfo {
 
 		lastType.Expression = buildType([]string{
 			buildExpression("update_cols?", "string[]"),
-			buildExpression(key, ret.Name),
+			buildExpression(key, typ.Name),
 		})
 	}
 

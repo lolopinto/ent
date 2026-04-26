@@ -20,6 +20,25 @@ Package-level commands:
 - `cd ts && npm test -- src/action/transformed_orchestrator.test.ts --runInBand`
 - `cd ts && npm run compile`
 
+Codegen feature matrix:
+
+- `go test ./internal/codegenmatrix -count=1`
+- See `testdata/codegen_matrix/README.md` before adding schema/codegen options
+  or generated-code regression coverage. New codegen inputs must be classified
+  in `testdata/codegen_matrix/features.yml` as covered, skipped with a focused
+  reason, delegated to an existing test, or non-codegen metadata. Prefer
+  representative cross-feature interactions over exhaustive low-value
+  combinations.
+- The matrix includes SQLite and Postgres DB-codegen smoke fixtures. Postgres
+  coverage runs when `DB_CONNECTION_STRING` or `ENT_CODEGEN_MATRIX_POSTGRES_URL`
+  points at Postgres; otherwise that fixture skips in local runs.
+- Core DB-rendered features should declare
+  `dialect_coverage: [sqlite, postgres]` in the matrix catalog so the test
+  enforces coverage in both DB fixtures. Dialect-specific behavior should
+  declare only the dialect it needs. Put shared core DB schema inputs in
+  `testdata/codegen_matrix/fixtures/_shared/core_db` so both SQLite and
+  Postgres fixtures exercise the same source.
+
 Example prerequisites:
 
 - Use Node 24 when validating the current example package locks and Docker

@@ -1,0 +1,4 @@
+codegen:
+  relativeImports: true
+  generatedHeader: "Codegen matrix Postgres fixture"
+  fieldPrivacyEvaluated: on_demand

@@ -7,6 +7,7 @@ on:
       - 'ent/**.go'
       - 'internal/**.go'
       - 'internal/**.tmpl'
+      - 'testdata/codegen_matrix/**'
       - 'ts/src/**'
       - .github/workflows/go_ci.yml
 
@@ -49,7 +50,9 @@ jobs:
     - name: Set up python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.14'
+        # auto_schema==0.0.34 pins SQLAlchemy 2.0.18, which fails during
+        # import on Python 3.13+ before codegen assertions can run.
+        python-version: '3.11'
         cache: pip
         cache-dependency-path: python/Pipfile.lock
       
