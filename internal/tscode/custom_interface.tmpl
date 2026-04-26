@@ -44,16 +44,16 @@
 
       {{ if .GenerateListConvert}}
         export function {{.GetConvertListMethod}}(input: any[]): {{.TSType}}[] {
-          const list = Array.isArray(input) ? input : JSON.parse(input);
-          return list.map(v => {{.GetConvertMethod}}(v));
+          const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+          return list.map((v: any) => {{.GetConvertMethod}}(v));
         }
 
         export function {{.GetConvertNullableListMethod}}(input: any[] | null): {{.TSType}}[] | null {
           if (input === null || input === undefined) {
             return null;
           }
-          const list = Array.isArray(input) ? input : JSON.parse(input);
-          return list.map(v => {{.GetConvertMethod}}(v));
+          const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+          return list.map((v: any) => {{.GetConvertMethod}}(v));
         }
       {{ end }}
     {{end -}}

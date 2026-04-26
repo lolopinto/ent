@@ -63,7 +63,6 @@ interface BunSQLResult extends Array<QueryResultRow> {
 
 interface BunSQLClientLike {
   unsafe(query: string, values?: any[]): Promise<BunSQLResult>;
-  array?(values: any[]): any;
 }
 
 interface BunSQLReservedClient extends BunSQLClientLike {
@@ -75,23 +74,41 @@ interface BunSQLPool extends BunSQLClientLike {
   close(options?: { timeout?: number }): Promise<void>;
 }
 
-type BunSQLConstructor = new (
-  options?: string | BunSQLConfig,
-) => BunSQLPool;
+type BunSQLConstructor = new (options?: string | BunSQLConfig) => BunSQLPool;
 
 export enum Dialect {
   Postgres = "postgres",
   SQLite = "sqlite",
 }
 
-function normalizeRuntimeMode(runtime?: RuntimeMode): RuntimeMode {
-  return runtime === "bun" ? "bun" : "node";
+function normalizeRuntimeMode(runtime?: RuntimeMode | string): RuntimeMode {
+  switch (runtime) {
+    case undefined:
+    case "":
+    case "node":
+      return "node";
+    case "bun":
+      return "bun";
+    default:
+      throw new Error(`invalid runtime "${runtime}". valid values: node, bun`);
+  }
 }
 
 function normalizePostgresDriver(
-  driver?: PostgresDriver,
+  driver?: PostgresDriver | string,
 ): PostgresDriver {
-  return driver === "bun" ? "bun" : "pg";
+  switch (driver) {
+    case undefined:
+    case "":
+    case "pg":
+      return "pg";
+    case "bun":
+      return "bun";
+    default:
+      throw new Error(
+        `invalid postgresDriver "${driver}". valid values: pg, bun`,
+      );
+  }
 }
 
 function parseConnectionString(
@@ -250,9 +267,11 @@ function getClientConfig(args?: clientConfigArgs): DatabaseInfo | null {
 }
 
 function getBunSQLConstructor(): BunSQLConstructor {
-  const BunRuntime = (globalThis as typeof globalThis & {
-    Bun?: { SQL?: BunSQLConstructor };
-  }).Bun;
+  const BunRuntime = (
+    globalThis as typeof globalThis & {
+      Bun?: { SQL?: BunSQLConstructor };
+    }
+  ).Bun;
   const SQL = BunRuntime?.SQL;
   if (!SQL) {
     throw new Error(`postgresDriver "bun" requires running under Bun`);
@@ -299,10 +318,9 @@ function createBunSQLConfig(
 
   if (searchPath) {
     bunConfig.onconnect = async (client) => {
-      await client.unsafe(
-        "SELECT set_config('search_path', $1, false)",
-        [searchPath],
-      );
+      await client.unsafe("SELECT set_config('search_path', $1, false)", [
+        searchPath,
+      ]);
     };
   }
 
@@ -310,9 +328,7 @@ function createBunSQLConfig(
 }
 
 function normalizeBunResult(result: BunSQLResult): QueryResult<QueryResultRow> {
-  const rows = Array.isArray(result)
-    ? result.map((row) => normalizeBunRow(row))
-    : [];
+  const rows = Array.isArray(result) ? [...result] : [];
   const rowCount =
     typeof result?.count === "number"
       ? result.count
@@ -333,30 +349,31 @@ function isPlainObject(value: any): value is Record<string, any> {
   return proto === Object.prototype || proto === null;
 }
 
-function isPrimitiveArray(value: any[]): boolean {
-  return value.every(
-    (entry) =>
-      entry === null ||
-      typeof entry === "string" ||
-      typeof entry === "number" ||
-      typeof entry === "boolean" ||
-      typeof entry === "bigint" ||
-      entry instanceof Date,
-  );
+function serializePostgresArray(values: any[]): string {
+  return `{${values.map((entry) => serializePostgresArrayElement(entry)).join(",")}}`;
 }
 
-function serializeBunValue(sql: BunSQLClientLike, value: any): any {
+function serializePostgresArrayElement(value: any): string {
+  if (value === null || value === undefined) {
+    return "NULL";
+  }
   if (Array.isArray(value)) {
-    if (isPrimitiveArray(value) && typeof sql.array === "function") {
-      return sql.array(
-        value.map((entry) =>
-          entry instanceof Date ? entry.toISOString() : entry,
-        ),
-      );
-    }
-    return JSON.stringify(value);
+    return serializePostgresArray(value);
   }
 
+  const str =
+    value instanceof Date
+      ? value.toISOString()
+      : isPlainObject(value)
+        ? JSON.stringify(value)
+        : String(value);
+  return `"${str.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
+function serializeBunValue(value: any): any {
+  if (Array.isArray(value)) {
+    return serializePostgresArray(value);
+  }
   if (isPlainObject(value)) {
     return JSON.stringify(value);
   }
@@ -364,35 +381,8 @@ function serializeBunValue(sql: BunSQLClientLike, value: any): any {
   return value;
 }
 
-function serializeBunValues(sql: BunSQLClientLike, values?: any[]): any[] | undefined {
-  return values?.map((value) => serializeBunValue(sql, value));
-}
-
-function normalizeBunArrayValue(value: any): any {
-  if (Array.isArray(value)) {
-    return value.map((entry) => normalizeBunArrayValue(entry));
-  }
-
-  if (
-    typeof value === "string" &&
-    value.startsWith('"') &&
-    value.endsWith('"')
-  ) {
-    try {
-      return JSON.parse(value);
-    } catch {}
-  }
-
-  return value;
-}
-
-function normalizeBunRow(row: QueryResultRow): QueryResultRow {
-  const normalized: QueryResultRow = {};
-  for (const key in row) {
-    const value = row[key];
-    normalized[key] = Array.isArray(value) ? normalizeBunArrayValue(value) : value;
-  }
-  return normalized;
+function serializeBunValues(values?: any[]): any[] | undefined {
+  return values?.map((value) => serializeBunValue(value));
 }
 
 function createBunQueryable(sql: BunSQLClientLike): PostgresQueryable {
@@ -402,7 +392,7 @@ function createBunQueryable(sql: BunSQLClientLike): PostgresQueryable {
       values?: any[],
     ): Promise<QueryResult<R>> {
       return normalizeBunResult(
-        await sql.unsafe(query, serializeBunValues(sql, values)),
+        await sql.unsafe(query, serializeBunValues(values)),
       ) as QueryResult<R>;
     },
   };
@@ -915,7 +905,7 @@ export class BunPostgres implements Connection {
   ): Promise<QueryResult<QueryResultRow>> {
     await this.ensureReady();
     return normalizeBunResult(
-      await this.sql.unsafe(query, serializeBunValues(this.sql, values)),
+      await this.sql.unsafe(query, serializeBunValues(values)),
     );
   }
 
@@ -925,14 +915,14 @@ export class BunPostgres implements Connection {
   ): Promise<QueryResult<QueryResultRow>> {
     await this.ensureReady();
     return normalizeBunResult(
-      await this.sql.unsafe(query, serializeBunValues(this.sql, values)),
+      await this.sql.unsafe(query, serializeBunValues(values)),
     );
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
     await this.ensureReady();
     return normalizeBunResult(
-      await this.sql.unsafe(query, serializeBunValues(this.sql, values)),
+      await this.sql.unsafe(query, serializeBunValues(values)),
     );
   }
 
@@ -962,7 +952,7 @@ export class BunPostgresClient implements Client {
   ): Promise<QueryResult<QueryResultRow>> {
     await this.ensureReady();
     return normalizeBunResult(
-      await this.client.unsafe(query, serializeBunValues(this.client, values)),
+      await this.client.unsafe(query, serializeBunValues(values)),
     );
   }
 
@@ -972,14 +962,14 @@ export class BunPostgresClient implements Client {
   ): Promise<QueryResult<QueryResultRow>> {
     await this.ensureReady();
     return normalizeBunResult(
-      await this.client.unsafe(query, serializeBunValues(this.client, values)),
+      await this.client.unsafe(query, serializeBunValues(values)),
     );
   }
 
   async exec(query: string, values?: any[]): Promise<ExecResult> {
     await this.ensureReady();
     return normalizeBunResult(
-      await this.client.unsafe(query, serializeBunValues(this.client, values)),
+      await this.client.unsafe(query, serializeBunValues(values)),
     );
   }
 
@@ -995,10 +985,7 @@ interface PostgresQueryable {
   ): Promise<QueryResult<R>>;
 }
 
-async function validateDevSchema(
-  pool: PostgresQueryable,
-  schemaName: string,
-) {
+async function validateDevSchema(pool: PostgresQueryable, schemaName: string) {
   const res = await pool.query(
     "SELECT EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = $1) AS ok",
     [schemaName],

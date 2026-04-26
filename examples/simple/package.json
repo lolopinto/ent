@@ -7,14 +7,16 @@
     "test": "tests"
   },
   "scripts": {
-    "test": "bun test --preload ./src/testsetup/bun.ts --max-concurrency=1 --timeout 20000",
-    "compile": "rm -rf dist && bunx ent-custom-compiler",
+    "build:ent": "npm --prefix ../../ts run compile && cd ../../ts/packages/ent-graphql-tests && ../../node_modules/.bin/tsc -p tsconfig.json && cd ../../../examples/simple && bun scripts/sync_local_ent_packages.ts",
+    "test": "npm run build:ent && bun test --preload ./src/testsetup/bun.ts --max-concurrency=1 --timeout 20000",
+    "compile": "npm run build:ent && rm -rf dist && bunx ent-custom-compiler",
     "start": "docker compose -f docker-compose.dev.yml up --build",
-    "codegen": "ENT_RUNTIME=bun ENT_POSTGRES_DRIVER=bun go run ../../tsent/main.go codegen --disable_upgrade",
+    "codegen": "npm run build:ent && ENT_RUNTIME=bun ENT_POSTGRES_DRIVER=bun go run ../../tsent/main.go codegen --disable_upgrade",
     "upgrade": "docker compose -f docker-compose.dev.yml run --rm app tsent upgrade",
     "rebuild-image": "docker compose -f docker-compose.dev.yml build",
-    "start-fast": "bun src/graphql/index.bun.ts",
-    "runtime:smoke": "ENT_RUNTIME=bun ENT_POSTGRES_DRIVER=bun bun src/scripts/bun_runtime_smoke.ts"
+    "start-fast": "npm run build:ent && bun src/graphql/index.bun.ts",
+    "runtime:smoke": "npm run build:ent && ENT_RUNTIME=bun ENT_POSTGRES_DRIVER=bun bun src/scripts/bun_runtime_smoke.ts",
+    "typecheck": "npm run build:ent && ./node_modules/.bin/tsc --noEmit"
   },
   "author": "",
   "license": "ISC",

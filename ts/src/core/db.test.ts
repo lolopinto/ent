@@ -504,6 +504,14 @@ describe("bun postgres wrapper", () => {
       rowCount: 1,
       rows: [{ id: 1 }],
     });
+    expect(sql.unsafe).toHaveBeenLastCalledWith("UPDATE users SET foo = $1", [
+      "bar",
+    ]);
+
+    await conn.exec("SELECT $1::text[]", [["a", '"quoted"', null, "x\\y"]]);
+    expect(sql.unsafe).toHaveBeenLastCalledWith("SELECT $1::text[]", [
+      '{"a","\\"quoted\\"",NULL,"x\\\\y"}',
+    ]);
 
     const client = await conn.newClient();
     expect(await client.query("SELECT 2")).toEqual({
@@ -527,6 +535,7 @@ describe("bun postgres wrapper", () => {
               array_like: '{"a","b"}',
               quoted_like: '"quoted"',
               actual_array: ['"x"', '"y"'],
+              json_array: ['{"theme":"dark"}', "plain"],
             },
           ],
           { count: 1 },
@@ -544,7 +553,8 @@ describe("bun postgres wrapper", () => {
           json_like: '{"theme":"dark"}',
           array_like: '{"a","b"}',
           quoted_like: '"quoted"',
-          actual_array: ["x", "y"],
+          actual_array: ['"x"', '"y"'],
+          json_array: ['{"theme":"dark"}', "plain"],
         },
       ],
     });
@@ -553,6 +563,7 @@ describe("bun postgres wrapper", () => {
   test("convertList parses postgres array literals for typed list fields", () => {
     expect(convertList('{"a","b"}')).toEqual(["a", "b"]);
     expect(convertList("{}")).toEqual([]);
+    expect(convertList("{2,3}", Number)).toEqual([2, 3]);
   });
 });
 

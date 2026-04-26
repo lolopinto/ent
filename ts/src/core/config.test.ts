@@ -5,6 +5,8 @@ import { MockLogs } from "../testutils/mock_log";
 
 afterEach(async () => {
   delete process.env.DB_CONNECTION_STRING;
+  delete process.env.ENT_RUNTIME;
+  delete process.env.ENT_POSTGRES_DRIVER;
   if ((DB as any).instance) {
     await DB.getInstance().endPool();
     (DB as any).instance = undefined;
@@ -183,6 +185,58 @@ describe("postgres", () => {
     expect(db.db.postgresDriver).toBe("pg");
   });
 
+  test("rejects invalid runtime values", () => {
+    const connStr = `postgres://:@localhost/ent_test`;
+    const ml = new MockLogs();
+    ml.mock();
+    try {
+      expect(() =>
+        loadConfig({
+          runtime: "deno" as any,
+          dbConnectionString: connStr,
+        }),
+      ).toThrow('invalid runtime "deno". valid values: node, bun');
+    } finally {
+      ml.restore();
+    }
+  });
+
+  test("rejects invalid postgres driver values", () => {
+    const connStr = `postgres://:@localhost/ent_test`;
+    const ml = new MockLogs();
+    ml.mock();
+    try {
+      expect(() =>
+        loadConfig(
+          Buffer.from(`
+dbConnectionString: ${connStr}
+postgresDriver: jdbc
+`),
+        ),
+      ).toThrow('invalid postgresDriver "jdbc". valid values: pg, bun');
+    } finally {
+      ml.restore();
+    }
+  });
+
+  test("rejects invalid runtime env values", () => {
+    process.env.DB_CONNECTION_STRING = `postgres://:@localhost/ent_test`;
+    process.env.ENT_RUNTIME = "deno";
+
+    expect(() => loadConfig()).toThrow(
+      'invalid runtime "deno". valid values: node, bun',
+    );
+  });
+
+  test("rejects invalid postgres driver env values", () => {
+    process.env.DB_CONNECTION_STRING = `postgres://:@localhost/ent_test`;
+    process.env.ENT_POSTGRES_DRIVER = "jdbc";
+
+    expect(() => loadConfig()).toThrow(
+      'invalid postgresDriver "jdbc". valid values: pg, bun',
+    );
+  });
+
   test("config object. runtime only still initializes db config flow", () => {
     const spy = jest.spyOn(DB, "initDB").mockImplementation(() => {});
 
@@ -209,9 +263,7 @@ describe("postgres", () => {
       dbConnectionString: `postgres://:@localhost/ent_test`,
     });
     const first = DB.getInstance();
-    const closeSpy = jest
-      .spyOn(first, "endPool")
-      .mockResolvedValue(undefined);
+    const closeSpy = jest.spyOn(first, "endPool").mockResolvedValue(undefined);
 
     loadConfig({
       dbConnectionString: `postgres://:@localhost/ent_test2`,

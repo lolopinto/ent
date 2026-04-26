@@ -1,4 +1,4 @@
-import { loadExampleRuntimeConfig } from "../testsetup/example_runtime_config";
+import { loadExampleRuntimeConfig } from "../runtime_config";
 
 loadExampleRuntimeConfig({
   runtime: "bun",
@@ -6,4 +6,7 @@ loadExampleRuntimeConfig({
   dbConnectionString: process.env.DB_CONNECTION_STRING,
 });
 
-await import("./index");
+import("./index").catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

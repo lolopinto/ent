@@ -2,7 +2,7 @@ import { DB } from "@snowtop/ent";
 import { Client as PGClient } from "pg";
 import * as path from "path";
 import * as fs from "fs";
-import { loadExampleRuntimeConfig } from "./example_runtime_config";
+import { loadExampleRuntimeConfig } from "../runtime_config";
 
 type TestDBSetup = {
   db: string;

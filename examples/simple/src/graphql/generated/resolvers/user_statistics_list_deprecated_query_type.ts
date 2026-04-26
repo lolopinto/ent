@@ -79,7 +79,14 @@ export const UserStatisticsListDeprecatedQueryType: GraphQLFieldConfig<
       query.AndOptional(...whereQueries),
     );
     if (args.ids?.length) {
-      const order = new Map(args.ids.map((id, index) => [id, index]));
+      const order = new Map<string | number, number>(
+        args.ids.map(
+          (id: string | number, index: number): [string | number, number] => [
+            id,
+            index,
+          ],
+        ),
+      );
       rows.sort(
         (a, b) =>
           (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -

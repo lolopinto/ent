@@ -9,13 +9,7 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "paths": {
-      "src/*": ["src/*"],
-      "@snowtop/ent": ["../../ts/src/index.ts"],
-      "@snowtop/ent/*": ["../../ts/src/*"],
-      "@snowtop/ent-graphql-tests": ["../../ts/src/testutils/ent-graphql-tests/index.ts"],
-      "@snowtop/ent-graphql-tests/*": ["../../ts/src/testutils/ent-graphql-tests/*"],
-      "graphql": ["../../ts/node_modules/graphql/index.js"],
-      "graphql/*": ["../../ts/node_modules/graphql/*"]
+      "src/*": ["src/*"]
     },
     "moduleResolution": "node",
     "esModuleInterop": true,

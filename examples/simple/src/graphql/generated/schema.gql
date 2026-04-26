@@ -2362,6 +2362,13 @@ type Mutation {
 }
 
 """
+The `Byte` scalar type represents byte value as a Buffer
+"""
+scalar Byte
+
+scalar ContactLabel2
+
+"""
 Date scalar type with format YYYY-MM-DD
 """
 scalar Date

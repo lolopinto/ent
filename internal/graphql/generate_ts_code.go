@@ -689,6 +689,13 @@ func searchForFiles(processor *codegen.Processor) []string {
 	files := strings.Split(strings.TrimSpace(string(b)), "\n")
 
 	result := []string{}
+	indexFile := path.Join(rootPath, "src/ent/index.ts")
+	stat, _ := os.Stat(indexFile)
+	allEnt := false
+	if stat != nil {
+		allEnt = true
+		result = append(result, "src/ent/index.ts")
+	}
 
 	entPaths := make(map[string]bool)
 
@@ -698,7 +705,7 @@ func searchForFiles(processor *codegen.Processor) []string {
 		entPaths[entPath] = true
 	}
 	for _, file := range files {
-		if entPaths[file] {
+		if allEnt && entPaths[file] {
 			continue
 		}
 		result = append(result, file)
@@ -1955,9 +1962,9 @@ func getSortedLines(_ *gqlSchema, cfg *codegen.Config) ([]resolverExportLine, er
 	return lines, nil
 }
 
-func getResolverExportLine(path string) resolverExportLine {
+func getResolverExportLine(path string, namedExport bool) resolverExportLine {
 	base := strings.TrimSuffix(filepath.Base(path), ".ts")
-	if base == "enums_type" {
+	if base == "enums_type" || !namedExport {
 		return resolverExportLine{
 			Path:      path,
 			ExportAll: true,
@@ -2004,7 +2011,7 @@ func getLocalResolverLinesFromDisk(cfg *codegen.Config) []resolverExportLine {
 		if err != nil {
 			return err
 		}
-		lines = append(lines, getResolverExportLine(strings.TrimSuffix(filepath.ToSlash(rel), ".ts")))
+		lines = append(lines, getResolverExportLine(strings.TrimSuffix(filepath.ToSlash(rel), ".ts"), false))
 		return nil
 	})
 	if err != nil {
@@ -2029,7 +2036,7 @@ func getSortedResolverLinesFromDisk(cfg *codegen.Config) ([]resolverExportLine, 
 		if err != nil {
 			return err
 		}
-		lines = append(lines, getResolverExportLine(strings.TrimSuffix(filepath.ToSlash(rel), ".ts")))
+		lines = append(lines, getResolverExportLine(strings.TrimSuffix(filepath.ToSlash(rel), ".ts"), true))
 		return nil
 	}
 

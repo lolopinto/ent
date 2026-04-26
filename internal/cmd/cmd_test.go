@@ -46,9 +46,10 @@ func TestGetPathToScriptUsesLocalSourcesWhenRequested(t *testing.T) {
 	require.True(t, strings.HasSuffix(scriptPath, filepath.Join("ts", "src", "scripts", "custom_graphql.ts")))
 }
 
-func TestGetPathToScriptUsesLocalSourcesForRepoBunProjects(t *testing.T) {
+func TestGetPathToScriptUsesInstalledScriptsForRepoBunProjects(t *testing.T) {
 	scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", filepath.Join(util.GetAbsolutePath("../../"), "examples", "simple"), false, "bun")
-	require.True(t, strings.HasSuffix(scriptPath, filepath.Join("ts", "src", "scripts", "custom_graphql.ts")))
+	require.True(t, strings.Contains(scriptPath, "node_modules"))
+	require.True(t, strings.HasSuffix(scriptPath, filepath.Join("scripts", "custom_graphql.js")))
 }
 
 func TestGetCommandInfoEnvOverridesConfig(t *testing.T) {

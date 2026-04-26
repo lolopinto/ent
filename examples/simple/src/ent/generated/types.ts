@@ -4,6 +4,7 @@
  */
 
 import type { ID } from "@snowtop/ent";
+import { convertList } from "@snowtop/ent/core/convert";
 
 export enum NodeType {
   // Address is the node type for the Address object. Used to identify this node in edges and other places.
@@ -115,14 +116,14 @@ export function convertNullableCatBreed(val: string | null): CatBreed | null {
   return convertCatBreed(val);
 }
 
-export function convertCatBreedList(val: string[]): CatBreed[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertCatBreed(v));
+export function convertCatBreedList(val: string[] | string): CatBreed[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertCatBreed(v));
 }
 
 export function convertNullableCatBreedList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): CatBreed[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -159,15 +160,15 @@ export function convertNullableContactInfoSource(
 }
 
 export function convertContactInfoSourceList(
-  val: string[],
+  val: string[] | string,
 ): ContactInfoSource[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertContactInfoSource(v));
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertContactInfoSource(v));
 }
 
 export function convertNullableContactInfoSourceList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): ContactInfoSource[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -205,14 +206,16 @@ export function convertNullableContactLabel(
   return convertContactLabel(val);
 }
 
-export function convertContactLabelList(val: string[]): ContactLabel[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertContactLabel(v));
+export function convertContactLabelList(
+  val: string[] | string,
+): ContactLabel[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertContactLabel(v));
 }
 
 export function convertNullableContactLabelList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): ContactLabel[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -254,14 +257,14 @@ export function convertNullableDayOfWeek(val: string | null): DayOfWeek | null {
   return convertDayOfWeek(val);
 }
 
-export function convertDayOfWeekList(val: string[]): DayOfWeek[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertDayOfWeek(v));
+export function convertDayOfWeekList(val: string[] | string): DayOfWeek[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertDayOfWeek(v));
 }
 
 export function convertNullableDayOfWeekList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): DayOfWeek[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -305,14 +308,16 @@ export function convertNullableDayOfWeekAlt(
   return convertDayOfWeekAlt(val);
 }
 
-export function convertDayOfWeekAltList(val: string[]): DayOfWeekAlt[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertDayOfWeekAlt(v));
+export function convertDayOfWeekAltList(
+  val: string[] | string,
+): DayOfWeekAlt[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertDayOfWeekAlt(v));
 }
 
 export function convertNullableDayOfWeekAltList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): DayOfWeekAlt[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -354,14 +359,14 @@ export function convertNullableDogBreed(val: string | null): DogBreed | null {
   return convertDogBreed(val);
 }
 
-export function convertDogBreedList(val: string[]): DogBreed[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertDogBreed(v));
+export function convertDogBreedList(val: string[] | string): DogBreed[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertDogBreed(v));
 }
 
 export function convertNullableDogBreedList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): DogBreed[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -405,14 +410,16 @@ export function convertNullableDogBreedGroup(
   return convertDogBreedGroup(val);
 }
 
-export function convertDogBreedGroupList(val: string[]): DogBreedGroup[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertDogBreedGroup(v));
+export function convertDogBreedGroupList(
+  val: string[] | string,
+): DogBreedGroup[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertDogBreedGroup(v));
 }
 
 export function convertNullableDogBreedGroupList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): DogBreedGroup[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -450,14 +457,16 @@ export function convertNullableEventRsvpStatus(
   return convertEventRsvpStatus(val);
 }
 
-export function convertEventRsvpStatusList(val: string[]): EventRsvpStatus[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertEventRsvpStatus(v));
+export function convertEventRsvpStatusList(
+  val: string[] | string,
+): EventRsvpStatus[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertEventRsvpStatus(v));
 }
 
 export function convertNullableEventRsvpStatusList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): EventRsvpStatus[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -494,15 +503,17 @@ export function convertNullableIntEnumUsedInList(
 }
 
 export function convertIntEnumUsedInListList(
-  val: number[],
+  val: number[] | string,
 ): IntEnumUsedInList[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertIntEnumUsedInList(v));
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<number>(val, (v: any) =>
+    typeof v === "string" ? Number(v) : v,
+  );
+  return input.map((v: number) => convertIntEnumUsedInList(v));
 }
 
 export function convertNullableIntEnumUsedInListList(
-  val: number[] | null,
+  val: number[] | string | null,
 ): IntEnumUsedInList[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -536,14 +547,14 @@ export function convertNullableNotifType(val: string | null): NotifType | null {
   return convertNotifType(val);
 }
 
-export function convertNotifTypeList(val: string[]): NotifType[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertNotifType(v));
+export function convertNotifTypeList(val: string[] | string): NotifType[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertNotifType(v));
 }
 
 export function convertNullableNotifTypeList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): NotifType[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -589,14 +600,14 @@ export function convertNullableRabbitBreed(
   return convertRabbitBreed(val);
 }
 
-export function convertRabbitBreedList(val: string[]): RabbitBreed[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertRabbitBreed(v));
+export function convertRabbitBreedList(val: string[] | string): RabbitBreed[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertRabbitBreed(v));
 }
 
 export function convertNullableRabbitBreedList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): RabbitBreed[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -632,14 +643,16 @@ export function convertNullableResponseType(
   return convertResponseType(val);
 }
 
-export function convertResponseTypeList(val: string[]): ResponseType[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertResponseType(v));
+export function convertResponseTypeList(
+  val: string[] | string,
+): ResponseType[] {
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertResponseType(v));
 }
 
 export function convertNullableResponseTypeList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): ResponseType[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -678,15 +691,15 @@ export function convertNullableUserAccountStatus(
 }
 
 export function convertUserAccountStatusList(
-  val: string[],
+  val: string[] | string,
 ): UserAccountStatus[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertUserAccountStatus(v));
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertUserAccountStatus(v));
 }
 
 export function convertNullableUserAccountStatusList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): UserAccountStatus[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -743,15 +756,15 @@ export function convertNullableUserPreferredShift(
 }
 
 export function convertUserPreferredShiftList(
-  val: string[],
+  val: string[] | string,
 ): UserPreferredShift[] {
-  // Bun's native Postgres driver can surface enum arrays as serialized strings.
-  const input = Array.isArray(val) ? val : JSON.parse(val as unknown as string);
-  return input.map((v) => convertUserPreferredShift(v));
+  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
+  const input = convertList<string>(val, (v: any) => v as string);
+  return input.map((v: string) => convertUserPreferredShift(v));
 }
 
 export function convertNullableUserPreferredShiftList(
-  val: string[] | null,
+  val: string[] | string | null,
 ): UserPreferredShift[] | null {
   if (val === null || val === undefined) {
     return null;
@@ -792,8 +805,8 @@ export function convertNullableAttachment(input: any): Attachment | null {
 }
 
 export function convertAttachmentList(input: any[]): Attachment[] {
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertAttachment(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertAttachment(v));
 }
 
 export function convertNullableAttachmentList(
@@ -802,8 +815,8 @@ export function convertNullableAttachmentList(
   if (input === null || input === undefined) {
     return null;
   }
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertAttachment(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertAttachment(v));
 }
 
 export interface ContactInfoExtra {
@@ -853,8 +866,8 @@ export function convertNullableDefaultsPayload(
 }
 
 export function convertDefaultsPayloadList(input: any[]): DefaultsPayload[] {
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertDefaultsPayload(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertDefaultsPayload(v));
 }
 
 export function convertNullableDefaultsPayloadList(
@@ -863,8 +876,8 @@ export function convertNullableDefaultsPayloadList(
   if (input === null || input === undefined) {
     return null;
   }
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertDefaultsPayload(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertDefaultsPayload(v));
 }
 
 export interface ImportantDates {
@@ -914,8 +927,8 @@ export function convertNullableUserNestedNestedObjectList(
 export function convertUserNestedNestedObjectListList(
   input: any[],
 ): UserNestedNestedObjectList[] {
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertUserNestedNestedObjectList(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertUserNestedNestedObjectList(v));
 }
 
 export function convertNullableUserNestedNestedObjectListList(
@@ -924,8 +937,8 @@ export function convertNullableUserNestedNestedObjectListList(
   if (input === null || input === undefined) {
     return null;
   }
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertUserNestedNestedObjectList(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertUserNestedNestedObjectList(v));
 }
 
 export interface UserNestedObjectList {
@@ -957,8 +970,8 @@ export function convertNullableUserNestedObjectList(
 export function convertUserNestedObjectListList(
   input: any[],
 ): UserNestedObjectList[] {
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertUserNestedObjectList(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertUserNestedObjectList(v));
 }
 
 export function convertNullableUserNestedObjectListList(
@@ -967,8 +980,8 @@ export function convertNullableUserNestedObjectListList(
   if (input === null || input === undefined) {
     return null;
   }
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertUserNestedObjectList(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertUserNestedObjectList(v));
 }
 
 export interface UserOnDemandNonNullable {
@@ -1022,8 +1035,8 @@ export function convertNullableUserOnDemandNonNullableList(
 export function convertUserOnDemandNonNullableListList(
   input: any[],
 ): UserOnDemandNonNullableList[] {
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertUserOnDemandNonNullableList(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertUserOnDemandNonNullableList(v));
 }
 
 export function convertNullableUserOnDemandNonNullableListList(
@@ -1032,8 +1045,8 @@ export function convertNullableUserOnDemandNonNullableListList(
   if (input === null || input === undefined) {
     return null;
   }
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertUserOnDemandNonNullableList(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertUserOnDemandNonNullableList(v));
 }
 
 export interface UserOnDemandWithPrivacy {
@@ -1107,8 +1120,8 @@ export function convertNullableUserPrefsStruct(
 }
 
 export function convertUserPrefsStructList(input: any[]): UserPrefsStruct[] {
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertUserPrefsStruct(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertUserPrefsStruct(v));
 }
 
 export function convertNullableUserPrefsStructList(
@@ -1117,8 +1130,8 @@ export function convertNullableUserPrefsStructList(
   if (input === null || input === undefined) {
     return null;
   }
-  const list = Array.isArray(input) ? input : JSON.parse(input);
-  return list.map((v) => convertUserPrefsStruct(v));
+  const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+  return list.map((v: any) => convertUserPrefsStruct(v));
 }
 
 export interface UserNestedObject {

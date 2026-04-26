@@ -213,6 +213,4 @@ export { ViewerQueryType } from "../generated/resolvers/viewer_query_type";
 export * from "../generated/resolvers/with_day_of_week_type";
 export { WithDayOfWeekType } from "../generated/resolvers/with_day_of_week_type";
 export * from "./node_query_type";
-export { NodeQueryType } from "./node_query_type";
 export * from "./subscription_type";
-export { SubscriptionType } from "./subscription_type";

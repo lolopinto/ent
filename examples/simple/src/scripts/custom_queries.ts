@@ -24,8 +24,9 @@ async function main() {
     const temp = camelCase(query);
     const node = temp.charAt(0).toUpperCase() + temp.substring(1);
 
-    const schema: Schema = require("../schema/" +
-      p.substring(0, p.length - 3)).default;
+    const schema: Schema = require(
+      "../schema/" + p.substring(0, p.length - 3),
+    ).default;
     if (schema.hideFromGraphQL) {
       continue;
     }
@@ -157,7 +158,12 @@ async function main() {
       query.AndOptional(...whereQueries),
     );
     if (args.ids?.length) {
-      const order = new Map(args.ids.map((id, index) => [id, index]));
+      const order = new Map<string | number, number>(
+        args.ids.map((id: string | number, index: number): [string | number, number] => [
+          id,
+          index,
+        ]),
+      );
       rows.sort(
         (a, b) =>
           (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
