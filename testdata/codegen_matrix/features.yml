@@ -9,14 +9,24 @@ fixtures:
       historically fragile generated-code interactions.
     surfaces:
       - parse_ts_schema
+      - bun_runtime
       - ts_codegen
       - graphql_codegen
       - generated_tsc
       - idempotence
+    runtime_variants:
+      - id: node_pg
+        runtime: node
+        postgresDriver: pg
+      - id: bun_bun
+        runtime: bun
+        postgresDriver: bun
     covers:
       - schema.nodes
       - schema.patterns
       - schema.global_schema
+      - runtime.bun
+      - postgres_driver.bun
       - node.table_name
       - node.field_overrides
       - node.assoc_edges
@@ -189,11 +199,19 @@ fixtures:
     surfaces:
       - parse_ts_schema
       - postgres_db_codegen
+      - bun_runtime
       - ts_codegen
       - graphql_codegen
       - generated_tsc
       - idempotence
     dialect: postgres
+    runtime_variants:
+      - id: node_pg
+        runtime: node
+        postgresDriver: pg
+      - id: bun_bun
+        runtime: bun
+        postgresDriver: bun
     covers:
       - schema.nodes
       - node.table_name
@@ -238,6 +256,14 @@ features:
     owns: [input.Schema.GlobalSchema]
     mode: explicit
     rationale: Global schema changes generated edge tables, global fields, and DB extension metadata.
+  - id: runtime.bun
+    owns: []
+    mode: explicit
+    rationale: Bun runtime changes TS schema/custom GraphQL launchers and generated GraphQL resolver export shape, so the matrix runs a full codegen fixture under Bun.
+  - id: postgres_driver.bun
+    owns: []
+    mode: explicit
+    rationale: Bun's native Postgres driver changes generated value/result conversion helpers for enum, list, and custom field types.
 
   - id: node.table_name
     owns: [input.Node.TableName]

@@ -33,14 +33,15 @@ type catalog struct {
 }
 
 type fixture struct {
-	ID          string   `yaml:"id"`
-	Path        string   `yaml:"path"`
-	Includes    []string `yaml:"includes"`
-	Description string   `yaml:"description"`
-	Surfaces    []string `yaml:"surfaces"`
-	Dialect     string   `yaml:"dialect"`
-	Covers      []string `yaml:"covers"`
-	SkipReason  string   `yaml:"skip_reason"`
+	ID              string           `yaml:"id"`
+	Path            string           `yaml:"path"`
+	Includes        []string         `yaml:"includes"`
+	Description     string           `yaml:"description"`
+	Surfaces        []string         `yaml:"surfaces"`
+	Dialect         string           `yaml:"dialect"`
+	RuntimeVariants []runtimeVariant `yaml:"runtime_variants"`
+	Covers          []string         `yaml:"covers"`
+	SkipReason      string           `yaml:"skip_reason"`
 }
 
 type feature struct {
@@ -51,6 +52,12 @@ type feature struct {
 	Rationale       string   `yaml:"rationale"`
 	SkipReason      string   `yaml:"skip_reason"`
 	TestRefs        []string `yaml:"test_refs"`
+}
+
+type runtimeVariant struct {
+	ID             string `yaml:"id"`
+	Runtime        string `yaml:"runtime"`
+	PostgresDriver string `yaml:"postgresDriver"`
 }
 
 const (
@@ -109,6 +116,8 @@ func TestFeatureCatalogClassifiesCodegenInputs(t *testing.T) {
 		require.NotEmpty(t, fixture.Path, "fixture %s must declare path", fixture.ID)
 		validateFixturePaths(t, repo, fixture)
 		validateFixtureDialect(t, fixture)
+		validateFixtureRuntimeVariants(t, fixture)
+		validateFixtureRuntimeCoverage(t, fixture)
 		for _, covered := range fixture.Covers {
 			if _, ok := featuresByID[covered]; !ok {
 				t.Fatalf("fixture %s covers unknown feature %s", fixture.ID, covered)
@@ -145,6 +154,45 @@ func validateFixturePaths(t *testing.T, repo string, fixture fixture) {
 	for _, include := range fixture.Includes {
 		require.DirExists(t, filepath.Join(matrixRoot, include), "fixture %s include %s is missing", fixture.ID, include)
 	}
+}
+
+func validateFixtureRuntimeVariants(t *testing.T, fixture fixture) {
+	t.Helper()
+	seen := map[string]bool{}
+	for _, variant := range runtimeVariantsForFixture(fixture) {
+		require.NotEmpty(t, variant.ID, "runtime variant id is required for fixture %s", fixture.ID)
+		require.False(t, seen[variant.ID], "duplicate runtime variant %s for fixture %s", variant.ID, fixture.ID)
+		seen[variant.ID] = true
+		require.Contains(t, validRuntimes(), variant.Runtime, "fixture %s runtime variant %s has unknown runtime", fixture.ID, variant.ID)
+		require.Contains(t, validPostgresDrivers(), variant.PostgresDriver, "fixture %s runtime variant %s has unknown postgres driver", fixture.ID, variant.ID)
+		if variant.PostgresDriver == "bun" {
+			require.Equal(t, "bun", variant.Runtime, "fixture %s runtime variant %s cannot use Bun postgres driver outside Bun runtime", fixture.ID, variant.ID)
+		}
+	}
+}
+
+func validateFixtureRuntimeCoverage(t *testing.T, fixture fixture) {
+	t.Helper()
+	var hasBunRuntime, hasBunPostgresDriver bool
+	for _, variant := range runtimeVariantsForFixture(fixture) {
+		hasBunRuntime = hasBunRuntime || variant.Runtime == "bun"
+		hasBunPostgresDriver = hasBunPostgresDriver || variant.PostgresDriver == "bun"
+	}
+	if fixtureCovers(fixture, "runtime.bun") {
+		require.True(t, hasBunRuntime, "fixture %s claims runtime.bun coverage without a Bun runtime variant", fixture.ID)
+	}
+	if fixtureCovers(fixture, "postgres_driver.bun") {
+		require.True(t, hasBunPostgresDriver, "fixture %s claims postgres_driver.bun coverage without a Bun postgres driver variant", fixture.ID)
+	}
+}
+
+func fixtureCovers(fixture fixture, featureID string) bool {
+	for _, covered := range fixture.Covers {
+		if covered == featureID {
+			return true
+		}
+	}
+	return false
 }
 
 func validateFixtureDialect(t *testing.T, fixture fixture) {
@@ -197,11 +245,26 @@ func validDialects() map[string]bool {
 	}
 }
 
+func validRuntimes() map[string]bool {
+	return map[string]bool{
+		"node": true,
+		"bun":  true,
+	}
+}
+
+func validPostgresDrivers() map[string]bool {
+	return map[string]bool{
+		"pg":  true,
+		"bun": true,
+	}
+}
+
 func TestCodegenMatrixFixtures(t *testing.T) {
 	c := loadCatalog(t)
 	repo := repoRoot(t)
 	entDist := buildEntDist(t, repo)
 	fixtureFilter := os.Getenv("ENT_CODEGEN_MATRIX_FIXTURE")
+	runtimeFilter := os.Getenv("ENT_CODEGEN_MATRIX_RUNTIME")
 
 	for _, fixture := range c.Fixtures {
 		fixture := fixture
@@ -212,9 +275,18 @@ func TestCodegenMatrixFixtures(t *testing.T) {
 			if fixture.SkipReason != "" && os.Getenv("ENT_CODEGEN_MATRIX_RUN_SKIPPED") != "true" {
 				t.Skip(fixture.SkipReason)
 			}
-			appRoot := copyFixture(t, repo, fixture)
-			writeGeneratedHarnessFiles(t, repo, appRoot, entDist)
-			runCodegenFixture(t, repo, appRoot, fixture)
+			for _, variant := range runtimeVariantsForFixture(fixture) {
+				variant := variant
+				if runtimeFilter != "" && runtimeFilter != variant.ID && runtimeFilter != variant.Runtime {
+					continue
+				}
+				t.Run(variant.ID, func(t *testing.T) {
+					appRoot := copyFixture(t, repo, fixture)
+					writeGeneratedHarnessFiles(t, repo, appRoot, entDist)
+					applyRuntimeVariantConfig(t, appRoot, variant)
+					runCodegenFixture(t, repo, appRoot, fixture)
+				})
+			}
 		})
 	}
 }
@@ -258,14 +330,58 @@ func copyFixture(t *testing.T, repo string, fixture fixture) string {
 	return dst
 }
 
+func runtimeVariantsForFixture(fixture fixture) []runtimeVariant {
+	if len(fixture.RuntimeVariants) > 0 {
+		var variants []runtimeVariant
+		for _, variant := range fixture.RuntimeVariants {
+			variants = append(variants, normalizeRuntimeVariant(variant))
+		}
+		return variants
+	}
+	return []runtimeVariant{defaultRuntimeVariant()}
+}
+
+func normalizeRuntimeVariant(variant runtimeVariant) runtimeVariant {
+	if variant.Runtime == "" {
+		variant.Runtime = "node"
+	}
+	if variant.PostgresDriver == "" {
+		variant.PostgresDriver = "pg"
+	}
+	return variant
+}
+
+func defaultRuntimeVariant() runtimeVariant {
+	return runtimeVariant{
+		ID:             "node_pg",
+		Runtime:        "node",
+		PostgresDriver: "pg",
+	}
+}
+
+func applyRuntimeVariantConfig(t *testing.T, appRoot string, variant runtimeVariant) {
+	t.Helper()
+	path := filepath.Join(appRoot, "ent.yml")
+	b, err := os.ReadFile(path)
+	require.NoError(t, err)
+	cfg := map[string]any{}
+	if len(bytes.TrimSpace(b)) > 0 {
+		require.NoError(t, yaml.Unmarshal(b, &cfg))
+	}
+	cfg["runtime"] = variant.Runtime
+	cfg["postgresDriver"] = variant.PostgresDriver
+	out, err := yaml.Marshal(cfg)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(path, out, fileMode))
+}
+
 func writeGeneratedHarnessFiles(t *testing.T, repo, appRoot, entDist string) {
 	t.Helper()
-	require.NoError(t, os.MkdirAll(filepath.Join(appRoot, "node_modules"), dirMode))
 	nodeModules := filepath.Join(appRoot, "node_modules")
 	if _, err := os.Lstat(nodeModules); err == nil {
 		require.NoError(t, os.RemoveAll(nodeModules))
 	}
-	require.NoError(t, os.Symlink(filepath.Join(repo, "ts", "node_modules"), nodeModules))
+	linkHarnessNodeModules(t, filepath.Join(repo, "ts", "node_modules"), nodeModules, entDist)
 
 	writeHarnessTSConfig(t, filepath.Join(appRoot, "tsconfig.json"), entPathMapping{
 		packageRoot:     filepath.Join(repo, "ts", "src", "index.ts"),
@@ -276,6 +392,52 @@ func writeGeneratedHarnessFiles(t *testing.T, repo, appRoot, entDist string) {
 		packageWildcard: filepath.Join(entDist, "*"),
 	})
 	replaceHarnessPlaceholders(t, appRoot)
+}
+
+func linkHarnessNodeModules(t *testing.T, sourceNodeModules, targetNodeModules, entDist string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(targetNodeModules, dirMode))
+	entries, err := os.ReadDir(sourceNodeModules)
+	require.NoError(t, err)
+	for _, entry := range entries {
+		if entry.Name() == "@snowtop" {
+			linkHarnessSnowtopModules(t, filepath.Join(sourceNodeModules, entry.Name()), filepath.Join(targetNodeModules, entry.Name()), entDist)
+			continue
+		}
+		require.NoError(t, os.Symlink(
+			filepath.Join(sourceNodeModules, entry.Name()),
+			filepath.Join(targetNodeModules, entry.Name()),
+		))
+	}
+	snowtopDir := filepath.Join(targetNodeModules, "@snowtop")
+	require.NoError(t, os.MkdirAll(snowtopDir, dirMode))
+	ensureSnowtopEntLink(t, snowtopDir, entDist)
+}
+
+func linkHarnessSnowtopModules(t *testing.T, sourceSnowtop, targetSnowtop, entDist string) {
+	t.Helper()
+	require.NoError(t, os.MkdirAll(targetSnowtop, dirMode))
+	entries, err := os.ReadDir(sourceSnowtop)
+	require.NoError(t, err)
+	for _, entry := range entries {
+		if entry.Name() == "ent" {
+			continue
+		}
+		require.NoError(t, os.Symlink(
+			filepath.Join(sourceSnowtop, entry.Name()),
+			filepath.Join(targetSnowtop, entry.Name()),
+		))
+	}
+	ensureSnowtopEntLink(t, targetSnowtop, entDist)
+}
+
+func ensureSnowtopEntLink(t *testing.T, snowtopDir, entDist string) {
+	t.Helper()
+	entLink := filepath.Join(snowtopDir, "ent")
+	if _, err := os.Lstat(entLink); err == nil {
+		require.NoError(t, os.RemoveAll(entLink))
+	}
+	require.NoError(t, os.Symlink(entDist, entLink))
 }
 
 type entPathMapping struct {

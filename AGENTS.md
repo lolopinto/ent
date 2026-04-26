@@ -31,7 +31,11 @@ Codegen feature matrix:
   combinations.
 - The matrix includes SQLite and Postgres DB-codegen smoke fixtures. Postgres
   coverage runs when `DB_CONNECTION_STRING` or `ENT_CODEGEN_MATRIX_POSTGRES_URL`
-  points at Postgres; otherwise that fixture skips in local runs.
+  points at Postgres; otherwise that fixture skips in local runs. The Postgres
+  smoke fixture runs both Node/pg and Bun/Bun SQL runtime variants.
+- The matrix includes Bun runtime coverage via fixture runtime variants. Install
+  Bun locally before running the full matrix, or use
+  `ENT_CODEGEN_MATRIX_RUNTIME=node` while iterating on Node-only changes.
 - Core DB-rendered features should declare
   `dialect_coverage: [sqlite, postgres]` in the matrix catalog so the test
   enforces coverage in both DB fixtures. Dialect-specific behavior should
