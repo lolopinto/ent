@@ -14,8 +14,10 @@ Run one fixture while iterating with:
 
 ```sh
 ENT_CODEGEN_MATRIX_FIXTURE=feature_stress go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
+ENT_CODEGEN_MATRIX_FIXTURE=feature_stress ENT_CODEGEN_MATRIX_RUNTIME=bun go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
 ENT_CODEGEN_MATRIX_FIXTURE=db_schema_smoke go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
 ENT_CODEGEN_MATRIX_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres ENT_CODEGEN_MATRIX_FIXTURE=postgres_schema_smoke go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
+ENT_CODEGEN_MATRIX_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres ENT_CODEGEN_MATRIX_FIXTURE=postgres_schema_smoke ENT_CODEGEN_MATRIX_RUNTIME=bun go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
 ```
 
 ## What It Tests
@@ -25,6 +27,9 @@ The matrix catalog lives in `features.yml`.
 - `feature_stress` runs TS schema parsing, `tsent codegen --step codegen`,
   `tsent codegen --step graphql`, generated TypeScript typechecking, and
   idempotence checks over a broad schema surface.
+  It runs once with the default Node/pg launcher settings and once with
+  Bun/Bun SQL settings, so generated Bun-specific resolver exports and
+  Postgres value conversion helpers stay covered by the same broad fixture.
 - `db_schema_smoke` runs the same checks and also includes
   `tsent codegen --step db` against SQLite-compatible schema features. Its
   idempotence snapshot includes DB-generated schema and migration files. It
@@ -33,8 +38,9 @@ The matrix catalog lives in `features.yml`.
   rendering plus Postgres-only paths such as operator classes and index
   parameters. It creates a generated temporary database for isolation and runs when
   `ENT_CODEGEN_MATRIX_POSTGRES_URL` or a Postgres `DB_CONNECTION_STRING` is
-  present; otherwise it skips locally. Go CI already provides Postgres. It
-  includes the same shared core DB schema fixture as `db_schema_smoke`.
+  present; otherwise it skips locally. Go CI already provides Postgres. It runs
+  both the default Node/pg path and the Bun/Bun SQL path, and includes the same
+  shared core DB schema fixture as `db_schema_smoke`.
 - `TestFeatureCatalogClassifiesCodegenInputs` reflects exported fields,
   selected enum constants from `internal/schema/input/input.go`, and action
   operation mappings from `getTSStringOperation`; it verifies every active
@@ -44,9 +50,10 @@ The matrix catalog lives in `features.yml`.
   supplemental owner list limited to non-reflectable inputs.
 
 The harness builds the current checked-out `tsent` and package-shaped
-`@snowtop/ent` `ts/dist`, copies fixtures to a temp app, symlinks local
-`ts/node_modules`, runs real codegen steps, checks the generated tree is stable
-across repeated runs, and then runs `tsc --noEmit` against the generated app.
+`@snowtop/ent` `ts/dist`, copies fixtures to a temp app, links local
+`ts/node_modules` entries plus the freshly built `@snowtop/ent` package, runs
+real codegen steps, checks the generated tree is stable across repeated runs,
+and then runs `tsc --noEmit` against the generated app.
 It locates the repository from the Go test source path, so it does not require
 `git rev-parse` at runtime.
 
@@ -90,8 +97,11 @@ The bar is:
 2. Add the fixture to `features.yml` with its `surfaces`, `covers`, and optional
    `includes`. DB fixtures must also declare `dialect: sqlite` or
    `dialect: postgres`.
-3. Add or update feature entries so every active feature is covered.
-4. Run the fixture directly, then run the whole package.
+3. Add `runtime_variants` only when the fixture should exercise non-default
+   runtime behavior. Omitted variants mean one Node/pg run; Bun SQL variants
+   should use `runtime: bun` with `postgresDriver: bun`.
+4. Add or update feature entries so every active feature is covered.
+5. Run the fixture directly, then run the whole package.
 
 Put core DB-rendered interactions in `fixtures/_shared/core_db` so the same
 schema source is exercised by both `db_schema_smoke` and
