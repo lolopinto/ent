@@ -75,8 +75,6 @@ export const HolidayCustomEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customCustomEditHolidayInput }
 > = {
-  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
-  // without tripping on top-level initialization order.
   get type() {
     return new GraphQLNonNull(CustomEditHolidayPayloadType);
   },

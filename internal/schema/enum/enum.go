@@ -13,30 +13,33 @@ import (
 )
 
 type Enum struct {
-	Name               string
-	Values             []*Data
-	DeprecatedValues   []*Data
-	Imported           bool // Imported enum that's not in this file. TODO aren't all enums Imported now now??
-	convertFuncTSType  string
-	DisableUnknownType bool
+	Name                  string
+	Values                []*Data
+	DeprecatedValues      []*Data
+	Imported              bool // Imported enum that's not in this file. TODO aren't all enums Imported now now??
+	convertFuncTSType     string
+	DisableUnknownType    bool
+	ConvertListFromString bool
 }
 
 func (c *Enum) Clone() *Enum {
 	ret := &Enum{
-		Name:     c.Name,
-		Values:   c.Values,
-		Imported: c.Imported,
+		Name:                  c.Name,
+		Values:                c.Values,
+		Imported:              c.Imported,
+		ConvertListFromString: c.ConvertListFromString,
 	}
 	return ret
 }
 
 type convertFunctionInfo struct {
-	Name              string
-	NullableName      string
-	ListName          string
-	NullableListName  string
-	UnknownKey        string
-	ConvertFuncTSType string
+	Name                  string
+	NullableName          string
+	ListName              string
+	NullableListName      string
+	UnknownKey            string
+	ConvertFuncTSType     string
+	ConvertListFromString bool
 }
 
 func (c *Enum) GetConvertFunctionInfo() *convertFunctionInfo {
@@ -53,12 +56,13 @@ func (c *Enum) GetConvertFunctionInfo() *convertFunctionInfo {
 		return nil
 	}
 	return &convertFunctionInfo{
-		Name:              fmt.Sprintf("convert%s", c.Name),
-		NullableName:      fmt.Sprintf("convertNullable%s", c.Name),
-		ListName:          fmt.Sprintf("convert%sList", c.Name),
-		NullableListName:  fmt.Sprintf("convertNullable%sList", c.Name),
-		UnknownKey:        unknown.Name,
-		ConvertFuncTSType: c.convertFuncTSType,
+		Name:                  fmt.Sprintf("convert%s", c.Name),
+		NullableName:          fmt.Sprintf("convertNullable%s", c.Name),
+		ListName:              fmt.Sprintf("convert%sList", c.Name),
+		NullableListName:      fmt.Sprintf("convertNullable%sList", c.Name),
+		UnknownKey:            unknown.Name,
+		ConvertFuncTSType:     c.convertFuncTSType,
+		ConvertListFromString: c.ConvertListFromString,
 	}
 }
 

@@ -60,8 +60,6 @@ export const UserDelete2Type: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customDeleteUserInput2 }
 > = {
-  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
-  // without tripping on top-level initialization order.
   get type() {
     return new GraphQLNonNull(DeleteUserInput2PayloadType);
   },

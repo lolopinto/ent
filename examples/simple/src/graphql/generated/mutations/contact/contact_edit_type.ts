@@ -105,8 +105,6 @@ export const ContactEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactEditInput }
 > = {
-  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
-  // without tripping on top-level initialization order.
   get type() {
     return new GraphQLNonNull(ContactEditPayloadType);
   },

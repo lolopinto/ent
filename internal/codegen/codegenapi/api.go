@@ -74,6 +74,8 @@ type Config interface {
 	FieldPrivacyEvaluated() FieldPrivacyEvaluated
 	GetRootPathToConfigs() string
 	GetAbsPathToRoot() string
+	Runtime() string
+	PostgresDriver() string
 	DebugMode() bool
 	DebugFilesMode() bool
 	// doesn't actually writes the files, just keeps track of which files were going to be written
@@ -103,6 +105,14 @@ func (cfg *DummyConfig) GetRootPathToConfigs() string {
 
 func (cfg *DummyConfig) GetAbsPathToRoot() string {
 	return ""
+}
+
+func (cfg *DummyConfig) Runtime() string {
+	return "node"
+}
+
+func (cfg *DummyConfig) PostgresDriver() string {
+	return "pg"
 }
 
 func (cfg *DummyConfig) DebugMode() bool {

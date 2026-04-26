@@ -1954,11 +1954,9 @@ type resolverExportLine struct {
 	ExportAll bool
 }
 
-func getSortedLines(_ *gqlSchema, cfg *codegen.Config) ([]resolverExportLine, error) {
-	lines, err := getSortedResolverLinesFromDisk(cfg)
-	if err != nil {
-		return nil, err
-	}
+func getSortedLines(s *gqlSchema, cfg *codegen.Config) ([]resolverExportLine, error) {
+	lines := getSchemaResolverLines(s, cfg)
+	lines = appendMissingResolverLines(lines, getLocalResolverLinesFromDisk(cfg)...)
 	return lines, nil
 }
 
@@ -2024,54 +2022,78 @@ func getLocalResolverLinesFromDisk(cfg *codegen.Config) []resolverExportLine {
 	return lines
 }
 
-func getSortedResolverLinesFromDisk(cfg *codegen.Config) ([]resolverExportLine, error) {
-	generatedDir := filepath.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/resolvers")
-	if _, err := os.Stat(generatedDir); err != nil {
-		return nil, err
+func getSchemaResolverLines(s *gqlSchema, cfg *codegen.Config) []resolverExportLine {
+	var nodes []string
+	var conns []string
+	var otherObjs []string
+	for _, node := range s.otherObjects {
+		if otherObjectIsInput(node) {
+			continue
+		}
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
+	}
+	for _, node := range s.nodes {
+		nodes = append(nodes, trimPath(cfg, node.FilePath))
+		for _, conn := range node.connections {
+			conns = append(conns, trimPath(cfg, conn.FilePath))
+		}
+	}
+	for _, node := range s.unions {
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
+	}
+	for _, node := range s.interfaces {
+		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
+	}
+	var enums []string
+	if len(s.enums) > 0 {
+		enums = append(enums, trimPath(cfg, getFilePathForEnums(cfg)))
+	}
+
+	var customQueries []string
+	for _, node := range s.customQueries {
+		customQueries = append(customQueries, trimPath(cfg, node.FilePath))
+		for _, conn := range node.connections {
+			conns = append(conns, trimPath(cfg, conn.FilePath))
+		}
+	}
+
+	var rootQueryImports []string
+	for _, rootQuery := range s.rootQueries {
+		rootQueryImports = append(rootQueryImports, trimPath(cfg, rootQuery.FilePath))
 	}
 
 	var lines []resolverExportLine
-	appendLine := func(path string) error {
-		rel, err := filepath.Rel(cfg.GetAbsPathToRoot(), path)
-		if err != nil {
-			return err
-		}
-		lines = append(lines, getResolverExportLine(strings.TrimSuffix(filepath.ToSlash(rel), ".ts"), true))
-		return nil
+	list := [][]string{
+		enums,
+		otherObjs,
+		nodes,
+		conns,
+		customQueries,
+		rootQueryImports,
 	}
-
-	err := filepath.Walk(generatedDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
+	namedExport := cfg.Runtime() == "bun"
+	for _, l := range list {
+		sort.Strings(l)
+		for _, path := range l {
+			lines = append(lines, getResolverExportLine(path, namedExport))
 		}
-		if info.IsDir() {
-			return nil
-		}
-		if !strings.HasSuffix(path, ".ts") || strings.HasSuffix(path, ".d.ts") {
-			return nil
-		}
-		return appendLine(path)
-	})
-	if err != nil {
-		return nil, err
 	}
+	return lines
+}
 
-	lines = append(lines, getLocalResolverLinesFromDisk(cfg)...)
-
-	sort.Slice(lines, func(i, j int) bool {
-		return lines[i].Path < lines[j].Path
-	})
-
+func appendMissingResolverLines(lines []resolverExportLine, additions ...resolverExportLine) []resolverExportLine {
 	seen := make(map[string]bool)
-	var ret []resolverExportLine
 	for _, line := range lines {
+		seen[line.Path] = true
+	}
+	for _, line := range additions {
 		if seen[line.Path] {
 			continue
 		}
 		seen[line.Path] = true
-		ret = append(ret, line)
+		lines = append(lines, line)
 	}
-	return ret, nil
+	return lines
 }
 
 func writeInternalGQLResolversFile(s *gqlSchema, processor *codegen.Processor) error {

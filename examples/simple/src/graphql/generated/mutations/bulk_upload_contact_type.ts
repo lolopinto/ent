@@ -25,8 +25,6 @@ export const BulkUploadContactType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   BulkUploadContactArgs
 > = {
-  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
-  // without tripping on top-level initialization order.
   get type() {
     return new GraphQLNonNull(UserType);
   },

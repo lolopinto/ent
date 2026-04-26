@@ -573,6 +573,7 @@ func (f *Field) GetImportsForTypes(cfg codegenapi.Config, g CustomInterfaceGette
 	tt := f.GetPossibleTypes()
 	for _, t := range tt {
 		imps := enttype.ConvertImportPaths(t, s)
+		imps = append(imps, enttype.BunPostgresConvertImportPaths(t, s, cfg)...)
 		for _, imp := range imps {
 			if imp.ImportPath != "" {
 				ret = append(ret, imp)

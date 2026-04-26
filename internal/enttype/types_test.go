@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/lolopinto/ent/ent/config"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/schema/input"
 	"github.com/lolopinto/ent/internal/tsimport"
@@ -827,7 +828,6 @@ func TestDateType(t *testing.T) {
 				tsType:          "string | null",
 				nonNullableType: &enttype.DateType{},
 				importType:      &enttype.DateImport{},
-				convertPostgresFns: []string{"convertNullableDBDate"},
 			},
 		},
 		"not nullable": {
@@ -842,7 +842,6 @@ func TestDateType(t *testing.T) {
 				tsType:       "string",
 				nullableType: &enttype.NullableDateType{},
 				importType:   &enttype.DateImport{},
-				convertPostgresFns: []string{"convertDBDate"},
 			},
 		},
 	})
@@ -925,6 +924,67 @@ type fakeSchema struct{}
 
 func (fs *fakeSchema) IsGlobalEnumWithDisableUnknownType(typ string) bool {
 	return false
+}
+
+type bunPostgresConfig struct {
+	codegenapi.DummyConfig
+}
+
+func (cfg *bunPostgresConfig) PostgresDriver() string {
+	return "bun"
+}
+
+func TestBunPostgresConvertFuncs(t *testing.T) {
+	if config.GetDialect() != config.Postgres {
+		t.Skip("Bun Postgres converters only apply to Postgres")
+	}
+
+	fs := &fakeSchema{}
+	require.Nil(t, enttype.BunPostgresConvertFuncs(
+		&enttype.ArrayListType{ElemType: &enttype.StringType{}},
+		fs,
+		&codegenapi.DummyConfig{},
+	))
+
+	testCases := []struct {
+		name string
+		typ  enttype.Type
+		exp  []string
+	}{
+		{
+			name: "string list",
+			typ:  &enttype.ArrayListType{ElemType: &enttype.StringType{}},
+			exp:  []string{"convertList"},
+		},
+		{
+			name: "nullable string list",
+			typ:  &enttype.NullableArrayListType{ElemType: &enttype.StringType{}},
+			exp:  []string{"convertNullableList"},
+		},
+		{
+			name: "date",
+			typ:  &enttype.DateType{},
+			exp:  []string{"convertDBDate"},
+		},
+		{
+			name: "nullable date list",
+			typ:  &enttype.NullableArrayListType{ElemType: &enttype.DateType{}},
+			exp:  []string{"convertNullableDBDateList"},
+		},
+		{
+			name: "enum list handled by enum converter",
+			typ: &enttype.ArrayListType{ElemType: &enttype.StringEnumType{
+				Type:   "Status",
+				Values: []string{"OPEN", "CLOSED"},
+			}},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			require.Equal(t, tt.exp, enttype.BunPostgresConvertFuncs(tt.typ, fs, &bunPostgresConfig{}))
+		})
+	}
 }
 
 // when testing the type directly e.g. typescript...

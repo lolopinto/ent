@@ -4,9 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -55,6 +52,7 @@ type Schema struct {
 
 	// used to keep track of schema-state
 	inputSchema *input.Schema
+	cfg         codegenapi.Config
 }
 
 func (s *Schema) GetInputSchema() *input.Schema {
@@ -216,6 +214,7 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 
 func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *input.Node, exposeToGraphQL bool) error {
 	tsEnum, gqlEnum := enum.GetEnums(input)
+	s.applyRuntimeOptionsToEnum(tsEnum)
 
 	// first create EnumInfo...
 	info := &EnumInfo{
@@ -256,6 +255,7 @@ func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *in
 
 func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern, exposeToGraphQL bool) (*EnumInfo, error) {
 	tsEnum, gqlEnum := enum.GetEnums(input)
+	s.applyRuntimeOptionsToEnum(tsEnum)
 
 	// first create EnumInfo...
 	info := &EnumInfo{
@@ -273,6 +273,13 @@ func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern, exp
 		return nil, err
 	}
 	return info, nil
+}
+
+func (s *Schema) applyRuntimeOptionsToEnum(tsEnum *enum.Enum) {
+	if tsEnum == nil || s.cfg == nil {
+		return
+	}
+	tsEnum.ConvertListFromString = s.cfg.PostgresDriver() == "bun"
 }
 
 func (s *Schema) addGlobalEnum(enumType enttype.EnumeratedType, exposeToGraphQL bool) (*EnumInfo, error) {
@@ -432,10 +439,11 @@ func (s *Schema) AddExistingEdgeTable(tableName string) {
 
 func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
 	s.inputSchema = schema
+	s.cfg = cfg
 
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
-	edgeData, err := s.loadExistingEdges(cfg)
+	edgeData, err := s.loadExistingEdges()
 	if err != nil {
 		return nil, err
 	}
@@ -795,7 +803,6 @@ func (s *Schema) validateEdgeIndices() error {
 
 	return nil
 }
-
 
 func normalizeDBExtensionName(name string) string {
 	return strings.ToLower(strings.TrimSpace(name))
@@ -1324,46 +1331,7 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field, globalTyp
 	return cu, nil
 }
 
-var schemaPyEdgePattern = regexp.MustCompile(`'([^']+)': \{"edge_name":"([^"]+)", "edge_type":"([^"]+)", "edge_table":"([^"]+)", "symmetric_edge":(True|False), "inverse_edge_type":(?:"([^"]+)"|None)\},?`)
-
-func loadExistingEdgesFromSchemaPy(root string) ([]*ent.AssocEdgeData, error) {
-	if root == "" {
-		return nil, nil
-	}
-
-	schemaPyPath := filepath.Join(root, "src", "schema", "schema.py")
-	b, err := os.ReadFile(schemaPyPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	matches := schemaPyEdgePattern.FindAllStringSubmatch(string(b), -1)
-	if len(matches) == 0 {
-		return nil, nil
-	}
-
-	ret := make([]*ent.AssocEdgeData, 0, len(matches))
-	for _, match := range matches {
-		edgeData := &ent.AssocEdgeData{
-			EdgeType:      ent.EdgeType(match[3]),
-			EdgeName:      match[2],
-			SymmetricEdge: match[5] == "True",
-			EdgeTable:     match[4],
-		}
-		if match[6] != "" {
-			if err := edgeData.InverseEdgeType.Scan(match[6]); err != nil {
-				return nil, err
-			}
-		}
-		ret = append(ret, edgeData)
-	}
-	return ret, nil
-}
-
-func (s *Schema) loadExistingEdges(cfg codegenapi.Config) (*assocEdgeData, error) {
+func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 	// load all edges in db
 	result := <-ent.GenLoadAssocEdges()
 	if result.Err != nil {
@@ -1376,18 +1344,6 @@ func (s *Schema) loadExistingEdges(cfg codegenapi.Config) (*assocEdgeData, error
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
 		edgeTables[assocEdgeData.EdgeTable] = true
 	}
-
-	fallbackEdges, err := loadExistingEdgesFromSchemaPy(cfg.GetAbsPathToRoot())
-	if err != nil {
-		return nil, err
-	}
-	for _, assocEdgeData := range fallbackEdges {
-		if edgeMap[assocEdgeData.EdgeName] == nil {
-			edgeMap[assocEdgeData.EdgeName] = assocEdgeData
-		}
-		edgeTables[assocEdgeData.EdgeTable] = true
-	}
-
 	return &assocEdgeData{
 		dbEdgeMap:     edgeMap,
 		dbEdgeTables:  edgeTables,

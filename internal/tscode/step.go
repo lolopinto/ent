@@ -1265,6 +1265,7 @@ func getBaseFuncs(s *schema.Schema, imps *tsimport.Imports) template.FuncMap {
 		// user convert
 		// custom type convert...
 		convs := enttype.ConvertFuncs(f.GetTSFieldType(cfg), s)
+		convs = append(convs, enttype.BunPostgresConvertFuncs(f.GetTSFieldType(cfg), s, cfg)...)
 		convImp := f.GetConvertImport(cfg, s)
 		if convImp != nil {
 			convs = append(convs, convImp.Import)

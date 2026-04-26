@@ -29,6 +29,7 @@ import {
   AssocEdge,
   ObjectLoaderFactory,
   applyPrivacyPolicy,
+  convertList,
   convertNullableList,
   loadCustomCount,
   loadCustomData,
@@ -197,7 +198,9 @@ export class UserBase
     this.bio = data.bio;
     this.nicknames = convertNullableList(data.nicknames);
     this._prefs = convertNullableUserPrefsStruct(data.prefs);
-    this._prefsList = convertNullableUserPrefsStructList(data.prefs_list);
+    this._prefsList = convertNullableUserPrefsStructList(
+      convertNullableList(data.prefs_list),
+    );
     this._prefsDiff = convertNullableUserPrefsDiff(data.prefs_diff);
     this.daysOff = data.days_off;
     this.preferredShift = convertNullableUserPreferredShiftList(
@@ -205,7 +208,9 @@ export class UserBase
     );
     this.timeInMs = BigInt(data.time_in_ms);
     this.funUuids = convertNullableList(data.fun_uuids);
-    this.nestedList = convertNullableUserNestedObjectListList(data.nested_list);
+    this.nestedList = convertNullableUserNestedObjectListList(
+      convertNullableList(data.nested_list),
+    );
     this.intEnum = data.int_enum;
     // @ts-expect-error
     this.data = data;
@@ -366,7 +371,9 @@ export class UserBase
       return null;
     }
     return convertOnDemandNonNullable(
-      convertUserOnDemandNonNullableListList(this._onDemandNonNullableList),
+      convertUserOnDemandNonNullableListList(
+        convertList(this._onDemandNonNullableList),
+      ),
     );
   }
 

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/ent/config"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
@@ -154,23 +155,6 @@ func getSqliteImportMap(imps ...*tsimport.ImportPath) ConvertDataTypeRet {
 	}
 }
 
-func getPostgresImportMap(imps ...*tsimport.ImportPath) ConvertDataTypeRet {
-	return map[config.Dialect][]*tsimport.ImportPath{
-		config.Postgres: imps,
-	}
-}
-
-func getMixedDialectImportMap(sqlite []*tsimport.ImportPath, postgres []*tsimport.ImportPath) ConvertDataTypeRet {
-	ret := ConvertDataTypeRet{}
-	if len(sqlite) > 0 {
-		ret[config.SQLite] = sqlite
-	}
-	if len(postgres) > 0 {
-		ret[config.Postgres] = postgres
-	}
-	return ret
-}
-
 func getAllDialectsImportMap(imps ...*tsimport.ImportPath) ConvertDataTypeRet {
 	return map[config.Dialect][]*tsimport.ImportPath{
 		config.SQLite:   imps,
@@ -183,17 +167,11 @@ func (t *boolType) Convert(s SchemaType) ConvertDataTypeRet {
 }
 
 func (t *boolType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
-	return getMixedDialectImportMap(
-		[]*tsimport.ImportPath{tsimport.NewEntImportPath("convertBoolList")},
-		[]*tsimport.ImportPath{tsimport.NewEntImportPath("convertList")},
-	)
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertBoolList"))
 }
 
 func (t *boolType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
-	return getMixedDialectImportMap(
-		[]*tsimport.ImportPath{tsimport.NewEntImportPath("convertNullableBoolList")},
-		[]*tsimport.ImportPath{tsimport.NewEntImportPath("convertNullableList")},
-	)
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableBoolList"))
 }
 
 type BoolType struct {
@@ -588,17 +566,11 @@ func (t *dateType) Convert(s SchemaType) ConvertDataTypeRet {
 }
 
 func (t *dateType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
-	return getMixedDialectImportMap(
-		[]*tsimport.ImportPath{tsimport.NewEntImportPath("convertDateList")},
-		[]*tsimport.ImportPath{tsimport.NewEntImportPath("convertList")},
-	)
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertDateList"))
 }
 
 func (t *dateType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
-	return getMixedDialectImportMap(
-		[]*tsimport.ImportPath{tsimport.NewEntImportPath("convertNullableDateList")},
-		[]*tsimport.ImportPath{tsimport.NewEntImportPath("convertNullableList")},
-	)
+	return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableDateList"))
 }
 
 func (t *dateType) GetTSType() string {
@@ -685,17 +657,15 @@ func (t *DateType) GetTSType() string {
 }
 
 func (t *DateType) Convert(s SchemaType) ConvertDataTypeRet {
-	// node-postgres already returns date strings; Bun's native Postgres driver needs an
-	// explicit Postgres-only conversion path here.
-	return getPostgresImportMap(tsimport.NewEntImportPath("convertDBDate"))
+	return nil
 }
 
 func (t *DateType) convertListWithItem(s SchemaType) ConvertDataTypeRet {
-	return getPostgresImportMap(tsimport.NewEntImportPath("convertDBDateList"))
+	return nil
 }
 
 func (t *DateType) convertNullableListWithItem(s SchemaType) ConvertDataTypeRet {
-	return getPostgresImportMap(tsimport.NewEntImportPath("convertNullableDBDateList"))
+	return nil
 }
 
 type NullableTimestampType struct {
@@ -771,7 +741,7 @@ func (t *NullableDateType) GetTSType() string {
 }
 
 func (t *NullableDateType) Convert(s SchemaType) ConvertDataTypeRet {
-	return getPostgresImportMap(tsimport.NewEntImportPath("convertNullableDBDate"))
+	return nil
 }
 
 type TimeType struct {
@@ -1452,9 +1422,8 @@ func (t *ArrayListType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
 func (t *ArrayListType) Convert(s SchemaType) ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
-		// Bun's native Postgres client can surface arrays in non-Array shapes, so keep
-		// the existing sqlite conversion and add the same wrapper on Postgres.
-		return getAllDialectsImportMap(tsimport.NewEntImportPath("convertList"))
+		// NB: this is intentionally only sqlite because postgres automatically returns as a list but sqlite doesn't
+		return getSqliteImportMap(tsimport.NewEntImportPath("convertList"))
 	}
 	return elem.convertListWithItem(s)
 }
@@ -1551,7 +1520,7 @@ func (t *NullableArrayListType) GetTSGraphQLImports(input bool) []*tsimport.Impo
 func (t *NullableArrayListType) Convert(s SchemaType) ConvertDataTypeRet {
 	elem, ok := t.ElemType.(convertListElemType)
 	if !ok {
-		return getAllDialectsImportMap(tsimport.NewEntImportPath("convertNullableList"))
+		return getSqliteImportMap(tsimport.NewEntImportPath("convertNullableList"))
 	}
 	return elem.convertNullableListWithItem(s)
 }
@@ -2033,6 +2002,18 @@ func ConvertFuncs(t Type, s SchemaType) []string {
 	return ret
 }
 
+func BunPostgresConvertFuncs(t Type, s SchemaType, cfg codegenapi.Config) []string {
+	imps := BunPostgresConvertImportPaths(t, s, cfg)
+	if imps == nil {
+		return nil
+	}
+	var ret []string
+	for _, imp := range imps {
+		ret = append(ret, imp.Import)
+	}
+	return ret
+}
+
 func ConvertImportPaths(t Type, s SchemaType) []*tsimport.ImportPath {
 	tt, ok := t.(ConvertDataType)
 	if !ok {
@@ -2041,6 +2022,47 @@ func ConvertImportPaths(t Type, s SchemaType) []*tsimport.ImportPath {
 
 	m := tt.Convert(s)
 	return m[config.GetDialect()]
+}
+
+func BunPostgresConvertImportPaths(t Type, s SchemaType, cfg codegenapi.Config) []*tsimport.ImportPath {
+	if cfg == nil || cfg.PostgresDriver() != "bun" || config.GetDialect() != config.Postgres {
+		return nil
+	}
+	switch tt := t.(type) {
+	case *DateType:
+		return []*tsimport.ImportPath{tsimport.NewEntImportPath("convertDBDate")}
+	case *NullableDateType:
+		return []*tsimport.ImportPath{tsimport.NewEntImportPath("convertNullableDBDate")}
+	case *ArrayListType:
+		return bunPostgresListConvertImportPaths(tt.ElemType, false)
+	case *NullableArrayListType:
+		return bunPostgresListConvertImportPaths(tt.ElemType, true)
+	default:
+		return nil
+	}
+}
+
+func bunPostgresListConvertImportPaths(elem TSType, nullable bool) []*tsimport.ImportPath {
+	if _, ok := elem.(EnumeratedType); ok {
+		return nil
+	}
+
+	var imp string
+	switch elem.(type) {
+	case *DateType:
+		if nullable {
+			imp = "convertNullableDBDateList"
+		} else {
+			imp = "convertDBDateList"
+		}
+	default:
+		if nullable {
+			imp = "convertNullableList"
+		} else {
+			imp = "convertList"
+		}
+	}
+	return []*tsimport.ImportPath{tsimport.NewEntImportPath(imp)}
 }
 
 // this exists because we need to account for lists...

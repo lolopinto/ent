@@ -19,6 +19,7 @@ import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 import {
   AllowIfViewerPrivacyPolicy,
   convertList,
+  convertNullableList,
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
@@ -78,7 +79,9 @@ export class ContactBase
     this.lastName = data.last_name;
     this.userId = data.user_id;
     this.importantDates = convertNullableImportantDates(data.important_dates);
-    this.attachments = convertNullableAttachmentList(data.attachments);
+    this.attachments = convertNullableAttachmentList(
+      convertNullableList(data.attachments),
+    );
     // @ts-expect-error
     this.data = data;
   }

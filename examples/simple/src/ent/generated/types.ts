@@ -117,7 +117,6 @@ export function convertNullableCatBreed(val: string | null): CatBreed | null {
 }
 
 export function convertCatBreedList(val: string[] | string): CatBreed[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertCatBreed(v));
 }
@@ -162,7 +161,6 @@ export function convertNullableContactInfoSource(
 export function convertContactInfoSourceList(
   val: string[] | string,
 ): ContactInfoSource[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertContactInfoSource(v));
 }
@@ -209,7 +207,6 @@ export function convertNullableContactLabel(
 export function convertContactLabelList(
   val: string[] | string,
 ): ContactLabel[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertContactLabel(v));
 }
@@ -258,7 +255,6 @@ export function convertNullableDayOfWeek(val: string | null): DayOfWeek | null {
 }
 
 export function convertDayOfWeekList(val: string[] | string): DayOfWeek[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertDayOfWeek(v));
 }
@@ -311,7 +307,6 @@ export function convertNullableDayOfWeekAlt(
 export function convertDayOfWeekAltList(
   val: string[] | string,
 ): DayOfWeekAlt[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertDayOfWeekAlt(v));
 }
@@ -360,7 +355,6 @@ export function convertNullableDogBreed(val: string | null): DogBreed | null {
 }
 
 export function convertDogBreedList(val: string[] | string): DogBreed[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertDogBreed(v));
 }
@@ -413,7 +407,6 @@ export function convertNullableDogBreedGroup(
 export function convertDogBreedGroupList(
   val: string[] | string,
 ): DogBreedGroup[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertDogBreedGroup(v));
 }
@@ -460,7 +453,6 @@ export function convertNullableEventRsvpStatus(
 export function convertEventRsvpStatusList(
   val: string[] | string,
 ): EventRsvpStatus[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertEventRsvpStatus(v));
 }
@@ -505,7 +497,6 @@ export function convertNullableIntEnumUsedInList(
 export function convertIntEnumUsedInListList(
   val: number[] | string,
 ): IntEnumUsedInList[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<number>(val, (v: any) =>
     typeof v === "string" ? Number(v) : v,
   );
@@ -548,7 +539,6 @@ export function convertNullableNotifType(val: string | null): NotifType | null {
 }
 
 export function convertNotifTypeList(val: string[] | string): NotifType[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertNotifType(v));
 }
@@ -601,7 +591,6 @@ export function convertNullableRabbitBreed(
 }
 
 export function convertRabbitBreedList(val: string[] | string): RabbitBreed[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertRabbitBreed(v));
 }
@@ -646,7 +635,6 @@ export function convertNullableResponseType(
 export function convertResponseTypeList(
   val: string[] | string,
 ): ResponseType[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertResponseType(v));
 }
@@ -693,7 +681,6 @@ export function convertNullableUserAccountStatus(
 export function convertUserAccountStatusList(
   val: string[] | string,
 ): UserAccountStatus[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertUserAccountStatus(v));
 }
@@ -758,7 +745,6 @@ export function convertNullableUserPreferredShift(
 export function convertUserPreferredShiftList(
   val: string[] | string,
 ): UserPreferredShift[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
   const input = convertList<string>(val, (v: any) => v as string);
   return input.map((v: string) => convertUserPreferredShift(v));
 }

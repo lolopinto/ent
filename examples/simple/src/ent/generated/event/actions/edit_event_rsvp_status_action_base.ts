@@ -14,7 +14,6 @@ import type {
 } from "@snowtop/ent/action";
 import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
 import { WriteOperation, setEdgeTypeInGroup } from "@snowtop/ent/action";
-import { convertList } from "@snowtop/ent/core/convert";
 import { Event } from "../../..";
 import { EventBuilder } from "./event_builder";
 import { NodeType } from "../../types";
@@ -49,15 +48,13 @@ export function convertNullableEventRsvpStatusInput(
 }
 
 export function convertEventRsvpStatusInputList(
-  val: string[] | string,
+  val: string[],
 ): EventRsvpStatusInput[] {
-  // Bun's native Postgres driver can surface enum arrays as Postgres array literals.
-  const input = convertList<string>(val, (v: any) => v as string);
-  return input.map((v: string) => convertEventRsvpStatusInput(v));
+  return val.map((v) => convertEventRsvpStatusInput(v));
 }
 
 export function convertNullableEventRsvpStatusInputList(
-  val: string[] | string | null,
+  val: string[] | null,
 ): EventRsvpStatusInput[] | null {
   if (val === null || val === undefined) {
     return null;
