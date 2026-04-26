@@ -7,7 +7,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { RequestContext } from "@snowtop/ent";
 import { useAndVerifyAuth, useAndVerifyAuthJWT } from "@snowtop/ent-passport";
-import { User } from "../../ent";
+import { User } from "../../ent/user";
 import {
   UserAuthInput,
   UserAuthJWTInput,

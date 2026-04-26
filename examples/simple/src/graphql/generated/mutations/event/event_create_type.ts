@@ -91,7 +91,9 @@ export const EventCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customEventCreateInput }
 > = {
-  type: new GraphQLNonNull(EventCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(EventCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

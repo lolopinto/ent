@@ -70,7 +70,9 @@ export const ContactPhoneNumberEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactPhoneNumberEditInput }
 > = {
-  type: new GraphQLNonNull(ContactPhoneNumberEditPayloadType),
+  get type() {
+    return new GraphQLNonNull(ContactPhoneNumberEditPayloadType);
+  },
   args: {
     input: {
       description: "",

@@ -1,6 +1,4 @@
-import { Client } from "pg";
-import { createDB } from "src/testsetup/globalSetup";
-import { loadConfig } from "@snowtop/ent";
+import { DB } from "@snowtop/ent";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import CreateUserAction, {
   UserCreateInput,
@@ -9,29 +7,9 @@ import { User } from "../../ent";
 import * as clause from "@snowtop/ent/core/clause";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
 
-let pgClient: Client;
-let globalDB: string;
-
 const loggedOutViewer = new LoggedOutExampleViewer();
 
 beforeAll(async () => {
-  const { db, user, password, client } = await createDB();
-  pgClient = client;
-  globalDB = db;
-
-  loadConfig({
-    db: {
-      database: db,
-      host: "localhost",
-      user,
-      password,
-      port: 5432,
-      sslmode: "disable",
-      max: 200,
-    },
-    //    log: ["query"],
-  });
-
   const inputs: Partial<UserCreateInput>[] = [
     {
       firstName: "Caetlyn",
@@ -115,8 +93,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await pgClient.query(`DROP DATABASE ${globalDB}`);
-  await pgClient.end();
+  await DB.getInstance().getPool().exec(
+    "TRUNCATE TABLE users RESTART IDENTITY CASCADE",
+  );
 });
 
 async function create(opts: Partial<UserCreateInput>): Promise<User> {

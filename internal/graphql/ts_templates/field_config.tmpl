@@ -48,7 +48,14 @@
     {{useTypeImport "RequestContext"}}<{{$viewerType}}>
   {{ end -}}
 > = {
-  type: {{$fieldConfig.FieldType}},
+  {{ if eq .Config.Runtime "bun" -}}
+    {{/* Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles. */ -}}
+    get type() {
+      return {{$fieldConfig.FieldType}};
+    },
+  {{ else -}}
+    type: {{$fieldConfig.FieldType}},
+  {{ end -}}
   {{ if $fieldConfig.Description -}}
     description: "{{$fieldConfig.Description}}",
   {{ end -}}

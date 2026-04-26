@@ -234,21 +234,31 @@ test("query multiple users. connection", async () => {
   const dt = DateTime.now();
   let user1 = await create({
     firstName: "ffirst",
-    // @ts-expect-error
-    timeCreated: dt.plus({ hour: 1 }),
   });
 
   let user2 = await create({
     firstName: "ffirst",
-    // @ts-expect-error
-    timeCreated: dt.plus({ hour: 2 }),
   });
 
   let user3 = await create({
     firstName: "ffirst",
-    // @ts-expect-error
-    timeCreated: dt.plus({ hour: 3 }),
   });
+
+  const pool = DB.getInstance().getPool();
+  await Promise.all([
+    pool.exec("UPDATE users SET created_at = $2::timestamp WHERE id = $1", [
+      user1.id,
+      dt.plus({ hour: 1 }).toJSDate(),
+    ]),
+    pool.exec("UPDATE users SET created_at = $2::timestamp WHERE id = $1", [
+      user2.id,
+      dt.plus({ hour: 2 }).toJSDate(),
+    ]),
+    pool.exec("UPDATE users SET created_at = $2::timestamp WHERE id = $1", [
+      user3.id,
+      dt.plus({ hour: 3 }).toJSDate(),
+    ]),
+  ]);
 
   const action = EditUserAction.create(user1.viewer, user1, {});
   // for privacy

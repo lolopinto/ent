@@ -73,7 +73,7 @@ export type FieldOverrideMap = {
 };
 
 // Schema is the base for every schema in typescript
-export default interface Schema {
+export interface Schema {
   // schema has fields that are unique to each node
   fields: FieldMap;
 

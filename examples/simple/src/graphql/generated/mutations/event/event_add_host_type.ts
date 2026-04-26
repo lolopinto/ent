@@ -61,7 +61,9 @@ export const EventAddHostType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customEventAddHostInput }
 > = {
-  type: new GraphQLNonNull(EventAddHostPayloadType),
+  get type() {
+    return new GraphQLNonNull(EventAddHostPayloadType);
+  },
   args: {
     input: {
       description: "",

@@ -1,20 +1,14 @@
 // NB: this is copied from ent-graphql-tests package until I have time to figure out how to share code here effectively
 // the circular dependencies btw this package and ent-graphql-tests seems to imply something needs to change
 import express, { Express, RequestHandler } from "express";
-import * as fs from "fs";
 import {
   GraphQLArgument,
   GraphQLField,
   GraphQLFieldMap,
-  GraphQLList,
-  GraphQLObjectType,
-  GraphQLScalarType,
   GraphQLSchema,
   GraphQLType,
-  isEnumType,
-  isScalarType,
-  isWrappingType,
 } from "graphql";
+import type { GraphQLObjectType } from "graphql";
 import {
   ExecutionContext,
   getGraphQLParameters,
@@ -26,6 +20,38 @@ import supertest from "supertest";
 import { inspect } from "util";
 import { buildContext, registerAuthHandler } from "../../auth";
 import { Viewer } from "../../core/base";
+
+const bunAgentServerClose = Symbol("bunAgentServerClose");
+const bunAgentServerCleanups = new Set<() => Promise<void>>();
+let bunAgentServerCleanupRegistered = false;
+
+function registerBunAgentServerCleanup(cleanup: () => Promise<void>) {
+  let cleanupPromise: Promise<void> | undefined;
+  const cleanupOnce = () => {
+    cleanupPromise = cleanupPromise || cleanup();
+    return cleanupPromise;
+  };
+  bunAgentServerCleanups.add(cleanupOnce);
+
+  const afterAllFn = (globalThis as { afterAll?: (fn: () => any) => void })
+    .afterAll;
+  if (!bunAgentServerCleanupRegistered && typeof afterAllFn === "function") {
+    bunAgentServerCleanupRegistered = true;
+    afterAllFn(async () => {
+      const cleanups = [...bunAgentServerCleanups];
+      bunAgentServerCleanups.clear();
+      await Promise.all(cleanups.map((cleanup) => cleanup()));
+    });
+  }
+  return cleanupOnce;
+}
+
+export async function cleanupBunGraphQLTestAgent(agent: any) {
+  const cleanup = agent?.[bunAgentServerClose];
+  if (cleanup) {
+    await cleanup();
+  }
+}
 
 function server(config: queryConfig): Express {
   const viewer = config.viewer;
@@ -66,9 +92,49 @@ function server(config: queryConfig): Express {
   return app;
 }
 
+// Bun can load GraphQL types from a different module realm than the schema under test,
+// so constructor identity checks are not reliable here.
+function isWrappingTypeLike(typ: any): typ is { ofType: any } {
+  return !!typ && typeof typ === "object" && "ofType" in typ;
+}
+
+function isListTypeLike(typ: any): boolean {
+  return (
+    isWrappingTypeLike(typ) &&
+    (typ.constructor?.name === "GraphQLList" || /^\[.*\]$/.test(String(typ)))
+  );
+}
+
+function isObjectTypeLike(
+  typ: any,
+): typ is { getFields: () => GraphQLFieldMap<any, any> } {
+  return (
+    !!typ && typeof typ === "object" && typeof typ.getFields === "function"
+  );
+}
+
+function isScalarTypeLike(typ: any): boolean {
+  return (
+    !!typ &&
+    typeof typ === "object" &&
+    typeof typ.serialize === "function" &&
+    typeof typ.parseValue === "function" &&
+    typeof typ.parseLiteral === "function"
+  );
+}
+
+function isEnumTypeLike(typ: any): boolean {
+  return (
+    !!typ &&
+    typeof typ === "object" &&
+    typeof typ.getValues === "function" &&
+    typeof typ.toConfig === "function"
+  );
+}
+
 function getInnerType(typ, list) {
-  if (isWrappingType(typ)) {
-    if (typ instanceof GraphQLList) {
+  if (isWrappingTypeLike(typ)) {
+    if (isListTypeLike(typ)) {
       return getInnerType(typ.ofType, true);
     }
     return getInnerType(typ.ofType, list);
@@ -76,19 +142,96 @@ function getInnerType(typ, list) {
   return [typ, list];
 }
 
-function makeGraphQLRequest(
+type BunTestTarget = {
+  app: Express;
+  url: string;
+};
+
+async function createBunTestHarness(
+  config: queryConfig,
+  persistentAgent: boolean,
+  testFactory?: (app: Express) => supertest.Agent,
+): Promise<{
+  agent: supertest.Agent;
+  cleanup?: () => Promise<void>;
+}> {
+  const app = config.server ? config.server : server(config);
+  const httpServer = await new Promise<any>((resolve) => {
+    const srv = app.listen(0, () => resolve(srv));
+  });
+  const address = httpServer.address();
+  if (!address || typeof address === "string") {
+    throw new Error("could not determine test server address");
+  }
+  const url = `http://127.0.0.1:${address.port}`;
+  let closePromise: Promise<void> | undefined;
+  const close = () => {
+    closePromise =
+      closePromise ||
+      new Promise<void>((resolve, reject) => {
+        httpServer.close((err?: Error) => (err ? reject(err) : resolve()));
+      });
+    return closePromise;
+  };
+
+  if (persistentAgent) {
+    try {
+      let agent: supertest.Agent;
+      // Keep the existing Express app factory contract. If bunTest is present,
+      // it owns the URL-backed agent and testFactory still runs against the app.
+      const factoryAgent = testFactory?.(app);
+      if (config.bunTest) {
+        agent = config.bunTest({ app, url });
+      } else if (factoryAgent) {
+        agent = factoryAgent;
+      } else {
+        agent = supertest.agent(url);
+      }
+      (agent as any)[bunAgentServerClose] = registerBunAgentServerCleanup(close);
+      return { agent };
+    } catch (err) {
+      await close();
+      throw err;
+    }
+  }
+  return {
+    agent: supertest(url),
+    cleanup: close,
+  };
+}
+
+async function makeGraphQLRequest(
   config: queryConfig,
   query: string,
   fieldArgs: Readonly<GraphQLArgument[]>,
-): [supertest.Agent, supertest.Test] {
+): Promise<{
+  agent: supertest.Agent;
+  request: supertest.Test;
+  cleanup?: () => Promise<void>;
+}> {
   let agent: supertest.Agent;
+  let cleanup: (() => Promise<void>) | undefined;
 
   if (config.test) {
     if (typeof config.test === "function") {
-      agent = config.test(config.server ? config.server : server(config));
+      if (process.versions.bun) {
+        ({ agent } = await createBunTestHarness(config, true, config.test));
+      } else {
+        const factoryAgent = config.test(
+          config.server ? config.server : server(config),
+        );
+        if (!factoryAgent) {
+          throw new Error("config.test must return a supertest agent");
+        }
+        agent = factoryAgent;
+      }
     } else {
       agent = config.test;
     }
+  } else if (process.versions.bun && config.bunTest) {
+    ({ agent } = await createBunTestHarness(config, true));
+  } else if (process.versions.bun) {
+    ({ agent, cleanup } = await createBunTestHarness(config, false));
   } else {
     agent = supertest(config.server ? config.server : server(config));
   }
@@ -99,7 +242,7 @@ function makeGraphQLRequest(
   fieldArgs.forEach((fieldArg) => {
     let [typ, list] = getInnerType(fieldArg.type, false);
 
-    if (typ instanceof GraphQLScalarType && typ.name == "Upload") {
+    if (isScalarTypeLike(typ) && typ.name == "Upload") {
       let value = config.args[fieldArg.name];
       if (list) {
         expect(Array.isArray(value)).toBe(true);
@@ -149,25 +292,23 @@ function makeGraphQLRequest(
 
     idx = 0;
     for (let [key, val] of files) {
-      if (typeof val === "string") {
-        val = fs.createReadStream(val);
-      }
       ret.attach(`${idx}`, val, key);
       idx++;
     }
 
-    return [agent, ret];
+    return { agent, request: ret, cleanup };
   } else {
-    return [
+    return {
       agent,
-      agent
+      request: agent
         .post(config.graphQLPath || "/graphql")
         .set((config.headers || {}) as IncomingHttpHeaders)
         .send({
           query: query,
-          variables: JSON.stringify(variables),
+          variables,
         }),
-    ];
+      cleanup,
+    };
   }
 }
 
@@ -178,7 +319,7 @@ function buildTreeFromQueryPaths(
 ) {
   let fields: GraphQLFieldMap<any, any>;
   const [typ] = getInnerType(fieldType, false);
-  if (typ instanceof GraphQLObjectType) {
+  if (isObjectTypeLike(typ)) {
     fields = typ.getFields();
   }
   let topLevelTree = {};
@@ -194,7 +335,7 @@ function buildTreeFromQueryPaths(
       if (!typ) {
         throw new Error(`can't find type for ${match[1]} in schema`);
       }
-      if (typ instanceof GraphQLObjectType) {
+      if (isObjectTypeLike(typ)) {
         fields = typ.getFields();
       }
     } else {
@@ -250,7 +391,7 @@ function buildTreeFromQueryPaths(
           subField = root?.[p];
           if (subField) {
             [subField] = getInnerType(subField.type, false);
-            if (subField instanceof GraphQLObjectType) {
+            if (isObjectTypeLike(subField)) {
               root = subField.getFields();
             }
           }
@@ -259,7 +400,7 @@ function buildTreeFromQueryPaths(
         if (!subField) {
           return false;
         }
-        return isScalarType(subField) || isEnumType(subField);
+        return isScalarTypeLike(subField) || isEnumTypeLike(subField);
       }
 
       if (i === parts.length - 1 && typeof option[1] === "object") {
@@ -309,6 +450,8 @@ interface queryConfig {
   // to init express e.g. session, passport initialize etc
   init?: (app: Express) => void;
   test?: supertest.Agent | ((express: Express) => supertest.Agent);
+  // Bun supertest must target a listening URL; use this for Bun-specific agent setup.
+  bunTest?: (target: BunTestTarget) => supertest.Agent;
   // TODO
   // if none indicated, defaults to logged out viewer
   schema: GraphQLSchema;
@@ -482,8 +625,19 @@ async function expectFromRoot(
   if (config.debugMode) {
     console.log(q);
   }
-  let [st, temp] = makeGraphQLRequest(config, q, fieldArgs);
-  const res = await temp.expect("Content-Type", /json/);
+  const {
+    agent: st,
+    request,
+    cleanup,
+  } = await makeGraphQLRequest(config, q, fieldArgs);
+  let res: supertest.Response;
+  try {
+    res = await request.expect("Content-Type", /json/);
+  } finally {
+    if (cleanup) {
+      await cleanup();
+    }
+  }
   if (config.debugMode) {
     console.log(inspect(res.body, false, 3));
   }

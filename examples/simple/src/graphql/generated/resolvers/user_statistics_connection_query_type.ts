@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { UserStatistics } from "../../../ent";
+import { UserStatistics } from "../../../ent/user_statistics";
 import { UserStatisticsArgInputType } from "../mutations/input/user_statistics_arg_input_type";
 import { UserStatisticsSortColumnType } from "./enums_type";
 import { RootToUserStatisticsConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,9 @@ export const UserStatisticsConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   UserStatisticsConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToUserStatisticsConnectionType()),
+  get type() {
+    return new GraphQLNonNull(RootToUserStatisticsConnectionType());
+  },
   description: "custom query for user_statistics. connection",
   args: {
     ids: {

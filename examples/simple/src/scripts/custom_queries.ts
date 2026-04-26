@@ -24,8 +24,9 @@ async function main() {
     const temp = camelCase(query);
     const node = temp.charAt(0).toUpperCase() + temp.substring(1);
 
-    const schema: Schema = require("../schema/" +
-      p.substring(0, p.length - 3)).default;
+    const schema: Schema = require(
+      "../schema/" + p.substring(0, p.length - 3),
+    ).default;
     if (schema.hideFromGraphQL) {
       continue;
     }
@@ -73,7 +74,7 @@ async function main() {
 
     const listImports: any = [
       {
-        importPath: "src/ent",
+        importPath: `src/ent/${query}`,
         import: node,
       },
       {
@@ -83,7 +84,7 @@ async function main() {
     ];
     const connectionImports: any = [
       {
-        importPath: "src/ent",
+        importPath: `src/ent/${query}`,
         import: node,
       },
       {
@@ -151,11 +152,25 @@ async function main() {
       throw new Error('invalid query. must provid id or ids');
     }
 
-    return ${node}.loadCustom(
+    const rows = await ${node}.loadCustom(
       context.getViewer(), 
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map<string | number, number>(
+        args.ids.map((id: string | number, index: number): [string | number, number] => [
+          id,
+          index,
+        ]),
+      );
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
     `;
 
     const connectionContent = `

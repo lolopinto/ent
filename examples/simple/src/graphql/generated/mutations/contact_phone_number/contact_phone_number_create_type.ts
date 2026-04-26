@@ -73,7 +73,9 @@ export const ContactPhoneNumberCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactPhoneNumberCreateInput }
 > = {
-  type: new GraphQLNonNull(ContactPhoneNumberCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(ContactPhoneNumberCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

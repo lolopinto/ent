@@ -1,7 +1,7 @@
 import { gqlField, gqlObjectType, encodeGQLID } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 
-import { User } from "../../ent";
+import { User } from "../../ent/user";
 import { ExampleViewer } from "../../viewer/viewer";
 import { UserPrefsStruct, NotifType } from "../../ent/generated/types";
 

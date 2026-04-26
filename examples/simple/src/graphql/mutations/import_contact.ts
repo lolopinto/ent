@@ -7,7 +7,7 @@ import {
 import { GraphQLID } from "graphql";
 import { FileUpload } from "graphql-upload";
 import parse from "csv-parse";
-import { User } from "../../ent";
+import { User } from "../../ent/user";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { ExampleViewer } from "../../viewer/viewer";
 import { ContactLabel } from "../../ent/generated/types";

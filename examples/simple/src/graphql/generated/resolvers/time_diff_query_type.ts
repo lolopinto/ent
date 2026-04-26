@@ -21,7 +21,9 @@ export const TimeDiffQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   TimeDiffArgs
 > = {
-  type: new GraphQLNonNull(GraphQLString),
+  get type() {
+    return new GraphQLNonNull(GraphQLString);
+  },
   args: {
     time: {
       description: "",

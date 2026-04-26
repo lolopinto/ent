@@ -65,7 +65,9 @@ export const UserEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customUserEditInput }
 > = {
-  type: new GraphQLNonNull(UserEditPayloadType),
+  get type() {
+    return new GraphQLNonNull(UserEditPayloadType);
+  },
   args: {
     input: {
       description: "",

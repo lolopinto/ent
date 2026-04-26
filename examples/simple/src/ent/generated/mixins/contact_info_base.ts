@@ -6,6 +6,7 @@
 import type { Data, Ent, ID, Viewer } from "@snowtop/ent";
 import type { ContactInfoExtra } from "../types";
 import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import { convertNullableContactInfoExtra } from "../types";
 import { Contact } from "../../internal";
 
 export interface IContactInfoBase<
@@ -42,7 +43,7 @@ export function ContactInfoBaseMixin<T extends Constructor>(BaseClass: T) {
     constructor(...args: any[]) {
       super(...args);
       const { data } = extractFromArgs(args);
-      this._extra = data.extra;
+      this._extra = convertNullableContactInfoExtra(data.extra);
       this.contactId = data.contact_id;
       this.ownerId = data.owner_id;
     }

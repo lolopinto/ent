@@ -25,7 +25,9 @@ export const BulkUploadContactType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   BulkUploadContactArgs
 > = {
-  type: new GraphQLNonNull(UserType),
+  get type() {
+    return new GraphQLNonNull(UserType);
+  },
   args: {
     userId: {
       description: "",

@@ -118,7 +118,9 @@ export const CanViewerDoQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   {}
 > = {
-  type: GlobalCanViewerDoType,
+  get type() {
+    return GlobalCanViewerDoType;
+  },
   resolve: async (
     _source,
     args: {},

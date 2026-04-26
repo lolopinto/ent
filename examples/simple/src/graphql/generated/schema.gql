@@ -287,8 +287,8 @@ type Comment implements Node {
 }
 
 type ContactDate implements ContactItemType {
-  contact: Contact
   label: ContactLabel!
+  contact: Contact
   date: Time!
   description: String!
 }
@@ -340,8 +340,8 @@ input ContactItemFilter {
 union ContactItemResult = ContactDate | ContactEmail | ContactPhoneNumber
 
 interface ContactItem {
-  contact: Contact
   label: ContactLabel!
+  contact: Contact
 }
 
 type ContactPhoneNumber implements Node & ContactItemType {
@@ -2365,6 +2365,8 @@ type Mutation {
 The `Byte` scalar type represents byte value as a Buffer
 """
 scalar Byte
+
+scalar ContactLabel2
 
 """
 Date scalar type with format YYYY-MM-DD

@@ -43,6 +43,18 @@ type Config struct {
 	changedTSFiles   []string
 }
 
+type Runtime = codegenapi.Runtime
+
+type PostgresDriver = codegenapi.PostgresDriver
+
+const (
+	RuntimeNode = codegenapi.RuntimeNode
+	RuntimeBun  = codegenapi.RuntimeBun
+
+	PostgresDriverPG  = codegenapi.PostgresDriverPG
+	PostgresDriverBun = codegenapi.PostgresDriverBun
+)
+
 // Clone doesn't clone changes and changedTSFiles
 func (cfg *Config) Clone() *Config {
 	return &Config{
@@ -69,6 +81,38 @@ func (cfg *Config) OverrideGraphQLMutationName(mutationName codegenapi.GraphQLMu
 			DefaultGraphQLMutationName: mutationName,
 		},
 	}
+}
+
+func ParseRuntimeValue(runtime string) (Runtime, error) {
+	switch runtime {
+	case "", string(RuntimeNode):
+		return RuntimeNode, nil
+	case string(RuntimeBun):
+		return RuntimeBun, nil
+	default:
+		return "", fmt.Errorf("invalid runtime %q. valid values: %s, %s", runtime, RuntimeNode, RuntimeBun)
+	}
+}
+
+func normalizeRuntime(runtime string) Runtime {
+	val, _ := ParseRuntimeValue(runtime)
+	return val
+}
+
+func ParsePostgresDriverValue(driver string) (PostgresDriver, error) {
+	switch driver {
+	case "", string(PostgresDriverPG):
+		return PostgresDriverPG, nil
+	case string(PostgresDriverBun):
+		return PostgresDriverBun, nil
+	default:
+		return "", fmt.Errorf("invalid postgresDriver %q. valid values: %s, %s", driver, PostgresDriverPG, PostgresDriverBun)
+	}
+}
+
+func normalizePostgresDriver(driver string) PostgresDriver {
+	val, _ := ParsePostgresDriverValue(driver)
+	return val
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -223,6 +267,20 @@ func (cfg *Config) getDatabaseMigrationConfig() *DatabaseMigrationConfig {
 		return cfg.config.DatabaseMigration
 	}
 	return nil
+}
+
+func (cfg *Config) Runtime() codegenapi.Runtime {
+	if cfg.config != nil {
+		return cfg.config.RuntimeValue()
+	}
+	return RuntimeNode
+}
+
+func (cfg *Config) PostgresDriver() codegenapi.PostgresDriver {
+	if cfg.config != nil {
+		return cfg.config.PostgresDriverValue()
+	}
+	return PostgresDriverPG
 }
 
 func (cfg *Config) ShouldUseRelativePaths() bool {
@@ -665,6 +723,12 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 		if err := yaml.Unmarshal(b, &c); err != nil {
 			return nil, err
 		}
+		if _, err := ParseRuntimeValue(c.Runtime); err != nil {
+			return nil, err
+		}
+		if _, err := ParsePostgresDriverValue(c.PostgresDriver); err != nil {
+			return nil, err
+		}
 		if c.Codegen != nil {
 			c.Codegen.init()
 		}
@@ -673,10 +737,16 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 	return nil, nil
 }
 
+func ReadConfig(absPathToRoot string) (*ConfigurableConfig, error) {
+	return parseConfig(absPathToRoot)
+}
+
 type ConfigurableConfig struct {
 	Codegen                            *CodegenConfig           `yaml:"codegen"`
 	DatabaseMigration                  *DatabaseMigrationConfig `yaml:"databaseMigration"`
 	DevSchema                          *DevSchemaConfig         `yaml:"devSchema"`
+	Runtime                            string                   `yaml:"runtime"`
+	PostgresDriver                     string                   `yaml:"postgresDriver"`
 	CustomGraphQLJSONPath              string                   `yaml:"customGraphQLJSONPath"`
 	DynamicScriptCustomGraphQLJSONPath string                   `yaml:"dynamicScriptCustomGraphQLJSONPath"`
 	GlobalSchemaPath                   string                   `yaml:"globalSchemaPath"`
@@ -687,10 +757,26 @@ func (cfg *ConfigurableConfig) Clone() *ConfigurableConfig {
 		Codegen:                            cloneCodegen(cfg.Codegen),
 		DatabaseMigration:                  cloneDatabaseMigration(cfg.DatabaseMigration),
 		DevSchema:                          cloneDevSchema(cfg.DevSchema),
+		Runtime:                            cfg.Runtime,
+		PostgresDriver:                     cfg.PostgresDriver,
 		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
 		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
 		GlobalSchemaPath:                   cfg.GlobalSchemaPath,
 	}
+}
+
+func (cfg *ConfigurableConfig) RuntimeValue() Runtime {
+	if cfg == nil {
+		return RuntimeNode
+	}
+	return normalizeRuntime(cfg.Runtime)
+}
+
+func (cfg *ConfigurableConfig) PostgresDriverValue() PostgresDriver {
+	if cfg == nil {
+		return PostgresDriverPG
+	}
+	return normalizePostgresDriver(cfg.PostgresDriver)
 }
 
 func cloneConfig(cfg *ConfigurableConfig) *ConfigurableConfig {

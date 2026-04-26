@@ -64,7 +64,9 @@ export const FileCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customFileCreateInput }
 > = {
-  type: new GraphQLNonNull(FileCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(FileCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

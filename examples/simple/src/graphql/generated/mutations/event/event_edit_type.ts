@@ -92,7 +92,9 @@ export const EventEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customEventEditInput }
 > = {
-  type: new GraphQLNonNull(EventEditPayloadType),
+  get type() {
+    return new GraphQLNonNull(EventEditPayloadType);
+  },
   args: {
     input: {
       description: "",

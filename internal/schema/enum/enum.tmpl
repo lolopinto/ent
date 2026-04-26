@@ -16,6 +16,9 @@ export enum {{.Name}} {
 
 {{ $conv := .GetConvertFunctionInfo }}
 {{if $conv }}
+  {{ if $conv.ConvertListFromString -}}
+    {{ reserveImport "@snowtop/ent/core/convert" "convertList" }}
+  {{ end -}}
   {{$enumName := .Name}}
   export function {{$conv.Name}}(val: {{$conv.ConvertFuncTSType}}): {{$enumName}} {
     switch (val) {
@@ -35,11 +38,23 @@ export enum {{.Name}} {
     return {{$conv.Name}}(val);
   }
 
-  export function {{$conv.ListName}}(val: {{$conv.ConvertFuncTSType}}[]): {{$enumName}}[] {
-    return val.map(v => {{$conv.Name}}(v))
+  export function {{$conv.ListName}}(val: {{$conv.ConvertFuncTSType}}[]{{if $conv.ConvertListFromString}} | string{{end}}): {{$enumName}}[] {
+    {{ if $conv.ConvertListFromString -}}
+      const input = {{useImport "convertList"}}<{{$conv.ConvertFuncTSType}}>(
+        val,
+        {{if eq $conv.ConvertFuncTSType "number" -}}
+          (v: any) => (typeof v === "string" ? Number(v) : v),
+        {{else -}}
+          (v: any) => v as {{$conv.ConvertFuncTSType}},
+        {{end -}}
+      );
+      return input.map((v: {{$conv.ConvertFuncTSType}}) => {{$conv.Name}}(v))
+    {{ else -}}
+      return val.map(v => {{$conv.Name}}(v))
+    {{ end -}}
   }
 
-  export function {{$conv.NullableListName}}(val: {{$conv.ConvertFuncTSType}}[] | null): {{$enumName}}[] | null {
+  export function {{$conv.NullableListName}}(val: {{$conv.ConvertFuncTSType}}[]{{if $conv.ConvertListFromString}} | string{{end}} | null): {{$enumName}}[] | null {
   if (val === null || val === undefined) {
     return null;
   }

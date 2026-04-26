@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { HoursOfOperation } from "../../../ent";
+import { HoursOfOperation } from "../../../ent/hours_of_operation";
 import { HoursOfOperationType } from "../../resolvers/internal";
 
 interface HoursOfOperationListDeprecatedArgs {
@@ -31,9 +31,11 @@ export const HoursOfOperationListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   HoursOfOperationListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(
-    new GraphQLList(new GraphQLNonNull(HoursOfOperationType)),
-  ),
+  get type() {
+    return new GraphQLNonNull(
+      new GraphQLList(new GraphQLNonNull(HoursOfOperationType)),
+    );
+  },
   description: "custom query for hours_of_operation. list",
   args: {
     id: {
@@ -69,10 +71,26 @@ export const HoursOfOperationListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return HoursOfOperation.loadCustom(
+    const rows = await HoursOfOperation.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map<string | number, number>(
+        args.ids.map(
+          (id: string | number, index: number): [string | number, number] => [
+            id,
+            index,
+          ],
+        ),
+      );
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

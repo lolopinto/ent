@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { HoursOfOperation } from "../../../ent";
+import { HoursOfOperation } from "../../../ent/hours_of_operation";
 import { HoursOfOperationArgInputType } from "../mutations/input/hours_of_operation_arg_input_type";
 import { HoursOfOperationSortColumnType } from "./enums_type";
 import { RootToHoursOfOperationConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,9 @@ export const HoursOfOperationConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   HoursOfOperationConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToHoursOfOperationConnectionType()),
+  get type() {
+    return new GraphQLNonNull(RootToHoursOfOperationConnectionType());
+  },
   description: "custom query for hours_of_operation. connection",
   args: {
     ids: {

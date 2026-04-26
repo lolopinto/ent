@@ -17,6 +17,7 @@ import type { HolidayDBData } from "./loaders";
 import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 import {
   AllowIfViewerPrivacyPolicy,
+  convertDBDate,
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
@@ -54,7 +55,7 @@ export class HolidayBase
     this.updatedAt = data.updated_at;
     this.dayOfWeekAlt = convertDayOfWeekAlt(data.day_of_week_alt);
     this.label = data.label;
-    this.date = data.date;
+    this.date = convertDBDate(data.date);
     // @ts-expect-error
     this.data = data;
   }

@@ -70,7 +70,9 @@ export const HolidayCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: HolidayCreateInput }
 > = {
-  type: new GraphQLNonNull(HolidayCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(HolidayCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

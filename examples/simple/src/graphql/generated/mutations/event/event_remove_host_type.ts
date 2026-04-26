@@ -61,7 +61,9 @@ export const EventRemoveHostType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customEventRemoveHostInput }
 > = {
-  type: new GraphQLNonNull(EventRemoveHostPayloadType),
+  get type() {
+    return new GraphQLNonNull(EventRemoveHostPayloadType);
+  },
   args: {
     input: {
       description: "",

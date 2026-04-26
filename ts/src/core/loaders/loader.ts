@@ -228,15 +228,15 @@ export function createLoaderCacheMap<K, V>(
   options: DataOptions,
 ): CacheMapLike<K, V> {
   const baseMap: CacheMapLike<K, V> = logEnabled("query")
-    ? new CacheMap(options)
-    : new Map();
+    ? new CacheMap<K, V>(options)
+    : new Map<K, V>();
   return createBoundedCacheMap(baseMap);
 }
 
-export class CacheMap {
-  private m = new Map();
+export class CacheMap<K, V> implements CacheMapLike<K, V> {
+  private m = new Map<K, V>();
   constructor(private options: DataOptions) {}
-  get(key) {
+  get(key: K) {
     const ret = this.m.get(key);
     if (ret) {
       // should this be debug?
@@ -251,11 +251,11 @@ export class CacheMap {
     return ret;
   }
 
-  set(key, value) {
+  set(key: K, value: V) {
     return this.m.set(key, value);
   }
 
-  delete(key) {
+  delete(key: K) {
     return this.m.delete(key);
   }
 

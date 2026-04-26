@@ -1,4 +1,5 @@
-import DB, { Client, Sqlite, SyncClient } from "./db";
+import DB, { BunPostgres, Client, Sqlite, SyncClient } from "./db";
+import { convertList } from "./convert";
 import {
   integer,
   table,
@@ -475,6 +476,94 @@ describe("sqlite", () => {
     } catch (err) {
       expect((err as Error).message).toBe("no such table: hello");
     }
+  });
+});
+
+describe("bun postgres wrapper", () => {
+  test("normalizes Bun SQL query results and reserved clients", async () => {
+    const reserved = {
+      unsafe: jest.fn().mockResolvedValue([{ id: 2 }]),
+      release: jest.fn(),
+    };
+    const sql = {
+      unsafe: jest
+        .fn()
+        .mockResolvedValue(Object.assign([{ id: 1 }], { count: 1 })),
+      reserve: jest.fn().mockResolvedValue(reserved),
+      close: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const conn = new BunPostgres(sql as any);
+    expect(await conn.query("SELECT 1")).toEqual({
+      rowCount: 1,
+      rows: [{ id: 1 }],
+    });
+
+    const execResult = await conn.exec("UPDATE users SET foo = $1", ["bar"]);
+    expect(execResult).toEqual({
+      rowCount: 1,
+      rows: [{ id: 1 }],
+    });
+    expect(sql.unsafe).toHaveBeenLastCalledWith("UPDATE users SET foo = $1", [
+      "bar",
+    ]);
+
+    await conn.exec("SELECT $1::text[]", [["a", '"quoted"', null, "x\\y"]]);
+    expect(sql.unsafe).toHaveBeenLastCalledWith("SELECT $1::text[]", [
+      '{"a","\\"quoted\\"",NULL,"x\\\\y"}',
+    ]);
+
+    const client = await conn.newClient();
+    expect(await client.query("SELECT 2")).toEqual({
+      rowCount: 1,
+      rows: [{ id: 2 }],
+    });
+    await client.release();
+    expect(reserved.release).toHaveBeenCalledTimes(1);
+
+    await conn.close();
+    expect(sql.close).toHaveBeenCalledTimes(1);
+  });
+
+  test("preserves string columns that look like JSON or arrays", async () => {
+    const sql = {
+      unsafe: jest.fn().mockResolvedValue(
+        Object.assign(
+          [
+            {
+              json_like: '{"theme":"dark"}',
+              array_like: '{"a","b"}',
+              quoted_like: '"quoted"',
+              actual_array: ['"x"', '"y"'],
+              json_array: ['{"theme":"dark"}', "plain"],
+            },
+          ],
+          { count: 1 },
+        ),
+      ),
+      reserve: jest.fn(),
+      close: jest.fn().mockResolvedValue(undefined),
+    };
+
+    const conn = new BunPostgres(sql as any);
+    expect(await conn.query("SELECT 1")).toEqual({
+      rowCount: 1,
+      rows: [
+        {
+          json_like: '{"theme":"dark"}',
+          array_like: '{"a","b"}',
+          quoted_like: '"quoted"',
+          actual_array: ['"x"', '"y"'],
+          json_array: ['{"theme":"dark"}', "plain"],
+        },
+      ],
+    });
+  });
+
+  test("convertList parses postgres array literals for typed list fields", () => {
+    expect(convertList('{"a","b"}')).toEqual(["a", "b"]);
+    expect(convertList("{}")).toEqual([]);
+    expect(convertList("{2,3}", Number)).toEqual([2, 3]);
   });
 });
 

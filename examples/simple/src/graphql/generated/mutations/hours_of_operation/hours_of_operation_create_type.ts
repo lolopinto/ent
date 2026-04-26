@@ -65,7 +65,9 @@ export const HoursOfOperationCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: HoursOfOperationCreateInput }
 > = {
-  type: new GraphQLNonNull(HoursOfOperationCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(HoursOfOperationCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

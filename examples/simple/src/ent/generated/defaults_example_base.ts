@@ -18,6 +18,7 @@ import type { DefaultsPayload } from "./types";
 import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 import {
   AllowIfViewerPrivacyPolicy,
+  convertList,
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
@@ -53,7 +54,7 @@ export class DefaultsExampleBase implements Ent<ExampleViewerAlias> {
     this.name = data.name;
     this.perHour = data.per_hour;
     this.hourlyLimit = data.hourly_limit;
-    this.payloads = convertDefaultsPayloadList(data.payloads);
+    this.payloads = convertDefaultsPayloadList(convertList(data.payloads));
     // @ts-expect-error
     this.data = data;
   }

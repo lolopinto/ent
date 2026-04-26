@@ -55,7 +55,9 @@ export const ContactPhoneNumberDeleteType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactPhoneNumberDeleteInput }
 > = {
-  type: new GraphQLNonNull(ContactPhoneNumberDeletePayloadType),
+  get type() {
+    return new GraphQLNonNull(ContactPhoneNumberDeletePayloadType);
+  },
   args: {
     input: {
       description: "",

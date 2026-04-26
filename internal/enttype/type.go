@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/lolopinto/ent/ent/config"
+	"github.com/lolopinto/ent/internal/codegen/codegenapi"
 	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/tsimport"
 )
@@ -2001,6 +2002,18 @@ func ConvertFuncs(t Type, s SchemaType) []string {
 	return ret
 }
 
+func BunPostgresConvertFuncs(t Type, s SchemaType, cfg codegenapi.Config) []string {
+	imps := BunPostgresConvertImportPaths(t, s, cfg)
+	if imps == nil {
+		return nil
+	}
+	var ret []string
+	for _, imp := range imps {
+		ret = append(ret, imp.Import)
+	}
+	return ret
+}
+
 func ConvertImportPaths(t Type, s SchemaType) []*tsimport.ImportPath {
 	tt, ok := t.(ConvertDataType)
 	if !ok {
@@ -2009,6 +2022,47 @@ func ConvertImportPaths(t Type, s SchemaType) []*tsimport.ImportPath {
 
 	m := tt.Convert(s)
 	return m[config.GetDialect()]
+}
+
+func BunPostgresConvertImportPaths(t Type, s SchemaType, cfg codegenapi.Config) []*tsimport.ImportPath {
+	if cfg == nil || cfg.PostgresDriver() != codegenapi.PostgresDriverBun || config.GetDialect() != config.Postgres {
+		return nil
+	}
+	switch tt := t.(type) {
+	case *DateType:
+		return []*tsimport.ImportPath{tsimport.NewEntImportPath("convertDBDate")}
+	case *NullableDateType:
+		return []*tsimport.ImportPath{tsimport.NewEntImportPath("convertNullableDBDate")}
+	case *ArrayListType:
+		return bunPostgresListConvertImportPaths(tt.ElemType, false)
+	case *NullableArrayListType:
+		return bunPostgresListConvertImportPaths(tt.ElemType, true)
+	default:
+		return nil
+	}
+}
+
+func bunPostgresListConvertImportPaths(elem TSType, nullable bool) []*tsimport.ImportPath {
+	if _, ok := elem.(EnumeratedType); ok {
+		return nil
+	}
+
+	var imp string
+	switch elem.(type) {
+	case *DateType:
+		if nullable {
+			imp = "convertNullableDBDateList"
+		} else {
+			imp = "convertDBDateList"
+		}
+	default:
+		if nullable {
+			imp = "convertNullableList"
+		} else {
+			imp = "convertList"
+		}
+	}
+	return []*tsimport.ImportPath{tsimport.NewEntImportPath(imp)}
 }
 
 // this exists because we need to account for lists...

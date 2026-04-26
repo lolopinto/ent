@@ -55,7 +55,9 @@ export const UserStatisticsDeleteType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customUserStatisticsDeleteInput }
 > = {
-  type: new GraphQLNonNull(UserStatisticsDeletePayloadType),
+  get type() {
+    return new GraphQLNonNull(UserStatisticsDeletePayloadType);
+  },
   args: {
     input: {
       description: "",

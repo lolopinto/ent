@@ -63,6 +63,13 @@ type ConvertMethodInfo struct {
 }
 
 func (cu *CustomUnion) HasConvertFunction(cfg codegenapi.Config) bool {
+	if cfg.PostgresDriver() == codegenapi.PostgresDriverBun {
+		// Same normalization boundary as custom interfaces: Bun Postgres can
+		// return serialized custom payloads, and unions need a converter to
+		// parse first and then narrow to the declared variant.
+		return true
+	}
+
 	for _, inter := range cu.Interfaces {
 		if inter.HasConvertFunction(cfg) {
 			return true

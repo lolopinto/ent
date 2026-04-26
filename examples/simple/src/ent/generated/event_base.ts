@@ -19,6 +19,7 @@ import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 import {
   AllowIfViewerPrivacyPolicy,
   applyPrivacyPolicy,
+  convertNullableList,
   convertNullableTextToBuffer,
   getEdgeTypeInGroup,
   loadCustomCount,
@@ -82,7 +83,9 @@ export class EventBase implements Ent<ExampleViewerAlias> {
     this._addressId = data.address_id;
     this.coverPhoto = data.cover_photo;
     this.coverPhoto2 = convertNullableTextToBuffer(data.cover_photo2);
-    this.attachments = convertNullableAttachmentList(data.attachments);
+    this.attachments = convertNullableAttachmentList(
+      convertNullableList(data.attachments),
+    );
     // @ts-expect-error
     this.data = data;
   }

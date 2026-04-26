@@ -55,7 +55,9 @@ export const FileDeleteType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customFileDeleteInput }
 > = {
-  type: new GraphQLNonNull(FileDeletePayloadType),
+  get type() {
+    return new GraphQLNonNull(FileDeletePayloadType);
+  },
   args: {
     input: {
       description: "",

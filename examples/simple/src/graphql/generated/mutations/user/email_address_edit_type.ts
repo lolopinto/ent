@@ -62,7 +62,9 @@ export const EmailAddressEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customEditEmailAddressInput }
 > = {
-  type: new GraphQLNonNull(EditEmailAddressPayloadType),
+  get type() {
+    return new GraphQLNonNull(EditEmailAddressPayloadType);
+  },
   args: {
     input: {
       description: "",

@@ -12,6 +12,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Added
 
 - add a codegen feature matrix smoke suite for generated TypeScript, GraphQL, DB schema, and idempotence coverage (#1984).
+- add optional Bun runtime and Bun native Postgres driver support (#1976).
 
 ### Fixed
 

@@ -3,6 +3,7 @@
 {{ $cfg := .Config }}
 {{ $schema := .Schema }}
 {{ $root := .Root }} 
+{{ $bunPostgres := eq $cfg.PostgresDriver "bun" }}
 
 
 {{ range $ci.GetAllCustomTypes -}}
@@ -18,12 +19,15 @@
       {{ else -}}
         function {{.GetConvertMethod}}(input: any): {{.TSType}} {
       {{ end -}}
+        {{ if $bunPostgres -}}
+          const data = typeof input === "string" ? JSON.parse(input) : input;
+        {{ end -}}
         return {
           {{range $field := .Fields -}}
             {{ if $field.HasConvertFunction $cfg $schema -}}
-              {{$field.TsFieldName $cfg}}: {{$field.GetConvertMethod $cfg}}(input.{{$field.GetDbColName}}),
+              {{$field.TsFieldName $cfg}}: {{$field.GetConvertMethod $cfg}}({{if $bunPostgres}}data{{else}}input{{end}}.{{$field.GetDbColName}}),
             {{else -}}
-              {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},
+              {{$field.TsFieldName $cfg}}: {{if $bunPostgres}}data{{else}}input{{end}}.{{$field.GetDbColName}},
             {{end -}}
           {{end -}}
         };
@@ -43,14 +47,24 @@
 
       {{ if .GenerateListConvert}}
         export function {{.GetConvertListMethod}}(input: any[]): {{.TSType}}[] {
-          return input.map(v => {{.GetConvertMethod}}(v));
+          {{ if $bunPostgres -}}
+            const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+            return list.map((v: any) => {{.GetConvertMethod}}(v));
+          {{ else -}}
+            return input.map(v => {{.GetConvertMethod}}(v));
+          {{ end -}}
         }
 
         export function {{.GetConvertNullableListMethod}}(input: any[] | null): {{.TSType}}[] | null {
           if (input === null || input === undefined) {
             return null;
           }
-          return input.map(v => {{.GetConvertMethod}}(v));
+          {{ if $bunPostgres -}}
+            const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+            return list.map((v: any) => {{.GetConvertMethod}}(v));
+          {{ else -}}
+            return input.map(v => {{.GetConvertMethod}}(v));
+          {{ end -}}
         }
       {{ end }}
     {{end -}}
@@ -59,17 +73,20 @@
     {{ .GetTypeDeclaration }}
     {{$info := .GetConvertMethodInfo $cfg }}
     function {{$info.Method}}(input: any): {{.TSType}} {
+      {{ if $bunPostgres -}}
+        const data = typeof input === "string" ? JSON.parse(input) : input;
+      {{ end -}}
       {{range $info.Infos -}} 
         {{if .HasConvertFunction -}}
-          if (input.{{.Field}} !== undefined) {
-            return {{.ReturnFunction}}(input);
+          if ({{if $bunPostgres}}data{{else}}input{{end}}.{{.Field}} !== undefined) {
+            return {{.ReturnFunction}}({{if $bunPostgres}}data{{else}}input{{end}});
           }
         {{ end -}}
       {{ end -}}
       {{ if $info.Default -}}
-        return {{$info.Default}}(input);
+        return {{$info.Default}}({{if $bunPostgres}}data{{else}}input{{end}});
       {{ else -}}
-        return input;
+        return {{if $bunPostgres}}data{{else}}input{{end}};
       {{ end -}}
     }
 

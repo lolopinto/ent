@@ -52,6 +52,7 @@ type Schema struct {
 
 	// used to keep track of schema-state
 	inputSchema *input.Schema
+	cfg         codegenapi.Config
 }
 
 func (s *Schema) GetInputSchema() *input.Schema {
@@ -213,6 +214,7 @@ func (s *Schema) addEnumFromInputNode(nodeName string, node *input.Node, nodeDat
 
 func (s *Schema) addEnumFrom(input *enum.Input, nodeData *NodeData, inputNode *input.Node, exposeToGraphQL bool) error {
 	tsEnum, gqlEnum := enum.GetEnums(input)
+	s.applyRuntimeOptionsToEnum(tsEnum)
 
 	// first create EnumInfo...
 	info := &EnumInfo{
@@ -253,6 +255,7 @@ func (s *Schema) addEnumFromPattern(enumType enttype.EnumeratedType, pattern *in
 
 func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern, exposeToGraphQL bool) (*EnumInfo, error) {
 	tsEnum, gqlEnum := enum.GetEnums(input)
+	s.applyRuntimeOptionsToEnum(tsEnum)
 
 	// first create EnumInfo...
 	info := &EnumInfo{
@@ -270,6 +273,13 @@ func (s *Schema) addEnumFromInput(input *enum.Input, pattern *input.Pattern, exp
 		return nil, err
 	}
 	return info, nil
+}
+
+func (s *Schema) applyRuntimeOptionsToEnum(tsEnum *enum.Enum) {
+	if tsEnum == nil || s.cfg == nil {
+		return
+	}
+	tsEnum.ConvertListFromString = s.cfg.PostgresDriver() == codegenapi.PostgresDriverBun
 }
 
 func (s *Schema) addGlobalEnum(enumType enttype.EnumeratedType, exposeToGraphQL bool) (*EnumInfo, error) {
@@ -429,6 +439,7 @@ func (s *Schema) AddExistingEdgeTable(tableName string) {
 
 func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, lang base.Language) (*assocEdgeData, error) {
 	s.inputSchema = schema
+	s.cfg = cfg
 
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
@@ -792,7 +803,6 @@ func (s *Schema) validateEdgeIndices() error {
 
 	return nil
 }
-
 
 func normalizeDBExtensionName(name string) string {
 	return strings.ToLower(strings.TrimSpace(name))

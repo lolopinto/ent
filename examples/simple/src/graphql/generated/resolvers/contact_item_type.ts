@@ -16,6 +16,9 @@ export const ContactItemType = new GraphQLInterfaceType({
     ContactItem,
     RequestContext<ExampleViewerAlias>
   > => ({
+    label: {
+      type: new GraphQLNonNull(ContactLabelType),
+    },
     contact: {
       type: ContactType,
       resolve: (
@@ -25,9 +28,6 @@ export const ContactItemType = new GraphQLInterfaceType({
       ) => {
         return obj.contact();
       },
-    },
-    label: {
-      type: new GraphQLNonNull(ContactLabelType),
     },
   }),
 });

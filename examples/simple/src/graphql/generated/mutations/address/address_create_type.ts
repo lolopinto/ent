@@ -67,7 +67,9 @@ export const AddressCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: AddressCreateInput }
 > = {
-  type: new GraphQLNonNull(AddressCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(AddressCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

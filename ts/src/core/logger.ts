@@ -1,6 +1,7 @@
 // query are things that go in database
 type logType = "query" | "warn" | "info" | "error" | "debug" | "cache";
-var m: { [key in logType]: string } = {
+type consoleMethod = "log" | "warn" | "error" | "debug";
+var m: { [key in logType]: consoleMethod } = {
   query: "log",
   warn: "warn",
   info: "log",
@@ -23,19 +24,21 @@ export function clearLogLevels() {
 
 export function log(level: logType, msg: any) {
   if (logLevels.has(level)) {
+    const method = m[level];
     // mostly for sqlite error but fine for any type of error
     if (level == "error" && msg instanceof Error && msg.message !== undefined) {
       console.error(msg.message);
       return;
     }
     // console[m[level]](inspect(msg, false, 10));
-    console[m[level]](msg);
+    console[method](msg);
   }
 }
 
 export function logIf(level: logType, logFn: () => any) {
   if (logLevels.has(level)) {
-    console[m[level]](logFn());
+    const method = m[level];
+    console[method](logFn());
   }
 }
 

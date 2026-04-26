@@ -19,6 +19,7 @@ import {
   mutationRootConfig,
   expectQueryFromRoot,
   expectMutation,
+  cleanupBunGraphQLTestAgent,
 } from "./index";
 
 import { GraphQLNodeInterface } from "@snowtop/ent/graphql";
@@ -28,6 +29,26 @@ import {
   processRequest,
   sendResult,
 } from "graphql-helix";
+
+async function withBunRuntime(fn: () => Promise<void>) {
+  const descriptor = Object.getOwnPropertyDescriptor(process.versions, "bun");
+  const afterAllFn = (globalThis as any).afterAll;
+  Object.defineProperty(process.versions, "bun", {
+    value: "test",
+    configurable: true,
+  });
+  (globalThis as any).afterAll = undefined;
+  try {
+    await fn();
+  } finally {
+    (globalThis as any).afterAll = afterAllFn;
+    if (descriptor) {
+      Object.defineProperty(process.versions, "bun", descriptor);
+    } else {
+      delete (process.versions as any).bun;
+    }
+  }
+}
 
 test("simplest query", async () => {
   const schema = new GraphQLSchema({
@@ -53,6 +74,44 @@ test("simplest query", async () => {
 
   // root query
   await expectQueryFromRoot(cfg, ["", "world"]);
+});
+
+test("bun mode preserves the Express app test factory contract", async () => {
+  await withBunRuntime(async () => {
+    const schema = new GraphQLSchema({
+      query: new GraphQLObjectType({
+        name: "RootQueryType",
+        fields: {
+          hello: {
+            type: GraphQLString,
+            resolve() {
+              return "world";
+            },
+          },
+        },
+      }),
+    });
+
+    let factoryCalled = false;
+    let factoryAgent: supertest.Agent | undefined;
+    const cfg: queryRootConfig = {
+      schema,
+      args: {},
+      root: "hello",
+      test: (app) => {
+        factoryCalled = true;
+        expect(typeof app.use).toBe("function");
+        expect(typeof app.listen).toBe("function");
+        factoryAgent = supertest.agent(app);
+        return factoryAgent;
+      },
+    };
+
+    const agent = await expectQueryFromRoot(cfg, ["", "world"]);
+    await cleanupBunGraphQLTestAgent(agent);
+    expect(factoryCalled).toBe(true);
+    expect(agent).toBe(factoryAgent);
+  });
 });
 
 interface Node {

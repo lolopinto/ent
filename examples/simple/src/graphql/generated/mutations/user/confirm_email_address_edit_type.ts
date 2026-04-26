@@ -66,7 +66,9 @@ export const ConfirmEmailAddressEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customConfirmEditEmailAddressInput }
 > = {
-  type: new GraphQLNonNull(ConfirmEditEmailAddressPayloadType),
+  get type() {
+    return new GraphQLNonNull(ConfirmEditEmailAddressPayloadType);
+  },
   args: {
     input: {
       description: "",

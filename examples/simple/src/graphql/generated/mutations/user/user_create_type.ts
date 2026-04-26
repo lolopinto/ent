@@ -113,7 +113,9 @@ export const UserCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: UserCreateInput }
 > = {
-  type: new GraphQLNonNull(UserCreatePayloadType),
+  get type() {
+    return new GraphQLNonNull(UserCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

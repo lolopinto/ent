@@ -550,7 +550,7 @@ class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 
   values(): any[] {
-    let result = [];
+    let result: any[] = [];
     for (const clause of this.clauses) {
       result = result.concat(...clause.values());
     }
@@ -558,7 +558,7 @@ class compositeClause<T extends Data, K = keyof T> implements Clause<T, K> {
   }
 
   logValues(): any[] {
-    let result = [];
+    let result: any[] = [];
     for (const clause of this.clauses) {
       result = result.concat(...clause.logValues());
     }

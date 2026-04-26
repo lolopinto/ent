@@ -47,7 +47,9 @@ export const UserAuthJWT2Type: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   UserAuthJWT2Args
 > = {
-  type: new GraphQLNonNull(UserAuthJWTLoginType),
+  get type() {
+    return new GraphQLNonNull(UserAuthJWTLoginType);
+  },
   description: "authenticate a user with JWT",
   args: {
     emailAddress: {

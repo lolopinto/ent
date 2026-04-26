@@ -63,7 +63,9 @@ export const ViewerQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   {}
 > = {
-  type: new GraphQLNonNull(ViewerType),
+  get type() {
+    return new GraphQLNonNull(ViewerType);
+  },
   description: "the viewer query",
   resolve: async (
     _source,

@@ -1,8 +1,6 @@
 import {
   GraphQLEnumType,
   GraphQLScalarType,
-  isEnumType,
-  isScalarType,
 } from "graphql";
 import { Data } from "../core/base";
 import type { FieldMap } from "../schema";
@@ -204,6 +202,18 @@ export interface CustomObject {
   unionTypes?: string[];
 }
 
+interface NormalizedClassDecoratorContext {
+  kind: "class";
+  name: string | symbol;
+}
+
+interface NormalizedMemberDecoratorContext {
+  kind: "method" | "field" | "getter";
+  name: string | symbol;
+  static: boolean;
+  private: boolean;
+}
+
 type NullableListOptions = "contents" | "contentsAndList";
 
 interface FieldImpl {
@@ -290,11 +300,20 @@ export const isCustomType = (type: Type): type is CustomTypeInput => {
 };
 
 const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
-  return isScalarType(type as GraphQLScalarType);
+  return !!type &&
+    typeof type === "object" &&
+    typeof (type as GraphQLScalarType).serialize === "function" &&
+    typeof (type as GraphQLScalarType).parseValue === "function" &&
+    typeof (type as GraphQLScalarType).parseLiteral === "function";
 };
 
 const isGraphQLEnumType = (type: Type): type is GraphQLEnumType => {
-  return isEnumType(type as GraphQLEnumType);
+  return (
+    !!type &&
+    typeof type === "object" &&
+    typeof (type as GraphQLEnumType).getValues === "function" &&
+    typeof (type as GraphQLEnumType).toConfig === "function"
+  );
 };
 
 export const addCustomType = async (
@@ -337,15 +356,20 @@ export const addCustomType = async (
       }
     } catch (e) {
       if (type.secondaryImportPath) {
-        await addCustomType(
-          {
-            ...type,
-            importPath: type.secondaryImportPath,
-          },
-          gqlCapture,
-        );
+        try {
+          const r = require(type.secondaryImportPath);
+          const ct = r[type.type];
+          if (ct && isGraphQLScalarType(ct)) {
+            type.scalarInfo = {
+              description: ct.description,
+              name: ct.name,
+            };
+            if (ct.specifiedByURL) {
+              type.scalarInfo.specifiedByUrl = ct.specifiedByURL;
+            }
+          }
+        } catch {}
       }
-      return;
     }
   }
 
@@ -397,8 +421,8 @@ const getType = (
     return;
   }
   // GraphQLScalarType or GraphQLEnumType or ClassType
-  result.scalarType = isGraphQLScalarType(typ);
   result.enumType = isGraphQLEnumType(typ);
+  result.scalarType = !result.enumType && isGraphQLScalarType(typ);
   result.type = typ.name;
   return;
 };
@@ -471,6 +495,76 @@ export class GQLCapture {
 
   static getCustomTypes(): Map<string, CustomType> {
     return this.customTypes;
+  }
+
+  private static normalizeClassDecoratorContext(
+    target: any,
+    ctx?: ClassDecoratorContext,
+  ): NormalizedClassDecoratorContext | null {
+    if (ctx && typeof ctx === "object" && ctx.kind === "class" && ctx.name) {
+      return {
+        kind: "class",
+        name: ctx.name,
+      };
+    }
+    if (typeof target === "function" && target.name) {
+      return {
+        kind: "class",
+        name: target.name,
+      };
+    }
+    return null;
+  }
+
+  private static normalizeMemberDecoratorContext(
+    target: any,
+    ctxOrProperty:
+      | ClassMethodDecoratorContext
+      | ClassFieldDecoratorContext
+      | ClassGetterDecoratorContext
+      | string
+      | symbol
+      | undefined,
+    descriptor?: PropertyDescriptor,
+  ): NormalizedMemberDecoratorContext | null {
+    if (
+      ctxOrProperty &&
+      typeof ctxOrProperty === "object" &&
+      "kind" in ctxOrProperty &&
+      (ctxOrProperty.kind === "method" ||
+        ctxOrProperty.kind === "field" ||
+        ctxOrProperty.kind === "getter")
+    ) {
+      return {
+        kind: ctxOrProperty.kind,
+        name: ctxOrProperty.name,
+        static: ctxOrProperty.static,
+        private: ctxOrProperty.private,
+      };
+    }
+
+    if (
+      typeof ctxOrProperty !== "string" &&
+      typeof ctxOrProperty !== "symbol"
+    ) {
+      return null;
+    }
+
+    let kind: NormalizedMemberDecoratorContext["kind"] = "field";
+    if (descriptor) {
+      if (typeof descriptor.value === "function") {
+        kind = "method";
+      } else if (typeof descriptor.get === "function") {
+        kind = "getter";
+      }
+    }
+
+    return {
+      kind,
+      name: ctxOrProperty,
+      static: typeof target === "function",
+      private: false,
+    };
   }
 
   private static getNullableArg(fd: Field): ProcessedField {
@@ -581,14 +675,23 @@ export class GQLCapture {
 
   static gqlField(options: gqlFieldOptions): any {
     return function (
-      _target: any,
-      ctx:
+      target: any,
+      ctxOrProperty:
         | ClassMethodDecoratorContext
         | ClassFieldDecoratorContext
-        | ClassGetterDecoratorContext,
+        | ClassGetterDecoratorContext
+        | string
+        | symbol,
+      descriptor?: PropertyDescriptor,
     ) {
+      const ctx = GQLCapture.normalizeMemberDecoratorContext(
+        target,
+        ctxOrProperty,
+        descriptor,
+      );
       if (
         !GQLCapture.isEnabled() ||
+        !ctx ||
         (ctx.kind !== "method" &&
           ctx.kind !== "field" &&
           ctx.kind !== "getter") ||
@@ -639,7 +742,8 @@ export class GQLCapture {
     ctx:
       | ClassMethodDecoratorContext
       | ClassFieldDecoratorContext
-      | ClassGetterDecoratorContext,
+      | ClassGetterDecoratorContext
+      | NormalizedMemberDecoratorContext,
     options: gqlFieldOptions | gqlMutationOptions | gqlQueryOptions,
     allowNoReturnType?: boolean,
   ): CustomField {
@@ -699,14 +803,20 @@ export class GQLCapture {
   }
 
   static gqlArgType(options?: gqlObjectOptions): any {
-    return function (target: any, ctx: ClassDecoratorContext): void {
-      return GQLCapture.customGQLObject(ctx, GQLCapture.customArgs, options);
+    return function (target: any, ctx?: ClassDecoratorContext): void {
+      return GQLCapture.customGQLObject(
+        target,
+        ctx,
+        GQLCapture.customArgs,
+        options,
+      );
     };
   }
 
   static gqlInputObjectType(options?: gqlObjectOptions): any {
-    return function (target: any, ctx: ClassDecoratorContext): void {
+    return function (target: any, ctx?: ClassDecoratorContext): void {
       return GQLCapture.customGQLObject(
+        target,
         ctx,
         GQLCapture.customInputObjects,
         options,
@@ -715,20 +825,31 @@ export class GQLCapture {
   }
 
   static gqlObjectType(options?: gqlObjectWithInterfaceOptions): any {
-    return function (target: any, ctx: ClassDecoratorContext): void {
-      return GQLCapture.customGQLObject(ctx, GQLCapture.customObjects, options);
+    return function (target: any, ctx?: ClassDecoratorContext): void {
+      return GQLCapture.customGQLObject(
+        target,
+        ctx,
+        GQLCapture.customObjects,
+        options,
+      );
     };
   }
 
   static gqlUnionType(options: gqlObjectWithUnionOptions): any {
-    return function (target: any, ctx: ClassDecoratorContext): void {
-      return GQLCapture.customGQLObject(ctx, GQLCapture.customUnions, options);
+    return function (target: any, ctx?: ClassDecoratorContext): void {
+      return GQLCapture.customGQLObject(
+        target,
+        ctx,
+        GQLCapture.customUnions,
+        options,
+      );
     };
   }
 
   static gqlInterfaceType(options?: gqlObjectOptions): any {
-    return function (target: any, ctx: ClassDecoratorContext): void {
+    return function (target: any, ctx?: ClassDecoratorContext): void {
       return GQLCapture.customGQLObject(
+        target,
         ctx,
         GQLCapture.customInterfaces,
         options,
@@ -737,15 +858,17 @@ export class GQLCapture {
   }
 
   private static customGQLObject(
-    ctx: ClassDecoratorContext,
+    target: any,
+    ctx: ClassDecoratorContext | undefined,
     map: Map<string, CustomObject>,
     options?: gqlObjectWithInterfaceOptions | gqlObjectWithUnionOptions,
   ) {
-    if (!GQLCapture.isEnabled() || ctx.kind !== "class" || !ctx.name) {
+    const normalized = GQLCapture.normalizeClassDecoratorContext(target, ctx);
+    if (!GQLCapture.isEnabled() || !normalized) {
       return;
     }
 
-    let className = ctx.name.toString();
+    let className = normalized.name.toString();
     let nodeName = options?.name || className;
 
     map.set(className, {
@@ -761,8 +884,17 @@ export class GQLCapture {
 
   // we want to specify args if any, name, response if any
   static gqlQuery(options: gqlQueryOptions): any {
-    return function (target: Function, ctx: ClassMethodDecoratorContext): void {
-      if (!GQLCapture.isEnabled()) {
+    return function (
+      target: any,
+      ctxOrProperty: ClassMethodDecoratorContext | string | symbol,
+      descriptor?: PropertyDescriptor,
+    ): void {
+      const ctx = GQLCapture.normalizeMemberDecoratorContext(
+        target,
+        ctxOrProperty,
+        descriptor,
+      );
+      if (!GQLCapture.isEnabled() || !ctx || ctx.kind !== "method") {
         return;
       }
 
@@ -771,8 +903,17 @@ export class GQLCapture {
   }
 
   static gqlMutation(options: gqlMutationOptions): any {
-    return function (target: Function, ctx: ClassMethodDecoratorContext): void {
-      if (!GQLCapture.isEnabled()) {
+    return function (
+      target: any,
+      ctxOrProperty: ClassMethodDecoratorContext | string | symbol,
+      descriptor?: PropertyDescriptor,
+    ): void {
+      const ctx = GQLCapture.normalizeMemberDecoratorContext(
+        target,
+        ctxOrProperty,
+        descriptor,
+      );
+      if (!GQLCapture.isEnabled() || !ctx || ctx.kind !== "method") {
         return;
       }
 
