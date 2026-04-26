@@ -146,6 +146,27 @@ func TestImports(t *testing.T) {
 				getLine("import {User} from {path};", "src/ent/user"),
 			},
 		},
+		"type + value import same path and same name": {
+			fn: func(imps *Imports) {
+				require.Nil(t, reserveTypeImport(imps, "src/ent/generated/types", "MatrixVisibility"))
+				require.Nil(t, useTypeImport(imps, "MatrixVisibility"))
+				require.Nil(t, reserveImport(imps, "src/ent/generated/types", "MatrixVisibility"))
+				require.Nil(t, useImport(imps, "MatrixVisibility"))
+			},
+			expectedLines: []string{
+				getLine("import {MatrixVisibility} from {path};", "src/ent/generated/types"),
+			},
+		},
+		"type usage promoted when value import is reserved later": {
+			fn: func(imps *Imports) {
+				require.Nil(t, reserveTypeImport(imps, "src/ent/generated/types", "MatrixVisibility"))
+				require.Nil(t, useTypeImport(imps, "MatrixVisibility"))
+				require.Nil(t, reserveImport(imps, "src/ent/generated/types", "MatrixVisibility"))
+			},
+			expectedLines: []string{
+				getLine("import {MatrixVisibility} from {path};", "src/ent/generated/types"),
+			},
+		},
 		"nothing used": {
 			fn: func(imps *Imports) {
 				require.Nil(t, reserveImport(imps, codepath.Package, "loadEnt", "loadEntX", "Viewer"))

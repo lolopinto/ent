@@ -111,9 +111,14 @@
   {{range $edge := .IndexedEdges -}}
     {{ if $edge.GenerateBaseClass -}}
       {{$name := printf "%sBase" $edge.TsEdgeQueryName -}}
-      {{$srcNode := useImport $edge.GetSourceNodeName -}}
-      {{$node := useImport $edge.GetNodeInfo.Node -}}
       {{$srcPoly := $edge.SourceIsPolymorphic -}}
+      {{$srcNode := "" -}}
+      {{ if $srcPoly -}}
+        {{$srcNode = useTypeImport $edge.GetSourceNodeName -}}
+      {{ else -}}
+        {{$srcNode = useImport $edge.GetSourceNodeName -}}
+      {{ end -}}
+      {{$node := useImport $edge.GetNodeInfo.Node -}}
       {{$srcType := printf "%s | %s " "TEnt" (useTypeImport "ID") }}
       {{ if eq $srcNode "Ent" -}}
         {{$srcNode = printf "%s<%s>" $srcNode $viewerType -}}

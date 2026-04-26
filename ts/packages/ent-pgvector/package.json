@@ -31,12 +31,12 @@
   "homepage": "https://github.com/lolopinto/ent#readme",
   "dependencies": {},
   "devDependencies": {
-    "@snowtop/ent": "file:../../dist",
+    "@snowtop/ent": "0.2.9",
     "@types/jest": "^30.0.0",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6"
   },
   "peerDependencies": {
-    "@snowtop/ent": ">=0.2.7"
+    "@snowtop/ent": ">=0.2.8"
   }
 }

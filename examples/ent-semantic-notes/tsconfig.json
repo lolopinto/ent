@@ -9,8 +9,6 @@
     "baseUrl": ".",
     "paths": {
       "src/*": ["src/*"],
-      "@snowtop/ent": ["../../ts/src/index"],
-      "@snowtop/ent/*": ["../../ts/src/*"],
       "@snowtop/ent-pgvector": ["../../ts/packages/ent-pgvector/src/pgvector"]
     },
     "moduleResolution": "node",

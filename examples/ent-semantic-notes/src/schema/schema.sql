@@ -45,7 +45,7 @@ CREATE TABLE note_chunks_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT note_chunks_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT note_chunks_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX note_chunks_edges_time_idx ON note_chunks_edges (time);
@@ -58,7 +58,7 @@ CREATE TABLE note_saved_by_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT note_saved_by_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT note_saved_by_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX note_saved_by_edges_time_idx ON note_saved_by_edges (time);
@@ -71,7 +71,7 @@ CREATE TABLE note_tags_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT note_tags_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT note_tags_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX note_tags_edges_time_idx ON note_tags_edges (time);
@@ -117,7 +117,7 @@ CREATE TABLE user_created_workspaces_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT user_created_workspaces_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT user_created_workspaces_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX user_created_workspaces_edges_time_idx ON user_created_workspaces_edges (time);
@@ -130,7 +130,7 @@ CREATE TABLE user_notes_authored_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT user_notes_authored_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT user_notes_authored_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX user_notes_authored_edges_time_idx ON user_notes_authored_edges (time);
@@ -154,7 +154,7 @@ CREATE TABLE workspace_members_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT workspace_members_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT workspace_members_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX workspace_members_edges_time_idx ON workspace_members_edges (time);
@@ -167,7 +167,7 @@ CREATE TABLE workspace_note_chunks_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT workspace_note_chunks_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT workspace_note_chunks_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX workspace_note_chunks_edges_time_idx ON workspace_note_chunks_edges (time);
@@ -180,7 +180,7 @@ CREATE TABLE workspace_notes_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT workspace_notes_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT workspace_notes_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX workspace_notes_edges_time_idx ON workspace_notes_edges (time);
@@ -193,7 +193,7 @@ CREATE TABLE workspace_tags_edges (
     id2_type TEXT NOT NULL, 
     time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
     data TEXT, 
-    CONSTRAINT workspace_tags_edges_pkey PRIMARY KEY (id1, edge_type, id2)
+    CONSTRAINT workspace_tags_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX workspace_tags_edges_time_idx ON workspace_tags_edges (time);

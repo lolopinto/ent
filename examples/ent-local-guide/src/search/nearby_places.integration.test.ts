@@ -4,6 +4,7 @@ import CreatePlaceAction from "src/ent/place/actions/create_place_action";
 import CreatePlaceReviewAction, {
   type PlaceReviewCreateInput,
 } from "src/ent/place_review/actions/create_place_review_action";
+import { PlaceCategory } from "src/ent/generated/types";
 import CreateUserAction from "src/ent/user/actions/create_user_action";
 import FavoritePlace from "src/ent/user/actions/favorite_place";
 import { nearbyPlaces } from "src/search/nearby_places";
@@ -51,7 +52,7 @@ describe("local guide nearby search integration", () => {
     const exactPlace = await CreatePlaceAction.create(creatorViewer, {
       name: `Cafe ${suffix}`,
       slug: `cafe-${suffix}`,
-      category: "coffee",
+      category: PlaceCategory.Coffee,
       description: "Closest coffee shop",
       website: "https://example.com/cafe",
       location: center,
@@ -59,21 +60,21 @@ describe("local guide nearby search integration", () => {
     const nearbyPlace = await CreatePlaceAction.create(creatorViewer, {
       name: `Roaster ${suffix}`,
       slug: `roaster-${suffix}`,
-      category: "coffee",
+      category: PlaceCategory.Coffee,
       description: "Still walkable",
       location: nearbyCenter,
     }).saveX();
     await CreatePlaceAction.create(creatorViewer, {
       name: `Museum ${suffix}`,
       slug: `museum-${suffix}`,
-      category: "museum",
+      category: PlaceCategory.Museum,
       description: "Wrong category",
       location: center,
     }).saveX();
     await CreatePlaceAction.create(creatorViewer, {
       name: `Far Cafe ${suffix}`,
       slug: `far-cafe-${suffix}`,
-      category: "coffee",
+      category: PlaceCategory.Coffee,
       description: "Outside the search radius",
       location: farCenter,
     }).saveX();

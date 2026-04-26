@@ -90,14 +90,16 @@ describe("semantic notes search integration", () => {
     }).saveX();
 
     const rows = await semanticChunkSearch({
-      workspaceID: workspace.id,
+      workspaceID: String(workspace.id),
       embedding: queryEmbedding,
       limit: 5,
       maxDistance: 0.05,
     });
 
     expect(rows.map((row) => row.id)).toEqual([exactChunk.id, nearbyChunk.id]);
-    expect(rows.every((row) => row.workspace_id === workspace.id)).toBe(true);
+    expect(rows.every((row) => row.workspace_id === String(workspace.id))).toBe(
+      true,
+    );
     expect(rows[0].distance).toBeCloseTo(0, 6);
     expect(rows[0].similarity).toBeCloseTo(1, 6);
     expect(rows[1].distance).toBeGreaterThan(rows[0].distance);

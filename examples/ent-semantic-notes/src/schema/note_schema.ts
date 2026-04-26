@@ -13,6 +13,7 @@ const NoteSchema = new EntSchema({
       fieldEdge: {
         schema: "Workspace",
         inverseEdge: "notes",
+        edgeConstName: "WorkspaceToNotesByWorkspaceID",
       },
       index: true,
     }),

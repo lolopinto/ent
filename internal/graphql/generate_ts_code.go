@@ -980,6 +980,14 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 			for _, class := range node.Classes {
 				obj.m[class.Name] = true
 			}
+
+			for _, field := range node.Fields {
+				for _, imp := range field.AllImports() {
+					if imp.ImportPath == "" {
+						obj.m[imp.Import] = true
+					}
+				}
+			}
 		}
 		for _, enum := range obj.Enums {
 			obj.m[enum.Type] = true
@@ -1317,6 +1325,31 @@ func getGqlConnection(packageName string, edge edge.ConnectionEdge, processor *c
 	}
 }
 
+func appendGqlConnection(conns []*gqlConnection, conn *gqlConnection) []*gqlConnection {
+	for idx, existing := range conns {
+		if existing.ConnType != conn.ConnType {
+			continue
+		}
+		if preferGqlConnection(conn, existing) {
+			conns[idx] = conn
+		}
+		return conns
+	}
+	return append(conns, conn)
+}
+
+func preferGqlConnection(candidate, existing *gqlConnection) bool {
+	candidateEdge := candidate.Edge.TsEdgeQueryEdgeName()
+	existingEdge := existing.Edge.TsEdgeQueryEdgeName()
+	if existingEdge == "Data" && candidateEdge != "Data" {
+		return true
+	}
+	if existingEdge != "Data" && candidateEdge == "Data" {
+		return false
+	}
+	return candidate.Edge.TsEdgeQueryName() < existing.Edge.TsEdgeQueryName()
+}
+
 type buildGQLSchemaResult struct {
 	schema *gqlSchema
 	error  error
@@ -1444,7 +1477,7 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 						}
 						hasConnections = true
 						conn := getGqlConnection(nodeData.PackageName, edge, processor)
-						obj.connections = append(obj.connections, conn)
+						obj.connections = appendGqlConnection(obj.connections, conn)
 					}
 				}
 

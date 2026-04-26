@@ -24,7 +24,7 @@ type Constructor<T extends {{$p.GetMixinInterfaceName}} = {{$p.GetMixinInterface
 
 export function {{$p.GetPatternMethod}}(ent: unknown): ent is {{$p.GetMixinInterfaceName}} {
   const o = ent as {{$p.GetMixinInterfaceName}};
-  return o.{{$p.GetPatternMethod}} && o.{{$p.GetPatternMethod}}() ?? false;
+  return (o.{{$p.GetPatternMethod}} && o.{{$p.GetPatternMethod}}()) ?? false;
 }
 
 {{ range $p.GetImportsForMixin $schema $cfg -}} 

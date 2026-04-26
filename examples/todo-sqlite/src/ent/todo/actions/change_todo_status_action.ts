@@ -5,7 +5,7 @@ import { AccountTodoStatusInput } from "src/ent/generated/account/actions/edit_a
 import { ChangeTodoStatusActionBase } from "src/ent/generated/todo/actions/change_todo_status_action_base";
 import type { ChangeTodoStatusActionTriggers, ChangeTodoStatusInput } from "src/ent/generated/todo/actions/change_todo_status_action_base";
 
-export type { AccountTodoStatusInput };
+export { AccountTodoStatusInput };
 export type { ChangeTodoStatusInput };
 
 export class ChangeTodoStatusAction extends ChangeTodoStatusActionBase {

@@ -1080,6 +1080,8 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 	}
 
 	var baseQueryFiles []string
+	var indexedBaseQueryFiles []string
+	var indexedDerivedQueryFiles []string
 	var queryFiles []string
 	var mixins []string
 	// add patterns first  after const
@@ -1104,7 +1106,11 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 		}
 
 		for _, edge := range info.NodeData.EdgeInfo.GetEdgesForIndexLoader() {
-			append2(&queryFiles, getImportPathForCustomEdgeQueryFile(info.NodeData, edge))
+			if edge.GenerateBaseClass() {
+				append2(&indexedBaseQueryFiles, getImportPathForCustomEdgeQueryFile(info.NodeData, edge))
+			} else {
+				append2(&indexedDerivedQueryFiles, getImportPathForCustomEdgeQueryFile(info.NodeData, edge))
+			}
 		}
 
 		if info.NodeData.EdgeInfo.CreateEdgeBaseFile() {
@@ -1119,7 +1125,9 @@ func getSortedInternalEntFileLines(s *schema.Schema) []string {
 		baseFiles,
 		entFiles,
 		baseQueryFiles,
+		indexedBaseQueryFiles,
 		queryFiles,
+		indexedDerivedQueryFiles,
 	}
 	for _, l := range list {
 		sort.Strings(l)

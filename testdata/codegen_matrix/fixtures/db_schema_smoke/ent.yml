@@ -1,0 +1,4 @@
+codegen:
+  relativeImports: true
+  generatedHeader: "Codegen matrix DB fixture"
+  fieldPrivacyEvaluated: on_demand

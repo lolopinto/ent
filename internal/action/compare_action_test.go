@@ -238,6 +238,86 @@ func TestCompareRemoveEdgeAction(t *testing.T) {
 	require.True(t, ActionEqual(a1, a2))
 }
 
+func TestCompareEdgeActionInputName(t *testing.T) {
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "createdEvents",
+	})
+	require.Nil(t, err)
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "createdEvents",
+	})
+	require.Nil(t, err)
+
+	a1 := createEdgeActionWithOptions(
+		"User",
+		edge1,
+		&addEdgeActionType{},
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action:          "ent.AddEdgeAction",
+				CustomInputName: "AddCreatedEventInput",
+			},
+		},
+	)
+
+	a2 := createEdgeActionWithOptions(
+		"User",
+		edge2,
+		&addEdgeActionType{},
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action:          "ent.AddEdgeAction",
+				CustomInputName: "AddCreatedEventInput",
+			},
+		},
+	)
+
+	require.Equal(t, "AddCreatedEventInput", a1.GetActionInputName())
+	require.Equal(t, "AddCreatedEventInput", a1.GetGraphQLInputName())
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalEdgeActionInputName(t *testing.T) {
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "createdEvents",
+	})
+	require.Nil(t, err)
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "createdEvents",
+	})
+	require.Nil(t, err)
+
+	a1 := createEdgeActionWithOptions(
+		"User",
+		edge1,
+		&addEdgeActionType{},
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action:          "ent.AddEdgeAction",
+				CustomInputName: "AddCreatedEventInput",
+			},
+		},
+	)
+
+	a2 := createEdgeActionWithOptions(
+		"User",
+		edge2,
+		&addEdgeActionType{},
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action:          "ent.AddEdgeAction",
+				CustomInputName: "AddCreatedEventInput2",
+			},
+		},
+	)
+
+	require.False(t, ActionEqual(a1, a2))
+}
+
 func TestCompareActionName(t *testing.T) {
 	a1 := createNodeActionWithOptions(
 		"User",
@@ -847,6 +927,108 @@ func TestCompareEdgeGroupAction(t *testing.T) {
 	)
 
 	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareEdgeGroupActionInputName(t *testing.T) {
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Declined",
+	})
+	require.Nil(t, err)
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Attending",
+	})
+	require.Nil(t, err)
+	assocEdgeGroup := &edge.AssociationEdgeGroup{
+		GroupName:         "rsvps",
+		GroupStatusName:   "rsvpStatus",
+		TSGroupStatusName: "rsvpStatus",
+		ConstType:         "EventRsvpStatus",
+		NodeInfo:          nodeinfo.GetNodeInfo("event"),
+		DestNodeInfo:      nodeinfo.GetNodeInfo("user"),
+		Edges: map[string]*edge.AssociationEdge{
+			"attending": edge2,
+			"declined":  edge1,
+		},
+		StatusEnums: []string{"attending", "declined"},
+	}
+
+	a1 := createEdgeGroupActionWithOptions(
+		"User",
+		assocEdgeGroup,
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action:          "ent.EdgeGroupAction",
+				CustomInputName: "SetRsvpStatusInput",
+			},
+		},
+	)
+
+	a2 := createEdgeGroupActionWithOptions(
+		"User",
+		assocEdgeGroup,
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action:          "ent.EdgeGroupAction",
+				CustomInputName: "SetRsvpStatusInput",
+			},
+		},
+	)
+
+	require.Equal(t, "SetRsvpStatusInput", a1.GetActionInputName())
+	require.Equal(t, "SetRsvpStatusInput", a1.GetGraphQLInputName())
+	require.True(t, ActionEqual(a1, a2))
+}
+
+func TestCompareUnequalEdgeGroupActionInputName(t *testing.T) {
+	edge1, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Declined",
+	})
+	require.Nil(t, err)
+	edge2, err := edge.AssocEdgeFromInput(&codegenapi.DummyConfig{}, "user", &input.AssocEdge{
+		SchemaName: "User",
+		Name:       "Attending",
+	})
+	require.Nil(t, err)
+	assocEdgeGroup := &edge.AssociationEdgeGroup{
+		GroupName:         "rsvps",
+		GroupStatusName:   "rsvpStatus",
+		TSGroupStatusName: "rsvpStatus",
+		ConstType:         "EventRsvpStatus",
+		NodeInfo:          nodeinfo.GetNodeInfo("event"),
+		DestNodeInfo:      nodeinfo.GetNodeInfo("user"),
+		Edges: map[string]*edge.AssociationEdge{
+			"attending": edge2,
+			"declined":  edge1,
+		},
+		StatusEnums: []string{"attending", "declined"},
+	}
+
+	a1 := createEdgeGroupActionWithOptions(
+		"User",
+		assocEdgeGroup,
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action:          "ent.EdgeGroupAction",
+				CustomInputName: "SetRsvpStatusInput",
+			},
+		},
+	)
+
+	a2 := createEdgeGroupActionWithOptions(
+		"User",
+		assocEdgeGroup,
+		&actionOptions{
+			edgeAction: &edge.EdgeAction{
+				Action:          "ent.EdgeGroupAction",
+				CustomInputName: "SetRsvpStatusInput2",
+			},
+		},
+	)
+
+	require.False(t, ActionEqual(a1, a2))
 }
 
 func TestCompareUnequalEdgeGroupAction(t *testing.T) {

@@ -7,6 +7,7 @@ on:
       - 'ent/**.go'
       - 'internal/**.go'
       - 'internal/**.tmpl'
+      - 'testdata/codegen_matrix/**'
       - 'ts/src/**'
       - .github/workflows/go_ci.yml
 
@@ -54,7 +55,10 @@ jobs:
         cache-dependency-path: python/Pipfile.lock
       
     - name: Install auto_schema
-      run: python3 -m pip install wheel auto_schema==0.0.34
+      # auto_schema==0.0.34 pins SQLAlchemy 2.0.18, which fails during
+      # import on Python 3.14. Keep python-dateutil in the published package:
+      # Alembic needs it when auto_schema generates timezone-aware revisions.
+      run: python3 -m pip install wheel auto_schema==0.0.35
 
     - name: Setup nodejs
       uses: actions/setup-node@v6

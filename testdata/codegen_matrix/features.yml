@@ -1,0 +1,878 @@
+version: 1
+
+fixtures:
+  - id: feature_stress
+    path: fixtures/feature_stress
+    description: >
+      Broad compile-time smoke fixture for generated TS, GraphQL, imports,
+      patterns, struct fields, action inputs, field edges, indexed edges, and
+      historically fragile generated-code interactions.
+    surfaces:
+      - parse_ts_schema
+      - ts_codegen
+      - graphql_codegen
+      - generated_tsc
+      - idempotence
+    covers:
+      - schema.nodes
+      - schema.patterns
+      - schema.global_schema
+      - node.table_name
+      - node.field_overrides
+      - node.assoc_edges
+      - node.assoc_edge_groups
+      - node.actions
+      - node.constraints
+      - node.indices
+      - node.hide_from_graphql
+      - node.patterns
+      - node.support_upsert
+      - node.show_can_viewer_see
+      - node.show_can_viewer_edit
+      - node.default_action_privacy
+      - global.extra_edge_fields
+      - global.edge_indices
+      - global.db_extensions
+      - db_extension.metadata
+      - field.uuid
+      - field.boolean
+      - field.int
+      - field.bigint
+      - field.float
+      - field.string
+      - field.timestamp
+      - field.timestamptz
+      - field.time
+      - field.timetz
+      - field.date
+      - field.json
+      - field.jsonb
+      - field.string_enum
+      - field.int_enum
+      - field.list
+      - field.bytea
+      - field.string_byte
+      - field.nullable
+      - field.storage_key
+      - field.unique
+      - field.hide_from_graphql
+      - field.private
+      - field.graphql_name
+      - field.index
+      - field.index_concurrently
+      - field.index_where
+      - field.primary_key
+      - field.default_to_viewer_on_create
+      - field.foreign_key
+      - field.field_edge
+      - field.server_default
+      - field.disable_user_editable
+      - field.disable_user_graphql_editable
+      - field.default_value_on_create
+      - field.default_value_on_edit
+      - field.field_privacy
+      - field.edit_field_privacy
+      - field.polymorphic
+      - field.derived_when_embedded
+      - field.derived_fields
+      - field.convert
+      - field.fetch_on_demand
+      - field.db_only
+      - field.disable_base64_encode
+      - field.immutable
+      - field.struct_subfields
+      - field.union_fields
+      - field.foreign_key.ondelete
+      - field.field_edge.inverse
+      - field.field_edge.index_edge
+      - field.polymorphic.types
+      - field.polymorphic.hide_inverse_graphql
+      - field.polymorphic.disable_builder_type
+      - field.polymorphic.edge_const_name
+      - assoc_edge.basic
+      - assoc_edge.symmetric
+      - assoc_edge.unique
+      - assoc_edge.inverse
+      - assoc_edge.edge_actions
+      - assoc_edge.hide_from_graphql
+      - assoc_edge.edge_const_name
+      - assoc_edge_group.basic
+      - assoc_edge_group.viewer_based
+      - assoc_edge_group.status_enums
+      - assoc_edge_group.null_states
+      - assoc_edge_group.edge_action
+      - action.edge_add
+      - action.edge_remove
+      - action.edge_group
+      - action.create
+      - action.edit
+      - action.delete
+      - action.mutations
+      - action.fields
+      - action.excluded_fields
+      - action.optional_fields
+      - action.required_fields
+      - action.no_fields
+      - action.custom_names
+      - action.hide_from_graphql
+      - action.action_only_fields
+      - action.can_viewer_do
+      - action.can_fail
+      - action_field.scalar
+      - action_field.list
+      - action_field.nullable_contents
+      - action_field.optional
+      - action_field.hide_from_graphql
+      - constraint.primary
+      - constraint.foreign_key
+      - constraint.unique
+      - constraint.check
+      - constraint.columns
+      - index.basic
+      - index.unique
+      - index.concurrently
+      - index.where
+      - custom_graphql.custom_mutation_return
+      - pattern.struct_privacy_import
+      - polymorphic.struct_field_codegen
+      - field_edge.uuid_list_inverse
+      - polymorphic.indexed_query_import
+      - transform_read.enum_value_import
+  - id: db_schema_smoke
+    path: fixtures/db_schema_smoke
+    includes:
+      - fixtures/_shared/core_db
+    description: >
+      SQLite-compatible full-flow fixture that includes the DB schema step plus
+      generated TS, GraphQL, generated typecheck, and idempotence checks.
+    surfaces:
+      - parse_ts_schema
+      - db_codegen
+      - ts_codegen
+      - graphql_codegen
+      - generated_tsc
+      - idempotence
+    dialect: sqlite
+    covers:
+      - schema.nodes
+      - node.table_name
+      - node.actions
+      - field.uuid
+      - field.string
+      - field.int
+      - field.nullable
+      - field.index
+      - field.foreign_key
+      - field.foreign_key.ondelete
+      - field.server_default
+      - field.storage_key
+      - field.unique
+      - node.constraints
+      - node.indices
+      - constraint.unique
+      - constraint.check
+      - constraint.columns
+      - index.basic
+      - index.where
+      - action.create
+      - action.edit
+      - action.delete
+      - action.mutations
+  - id: postgres_schema_smoke
+    path: fixtures/postgres_schema_smoke
+    includes:
+      - fixtures/_shared/core_db
+    description: >
+      Postgres-backed DB schema fixture for core DB rendering plus
+      Postgres-only index rendering. Runs in CI when DB_CONNECTION_STRING
+      points at Postgres and skips locally when no Postgres DSN is configured.
+    surfaces:
+      - parse_ts_schema
+      - postgres_db_codegen
+      - ts_codegen
+      - graphql_codegen
+      - generated_tsc
+      - idempotence
+    dialect: postgres
+    covers:
+      - schema.nodes
+      - node.table_name
+      - node.actions
+      - field.uuid
+      - field.string
+      - field.int
+      - field.timestamptz
+      - field.nullable
+      - field.index
+      - field.foreign_key
+      - field.foreign_key.ondelete
+      - field.server_default
+      - field.storage_key
+      - field.unique
+      - node.constraints
+      - node.indices
+      - constraint.unique
+      - constraint.check
+      - constraint.columns
+      - index.basic
+      - index.index_type
+      - index.where
+      - index.ops
+      - index.params
+      - action.create
+      - action.edit
+      - action.delete
+      - action.mutations
+
+features:
+  - id: schema.nodes
+    owns: [input.Schema.Nodes, input.Node.Fields]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Top-level source for generated nodes, ent files, DB tables, and GraphQL objects.
+  - id: schema.patterns
+    owns: [input.Schema.Patterns, input.Pattern.Name, input.Pattern.Fields, input.Pattern.AssocEdges, input.Pattern.DisableMixin]
+    mode: explicit
+    rationale: Pattern fields and edges generate mixins, interfaces, imports, and inherited action fields.
+  - id: schema.global_schema
+    owns: [input.Schema.GlobalSchema]
+    mode: explicit
+    rationale: Global schema changes generated edge tables, global fields, and DB extension metadata.
+
+  - id: node.table_name
+    owns: [input.Node.TableName]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Table names affect DB schema and generated loader options.
+  - id: node.field_overrides
+    owns: [input.Node.FieldOverrides, input.FieldOverride.Nullable, input.FieldOverride.StorageKey, input.FieldOverride.Unique, input.FieldOverride.HideFromGraphQL, input.FieldOverride.GraphQLName, input.FieldOverride.Index, input.FieldOverride.IndexConcurrently, input.FieldOverride.IndexWhere, input.FieldOverride.ServerDefault]
+    mode: representative
+    rationale: Field override plumbing is shared; one representative field override covers the generated paths.
+  - id: node.assoc_edges
+    owns: [input.Node.AssocEdges]
+    mode: explicit
+    rationale: Association edges generate query classes, constants, action classes, GraphQL connections, and edge tables.
+  - id: node.assoc_edge_groups
+    owns: [input.Node.AssocEdgeGroups]
+    mode: explicit
+    rationale: Edge groups generate grouped action and query surfaces distinct from normal edges.
+  - id: node.actions
+    owns: [input.Node.Actions]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Actions generate builders, action bases, GraphQL mutation inputs, and operation-specific types.
+  - id: node.enum_table
+    owns: [input.Node.EnumTable, input.Node.DBRows]
+    mode: skipped
+    skip_reason: Lookup table enums need a small DB/render fixture; not part of compile-only smoke yet.
+  - id: node.constraints
+    owns: [input.Node.Constraints]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Constraints are DB-rendered codegen behavior and should stay in the matrix even without live DB.
+  - id: node.indices
+    owns: [input.Node.Indices]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Indices affect DB schema and can pull in extension/operator-class code paths.
+  - id: node.hide_from_graphql
+    owns: [input.Node.HideFromGraphQL]
+    mode: representative
+    rationale: Hiding one node exercises generated GraphQL deletion/omission behavior.
+  - id: node.edge_const_name
+    owns: [input.Node.EdgeConstName]
+    mode: skipped
+    skip_reason: Node-level edgeConstName exists in Go input but is not exposed by the current TS schema config type.
+  - id: node.transforms
+    owns: [input.Node.TransformsSelect, input.Node.TransformsDelete, input.Node.TransformsLoaderCodegen, input.TransformsLoaderCodegen.Code, input.TransformsLoaderCodegen.Imports]
+    mode: skipped
+    skip_reason: Transform read/delete needs a runtime loader smoke fixture; cataloged but not covered by compile-only fixture.
+  - id: node.patterns
+    owns: [input.Node.PatternName, input.Node.Patterns]
+    mode: explicit
+    rationale: Applying patterns to nodes is the common inherited-field regression surface.
+  - id: node.schema_path
+    owns: [input.Node.SchemaPath]
+    mode: non_codegen
+    rationale: SchemaPath records the source TS file for bookkeeping and incremental comparisons.
+  - id: node.custom_graphql_interfaces
+    owns: [input.Node.CustomGraphQLInterfaces]
+    mode: skipped
+    skip_reason: Custom GraphQL interfaces currently require decorator-scanned interface classes; skipped with decorator scanning until the local scanner is stable.
+  - id: node.support_upsert
+    owns: [input.Node.SupportUpsert]
+    mode: representative
+    rationale: Upsert toggles generated action APIs.
+  - id: node.show_can_viewer_see
+    owns: [input.Node.ShowCanViewerSee]
+    mode: representative
+    rationale: Generates field-privacy GraphQL surfaces.
+  - id: node.show_can_viewer_edit
+    owns: [input.Node.ShowCanViewerEdit]
+    mode: representative
+    rationale: Generates edit-privacy GraphQL surfaces.
+  - id: node.default_action_privacy
+    owns: [input.Node.HasDefaultActionPrivacy]
+    mode: representative
+    rationale: Default action privacy changes generated action imports.
+
+  - id: global.extra_edge_fields
+    owns: [input.GlobalSchema.ExtraEdgeFields]
+    mode: representative
+    rationale: Extra edge fields alter common edge table rendering and types.
+  - id: global.global_edges
+    owns: [input.GlobalSchema.GlobalEdges]
+    mode: skipped
+    skip_reason: Current TS codegen fails generated query processing for Global-owned edges; needs a focused fix before enabling.
+  - id: global.edge_indices
+    owns: [input.GlobalSchema.EdgeIndices]
+    mode: representative
+    rationale: Edge index DB rendering differs from node index rendering.
+  - id: global.init
+    owns: [input.GlobalSchema.Init]
+    mode: non_codegen
+    rationale: Init is carried in input metadata but does not currently select generated TS behavior.
+  - id: global.transforms_edges
+    owns: [input.GlobalSchema.TransformsEdges]
+    mode: skipped
+    skip_reason: Edge transform write/read needs runtime DB edge smoke coverage.
+  - id: global.global_fields
+    owns: [input.GlobalSchema.GlobalFields]
+    mode: skipped
+    skip_reason: Current global field parsing requires a primary key table shape; needs a focused fixture after clarifying intended support.
+  - id: global.db_extensions
+    owns: [input.GlobalSchema.DBExtensions]
+    mode: explicit
+    rationale: DB extensions affect generated schema metadata and runtime extension config.
+  - id: db_extension.metadata
+    owns: [input.DBExtension.Name, input.DBExtension.ProvisionedBy, input.DBExtension.Version, input.DBExtension.InstallSchema, input.DBExtension.RuntimeSchemas, input.DBExtension.DropCascade]
+    mode: representative
+    rationale: DB extension options share one metadata rendering path.
+
+  - id: field.uuid
+    owns: [input.FieldType.DBType, input.Field.Name, input.Field.Type, input.DBType.UUID]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: UUID is the id/edge/fkey workhorse and gets multiple explicit interactions.
+  - id: field.int64_id
+    owns: [input.DBType.Int64ID]
+    mode: skipped
+    skip_reason: The TS parser marks Int64ID unsupported today.
+  - id: field.boolean
+    owns: [input.DBType.Boolean]
+    mode: representative
+    rationale: Boolean scalar itself is covered once; nullable boolean is intentionally not a special interaction.
+  - id: field.int
+    owns: [input.DBType.Int]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Numeric scalar import and GraphQL mapping.
+  - id: field.bigint
+    owns: [input.DBType.BigInt]
+    mode: representative
+    rationale: BigInt has distinct generated TS/runtime type mapping.
+  - id: field.float
+    owns: [input.DBType.Float]
+    mode: representative
+    rationale: Float has distinct GraphQL scalar mapping.
+  - id: field.string
+    owns: [input.FieldType.CustomType, input.DBType.String, input.CustomType.EmailType, input.CustomType.PhoneType, input.CustomType.PasswordType]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: String and string-backed custom types share scalar generation; package custom types remain package-level tests.
+  - id: field.timestamp
+    owns: [input.DBType.Timestamp]
+    mode: representative
+    rationale: Timestamp has custom GraphQL scalar handling.
+  - id: field.timestamptz
+    owns: [input.DBType.Timestamptz]
+    mode: representative
+    dialect_coverage: [postgres]
+    rationale: Timestamptz uses a distinct DB type but shared TS shape.
+  - id: field.time
+    owns: [input.DBType.Time]
+    mode: representative
+    rationale: Time has custom GraphQL scalar handling.
+  - id: field.timetz
+    owns: [input.DBType.Timetz]
+    mode: representative
+    rationale: Timetz uses a distinct DB type but shared TS shape.
+  - id: field.date
+    owns: [input.DBType.Date]
+    mode: representative
+    rationale: Date has had nullable/runtime regressions and generated GraphQL scalar behavior.
+  - id: field.json
+    owns: [input.DBType.JSON]
+    mode: representative
+    rationale: JSON and JSONB diverge in DB rendering.
+  - id: field.jsonb
+    owns: [input.DBType.JSONB]
+    mode: representative
+    rationale: JSONB is the default struct/union storage path.
+  - id: field.string_enum
+    owns: [input.DBType.Enum, input.DBType.StringEnum, input.FieldType.Values, input.FieldType.EnumMap, input.FieldType.Type, input.FieldType.GraphQLType, input.FieldType.DisableUnknownType, input.FieldType.GlobalType]
+    mode: representative
+    rationale: String enum generation covers TS enum, GraphQL enum, global enum, and unknown handling.
+  - id: field.int_enum
+    owns: [input.DBType.IntEnum, input.FieldType.IntEnumMap, input.FieldType.DeprecatedIntEnumMap]
+    mode: representative
+    rationale: Integer enum generation has separate conversion and GraphQL paths.
+  - id: field.list
+    owns: [input.DBType.List, input.FieldType.ListElemType]
+    mode: representative
+    rationale: List wrapper generation is shared; interesting list+edge interactions are explicit.
+  - id: field.bytea
+    owns: [input.DBType.Bytea]
+    mode: representative
+    rationale: Binary DB storage has distinct type mapping.
+  - id: field.string_byte
+    owns: [input.DBType.StringByte]
+    mode: representative
+    rationale: Text-backed binary storage has distinct type mapping.
+  - id: field.postgres_type
+    owns: [input.FieldType.PostgresType]
+    mode: skipped
+    skip_reason: Postgres custom column types need a focused TS schema helper or JSON-schema fixture; the current Postgres smoke covers index rendering first.
+  - id: field.db_extension_type
+    owns: [input.FieldType.DBExtension]
+    mode: skipped
+    skip_reason: Extension-backed concrete fields need postgis/pgvector package fixtures.
+  - id: field.import_type
+    owns: [input.FieldType.ImportType]
+    mode: skipped
+    skip_reason: Custom import type should be covered with a focused custom scalar fixture.
+  - id: field.struct_subfields
+    owns: [input.FieldType.SubFields]
+    mode: explicit
+    rationale: Struct fields are frequent codegen/runtime regression sources.
+  - id: field.union_fields
+    owns: [input.FieldType.UnionFields]
+    mode: representative
+    rationale: Union fields generate shared types and GraphQL object/union wiring.
+
+  - id: field.nullable
+    owns: [input.Field.Nullable]
+    mode: once
+    dialect_coverage: [sqlite, postgres]
+    rationale: Nullability is a modifier; only explicit interactions get their own case.
+  - id: field.storage_key
+    owns: [input.Field.StorageKey]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Storage key changes DB columns and transformWrite input shape.
+  - id: field.unique
+    owns: [input.Field.Unique]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Unique fields alter DB constraints and generated loaders.
+  - id: field.hide_from_graphql
+    owns: [input.Field.HideFromGraphQL]
+    mode: representative
+    rationale: GraphQL omission is shared across scalar field types.
+  - id: field.private
+    owns: [input.Field.Private, input.PrivateOptions.ExposeToActions]
+    mode: representative
+    rationale: Private fields alter ent, action, and GraphQL generation.
+  - id: field.graphql_name
+    owns: [input.Field.GraphQLName]
+    mode: representative
+    rationale: Custom GraphQL field names affect generated object and mutation input names.
+  - id: field.index
+    owns: [input.Field.Index]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Scalar index generation is shared.
+  - id: field.index_concurrently
+    owns: [input.Field.IndexConcurrently]
+    mode: representative
+    rationale: Concurrent index DB rendering is separate from plain index rendering.
+  - id: field.index_where
+    owns: [input.Field.IndexWhere]
+    mode: representative
+    rationale: Partial index DB rendering is a separate code path.
+  - id: field.primary_key
+    owns: [input.Field.PrimaryKey]
+    mode: representative
+    rationale: Primary key selection affects base ent and DB schema.
+  - id: field.default_to_viewer_on_create
+    owns: [input.Field.DefaultToViewerOnCreate]
+    mode: representative
+    rationale: Viewer defaults alter action input/builder generation.
+  - id: field.foreign_key
+    owns: [input.Field.ForeignKey, input.ForeignKey.Schema, input.ForeignKey.Column, input.ForeignKey.Name, input.ForeignKey.DisableIndex, input.ForeignKey.DisableBuilderType]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Foreign keys interact with id fields, builder types, and DB constraints.
+  - id: field.foreign_key.ondelete
+    owns: [input.ForeignKey.OnDelete, input.OnDeleteFkey.Restrict, input.OnDeleteFkey.Cascade, input.OnDeleteFkey.SetNull, input.OnDeleteFkey.SetDefault, input.OnDeleteFkey.NoAction]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: ON DELETE variants share one DB-rendering path.
+  - id: field.field_edge
+    owns: [input.Field.FieldEdge, input.FieldEdge.Schema, input.FieldEdge.DisableBuilderType, input.FieldEdge.EdgeConstName]
+    mode: explicit
+    rationale: Field edges generate loaders, queries, connections, and action edge maintenance.
+  - id: field.field_edge.inverse
+    owns: [input.FieldEdge.InverseEdge, input.InverseFieldEdge.Name, input.InverseFieldEdge.TableName, input.InverseFieldEdge.HideFromGraphQL, input.InverseFieldEdge.EdgeConstName]
+    mode: explicit
+    rationale: Inverse field edges have distinct generated query and GraphQL paths.
+  - id: field.field_edge.index_edge
+    owns: [input.FieldEdge.IndexEdge, input.IndexEdgeOptions.Name, input.IndexEdgeOptions.OrderBy, input.OrderByOption.Column, input.OrderByOption.Direction, input.OrderByDirection.Ascending, input.OrderByDirection.Descending, input.OrderByOption.Alias, input.OrderByOption.NullsPlacement, input.NullsPlacement.First, input.NullsPlacement.Last]
+    mode: explicit
+    rationale: Indexed field edges produce generated query base files and import-stress failures.
+  - id: field.server_default
+    owns: [input.Field.ServerDefault]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Server defaults affect DB schema and action input optionality.
+  - id: field.disable_user_editable
+    owns: [input.Field.DisableUserEditable]
+    mode: representative
+    rationale: Removes generated setters/action inputs.
+  - id: field.disable_user_graphql_editable
+    owns: [input.Field.DisableUserGraphQLEditable]
+    mode: representative
+    rationale: Removes GraphQL mutation input fields while retaining TS action behavior.
+  - id: field.default_value_on_create
+    owns: [input.Field.HasDefaultValueOnCreate]
+    mode: representative
+    rationale: Default-on-create alters generated action required fields.
+  - id: field.default_value_on_edit
+    owns: [input.Field.HasDefaultValueOnEdit]
+    mode: representative
+    rationale: Default-on-edit alters generated edit action behavior.
+  - id: field.field_privacy
+    owns: [input.Field.HasFieldPrivacy]
+    mode: explicit
+    rationale: Field privacy generates async accessors and has import regressions with struct fields.
+  - id: field.edit_field_privacy
+    owns: [input.Field.HasEditFieldPrivacy]
+    mode: representative
+    rationale: Edit privacy affects action input and canViewerEdit generation.
+  - id: field.polymorphic
+    owns: [input.Field.Polymorphic, input.PolymorphicOptions.Name]
+    mode: explicit
+    rationale: Polymorphic id fields generate derived type fields, query classes, and GraphQL relationships.
+  - id: field.polymorphic.types
+    owns: [input.PolymorphicOptions.Types]
+    mode: explicit
+    rationale: Type restrictions affect generated imports and GraphQL unions.
+  - id: field.polymorphic.hide_inverse_graphql
+    owns: [input.PolymorphicOptions.HideFromInverseGraphQL]
+    mode: representative
+    rationale: GraphQL omission for inverse polymorphic edges.
+  - id: field.polymorphic.disable_builder_type
+    owns: [input.PolymorphicOptions.DisableBuilderType]
+    mode: representative
+    rationale: Builder type generation changes action inputs.
+  - id: field.polymorphic.edge_const_name
+    owns: [input.PolymorphicOptions.EdgeConstName]
+    mode: explicit
+    rationale: Custom polymorphic edge const names triggered generated query import bugs.
+  - id: field.derived_when_embedded
+    owns: [input.Field.DerivedWhenEmbedded]
+    mode: representative
+    rationale: Embedded action object generation uses this to omit derived fields.
+  - id: field.derived_fields
+    owns: [input.Field.DerivedFields]
+    mode: representative
+    rationale: Derived fields are added to generated field maps.
+  - id: field.convert
+    owns: [input.Field.UserConvert, input.UserConvertType.Path, input.UserConvertType.Function]
+    mode: representative
+    rationale: Convert functions alter generated imports and accessors.
+  - id: field.fetch_on_demand
+    owns: [input.Field.FetchOnDemand]
+    mode: representative
+    rationale: Fetch-on-demand changes base class accessors and privacy behavior.
+  - id: field.db_only
+    owns: [input.Field.DBOnly]
+    mode: representative
+    rationale: DB-only fields should render in DB but disappear from ent/GraphQL surfaces.
+  - id: field.disable_base64_encode
+    owns: [input.Field.DisableBase64Encode]
+    mode: representative
+    rationale: ID encoding behavior changes generated GraphQL field resolver behavior.
+  - id: field.immutable
+    owns: [input.Field.Immutable]
+    mode: representative
+    rationale: Immutable fields affect edit action generation.
+  - id: field.pattern_name
+    owns: [input.Field.PatternName]
+    mode: non_codegen
+    rationale: Internal metadata tracking inherited pattern ownership.
+  - id: field.import
+    owns: [input.Field.Import]
+    mode: non_codegen
+    rationale: Import is transient parser state and is intentionally not serialized into schema.json.
+
+  - id: assoc_edge.basic
+    owns: [input.AssocEdge.Name, input.AssocEdge.SchemaName, input.AssocEdge.TableName, input.AssocEdge.PatternName]
+    mode: explicit
+    rationale: Basic association edge generation.
+  - id: assoc_edge.symmetric
+    owns: [input.AssocEdge.Symmetric]
+    mode: representative
+    rationale: Symmetric edges alter edge config and inverse writes.
+  - id: assoc_edge.unique
+    owns: [input.AssocEdge.Unique]
+    mode: representative
+    rationale: Unique edges generate distinct loader/action shapes.
+  - id: assoc_edge.inverse
+    owns: [input.AssocEdge.InverseEdge, input.InverseAssocEdge.Name, input.InverseAssocEdge.EdgeConstName, input.InverseAssocEdge.HideFromGraphQL]
+    mode: explicit
+    rationale: Inverse association edges generate paired edge types and GraphQL fields.
+  - id: assoc_edge.edge_actions
+    owns: [input.AssocEdge.EdgeActions]
+    mode: explicit
+    rationale: Edge actions generate action classes and GraphQL mutations.
+  - id: assoc_edge.hide_from_graphql
+    owns: [input.AssocEdge.HideFromGraphQL]
+    mode: representative
+    rationale: Edge GraphQL omission is shared.
+  - id: assoc_edge.edge_const_name
+    owns: [input.AssocEdge.EdgeConstName]
+    mode: representative
+    rationale: Custom edge constants affect generated imports and names.
+  - id: assoc_edge_config.stable_edge_type_ids
+    owns: []
+    mode: skipped
+    skip_reason: Matrix snapshots normalize UUID literals but do not yet assert that assoc_edge_config edge type IDs stay stable across DB generations; needs a focused DB/runtime smoke.
+
+  - id: assoc_edge_group.basic
+    owns: [input.AssocEdgeGroup.Name, input.AssocEdgeGroup.GroupStatusName, input.AssocEdgeGroup.TableName, input.AssocEdgeGroup.AssocEdges]
+    mode: explicit
+    rationale: Edge groups have separate generated state and action code.
+  - id: assoc_edge_group.viewer_based
+    owns: [input.AssocEdgeGroup.ViewerBased]
+    mode: representative
+    rationale: Viewer-based groups generate viewer-specific helpers.
+  - id: assoc_edge_group.status_enums
+    owns: [input.AssocEdgeGroup.StatusEnums]
+    mode: representative
+    rationale: Restricted status enum generation.
+  - id: assoc_edge_group.null_states
+    owns: [input.AssocEdgeGroup.NullStateFn, input.AssocEdgeGroup.NullStates]
+    mode: representative
+    rationale: Null-state helpers alter generated edge group accessors.
+  - id: assoc_edge_group.edge_action
+    owns: [input.AssocEdgeGroup.EdgeAction, input.AssocEdgeGroup.EdgeActions]
+    mode: explicit
+    rationale: Edge group action generation is distinct from normal edge actions.
+  - id: assoc_edge_group.action_edges
+    owns: [input.AssocEdgeGroup.ActionEdges]
+    mode: non_codegen
+    rationale: ActionEdges is Go-only parsed state and not serialized through the TS schema input.
+
+  - id: action.create
+    owns: [input.Action.Operation, input.Action.Operation.Create]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Create action generation.
+  - id: action.edit
+    owns: [input.Action.Operation.Edit]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Edit action generation.
+  - id: action.delete
+    owns: [input.Action.Operation.Delete]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Delete action generation.
+  - id: action.mutations
+    owns: [input.Action.Operation.Mutations]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Mutations shortcut generation.
+  - id: action.edge_add
+    owns: [input.EdgeAction.Operation, input.EdgeAction.Operation.AddEdge]
+    mode: explicit
+    rationale: Add-edge action generation.
+  - id: action.edge_remove
+    owns: [input.EdgeAction.Operation.RemoveEdge]
+    mode: explicit
+    rationale: Remove-edge action generation.
+  - id: action.edge_group
+    owns: [input.EdgeAction.Operation.EdgeGroup]
+    mode: explicit
+    rationale: Edge-group action generation.
+  - id: action.fields
+    owns: [input.Action.Fields]
+    mode: representative
+    rationale: Field selection drives generated input type composition.
+  - id: action.excluded_fields
+    owns: [input.Action.ExcludedFields]
+    mode: representative
+    rationale: Exclusions have caused embedded object input bugs.
+  - id: action.optional_fields
+    owns: [input.Action.OptionalFields]
+    mode: representative
+    rationale: Optional field overrides affect generated action type requiredness.
+  - id: action.required_fields
+    owns: [input.Action.RequiredFields]
+    mode: representative
+    rationale: Required field overrides affect generated action type requiredness.
+  - id: action.no_fields
+    owns: [input.Action.NoFields]
+    mode: representative
+    rationale: No-field actions generate different constructor/input shapes.
+  - id: action.custom_names
+    owns: [input.Action.CustomActionName, input.Action.CustomGraphQLName, input.Action.CustomInputName, input.EdgeAction.CustomActionName, input.EdgeAction.CustomGraphQLName, input.EdgeAction.CustomInputName]
+    mode: representative
+    rationale: Custom names have import reservation and input rename regressions.
+  - id: action.hide_from_graphql
+    owns: [input.Action.HideFromGraphQL, input.EdgeAction.HideFromGraphQL]
+    mode: representative
+    rationale: GraphQL mutation omission is shared.
+  - id: action.action_only_fields
+    owns: [input.Action.ActionOnlyFields, input.EdgeAction.ActionOnlyFields, input.ActionField.Name]
+    mode: explicit
+    rationale: Action-only fields generate standalone input fields and embedded object inputs.
+  - id: action.can_viewer_do
+    owns: [input.Action.CanViewerDo, input.EdgeAction.CanViewerDo, input.CanViewerDo.AddAllFields, input.CanViewerDo.InputFields]
+    mode: representative
+    rationale: CanViewerDo adds GraphQL fields and action input plumbing.
+  - id: action.can_fail
+    owns: [input.Action.CanFail, input.EdgeAction.CanFail]
+    mode: representative
+    rationale: Can-fail changes generated save behavior.
+
+  - id: action_field.scalar
+    owns: [input.ActionField.Type, input.ActionField.Type.ID, input.ActionField.Type.Boolean, input.ActionField.Type.Int, input.ActionField.Type.Float, input.ActionField.Type.String, input.ActionField.Type.Time, input.ActionField.Type.JSON]
+    mode: representative
+    rationale: Action-only scalar fields share render paths with representative scalar coverage.
+  - id: action_field.object
+    owns: [input.ActionField.Type.Object, input.ActionField.ActionName, input.ActionField.ExcludedFields]
+    mode: skipped
+    skip_reason: Generated action bases currently reference the lower-case embedded input interface without declaring/importing it; needs a focused action-only object fix.
+  - id: action_field.list
+    owns: [input.ActionField.List]
+    mode: representative
+    rationale: List wrapping is a distinct generated input shape.
+  - id: action_field.nullable_contents
+    owns: [input.ActionField.Nullable, input.NullableItem.Contents, input.NullableItem.ContentsAndList, input.NullableItem.True]
+    mode: representative
+    rationale: Nullable list contents are an explicit action input encoding.
+  - id: action_field.optional
+    owns: [input.ActionField.Optional]
+    mode: representative
+    rationale: Optional action-only fields affect generated constructor typing.
+  - id: action_field.hide_from_graphql
+    owns: [input.ActionField.HideFromGraphQL]
+    mode: representative
+    rationale: Hides only the GraphQL input field.
+
+  - id: constraint.primary
+    owns: [input.Constraint.Type, input.Constraint.Type.PrimaryKey]
+    mode: representative
+    rationale: Primary key constraint DB rendering.
+  - id: constraint.foreign_key
+    owns: [input.Constraint.Type.ForeignKey, input.Constraint.ForeignKey, input.ForeignKeyInfo.TableName, input.ForeignKeyInfo.Columns, input.ForeignKeyInfo.OnDelete]
+    mode: representative
+    rationale: Multi-column foreign-key DB rendering.
+  - id: constraint.unique
+    owns: [input.Constraint.Type.Unique]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Unique constraint DB rendering.
+  - id: constraint.check
+    owns: [input.Constraint.Type.Check, input.Constraint.Condition]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Check constraint DB rendering.
+  - id: constraint.columns
+    owns: [input.Constraint.Name, input.Constraint.Columns]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Shared constraint naming/column plumbing.
+
+  - id: index.basic
+    owns: [input.Index.Name, input.Index.Columns]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Basic index DB rendering.
+  - id: index.unique
+    owns: [input.Index.Unique]
+    mode: representative
+    rationale: Unique index DB rendering.
+  - id: index.full_text
+    owns: [input.Index.FullText, input.FullText.GeneratedColumnName, input.FullText.Language, input.FullText.Language.English, input.FullText.Language.French, input.FullText.Language.German, input.FullText.Language.Simple, input.FullText.LanguageColumn, input.FullText.IndexType, input.FullText.Weights, input.FullTextWeight.A, input.FullTextWeight.B, input.FullTextWeight.C, input.FullTextWeight.D]
+    mode: skipped
+    skip_reason: Postgres full-text indexes currently generate a repeated drop-index migration after apply; enable once DB idempotence is fixed.
+  - id: index.index_type
+    owns: [input.Index.IndexType, input.IndexType.Gin, input.IndexType.Gist, input.IndexType.Btree, input.IndexType.Hash, input.IndexType.SpGist, input.IndexType.Brin, input.IndexType.HNSW, input.IndexType.IVFFlat]
+    mode: representative
+    dialect_coverage: [postgres]
+    rationale: Postgres access methods share DB rendering; the Postgres smoke exercises explicit access-method output.
+  - id: index.concurrently
+    owns: [input.Index.Concurrently]
+    mode: representative
+    rationale: Concurrent index rendering has separate DB options.
+  - id: index.where
+    owns: [input.Index.Where]
+    mode: representative
+    dialect_coverage: [sqlite, postgres]
+    rationale: Partial index rendering.
+  - id: index.ops
+    owns: [input.Index.Ops]
+    mode: representative
+    dialect_coverage: [postgres]
+    rationale: Operator classes are Postgres-only and are covered by the Postgres DB-render fixture.
+  - id: index.params
+    owns: [input.Index.IndexParams]
+    mode: representative
+    dialect_coverage: [postgres]
+    rationale: Index WITH params are Postgres-only and are covered by the Postgres DB-render fixture.
+  - id: index.db_extension
+    owns: [input.Index.DBExtension]
+    mode: skipped
+    skip_reason: Extension-backed indexes need postgis/pgvector package fixtures.
+
+  - id: custom_graphql.decorators
+    owns: [custom_graphql.gqlField, custom_graphql.gqlObjectType, custom_graphql.gqlInputObjectType, custom_graphql.gqlQuery, custom_graphql.gqlMutation, custom_graphql.gqlConnection]
+    mode: skipped
+    skip_reason: Local decorator scanning becomes unstable after generated ent files exist; JSON custom GraphQL keeps mutation codegen covered while decorator scanning gets a focused fix.
+  - id: custom_graphql.custom_mutation_return
+    owns: [custom_graphql.mutationReturnType]
+    mode: explicit
+    rationale: Custom mutation object returns must use the declared object type, not a generated payload type.
+
+  - id: transform_write.struct_input_runtime
+    owns: []
+    mode: existing_test
+    test_refs:
+      - ts/src/action/transformed_orchestrator.test.ts
+      - examples/simple/src/ent/tests/transform_write_struct_input.test.ts
+    rationale: Runtime transformWrite/input-shape behavior is covered outside compile-only codegen matrix.
+  - id: pattern.struct_privacy_import
+    owns: []
+    mode: explicit
+    rationale: Pattern struct field privacy must compile generated base accessors with imported struct types.
+  - id: polymorphic.struct_field_codegen
+    owns: []
+    mode: explicit
+    rationale: Polymorphic UUID fields inside struct/list fields must generate valid GraphQL/TS.
+  - id: polymorphic.struct_runtime_write
+    owns: []
+    mode: skipped
+    skip_reason: Needs generated runtime action smoke that writes struct polymorphic type fields to DB.
+  - id: field_edge.uuid_list_inverse
+    owns: []
+    mode: explicit
+    rationale: UUIDListType with inverse fieldEdge must codegen and compile.
+  - id: polymorphic.indexed_query_import
+    owns: []
+    mode: explicit
+    rationale: Polymorphic indexed edge query imports must reserve source-node imports.
+  - id: field_edge.inverse_index_name_collision
+    owns: []
+    mode: skipped
+    skip_reason: An indexed field edge and inverse field edge can generate duplicate query/connection names when they share one edge const; the matrix fixture keeps inverse and index-edge coverage separate until aliasing is fixed.
+  - id: node_name.reserved_ent_import
+    owns: []
+    mode: skipped
+    skip_reason: A schema named Ent collides with the framework Ent import in generated query bases; this needs an import aliasing strategy before it can be enabled.
+  - id: transform_read.enum_value_import
+    owns: []
+    mode: explicit
+    rationale: transformReadCodegen_BETA can import an enum value already reserved as a generated type-only field import in loaders.ts; value imports should reconcile the prior type-only import.

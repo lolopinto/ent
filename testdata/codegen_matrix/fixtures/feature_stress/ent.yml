@@ -1,0 +1,5 @@
+codegen:
+  relativeImports: true
+  generatedHeader: "Codegen matrix fixture"
+  fieldPrivacyEvaluated: on_demand
+customGraphQLJSONPath: src/schema/custom_graphql.json

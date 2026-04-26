@@ -177,6 +177,7 @@ export interface EdgeAction {
   //   ActionOperation.AddEdge | ActionOperation.RemoveEdge
   // >;
   actionName?: string;
+  inputName?: string;
   hideFromGraphQL?: boolean;
   graphQLName?: string;
   actionOnlyFields?: ActionField[];
@@ -207,6 +208,7 @@ export interface EdgeGroupAction {
   //   ActionOperation.AddEdge | ActionOperation.RemoveEdge
   // >;
   actionName?: string;
+  inputName?: string;
   hideFromGraphQL?: boolean;
   graphQLName?: string;
   actionOnlyFields?: ActionField[];

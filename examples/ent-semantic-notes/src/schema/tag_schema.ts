@@ -12,6 +12,7 @@ const TagSchema = new EntSchema({
       fieldEdge: {
         schema: "Workspace",
         inverseEdge: "tags",
+        edgeConstName: "WorkspaceToTagsByWorkspaceID",
       },
       index: true,
     }),

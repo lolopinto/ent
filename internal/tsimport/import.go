@@ -224,6 +224,9 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 		if otherImportMap[ident] != nil && otherImportMap[ident].path == input.path && input.typeOnly {
 			continue
 		}
+		if !input.typeOnly && otherImportMap[ident] != nil && otherImportMap[ident].path == input.path {
+			imps.promoteTypeOnlyImportToValueImport(ident, otherImportMap[ident])
+		}
 		filteredImports = append(filteredImports, v)
 	}
 	input.imports = filteredImports
@@ -234,6 +237,9 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 		}
 		if otherImportMap[ident] != nil && otherImportMap[ident].path == input.path && input.typeOnly {
 			input.defaultImport = ""
+		}
+		if !input.typeOnly && otherImportMap[ident] != nil && otherImportMap[ident].path == input.path {
+			imps.promoteTypeOnlyImportToValueImport(ident, otherImportMap[ident])
 		}
 	}
 
@@ -298,6 +304,27 @@ func (imps *Imports) reserve(input *importInfoInput) (string, error) {
 	return "", nil
 }
 
+func (imps *Imports) promoteTypeOnlyImportToValueImport(ident string, typeImport *importInfo) {
+	delete(imps.typeImportMap, ident)
+	if imps.usedTypeImports[ident] {
+		delete(imps.usedTypeImports, ident)
+		imps.usedImports[ident] = true
+	}
+
+	var imports []importedItem
+	for _, item := range typeImport.imports {
+		if item.getIdent() == ident {
+			continue
+		}
+		imports = append(imports, item)
+	}
+	typeImport.imports = imports
+
+	if typeImport.defaultExport == ident {
+		typeImport.defaultExport = ""
+	}
+}
+
 func (imps *Imports) ExportAll(path string) (string, error) {
 	return imps.export(path, "")
 }
@@ -341,23 +368,23 @@ func (imps *Imports) exportType(path string, as string, exports ...string) (stri
 // FuncMap returns the FuncMap to be passed to a template
 func (imps *Imports) FuncMap() template.FuncMap {
 	return template.FuncMap{
-		"reserveImport":                  imps.Reserve,
-		"reserveTypeImport":              imps.ReserveType,
-		"reserveDefaultImport":           imps.ReserveDefault,
-		"reserveAllImport":               imps.ReserveAll,
-		"reserveImportPath":              imps.ReserveImportPath,
-		"reserveTypeImportPath":          imps.ReserveTypeImportPath,
-		"conditionallyReserveImportPath": imps.ConditionallyReserveImportPath,
+		"reserveImport":                      imps.Reserve,
+		"reserveTypeImport":                  imps.ReserveType,
+		"reserveDefaultImport":               imps.ReserveDefault,
+		"reserveAllImport":                   imps.ReserveAll,
+		"reserveImportPath":                  imps.ReserveImportPath,
+		"reserveTypeImportPath":              imps.ReserveTypeImportPath,
+		"conditionallyReserveImportPath":     imps.ConditionallyReserveImportPath,
 		"conditionallyReserveTypeImportPath": imps.ConditionallyReserveTypeImportPath,
-		"useImport":                      imps.Use,
-		"useImportMaybe":                 imps.UseMaybe,
-		"useTypeImport":                  imps.UseType,
-		"useTypeImportMaybe":             imps.UseTypeMaybe,
-		"exportAll":                      imps.ExportAll,
-		"exportAllAs":                    imps.ExportAllAs,
-		"export":                         imps.Export,
-		"exportType":                     imps.ExportType,
-		"dict":                           dict,
+		"useImport":                          imps.Use,
+		"useImportMaybe":                     imps.UseMaybe,
+		"useTypeImport":                      imps.UseType,
+		"useTypeImportMaybe":                 imps.UseTypeMaybe,
+		"exportAll":                          imps.ExportAll,
+		"exportAllAs":                        imps.ExportAllAs,
+		"export":                             imps.Export,
+		"exportType":                         imps.ExportType,
+		"dict":                               dict,
 	}
 }
 

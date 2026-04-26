@@ -8,13 +8,13 @@
   },
   "scripts": {
     "test": "jest",
-    "sqlite-test": "docker-compose -f docker-compose.dev.yml run --rm app ./node_modules/jest/bin/jest.js",
+    "sqlite-test": "docker compose -f docker-compose.dev.yml run --rm app ./node_modules/jest/bin/jest.js",
     "compile": "rm -rf dist && ./node_modules/.bin/ent-custom-compiler",
-    "start": "docker-compose -f docker-compose.dev.yml up --build",
-    "sqlite-init": "docker-compose -f docker-compose.dev.yml run --rm app npm install",
-    "codegen": "docker-compose -f docker-compose.dev.yml run --rm app tsent codegen",
-    "upgrade": "docker-compose -f docker-compose.dev.yml run --rm app tsent upgrade",
-    "rebuild-image": "docker-compose -f docker-compose.dev.yml build",
+    "start": "docker compose -f docker-compose.dev.yml up --build",
+    "sqlite-init": "docker compose -f docker-compose.dev.yml run --rm app npm install",
+    "codegen": "docker compose -f docker-compose.dev.yml run --rm app tsent codegen",
+    "upgrade": "docker compose -f docker-compose.dev.yml run --rm app tsent upgrade",
+    "rebuild-image": "docker compose -f docker-compose.dev.yml build",
     "start-fast": "npm run compile && node dist/graphql/index.js"
   },
   "author": "",
@@ -37,7 +37,7 @@
     "uuid": "^8.3.2"
   },
   "dependencies": {
-    "@snowtop/ent": "^0.2.7",
+    "@snowtop/ent": "0.2.9",
     "@snowtop/ent-phonenumber": "^0.1.0-rc1",
     "@snowtop/ent-soft-delete": "^0.1.0",
     "@types/node": "^15.0.3",

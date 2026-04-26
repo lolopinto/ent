@@ -16,6 +16,7 @@ import {
 } from "graphql";
 import type { GraphQLObjectType } from "graphql";
 import { buildContext, registerAuthHandler } from "@snowtop/ent/auth";
+import type { IncomingHttpHeaders } from "http";
 import supertest from "supertest";
 import * as fs from "fs";
 import { inspect } from "util";
@@ -383,13 +384,11 @@ interface queryConfig {
   viewer?: Viewer;
   // to init express e.g. session, passport initialize etc
   init?: (app: Express) => void;
-  test?:
-    | supertest.SuperTest<supertest.Test>
-    | ((express: Express) => supertest.SuperTest<supertest.Test>);
+  test?: supertest.Agent | ((express: Express) => supertest.Agent);
   // TODO
   // if none indicated, defaults to logged out viewer
   schema: GraphQLSchema;
-  headers?: object;
+  headers?: IncomingHttpHeaders;
   debugMode?: boolean;
   args: {};
   // any variables in here get added to the query as `$foo`, in query you should use
@@ -420,7 +419,7 @@ export interface queryRootConfig extends queryConfig {
 export async function expectQueryFromRoot(
   config: queryRootConfig,
   ...options: Option[] // TODO queries? expected values
-): Promise<supertest.SuperTest<supertest.Test>> {
+): Promise<supertest.Agent> {
   return expectFromRoot(
     {
       ...config,
@@ -442,7 +441,7 @@ export interface mutationRootConfig extends queryConfig {
 export async function expectMutation(
   config: mutationRootConfig,
   ...options: Option[]
-): Promise<supertest.SuperTest<supertest.Test>> {
+): Promise<supertest.Agent> {
   // wrap args in input because we simplify the args for mutations
   // and don't require the input
   let args = config.args;
@@ -490,7 +489,7 @@ function splitPath(path: string) {
 async function expectFromRoot(
   config: rootConfig,
   ...options: Option[]
-): Promise<supertest.SuperTest<supertest.Test>> {
+): Promise<supertest.Agent> {
   let query = config.queryFN;
   let fields = query?.getFields();
   if (!fields) {

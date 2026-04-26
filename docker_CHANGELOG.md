@@ -7,17 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
-## [Unreleased]
+## [0.3.2]
+
+### Added
+
+- support running auto_schema against non-public Postgres schemas (#1946)
+- add dev branch schema configuration and pruning commands (#1947, #1951)
+- add schema metadata and auto_schema operations for Postgres extensions (#1953, #1955)
+- add Postgres type metadata and computed query primitives to Go schema/codegen and auto_schema (#1956)
+
+### Changed
+
+- update auto_schema to the official Alembic package (#1923)
+- compare full-text index metadata through `pg_catalog` (#1966)
+- replace Go string-case and error helper dependencies with in-repo or standard-library code (#1964, #1965)
+- remove unused auto_schema date/datetime dependencies and add ty checks for auto_schema helpers (#1971, #1972, #1973)
 
 ### Fixed
 
+- align Python build and runtime images on Debian bookworm so native `auto_schema` dependencies do not require a newer glibc than the final image provides (#1981).
+- include `/go/bin` and `/opt/venv/bin` in the image `PATH` so `tsent` and `auto_schema` are available without per-project Dockerfile workarounds (#1981).
 - fix types for struct list for on demand types (#1911)
+- validate generated edge-table primary key names against identifier length limits (#1916)
 - exclude action-only fields when embedding action inputs (#1914)
 - fix builder codegen for list inverse edges (#1915)
-- fix action custom inputs to use public field names when field privacy is enabled (#1874)
-- fix generation of union types to be deterministic (#1919)
-- fix bug which lead to union types to be missing sometimes (#1920)
-- dev schema config + pruning updates (#1946, #1947)
+- fix action custom inputs to use public field names when field privacy is enabled (#1918)
+- make generated union types deterministic (#1919)
+- fix missing generated union items (#1920)
+- tighten dev schema runtime and prune behavior (#1951)
 
 ## [0.3.0]
 
