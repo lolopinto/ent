@@ -32,6 +32,9 @@ enum fieldPrivacyEvaluated {
 }
 
 // runtime configurations
+export type RuntimeMode = "node" | "bun";
+export type PostgresDriver = "pg" | "bun";
+
 export interface RuntimeDBExtension {
   name: string;
   provisionedBy?: "ent" | "external";
@@ -42,6 +45,8 @@ export interface RuntimeDBExtension {
 }
 
 export interface Config {
+  runtime?: RuntimeMode;
+  postgresDriver?: PostgresDriver;
   dbConnectionString?: string;
   dbFile?: string; // config/database.yml is default
   db?: Database | DBDict;
@@ -236,9 +241,13 @@ function setConfig(cfg: Config) {
     cfg.dbFile ||
     cfg.db ||
     cfg.devSchema ||
-    cfg.extensions
+    cfg.extensions ||
+    cfg.runtime ||
+    cfg.postgresDriver
   ) {
     DB.initDB({
+      runtime: cfg.runtime,
+      postgresDriver: cfg.postgresDriver,
       connectionString: cfg.dbConnectionString,
       dbFile: cfg.dbFile,
       db: cfg.db,

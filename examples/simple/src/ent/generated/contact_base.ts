@@ -18,6 +18,7 @@ import type { Attachment, ImportantDates } from "./types";
 import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
 import {
   AllowIfViewerPrivacyPolicy,
+  convertList,
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
@@ -71,8 +72,8 @@ export class ContactBase
     this.id = data.id;
     this.createdAt = data.created_at;
     this.updatedAt = data.updated_at;
-    this.emailIds = data.email_ids;
-    this.phoneNumberIds = data.phone_number_ids;
+    this.emailIds = convertList(data.email_ids);
+    this.phoneNumberIds = convertList(data.phone_number_ids);
     this.firstName = data.first_name;
     this.lastName = data.last_name;
     this.userId = data.user_id;

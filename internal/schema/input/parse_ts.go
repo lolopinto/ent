@@ -33,11 +33,14 @@ func GetRawSchema(dirPath string, fromTest bool) ([]byte, error) {
 		return nil, fmt.Errorf("expected schema to be a directory")
 	}
 
-	cmdInfo := cmd.GetCommandInfo(dirPath, fromTest)
+	cmdInfo, err := cmd.GetCommandInfo(dirPath, fromTest)
+	if err != nil {
+		return nil, err
+	}
 
 	cmdArgs := append(
 		cmdInfo.Args,
-		util.GetPathToScript("scripts/read_schema.ts", fromTest),
+		util.GetPathToScript("scripts/read_schema.ts", dirPath, fromTest, cmdInfo.Runtime),
 		"--path",
 		schemaPath,
 	)

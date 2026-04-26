@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Event } from "../../../ent";
+import { Event } from "../../../ent/event";
 import { EventType } from "../../resolvers/internal";
 
 interface EventListDeprecatedArgs {
@@ -31,7 +31,11 @@ export const EventListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   EventListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(EventType))),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(EventType)));
+  },
   description: "custom query for event. list",
   args: {
     id: {
@@ -67,10 +71,26 @@ export const EventListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return Event.loadCustom(
+    const rows = await Event.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map<string | number, number>(
+        args.ids.map(
+          (id: string | number, index: number): [string | number, number] => [
+            id,
+            index,
+          ],
+        ),
+      );
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

@@ -29,6 +29,7 @@ import {
   AssocEdge,
   ObjectLoaderFactory,
   applyPrivacyPolicy,
+  convertNullableList,
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
@@ -62,6 +63,7 @@ import {
   convertNullableUserNestedObjectListList,
   convertNullableUserOnDemandWithPrivacy,
   convertNullableUserPreferredShiftList,
+  convertNullableUserPrefsDiff,
   convertNullableUserPrefsStruct,
   convertNullableUserPrefsStructList,
   convertNullableUserSuperNestedObject,
@@ -193,16 +195,16 @@ export class UserBase
     );
     this._emailVerified = data.email_verified;
     this.bio = data.bio;
-    this.nicknames = data.nicknames;
+    this.nicknames = convertNullableList(data.nicknames);
     this._prefs = convertNullableUserPrefsStruct(data.prefs);
     this._prefsList = convertNullableUserPrefsStructList(data.prefs_list);
-    this._prefsDiff = data.prefs_diff;
+    this._prefsDiff = convertNullableUserPrefsDiff(data.prefs_diff);
     this.daysOff = data.days_off;
     this.preferredShift = convertNullableUserPreferredShiftList(
       data.preferred_shift,
     );
     this.timeInMs = BigInt(data.time_in_ms);
-    this.funUuids = data.fun_uuids;
+    this.funUuids = convertNullableList(data.fun_uuids);
     this.nestedList = convertNullableUserNestedObjectListList(data.nested_list);
     this.intEnum = data.int_enum;
     // @ts-expect-error

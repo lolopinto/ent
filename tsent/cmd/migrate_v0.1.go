@@ -129,13 +129,16 @@ func fullCodegen(s *schema.Schema) error {
 }
 
 func runNodeJSMigrateStep(p *codegen.Processor, step string) error {
-	scriptPath := util.GetPathToScript("scripts/migrate_v0.1.ts", false)
-	cmdArgs := append(
-		cmd2.GetArgsForTsNodeScript(p.Config.GetAbsPathToRoot()),
-		"--swc",
-		scriptPath,
-		step,
-	)
+	cmdInfo, err := cmd2.GetCommandInfo(p.Config.GetAbsPathToRoot(), false)
+	if err != nil {
+		return err
+	}
+	if cmdInfo.UseSwc {
+		cleanup := cmdInfo.MaybeSetupSwcrc(p.Config.GetAbsPathToRoot())
+		defer cleanup()
+	}
+	scriptPath := util.GetPathToScript("scripts/migrate_v0.1.ts", p.Config.GetAbsPathToRoot(), false, cmdInfo.Runtime)
+	cmdArgs := append(cmdInfo.Args, scriptPath, step)
 
 	if step == "--transform_schema" {
 		if migrateV1Info.newSchemaClass != "" && migrateV1Info.oldBaseClass != "" && migrateV1Info.transformPath != "" {
@@ -151,10 +154,11 @@ func runNodeJSMigrateStep(p *codegen.Processor, step string) error {
 		}
 	}
 
-	command := exec.Command("ts-node-script", cmdArgs...)
+	command := exec.Command(cmdInfo.Name, cmdArgs...)
 	command.Dir = p.Config.GetAbsPathToRoot()
 	command.Stderr = os.Stderr
 	command.Stdout = os.Stdout
+	command.Env = cmdInfo.Env
 
 	return command.Run()
 }

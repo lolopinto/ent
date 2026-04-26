@@ -63,7 +63,11 @@ export const ViewerQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   {}
 > = {
-  type: new GraphQLNonNull(ViewerType),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(ViewerType);
+  },
   description: "the viewer query",
   resolve: async (
     _source,

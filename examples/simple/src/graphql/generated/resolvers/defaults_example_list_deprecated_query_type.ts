@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { DefaultsExample } from "../../../ent";
+import { DefaultsExample } from "../../../ent/defaults_example";
 import { DefaultsExampleType } from "../../resolvers/internal";
 
 interface DefaultsExampleListDeprecatedArgs {
@@ -31,9 +31,13 @@ export const DefaultsExampleListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   DefaultsExampleListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(
-    new GraphQLList(new GraphQLNonNull(DefaultsExampleType)),
-  ),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(
+      new GraphQLList(new GraphQLNonNull(DefaultsExampleType)),
+    );
+  },
   description: "custom query for defaults_example. list",
   args: {
     id: {
@@ -69,10 +73,26 @@ export const DefaultsExampleListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return DefaultsExample.loadCustom(
+    const rows = await DefaultsExample.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map<string | number, number>(
+        args.ids.map(
+          (id: string | number, index: number): [string | number, number] => [
+            id,
+            index,
+          ],
+        ),
+      );
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

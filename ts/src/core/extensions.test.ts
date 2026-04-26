@@ -265,4 +265,42 @@ describe("extension initialization", () => {
       'required pg type "vector" for db extension "vector" was not found',
     );
   });
+
+  test("bun driver rejects extensions that require pg type parsers", async () => {
+    registerExtensionRuntime({
+      name: "vector",
+      types: [
+        {
+          name: "vector",
+          parse: (value) => value,
+        },
+      ],
+    });
+
+    const pool = {
+      query: jest.fn().mockResolvedValue({
+        rows: [
+          {
+            extname: "vector",
+            extversion: "0.8.1",
+            install_schema: "public",
+          },
+        ],
+      }),
+    } as unknown as Pool;
+
+    await expect(
+      initializeExtensions(
+        pool,
+        [
+          {
+            name: "vector",
+          },
+        ],
+        "bun",
+      ),
+    ).rejects.toThrow(
+      'postgresDriver "bun" does not support extension runtime type parsers for: vector',
+    );
+  });
 });

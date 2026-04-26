@@ -1,7 +1,14 @@
 import { FieldMap, Pattern, FieldOverrideMap } from "./schema";
 import { v4 as uuidv4 } from "uuid";
 import { TimestampType, UUIDType } from "./field";
-import { Action, AssocEdgeGroup, Constraint, Edge, Index, Schema } from ".";
+import type {
+  Action,
+  AssocEdgeGroup,
+  Constraint,
+  Edge,
+  Index,
+  Schema,
+} from "./schema";
 import { PrivacyPolicy } from "../core/base";
 
 let tsFields: FieldMap = {

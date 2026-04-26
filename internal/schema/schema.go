@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -432,7 +435,7 @@ func (s *Schema) parseInputSchema(cfg codegenapi.Config, schema *input.Schema, l
 
 	// TODO right now this is also depending on config/database.yml
 	// figure out if best place for this
-	edgeData, err := s.loadExistingEdges()
+	edgeData, err := s.loadExistingEdges(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -1321,7 +1324,46 @@ func (s *Schema) getCustomUnion(cfg codegenapi.Config, f *field.Field, globalTyp
 	return cu, nil
 }
 
-func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
+var schemaPyEdgePattern = regexp.MustCompile(`'([^']+)': \{"edge_name":"([^"]+)", "edge_type":"([^"]+)", "edge_table":"([^"]+)", "symmetric_edge":(True|False), "inverse_edge_type":(?:"([^"]+)"|None)\},?`)
+
+func loadExistingEdgesFromSchemaPy(root string) ([]*ent.AssocEdgeData, error) {
+	if root == "" {
+		return nil, nil
+	}
+
+	schemaPyPath := filepath.Join(root, "src", "schema", "schema.py")
+	b, err := os.ReadFile(schemaPyPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	matches := schemaPyEdgePattern.FindAllStringSubmatch(string(b), -1)
+	if len(matches) == 0 {
+		return nil, nil
+	}
+
+	ret := make([]*ent.AssocEdgeData, 0, len(matches))
+	for _, match := range matches {
+		edgeData := &ent.AssocEdgeData{
+			EdgeType:      ent.EdgeType(match[3]),
+			EdgeName:      match[2],
+			SymmetricEdge: match[5] == "True",
+			EdgeTable:     match[4],
+		}
+		if match[6] != "" {
+			if err := edgeData.InverseEdgeType.Scan(match[6]); err != nil {
+				return nil, err
+			}
+		}
+		ret = append(ret, edgeData)
+	}
+	return ret, nil
+}
+
+func (s *Schema) loadExistingEdges(cfg codegenapi.Config) (*assocEdgeData, error) {
 	// load all edges in db
 	result := <-ent.GenLoadAssocEdges()
 	if result.Err != nil {
@@ -1334,6 +1376,18 @@ func (s *Schema) loadExistingEdges() (*assocEdgeData, error) {
 		edgeMap[assocEdgeData.EdgeName] = assocEdgeData
 		edgeTables[assocEdgeData.EdgeTable] = true
 	}
+
+	fallbackEdges, err := loadExistingEdgesFromSchemaPy(cfg.GetAbsPathToRoot())
+	if err != nil {
+		return nil, err
+	}
+	for _, assocEdgeData := range fallbackEdges {
+		if edgeMap[assocEdgeData.EdgeName] == nil {
+			edgeMap[assocEdgeData.EdgeName] = assocEdgeData
+		}
+		edgeTables[assocEdgeData.EdgeTable] = true
+	}
+
 	return &assocEdgeData{
 		dbEdgeMap:     edgeMap,
 		dbEdgeTables:  edgeTables,

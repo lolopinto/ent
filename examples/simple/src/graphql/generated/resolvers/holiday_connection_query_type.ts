@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Holiday } from "../../../ent";
+import { Holiday } from "../../../ent/holiday";
 import { HolidayArgInputType } from "../mutations/input/holiday_arg_input_type";
 import { HolidaySortColumnType } from "./enums_type";
 import { RootToHolidayConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,11 @@ export const HolidayConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   HolidayConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToHolidayConnectionType()),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(RootToHolidayConnectionType());
+  },
   description: "custom query for holiday. connection",
   args: {
     ids: {

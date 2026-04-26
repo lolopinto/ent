@@ -4,6 +4,7 @@ import * as glob from "glob";
 import * as path from "path";
 import * as fs from "fs";
 import ts from "typescript";
+import { pathToFileURL } from "url";
 import {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
@@ -33,6 +34,10 @@ const { parseArgs } = require("./parse_args");
 // we're affecting the local paths as opposed to a different instance
 // life is hard
 const MODULE_PATH = GRAPHQL_PATH;
+
+function isBunRuntime() {
+  return process.env.ENT_RUNTIME === "bun" || (process.versions as any).bun;
+}
 
 function parseJSONC(fileName: string, text: string): CustomGraphQLInput {
   const { config, error } = ts.parseConfigFileTextToJson(fileName, text);
@@ -184,21 +189,27 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
     return;
   }
   return new Promise((resolve, reject) => {
-    let cmd = "";
-    const args: string[] = [];
     const env = {
       ...process.env,
     };
-    if (process.env.ENABLE_SWC) {
-      cmd = "node";
-      // we seem to get tsconfig-paths by default because child process but not 100% sure...
-      args.push("-r", "@swc-node/register");
-      env.SWCRC = "true";
+    let cmd = "ts-node";
+    const args: string[] = [];
+    const runtime = isBunRuntime() ? "bun" : "node";
+
+    if (runtime === "bun") {
+      cmd = "bun";
+      args.push(filePath);
     } else {
-      cmd = "ts-node";
-      args.push("--transpileOnly");
+      if (process.env.ENABLE_SWC) {
+        cmd = "node";
+        // we seem to get tsconfig-paths by default because child process but not 100% sure...
+        args.push("-r", "@swc-node/register");
+        env.SWCRC = "true";
+      } else {
+        args.push("--transpileOnly");
+      }
+      args.push(filePath);
     }
-    args.push(filePath);
     const r = spawn(cmd, args, {
       env,
     });
@@ -301,14 +312,6 @@ async function captureCustom(
   // TODO configurable paths eventually
   // for now only files that are in the include path of the roots are allowed
 
-  const rootFiles = [
-    // right now, currently expecting all custom ent stuff to be in the ent object
-    // eventually, create a path we check e.g. ent/custom_gql/ ent/graphql?
-    // for now can just go in graphql/resolvers/ (not generated)
-    path.join(filePath, "ent/index.ts"),
-    path.join(filePath, "/graphql/resolvers/index.ts"),
-  ];
-
   const ignore = [
     "**/generated/**",
     "**/tests/**",
@@ -317,43 +320,51 @@ async function captureCustom(
     // ignore test files.
     "**/*.test.ts",
   ];
+  const customGraphQLEntFiles = glob.sync(path.join(filePath, "/ent/**/*.ts"), {
+    // not in action files since we can't customize payloads (yet?)
+    ignore: [...ignore, "**/actions/**"],
+  });
   const customGQLResolvers = glob.sync(
     path.join(filePath, "/graphql/resolvers/**/*.ts"),
     {
-      // no actions for now to speed things up
-      // no index.ts or internal file.
       ignore: ignore,
     },
   );
   const customGQLMutations = glob.sync(
     path.join(filePath, "/graphql/mutations/**/*.ts"),
     {
-      // no actions for now to speed things up
-      // no index.ts or internal file.
       ignore: ignore,
     },
   );
-  const files = rootFiles.concat(customGQLResolvers, customGQLMutations);
+  const files = customGraphQLEntFiles
+    .concat(customGQLResolvers, customGQLMutations)
+    .filter(fileImportsGraphQLDecorators);
 
   await requireFiles(files);
 }
 
-async function requireFiles(files: string[]) {
-  await Promise.all(
-    files.map(async (file) => {
-      if (fs.existsSync(file)) {
-        try {
-          await require(file);
-        } catch (e) {
-          throw new Error(`${(e as Error).message} loading ${file}`);
-        }
-      } else {
-        throw new Error(`file ${file} doesn't exist`);
-      }
-    }),
-  ).catch((err) => {
-    throw new Error(err);
+function fileImportsGraphQLDecorators(file: string) {
+  const contents = fs.readFileSync(file, {
+    encoding: "utf8",
   });
+  return /@snowtop\/ent\/graphql(?:\/graphql)?/.test(contents);
+}
+
+async function requireFiles(files: string[]) {
+  for (const file of files) {
+    if (!fs.existsSync(file)) {
+      throw new Error(`file ${file} doesn't exist`);
+    }
+    try {
+      if (isBunRuntime()) {
+        await import(pathToFileURL(file).href);
+      } else {
+        await require(file);
+      }
+    } catch (e) {
+      throw new Error(`${(e as Error).message} loading ${file}`);
+    }
+  }
 }
 
 // filePath is path-to-src
@@ -413,7 +424,7 @@ async function main() {
   // for local dev, get the one from the file system. otherwise, get the one
   // from node_modules
   let gqlCapture: typeof GQLCapture;
-  if (process.env.LOCAL_SCRIPT_PATH) {
+  if (process.env.LOCAL_SCRIPT_PATH || isBunRuntime()) {
     const r = require("../graphql/graphql");
     gqlCapture = r.GQLCapture;
     gqlCapture.enable(true);

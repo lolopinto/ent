@@ -1,31 +1,31 @@
 export {
   WriteOperation,
-  Builder,
   // make sure not to expose Executor...
-  Changeset,
-  Trigger,
-  Observer,
-  Validator,
-  Action,
   saveBuilder,
   saveBuilderX,
   setEdgeTypeInGroup,
-  TriggerReturn,
-  ChangesetOptions,
 } from "./action";
-export {
-  OrchestratorOptions,
-  Orchestrator,
-  EntChangeset,
-  EdgeInputData,
-} from "./orchestrator";
+export { Orchestrator, EntChangeset } from "./orchestrator";
+export type {
+  Action,
+  Builder,
+  Changeset,
+  ChangesetOptions,
+  Observer,
+  Trigger,
+  TriggerReturn,
+  Validator,
+} from "./action";
+export type { OrchestratorOptions, EdgeInputData } from "./orchestrator";
 export { DenyIfBuilder, AllowIfBuilder } from "./privacy";
 export {
-  RelativeFieldValue,
-  RelativeNumberValue,
   NumberOps,
   convertRelativeInput,
   maybeConvertRelativeInputPlusExpressions,
 } from "./relative_value";
+export type {
+  RelativeFieldValue,
+  RelativeNumberValue,
+} from "./relative_value";
 export { Transaction } from "./transaction";
-export { AssocEdgeOptions } from "./operations";
+export type { AssocEdgeOptions } from "./operations";

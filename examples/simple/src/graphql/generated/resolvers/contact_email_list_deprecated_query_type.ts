@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { ContactEmail } from "../../../ent";
+import { ContactEmail } from "../../../ent/contact_email";
 import { ContactEmailType } from "../../resolvers/internal";
 
 interface ContactEmailListDeprecatedArgs {
@@ -31,9 +31,13 @@ export const ContactEmailListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   ContactEmailListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(
-    new GraphQLList(new GraphQLNonNull(ContactEmailType)),
-  ),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(
+      new GraphQLList(new GraphQLNonNull(ContactEmailType)),
+    );
+  },
   description: "custom query for contact_email. list",
   args: {
     id: {
@@ -69,10 +73,26 @@ export const ContactEmailListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return ContactEmail.loadCustom(
+    const rows = await ContactEmail.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map<string | number, number>(
+        args.ids.map(
+          (id: string | number, index: number): [string | number, number] => [
+            id,
+            index,
+          ],
+        ),
+      );
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

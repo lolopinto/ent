@@ -85,7 +85,11 @@ export const CommentCreateType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customCommentCreateInput }
 > = {
-  type: new GraphQLNonNull(CommentCreatePayloadType),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(CommentCreatePayloadType);
+  },
   args: {
     input: {
       description: "",

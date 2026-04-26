@@ -827,6 +827,7 @@ func TestDateType(t *testing.T) {
 				tsType:          "string | null",
 				nonNullableType: &enttype.DateType{},
 				importType:      &enttype.DateImport{},
+				convertPostgresFns: []string{"convertNullableDBDate"},
 			},
 		},
 		"not nullable": {
@@ -841,6 +842,7 @@ func TestDateType(t *testing.T) {
 				tsType:       "string",
 				nullableType: &enttype.NullableDateType{},
 				importType:   &enttype.DateImport{},
+				convertPostgresFns: []string{"convertDBDate"},
 			},
 		},
 	})

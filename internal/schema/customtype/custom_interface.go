@@ -131,20 +131,10 @@ func (ci *CustomInterface) IsCustomUnion() bool {
 }
 
 func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
-	for _, c := range ci.Children {
-		if c.HasConvertFunction(cfg) {
-			return true
-		}
-	}
-
-	for _, f := range ci.Fields {
-		if f.TsFieldName(cfg) != f.GetDbColName() {
-			return true
-		}
-	}
-
-	// this is (currently) only used in actions and should not apply. but to be safe, if exists, have a convert function
-	return len(ci.NonEntFields) > 0
+	// Always emit a converter. Bun's native Postgres path can surface JSON-backed custom
+	// types as serialized strings, and the generated converter is where we normalize
+	// string and object inputs into the declared TypeScript shape.
+	return true
 }
 
 // note the logic for these 4 duplicated in Field.GetConvertMethod() in field_type.go

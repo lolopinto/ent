@@ -16,7 +16,7 @@ import {
   TimestamptzType,
   UUIDListType,
 } from "./field";
-import Schema from "./schema";
+import type { Schema } from "./schema";
 import {
   User,
   SimpleAction,

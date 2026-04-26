@@ -48,7 +48,11 @@
     {{useTypeImport "RequestContext"}}<{{$viewerType}}>
   {{ end -}}
 > = {
-  type: {{$fieldConfig.FieldType}},
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return {{$fieldConfig.FieldType}};
+  },
   {{ if $fieldConfig.Description -}}
     description: "{{$fieldConfig.Description}}",
   {{ end -}}

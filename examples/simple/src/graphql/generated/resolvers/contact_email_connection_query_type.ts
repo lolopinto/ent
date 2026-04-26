@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { ContactEmail } from "../../../ent";
+import { ContactEmail } from "../../../ent/contact_email";
 import { ContactEmailArgInputType } from "../mutations/input/contact_email_arg_input_type";
 import { ContactEmailSortColumnType } from "./enums_type";
 import { RootToContactEmailConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,11 @@ export const ContactEmailConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   ContactEmailConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToContactEmailConnectionType()),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(RootToContactEmailConnectionType());
+  },
   description: "custom query for contact_email. connection",
   args: {
     ids: {

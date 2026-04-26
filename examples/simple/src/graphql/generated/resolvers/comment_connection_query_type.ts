@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Comment } from "../../../ent";
+import { Comment } from "../../../ent/comment";
 import { CommentArgInputType } from "../mutations/input/comment_arg_input_type";
 import { CommentSortColumnType } from "./enums_type";
 import { RootToCommentConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,11 @@ export const CommentConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   CommentConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToCommentConnectionType()),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(RootToCommentConnectionType());
+  },
   description: "custom query for comment. connection",
   args: {
     ids: {

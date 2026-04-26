@@ -23,18 +23,21 @@ var runScriptCmd = &cobra.Command{
 			return err
 		}
 
-		scriptPath := util.GetPathToScript(script, false)
-
-		cmdArgs := append(
-			cmd2.GetArgsForTsNodeScript(cfg.GetAbsPathToRoot()),
-			// "--swc",
-			scriptPath,
-		)
-
-		command := exec.Command("ts-node-script", cmdArgs...)
+		cmdInfo, err := cmd2.GetCommandInfo(cfg.GetAbsPathToRoot(), false)
+		if err != nil {
+			return err
+		}
+		if cmdInfo.UseSwc {
+			cleanup := cmdInfo.MaybeSetupSwcrc(cfg.GetAbsPathToRoot())
+			defer cleanup()
+		}
+		scriptPath := util.GetPathToScript(script, cfg.GetAbsPathToRoot(), false, cmdInfo.Runtime)
+		cmdArgs := append(cmdInfo.Args, scriptPath)
+		command := exec.Command(cmdInfo.Name, cmdArgs...)
 		command.Dir = cfg.GetAbsPathToRoot()
 		command.Stderr = os.Stderr
 		command.Stdout = os.Stdout
+		command.Env = cmdInfo.Env
 
 		return command.Run()
 	},

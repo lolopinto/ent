@@ -367,8 +367,6 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 	writeAll := processor.Config.WriteAllFiles()
 	changes := processor.ChangeMap
 	updateBecauseChanges := writeAll || len(changes) > 0
-	customChanges := s.customData.compareResult
-	hasCustomChanges := (customChanges != nil && customChanges.hasAnyChanges())
 
 	if len(s.enums) > 0 {
 		// TODO eventually stop deleting this
@@ -496,29 +494,19 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		}
 	}
 
-	// simplify and only do this if there's changes, we can be smarter about this over time
-	if updateBecauseChanges || hasCustomChanges {
-		// Query|Mutation|Subscription
-		for idx := range s.rootDatas {
-			rootData := s.rootDatas[idx]
-			funcs = append(funcs, func() error {
-				return writeRootDataFile(processor, rootData)
-			})
-		}
+	// Root query/mutation files describe the full schema surface. Always rewrite them so
+	// a plain codegen run can recover from stale on-disk generated files even when the
+	// change detector thinks nothing changed.
+	for idx := range s.rootDatas {
+		rootData := s.rootDatas[idx]
+		funcs = append(funcs, func() error {
+			return writeRootDataFile(processor, rootData)
+		})
 	}
 
 	// other files
 	funcs = append(
 		funcs,
-		func() error {
-			// graphql/resolvers/internal
-			// if any changes, update this
-			// eventually only wanna do this if add|remove something
-			if updateBecauseChanges || hasCustomChanges {
-				return writeInternalGQLResolversFile(s, processor)
-			}
-			return nil
-		},
 		// graphql/resolvers/index
 		func() error {
 			// have writeOnce handle this
@@ -526,11 +514,7 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		},
 		func() error {
 			// graphql/schema.ts
-			// if any changes, just do this
-			if updateBecauseChanges || hasCustomChanges {
-				return writeTSSchemaFile(processor, s)
-			}
-			return nil
+			return writeTSSchemaFile(processor, s)
 		},
 		func() error {
 			// graphql/index.ts
@@ -539,7 +523,13 @@ func (p *TSStep) writeBaseFiles(processor *codegen.Processor, s *gqlSchema) erro
 		},
 	)
 
-	return fns.RunParallel(funcs)
+	if err := fns.RunParallel(funcs); err != nil {
+		return err
+	}
+
+	// internal.ts depends on the final resolver set on disk so it can pick up
+	// generated additions/removals and local top-level resolver files.
+	return writeInternalGQLResolversFile(s, processor)
 }
 
 var _ codegen.Step = &TSStep{}
@@ -699,10 +689,6 @@ func searchForFiles(processor *codegen.Processor) []string {
 	files := strings.Split(strings.TrimSpace(string(b)), "\n")
 
 	result := []string{}
-
-	// we want to load all of ent first to make sure that any requires we do resolve correctly
-	// we don't need to load graphql by default since we use ent -> graphql objects
-	// any custom objects that are referenced should be in the load path
 	indexFile := path.Join(rootPath, "src/ent/index.ts")
 	stat, _ := os.Stat(indexFile)
 	allEnt := false
@@ -718,9 +704,7 @@ func searchForFiles(processor *codegen.Processor) []string {
 		entPath := getImportPathForModelFile(nodeData)
 		entPaths[entPath] = true
 	}
-
 	for _, file := range files {
-		// ignore entPaths since we're doing src/ent/index.ts to get all of ent
 		if allEnt && entPaths[file] {
 			continue
 		}
@@ -784,9 +768,11 @@ func ParseRawCustomData(processor *codegen.Processor, fromTest bool) ([]byte, er
 		buf.WriteString("\n")
 	}
 
-	scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", fromTest)
-
-	cmdInfo := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), fromTest)
+	cmdInfo, err := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), fromTest)
+	if err != nil {
+		return nil, err
+	}
+	scriptPath := util.GetPathToScript("scripts/custom_graphql.ts", processor.Config.GetAbsPathToRoot(), fromTest, cmdInfo.Runtime)
 
 	if cmdInfo.UseSwc {
 		cleanup := cmdInfo.MaybeSetupSwcrc(processor.Config.GetAbsPathToRoot())
@@ -1962,77 +1948,143 @@ func otherObjectIsInput(node *gqlNode) bool {
 	return obj.GQLType == "GraphQLInputObjectType" && !obj.ArgNotInput
 }
 
-func getSortedLines(s *gqlSchema, cfg *codegen.Config) []string {
-	// this works based on what we're currently doing
-	// if we eventually add other things here, may not work?
+type resolverExportLine struct {
+	Path      string
+	Export    string
+	ExportAll bool
+}
 
-	var nodes []string
-	var conns []string
-	var otherObjs []string
-	for _, node := range s.otherObjects {
-		if otherObjectIsInput(node) {
+func getSortedLines(_ *gqlSchema, cfg *codegen.Config) ([]resolverExportLine, error) {
+	lines, err := getSortedResolverLinesFromDisk(cfg)
+	if err != nil {
+		return nil, err
+	}
+	return lines, nil
+}
+
+func getResolverExportLine(path string, namedExport bool) resolverExportLine {
+	base := strings.TrimSuffix(filepath.Base(path), ".ts")
+	if base == "enums_type" || !namedExport {
+		return resolverExportLine{
+			Path:      path,
+			ExportAll: true,
+		}
+	}
+	return resolverExportLine{
+		Path:   path,
+		Export: names.ToClassType(strings.Split(base, "_")...),
+	}
+}
+
+func getLocalResolverLinesFromDisk(cfg *codegen.Config) []resolverExportLine {
+	var lines []resolverExportLine
+	localResolverDir := filepath.Join(cfg.GetAbsPathToRoot(), "src/graphql/resolvers")
+	if _, err := os.Stat(localResolverDir); err != nil {
+		return lines
+	}
+
+	err := filepath.Walk(localResolverDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		base := filepath.Base(path)
+		if base == "internal.ts" || base == "index.ts" {
+			return nil
+		}
+		if !strings.HasSuffix(base, ".ts") || strings.HasSuffix(base, ".d.ts") {
+			return nil
+		}
+		if !strings.HasSuffix(base, "_type.ts") && !strings.HasSuffix(base, "_query_type.ts") {
+			return nil
+		}
+		rel, err := filepath.Rel(localResolverDir, path)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(rel, string(filepath.Separator)) {
+			return nil
+		}
+		rel, err = filepath.Rel(cfg.GetAbsPathToRoot(), path)
+		if err != nil {
+			return err
+		}
+		lines = append(lines, getResolverExportLine(strings.TrimSuffix(filepath.ToSlash(rel), ".ts"), false))
+		return nil
+	})
+	if err != nil {
+		return nil
+	}
+
+	sort.Slice(lines, func(i, j int) bool {
+		return lines[i].Path < lines[j].Path
+	})
+	return lines
+}
+
+func getSortedResolverLinesFromDisk(cfg *codegen.Config) ([]resolverExportLine, error) {
+	generatedDir := filepath.Join(cfg.GetAbsPathToRoot(), "src/graphql/generated/resolvers")
+	if _, err := os.Stat(generatedDir); err != nil {
+		return nil, err
+	}
+
+	var lines []resolverExportLine
+	appendLine := func(path string) error {
+		rel, err := filepath.Rel(cfg.GetAbsPathToRoot(), path)
+		if err != nil {
+			return err
+		}
+		lines = append(lines, getResolverExportLine(strings.TrimSuffix(filepath.ToSlash(rel), ".ts"), true))
+		return nil
+	}
+
+	err := filepath.Walk(generatedDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(path, ".ts") || strings.HasSuffix(path, ".d.ts") {
+			return nil
+		}
+		return appendLine(path)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	lines = append(lines, getLocalResolverLinesFromDisk(cfg)...)
+
+	sort.Slice(lines, func(i, j int) bool {
+		return lines[i].Path < lines[j].Path
+	})
+
+	seen := make(map[string]bool)
+	var ret []resolverExportLine
+	for _, line := range lines {
+		if seen[line.Path] {
 			continue
 		}
-		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
+		seen[line.Path] = true
+		ret = append(ret, line)
 	}
-	for _, node := range s.nodes {
-		nodes = append(nodes, trimPath(cfg, node.FilePath))
-		for _, conn := range node.connections {
-			conns = append(conns, trimPath(cfg, conn.FilePath))
-		}
-	}
-	for _, node := range s.unions {
-		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
-	}
-	for _, node := range s.interfaces {
-		otherObjs = append(otherObjs, trimPath(cfg, node.FilePath))
-	}
-	var enums []string
-	if len(s.enums) > 0 {
-		// enums in one file
-		enums = append(enums, trimPath(cfg, getFilePathForEnums(cfg)))
-	}
-
-	var customQueries []string
-	for _, node := range s.customQueries {
-		customQueries = append(customQueries, trimPath(cfg, node.FilePath))
-		for _, conn := range node.connections {
-			conns = append(conns, trimPath(cfg, conn.FilePath))
-		}
-	}
-
-	rootQueryImports := []string{}
-	for _, rootQuery := range s.rootQueries {
-		rootQueryImports = append(rootQueryImports, trimPath(cfg, rootQuery.FilePath))
-	}
-
-	var lines []string
-	// get the enums
-	// get top level nodes e.g. User, Photo
-	// get the connections
-	// get the custom queries
-	list := [][]string{
-		enums,
-		otherObjs,
-		nodes,
-		conns,
-		customQueries,
-		rootQueryImports,
-	}
-	for _, l := range list {
-		sort.Strings(l)
-		lines = append(lines, l...)
-	}
-	return lines
+	return ret, nil
 }
 
 func writeInternalGQLResolversFile(s *gqlSchema, processor *codegen.Processor) error {
 	filePath := filepath.Join(processor.Config.GetAbsPathToRoot(), codepath.GetFilePathForInternalGQLFile())
 	imps := tsimport.NewImports(processor.Config, filePath)
+	lines, err := getSortedLines(s, processor.Config)
+	if err != nil {
+		return err
+	}
 
 	return file.Write(&file.TemplatedBasedFileWriter{
 		Config:            processor.Config,
-		Data:              getSortedLines(s, processor.Config),
+		Data:              lines,
 		AbsPathToTemplate: util.GetAbsolutePath("ts_templates/resolver_internal.tmpl"),
 		TemplateName:      "resolver_internal.tmpl",
 		PathToFile:        filePath,
@@ -4265,15 +4317,26 @@ func generateSchemaFile(processor *codegen.Processor, hasMutations bool) error {
 		return fmt.Errorf("error writing temporary schema file: %w", err)
 	}
 
-	cmd := exec.Command("ts-node", "-r", cmd.GetTsconfigPaths(), filePath)
+	cmdInfo, err := cmd.GetCommandInfo(processor.Config.GetAbsPathToRoot(), false)
+	if err != nil {
+		return err
+	}
+	if cmdInfo.UseSwc {
+		cleanup := cmdInfo.MaybeSetupSwcrc(processor.Config.GetAbsPathToRoot())
+		defer cleanup()
+	}
+	cmdArgs := append(cmdInfo.Args, filePath)
+	command := exec.Command(cmdInfo.Name, cmdArgs...)
 	// TODO check this and do something useful with it
 	// and then apply this in more places
 	// for now we'll just spew it when there's an error as it's a hint as to what
 	// TODO https://github.com/lolopinto/ent/issues/61
 	// TODO https://github.com/lolopinto/ent/issues/76
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	err = cmd.Run()
+	command.Stdout = os.Stdout
+	command.Stderr = os.Stderr
+	command.Dir = processor.Config.GetAbsPathToRoot()
+	command.Env = cmdInfo.Env
+	err = command.Run()
 	if err != nil {
 		return fmt.Errorf("error writing schema file: %w", err)
 	}

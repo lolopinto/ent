@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { User } from "../../../ent";
+import { User } from "../../../ent/user";
 import { UserArgInputType } from "../mutations/input/user_arg_input_type";
 import { UserSortColumnType } from "./enums_type";
 import { RootToUserConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,11 @@ export const UserConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   UserConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToUserConnectionType()),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(RootToUserConnectionType());
+  },
   description: "custom query for user. connection",
   args: {
     ids: {

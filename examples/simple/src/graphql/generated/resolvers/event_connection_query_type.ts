@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Event } from "../../../ent";
+import { Event } from "../../../ent/event";
 import { EventArgInputType } from "../mutations/input/event_arg_input_type";
 import { EventSortColumnType } from "./enums_type";
 import { RootToEventConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,11 @@ export const EventConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   EventConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToEventConnectionType()),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(RootToEventConnectionType());
+  },
   description: "custom query for event. connection",
   args: {
     ids: {

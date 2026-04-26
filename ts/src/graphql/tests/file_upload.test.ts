@@ -96,17 +96,13 @@ const schema = new GraphQLSchema({
           },
         },
         async resolve(src, args) {
-          // graphql-upload resolves each promise as buffering starts, so consume
-          // multiple uploads concurrently instead of serializing the reads.
-          await Promise.all(
-            args.files.map(async (f) => {
-              const file = await f;
-              const data = await readStream(file);
-              if (data !== fileContents) {
-                throw new Error(`invalid file sent`);
-              }
-            }),
-          );
+          for (const f of args.files) {
+            const file = await f;
+            const data = await readStream(file);
+            if (data !== fileContents) {
+              throw new Error(`invalid file sent`);
+            }
+          }
 
           return true;
         },

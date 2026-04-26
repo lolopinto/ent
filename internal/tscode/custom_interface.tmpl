@@ -18,12 +18,13 @@
       {{ else -}}
         function {{.GetConvertMethod}}(input: any): {{.TSType}} {
       {{ end -}}
+        const data = typeof input === "string" ? JSON.parse(input) : input;
         return {
           {{range $field := .Fields -}}
             {{ if $field.HasConvertFunction $cfg $schema -}}
-              {{$field.TsFieldName $cfg}}: {{$field.GetConvertMethod $cfg}}(input.{{$field.GetDbColName}}),
+              {{$field.TsFieldName $cfg}}: {{$field.GetConvertMethod $cfg}}(data.{{$field.GetDbColName}}),
             {{else -}}
-              {{$field.TsFieldName $cfg}}: input.{{$field.GetDbColName}},
+              {{$field.TsFieldName $cfg}}: data.{{$field.GetDbColName}},
             {{end -}}
           {{end -}}
         };
@@ -43,14 +44,16 @@
 
       {{ if .GenerateListConvert}}
         export function {{.GetConvertListMethod}}(input: any[]): {{.TSType}}[] {
-          return input.map(v => {{.GetConvertMethod}}(v));
+          const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+          return list.map((v: any) => {{.GetConvertMethod}}(v));
         }
 
         export function {{.GetConvertNullableListMethod}}(input: any[] | null): {{.TSType}}[] | null {
           if (input === null || input === undefined) {
             return null;
           }
-          return input.map(v => {{.GetConvertMethod}}(v));
+          const list: any[] = Array.isArray(input) ? input : JSON.parse(input);
+          return list.map((v: any) => {{.GetConvertMethod}}(v));
         }
       {{ end }}
     {{end -}}
@@ -59,17 +62,18 @@
     {{ .GetTypeDeclaration }}
     {{$info := .GetConvertMethodInfo $cfg }}
     function {{$info.Method}}(input: any): {{.TSType}} {
+      const data = typeof input === "string" ? JSON.parse(input) : input;
       {{range $info.Infos -}} 
         {{if .HasConvertFunction -}}
-          if (input.{{.Field}} !== undefined) {
-            return {{.ReturnFunction}}(input);
+          if (data.{{.Field}} !== undefined) {
+            return {{.ReturnFunction}}(data);
           }
         {{ end -}}
       {{ end -}}
       {{ if $info.Default -}}
-        return {{$info.Default}}(input);
+        return {{$info.Default}}(data);
       {{ else -}}
-        return input;
+        return data;
       {{ end -}}
     }
 

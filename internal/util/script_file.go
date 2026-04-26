@@ -9,7 +9,7 @@ import (
 
 // path should be scripts/...
 // e.g. scripts/custom_graphql.ts
-func GetPathToScript(path string, fromTest bool) string {
+func GetPathToScript(path string, dirPath string, fromTest bool, runtime string) string {
 	local := EnvIsTrue("LOCAL_SCRIPT_PATH")
 	if fromTest || local {
 		return GetAbsolutePath("../../ts/src/" + path)

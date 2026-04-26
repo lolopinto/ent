@@ -35,6 +35,25 @@ class UserToCommentsAuthoredQuery extends CustomEdgeQueryBase<
 }
 
 export class User extends UserBase {
+  private async queryContactInfosWithSelfLast() {
+    const [selfContactEdge, contactInfos] = await Promise.all([
+      this.loadSelfContactEdge(),
+      this.queryContactInfos(),
+    ]);
+    const selfContactID = selfContactEdge?.id2;
+    if (!selfContactID) {
+      return contactInfos;
+    }
+    return contactInfos.sort((a, b) => {
+      const aSelf = a.contact.id === selfContactID;
+      const bSelf = b.contact.id === selfContactID;
+      if (aSelf === bSelf) {
+        return 0;
+      }
+      return aSelf ? 1 : -1;
+    });
+  }
+
   getPrivacyPolicy(): PrivacyPolicy<this> {
     return {
       rules: [
@@ -130,7 +149,7 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
-    const contactInfos = await this.queryContactInfos();
+    const contactInfos = await this.queryContactInfosWithSelfLast();
     return contactInfos.filterMap((info) => {
       return {
         include: domain === this.getDomainFromEmail(info.contactInfo.email1),
@@ -152,7 +171,7 @@ export class User extends UserBase {
     async: true,
   })
   async getContactsGivenDomain(domain: string): Promise<Contact[]> {
-    const contactInfos = await this.queryContactInfos();
+    const contactInfos = await this.queryContactInfosWithSelfLast();
     return contactInfos.filterMap((info) => {
       return {
         include: domain === this.getDomainFromEmail(info.contactInfo.email1),
@@ -174,7 +193,7 @@ export class User extends UserBase {
     if (!domain) {
       return null;
     }
-    const contactInfos = await this.queryContactInfos();
+    const contactInfos = await this.queryContactInfosWithSelfLast();
     const res = contactInfos.filterMap((info) => {
       return {
         include:
@@ -204,7 +223,7 @@ export class User extends UserBase {
     if (!domain) {
       return [];
     }
-    let contactInfos = await this.queryContactInfos();
+    let contactInfos = await this.queryContactInfosWithSelfLast();
     return contactInfos.map((info) => {
       let contactDomain = this.getDomainFromEmail(info.contactInfo.email1);
       if (contactDomain === domain) {
@@ -229,7 +248,7 @@ export class User extends UserBase {
     if (!domain) {
       return null;
     }
-    const contactInfos = await this.queryContactInfos();
+    const contactInfos = await this.queryContactInfosWithSelfLast();
     return contactInfos.map((info) => {
       let contactDomain = this.getDomainFromEmail(info.contactInfo.email1);
       if (contactDomain === domain) {

@@ -1,6 +1,4 @@
 export {
-  gqlFieldOptions,
-  gqlObjectOptions,
   gqlField,
   gqlArgType,
   gqlInputObjectType,
@@ -9,19 +7,24 @@ export {
   gqlMutation,
   gqlContextType,
   gqlConnection,
-  GraphQLConnection,
   GQLCapture,
   gqlFileUpload,
-  CustomType,
   gqlInterfaceType,
   gqlUnionType,
+} from "./graphql";
+export type {
+  CustomType,
+  GraphQLConnection,
+  gqlFieldOptions,
+  gqlObjectOptions,
 } from "./graphql";
 
 export { GraphQLTime } from "./scalars/time";
 export { GraphQLDate } from "./scalars/date";
 export { GraphQLOrderByDirection } from "./scalars/orderby_direction";
 export { GraphQLPageInfo } from "./query/page_info";
-export { GraphQLEdge, GraphQLEdgeConnection } from "./query/edge_connection";
+export { GraphQLEdgeConnection } from "./query/edge_connection";
+export type { GraphQLEdge } from "./query/edge_connection";
 export {
   GraphQLEdgeType,
   GraphQLConnectionType,
@@ -30,7 +33,6 @@ export { GraphQLNodeInterface } from "./builtins/node";
 export { GraphQLConnectionInterface } from "./builtins/connection";
 export { GraphQLEdgeInterface } from "./builtins/edge";
 export {
-  NodeResolver,
   EntNodeResolver,
   registerResolver,
   clearResolvers,
@@ -40,4 +42,5 @@ export {
   mustDecodeNullableIDFromGQLID,
   encodeGQLID,
 } from "./node_resolver";
+export type { NodeResolver } from "./node_resolver";
 export { transformUnionTypes } from "./mutations/union";

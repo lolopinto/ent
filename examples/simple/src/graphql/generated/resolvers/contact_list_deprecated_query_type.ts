@@ -17,7 +17,7 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Contact } from "../../../ent";
+import { Contact } from "../../../ent/contact";
 import { ContactType } from "../../resolvers/internal";
 
 interface ContactListDeprecatedArgs {
@@ -31,7 +31,11 @@ export const ContactListDeprecatedQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   ContactListDeprecatedArgs
 > = {
-  type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(ContactType))),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(ContactType)));
+  },
   description: "custom query for contact. list",
   args: {
     id: {
@@ -67,10 +71,26 @@ export const ContactListDeprecatedQueryType: GraphQLFieldConfig<
       throw new Error("invalid query. must provid id or ids");
     }
 
-    return Contact.loadCustom(
+    const rows = await Contact.loadCustom(
       context.getViewer(),
       // @ts-expect-error Clause shenanigans
       query.AndOptional(...whereQueries),
     );
+    if (args.ids?.length) {
+      const order = new Map<string | number, number>(
+        args.ids.map(
+          (id: string | number, index: number): [string | number, number] => [
+            id,
+            index,
+          ],
+        ),
+      );
+      rows.sort(
+        (a, b) =>
+          (order.get(a.id) ?? Number.MAX_SAFE_INTEGER) -
+          (order.get(b.id) ?? Number.MAX_SAFE_INTEGER),
+      );
+    }
+    return rows;
   },
 };

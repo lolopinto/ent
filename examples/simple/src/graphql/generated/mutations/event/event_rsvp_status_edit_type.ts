@@ -66,7 +66,11 @@ export const EventRsvpStatusEditType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customEventRsvpStatusEditInput }
 > = {
-  type: new GraphQLNonNull(EventRsvpStatusEditPayloadType),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(EventRsvpStatusEditPayloadType);
+  },
   args: {
     input: {
       description: "",

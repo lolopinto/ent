@@ -17,7 +17,7 @@ function isGlobalSchemaField(f: Field) {
 export function setGlobalSchema(val: GlobalSchema) {
   globalSchema = val;
   if (val.fields) {
-    for (const [k, v] of Object.entries(val.fields)) {
+    for (const [_k, v] of Object.entries(val.fields)) {
       if (isGlobalSchemaField(v) && v.type.type) {
         globalSchemaFields.set(v.type.type, v);
       }

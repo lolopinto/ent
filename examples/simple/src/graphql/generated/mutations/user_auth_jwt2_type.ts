@@ -47,7 +47,11 @@ export const UserAuthJWT2Type: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   UserAuthJWT2Args
 > = {
-  type: new GraphQLNonNull(UserAuthJWTLoginType),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(UserAuthJWTLoginType);
+  },
   description: "authenticate a user with JWT",
   args: {
     emailAddress: {

@@ -18,7 +18,7 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { File } from "../../../ent";
+import { File } from "../../../ent/file";
 import { FileArgInputType } from "../mutations/input/file_arg_input_type";
 import { FileSortColumnType } from "./enums_type";
 import { RootToFileConnectionType } from "../../resolvers/internal";
@@ -38,7 +38,11 @@ export const FileConnectionQueryType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   FileConnectionArgs
 > = {
-  type: new GraphQLNonNull(RootToFileConnectionType()),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(RootToFileConnectionType());
+  },
   description: "custom query for file. connection",
   args: {
     ids: {

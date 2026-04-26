@@ -55,7 +55,11 @@ export const ContactEmailDeleteType: GraphQLFieldConfig<
   RequestContext<ExampleViewerAlias>,
   { [input: string]: customContactEmailDeleteInput }
 > = {
-  type: new GraphQLNonNull(ContactEmailDeletePayloadType),
+  // Lazily resolve the GraphQL type so Bun can load field configs through ESM cycles
+  // without tripping on top-level initialization order.
+  get type() {
+    return new GraphQLNonNull(ContactEmailDeletePayloadType);
+  },
   args: {
     input: {
       description: "",

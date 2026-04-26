@@ -6,7 +6,6 @@ export {
   loadCustomCount,
   loadEntX,
   loadEnts,
-  CustomQuery,
   loadDerivedEnt,
   loadDerivedEntX,
   loadEntViaKey,
@@ -30,16 +29,19 @@ export {
   setEntLoaderPrivacyConcurrencyLimit,
   getEntLoaderPrivacyConcurrencyLimit,
 } from "./core/ent";
+export type { CustomQuery } from "./core/ent";
 // TODO should these even be exported from the root?
 export {
-  DataOperation,
-  EditNodeOptions,
   EditNodeOperation,
   RawQueryOperation,
   EdgeOperation,
   DeleteNodeOperation,
-  AssocEdgeInputOptions,
+} from "./action/operations";
+export type {
   AssocEdgeInput,
+  AssocEdgeInputOptions,
+  DataOperation,
+  EditNodeOptions,
 } from "./action/operations";
 export { setGlobalSchema } from "./core/global_schema";
 export { registerExtensionRuntime } from "./core/extensions";
@@ -94,7 +96,8 @@ export type { QueryExpression } from "./core/query_expression";
 
 export * from "./schema/";
 import * as q from "./core/clause";
-export { Clause, Expression, ParameterizedExpression } from "./core/clause";
+export { Expression, ParameterizedExpression } from "./core/clause";
+export type { Clause } from "./core/clause";
 const query = {
   Eq: q.Eq,
   NotEq: q.NotEq,
@@ -140,9 +143,11 @@ const query = {
 
 export { query };
 
-export { RequestContext, ContextCache } from "./core/context";
+export { ContextCache } from "./core/context";
+export type { RequestContext } from "./core/context";
 
-export { IDViewer, LoggedOutViewer, IDViewerOptions } from "./core/viewer";
+export { IDViewer, LoggedOutViewer } from "./core/viewer";
+export type { IDViewerOptions } from "./core/viewer";
 
 export { loadConfig } from "./core/config";
 
