@@ -93,6 +93,7 @@ test("bun mode preserves the Express app test factory contract", async () => {
     });
 
     let factoryCalled = false;
+    let factoryAgent: supertest.Agent | undefined;
     const cfg: queryRootConfig = {
       schema,
       args: {},
@@ -101,13 +102,15 @@ test("bun mode preserves the Express app test factory contract", async () => {
         factoryCalled = true;
         expect(typeof app.use).toBe("function");
         expect(typeof app.listen).toBe("function");
-        return supertest.agent(app);
+        factoryAgent = supertest.agent(app);
+        return factoryAgent;
       },
     };
 
     const agent = await expectQueryFromRoot(cfg, ["", "world"]);
     await cleanupBunGraphQLTestAgent(agent);
     expect(factoryCalled).toBe(true);
+    expect(agent).toBe(factoryAgent);
   });
 });
 

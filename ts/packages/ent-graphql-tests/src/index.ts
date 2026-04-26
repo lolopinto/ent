@@ -177,10 +177,13 @@ async function createBunTestHarness(
   if (persistentAgent) {
     try {
       let test: supertest.Agent;
-      // Keep the existing Express app factory contract for app setup.
-      testFactory?.(app);
+      // Keep the existing Express app factory contract. If bunTest is present,
+      // it owns the URL-backed agent and testFactory still runs against the app.
+      const factoryAgent = testFactory?.(app);
       if (config.bunTest) {
         test = config.bunTest({ app, url });
+      } else if (factoryAgent) {
+        test = factoryAgent;
       } else {
         test = supertest.agent(url);
       }
@@ -214,7 +217,13 @@ async function makeGraphQLRequest(
       if (process.versions.bun) {
         ({ test } = await createBunTestHarness(config, true, config.test));
       } else {
-        test = config.test(config.server ? config.server : server(config));
+        const factoryAgent = config.test(
+          config.server ? config.server : server(config),
+        );
+        if (!factoryAgent) {
+          throw new Error("config.test must return a supertest agent");
+        }
+        test = factoryAgent;
       }
     } else {
       test = config.test;
