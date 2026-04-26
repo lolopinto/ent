@@ -1,7 +1,6 @@
 // NB: this is copied from ent-graphql-tests package until I have time to figure out how to share code here effectively
 // the circular dependencies btw this package and ent-graphql-tests seems to imply something needs to change
 import express, { Express, RequestHandler } from "express";
-import * as fs from "fs";
 import {
   GraphQLArgument,
   GraphQLField,
@@ -284,9 +283,6 @@ async function makeGraphQLRequest(
 
     idx = 0;
     for (let [key, val] of files) {
-      if (typeof val === "string") {
-        val = fs.createReadStream(val);
-      }
       ret.attach(`${idx}`, val, key);
       idx++;
     }

@@ -283,9 +283,6 @@ async function makeGraphQLRequest(
 
     idx = 0;
     for (let [key, val] of files) {
-      if (typeof val === "string") {
-        val = fs.createReadStream(val);
-      }
       ret.attach(`${idx}`, val, key);
       idx++;
     }
