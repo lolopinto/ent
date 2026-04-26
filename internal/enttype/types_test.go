@@ -930,8 +930,8 @@ type bunPostgresConfig struct {
 	codegenapi.DummyConfig
 }
 
-func (cfg *bunPostgresConfig) PostgresDriver() string {
-	return "bun"
+func (cfg *bunPostgresConfig) PostgresDriver() codegenapi.PostgresDriver {
+	return codegenapi.PostgresDriverBun
 }
 
 func TestBunPostgresConvertFuncs(t *testing.T) {

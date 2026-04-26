@@ -43,16 +43,16 @@ type Config struct {
 	changedTSFiles   []string
 }
 
-type Runtime string
+type Runtime = codegenapi.Runtime
 
-type PostgresDriver string
+type PostgresDriver = codegenapi.PostgresDriver
 
 const (
-	RuntimeNode Runtime = "node"
-	RuntimeBun  Runtime = "bun"
+	RuntimeNode = codegenapi.RuntimeNode
+	RuntimeBun  = codegenapi.RuntimeBun
 
-	PostgresDriverPG  PostgresDriver = "pg"
-	PostgresDriverBun PostgresDriver = "bun"
+	PostgresDriverPG  = codegenapi.PostgresDriverPG
+	PostgresDriverBun = codegenapi.PostgresDriverBun
 )
 
 // Clone doesn't clone changes and changedTSFiles
@@ -269,18 +269,18 @@ func (cfg *Config) getDatabaseMigrationConfig() *DatabaseMigrationConfig {
 	return nil
 }
 
-func (cfg *Config) Runtime() string {
+func (cfg *Config) Runtime() codegenapi.Runtime {
 	if cfg.config != nil {
-		return string(cfg.config.RuntimeValue())
+		return cfg.config.RuntimeValue()
 	}
-	return string(RuntimeNode)
+	return RuntimeNode
 }
 
-func (cfg *Config) PostgresDriver() string {
+func (cfg *Config) PostgresDriver() codegenapi.PostgresDriver {
 	if cfg.config != nil {
-		return string(cfg.config.PostgresDriverValue())
+		return cfg.config.PostgresDriverValue()
 	}
-	return string(PostgresDriverPG)
+	return PostgresDriverPG
 }
 
 func (cfg *Config) ShouldUseRelativePaths() bool {

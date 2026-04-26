@@ -34,6 +34,20 @@ const (
 	OnDemand  FieldPrivacyEvaluated = "on_demand"
 )
 
+type Runtime string
+
+const (
+	RuntimeNode Runtime = "node"
+	RuntimeBun  Runtime = "bun"
+)
+
+type PostgresDriver string
+
+const (
+	PostgresDriverPG  PostgresDriver = "pg"
+	PostgresDriverBun PostgresDriver = "bun"
+)
+
 type ImportedObject struct {
 	Path  string `yaml:"path"`
 	Name  string `yaml:"name"`
@@ -74,8 +88,8 @@ type Config interface {
 	FieldPrivacyEvaluated() FieldPrivacyEvaluated
 	GetRootPathToConfigs() string
 	GetAbsPathToRoot() string
-	Runtime() string
-	PostgresDriver() string
+	Runtime() Runtime
+	PostgresDriver() PostgresDriver
 	DebugMode() bool
 	DebugFilesMode() bool
 	// doesn't actually writes the files, just keeps track of which files were going to be written
@@ -107,12 +121,12 @@ func (cfg *DummyConfig) GetAbsPathToRoot() string {
 	return ""
 }
 
-func (cfg *DummyConfig) Runtime() string {
-	return "node"
+func (cfg *DummyConfig) Runtime() Runtime {
+	return RuntimeNode
 }
 
-func (cfg *DummyConfig) PostgresDriver() string {
-	return "pg"
+func (cfg *DummyConfig) PostgresDriver() PostgresDriver {
+	return PostgresDriverPG
 }
 
 func (cfg *DummyConfig) DebugMode() bool {

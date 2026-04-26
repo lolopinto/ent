@@ -2071,7 +2071,7 @@ func getSchemaResolverLines(s *gqlSchema, cfg *codegen.Config) []resolverExportL
 		customQueries,
 		rootQueryImports,
 	}
-	namedExport := cfg.Runtime() == "bun"
+	namedExport := cfg.Runtime() == codegenapi.RuntimeBun
 	for _, l := range list {
 		sort.Strings(l)
 		for _, path := range l {

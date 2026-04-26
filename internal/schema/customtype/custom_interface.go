@@ -131,7 +131,10 @@ func (ci *CustomInterface) IsCustomUnion() bool {
 }
 
 func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
-	if cfg.PostgresDriver() == "bun" {
+	if cfg.PostgresDriver() == codegenapi.PostgresDriverBun {
+		// Bun's native Postgres driver can surface JSON-backed custom types as
+		// serialized strings, so Bun mode always emits converters to normalize
+		// string and object payloads into the declared TypeScript shape.
 		return true
 	}
 

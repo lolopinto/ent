@@ -279,7 +279,7 @@ func (s *Schema) applyRuntimeOptionsToEnum(tsEnum *enum.Enum) {
 	if tsEnum == nil || s.cfg == nil {
 		return
 	}
-	tsEnum.ConvertListFromString = s.cfg.PostgresDriver() == "bun"
+	tsEnum.ConvertListFromString = s.cfg.PostgresDriver() == codegenapi.PostgresDriverBun
 }
 
 func (s *Schema) addGlobalEnum(enumType enttype.EnumeratedType, exposeToGraphQL bool) (*EnumInfo, error) {

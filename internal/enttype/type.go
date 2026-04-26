@@ -2025,7 +2025,7 @@ func ConvertImportPaths(t Type, s SchemaType) []*tsimport.ImportPath {
 }
 
 func BunPostgresConvertImportPaths(t Type, s SchemaType, cfg codegenapi.Config) []*tsimport.ImportPath {
-	if cfg == nil || cfg.PostgresDriver() != "bun" || config.GetDialect() != config.Postgres {
+	if cfg == nil || cfg.PostgresDriver() != codegenapi.PostgresDriverBun || config.GetDialect() != config.Postgres {
 		return nil
 	}
 	switch tt := t.(type) {
