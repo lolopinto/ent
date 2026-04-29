@@ -129,7 +129,9 @@ fixtures:
       - action.can_viewer_do
       - action.can_fail
       - action_field.scalar
+      - action_field.object
       - action_field.list
+      - action_field.id_list_graphql_decode
       - action_field.nullable_contents
       - action_field.optional
       - action_field.hide_from_graphql
@@ -769,12 +771,16 @@ features:
     rationale: Action-only scalar fields share render paths with representative scalar coverage.
   - id: action_field.object
     owns: [input.ActionField.Type.Object, input.ActionField.ActionName, input.ActionField.ExcludedFields]
-    mode: skipped
-    skip_reason: Generated action bases currently reference the lower-case embedded input interface without declaring/importing it; needs a focused action-only object fix.
+    mode: explicit
+    rationale: Action-only object fields generate embedded object inputs and nested action input conversion, including object lists with ID fields.
   - id: action_field.list
     owns: [input.ActionField.List]
     mode: representative
     rationale: List wrapping is a distinct generated input shape.
+  - id: action_field.id_list_graphql_decode
+    owns: []
+    mode: explicit
+    rationale: Action-only ID list fields must decode each GraphQL global ID before passing input to action builders.
   - id: action_field.nullable_contents
     owns: [input.ActionField.Nullable, input.NullableItem.Contents, input.NullableItem.ContentsAndList, input.NullableItem.True]
     mode: representative
