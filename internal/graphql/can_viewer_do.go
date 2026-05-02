@@ -6,6 +6,7 @@ import (
 
 	"github.com/lolopinto/ent/internal/action"
 	"github.com/lolopinto/ent/internal/codegen"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/names"
 	"github.com/lolopinto/ent/internal/schema"
@@ -105,7 +106,7 @@ func getCanViewerDoObjectImpl(processor *codegen.Processor, ctx *canViewerDoCont
 
 			arg := &fieldConfigArg{
 				Name:    field.GetGraphQLName(),
-				Imports: field.GetTSGraphQLTypeForFieldImports(true),
+				Imports: getCanViewerDoFieldImports(action, field),
 			}
 
 			gqlField.Args = append(gqlField.Args, arg)
@@ -254,6 +255,31 @@ func getNewCanViewerDoClass(processor *codegen.Processor, ctx *canViewerDoContex
 		Contents:             classContents,
 		UnconditionalImports: imports,
 	}, nil
+}
+
+func getCanViewerDoFieldImports(a action.Action, f action.ActionField) []*tsimport.ImportPath {
+	imports := f.GetTSGraphQLTypeForFieldImports(true)
+	actionFields, ok := f.GetFieldType().(enttype.TSTypeWithActionFields)
+	if !ok || actionFields.GetActionFieldsInfo() == nil {
+		return imports
+	}
+	customType, ok := f.GetFieldType().(enttype.TSTypeWithCustomType)
+	if !ok || customType.GetCustomTypeInfo() == nil {
+		return imports
+	}
+
+	gqlType := customType.GetCustomTypeInfo().GraphQLInterface
+	ret := make([]*tsimport.ImportPath, 0, len(imports))
+	for _, imp := range imports {
+		if imp.Import == gqlType && imp.ImportPath == "" {
+			impCopy := *imp
+			impCopy.ImportPath = getImportPathForActionFromPackage(a.GetNodeInfo().PackageName, a)
+			ret = append(ret, &impCopy)
+			continue
+		}
+		ret = append(ret, imp)
+	}
+	return ret
 }
 
 func getActionCanViewerDoFields(a action.Action, actionCanViewerDo *input.CanViewerDo) ([]action.ActionField, error) {

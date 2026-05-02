@@ -3057,8 +3057,9 @@ func checkUnionType(cfg codegenapi.Config, nodeName string, f *field.Field, curr
 // returns (`foo: input.foo`, imports)
 func processActionField(processor *codegen.Processor, a action.Action, f action.ActionField, prefix string) (string, []*tsimport.ImportPath) {
 	typ := f.GetFieldType()
+	inputOptional := !action.IsRequiredField(a, f)
 	// get nullable version
-	if !action.IsRequiredField(a, f) {
+	if inputOptional {
 		nullable, ok := typ.(enttype.NullableType)
 		if ok {
 			typ = nullable.GetNullableType()
@@ -3083,10 +3084,16 @@ func processActionField(processor *codegen.Processor, a action.Action, f action.
 		cti := customType.GetCustomTypeInfo()
 		if cti != nil {
 
-			ci, ok := processor.Schema.CustomInterfaces[cti.TSInterface]
+			ci, ok := customInterfaceForActionField(processor, a, cti.TSInterface)
 			if ok {
-
+				var fields []action.ActionField
 				for _, f := range ci.Fields {
+					fields = append(fields, f)
+				}
+				for _, f := range ci.NonEntFields {
+					fields = append(fields, f)
+				}
+				for _, f := range fields {
 					nestedType := f.GetFieldType()
 
 					customRenderer, ok := nestedType.(enttype.CustomGQLRenderer)
@@ -3110,12 +3117,12 @@ func processActionField(processor *codegen.Processor, a action.Action, f action.
 
 					if f.Nullable() {
 						nestedInputField = fmt.Sprintf("%s: %s ? %s: undefined",
-							f.GetGraphQLName(),
+							f.TSPublicAPIName(),
 							nestedInputFieldPrefix,
 							nestedInputField,
 						)
 					} else {
-						nestedInputField = fmt.Sprintf("%s: %s", f.GetGraphQLName(), nestedInputField)
+						nestedInputField = fmt.Sprintf("%s: %s", f.TSPublicAPIName(), nestedInputField)
 					}
 
 					customList = append(customList, nestedInputField)
@@ -3136,7 +3143,11 @@ func processActionField(processor *codegen.Processor, a action.Action, f action.
 		}
 
 		if listType {
-			res = fmt.Sprintf("%s?.map((item: any) =>  ( %s ))", resPrefix, res)
+			if inputOptional {
+				res = fmt.Sprintf("%s ? %s.map((item: any) =>  ( %s )) : %s", resPrefix, resPrefix, res, resPrefix)
+			} else {
+				res = fmt.Sprintf("%s.map((item: any) =>  ( %s ))", resPrefix, res)
+			}
 		} else if f.Nullable() {
 			res = fmt.Sprintf("%s ? %s: undefined", resPrefix, res)
 		}
@@ -3148,6 +3159,19 @@ func processActionField(processor *codegen.Processor, a action.Action, f action.
 		f.TSPublicAPIName(),
 		inputField,
 	), argImports
+}
+
+func customInterfaceForActionField(processor *codegen.Processor, a action.Action, tsInterface string) (*customtype.CustomInterface, bool) {
+	ci, ok := processor.Schema.CustomInterfaces[tsInterface]
+	if ok {
+		return ci, true
+	}
+	for _, ci := range a.GetCustomInterfaces() {
+		if ci.TSType == tsInterface {
+			return ci, true
+		}
+	}
+	return nil, false
 }
 
 func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) (*fieldConfig, error) {

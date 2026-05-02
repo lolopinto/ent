@@ -53,7 +53,8 @@ The harness builds the current checked-out `tsent` and package-shaped
 `@snowtop/ent` `ts/dist`, copies fixtures to a temp app, links local
 `ts/node_modules` entries plus the freshly built `@snowtop/ent` package, runs
 real codegen steps, checks the generated tree is stable across repeated runs,
-and then runs `tsc --noEmit` against the generated app.
+checks any fixture-local `codegen_matrix_assertions.yml` generated-file
+snippets, and then runs `tsc --noEmit` against the generated app.
 It locates the repository from the Go test source path, so it does not require
 `git rev-parse` at runtime.
 
@@ -101,7 +102,9 @@ The bar is:
    runtime behavior. Omitted variants mean one Node/pg run; Bun SQL variants
    should use `runtime: bun` with `postgresDriver: bun`.
 4. Add or update feature entries so every active feature is covered.
-5. Run the fixture directly, then run the whole package.
+5. Add `codegen_matrix_assertions.yml` when a regression requires a specific
+   generated snippet that plain typechecking would not catch.
+6. Run the fixture directly, then run the whole package.
 
 Put core DB-rendered interactions in `fixtures/_shared/core_db` so the same
 schema source is exercised by both `db_schema_smoke` and

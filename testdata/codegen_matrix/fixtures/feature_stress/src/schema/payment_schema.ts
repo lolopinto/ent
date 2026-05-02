@@ -396,6 +396,19 @@ const PaymentSchema = new EntSchema({
           type: "JSON",
           nullable: true,
         },
+        {
+          name: "studbooks",
+          type: "ID",
+          list: true,
+          nullable: true,
+        },
+        {
+          name: "registrations",
+          type: "Object",
+          list: true,
+          nullable: true,
+          actionName: "AddRegistrationAction",
+        },
       ],
     },
     {

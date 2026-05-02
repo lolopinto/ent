@@ -82,6 +82,143 @@ func TestActionWithFieldEdgeFieldConfig(t *testing.T) {
 	assert.Len(t, editNode.Fields, len(editAction.GetFields())+len(editAction.GetNonEntFields())+1)
 }
 
+func TestActionOnlyIDListFieldConfigDecodesGraphQLIDs(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		map[string]string{
+			"payment.ts": testhelper.GetCodeWithSchema(
+				`import {EntSchema, ActionOperation, IntegerType, StringType, UUIDType} from "{schema}";
+
+				const Payment = new EntSchema({
+					fields: {
+						externalID: StringType(),
+						amount: IntegerType(),
+						entID: UUIDType(),
+					},
+
+					actions: [
+						{
+							operation: ActionOperation.Create,
+							fields: ["externalID", "amount", "entID"],
+							actionOnlyFields: [
+								{
+									name: "studbooks",
+									type: "ID",
+									list: true,
+									nullable: true,
+								},
+								{
+									name: "nullableStudbooks",
+									type: "ID",
+									list: true,
+									nullable: "contents",
+								},
+							],
+						},
+					],
+				});
+				export default Payment;`),
+		},
+	)
+	processor, err := codegen.NewTestCodegenProcessor("src/schema", schema, &codegen.CodegenConfig{
+		DisableGraphQLRoot: true,
+	})
+	require.NoError(t, err)
+
+	paymentCfg := schema.Nodes["Payment"]
+	require.NotNil(t, paymentCfg)
+
+	createAction := paymentCfg.NodeData.ActionInfo.GetByName("CreatePaymentAction")
+	require.NotNil(t, createAction)
+
+	createActionCfg, err := buildActionFieldConfig(processor, paymentCfg.NodeData, createAction)
+	require.NoError(t, err)
+
+	contents := strings.Join(createActionCfg.FunctionContents, "\n")
+	assert.Contains(
+		t,
+		contents,
+		"studbooks: input.studbooks ? input.studbooks.map((i:any) => mustDecodeIDFromGQLID(i.toString())) : input.studbooks,",
+	)
+	assert.Contains(
+		t,
+		contents,
+		"nullableStudbooks: input.nullableStudbooks.map((i:any) => mustDecodeNullableIDFromGQLID(i?.toString() ?? i)),",
+	)
+	assert.Contains(t, actionConfigImportNames(createActionCfg), "mustDecodeIDFromGQLID")
+	assert.Contains(t, actionConfigImportNames(createActionCfg), "mustDecodeNullableIDFromGQLID")
+}
+
+func TestActionOnlyObjectListFieldConfigDecodesNestedGraphQLIDs(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		map[string]string{
+			"registration.ts": testhelper.GetCodeWithSchema(
+				`import {EntSchema, ActionOperation, IntegerType, UUIDType} from "{schema}";
+
+				const Registration = new EntSchema({
+					fields: {
+						registryID: UUIDType(),
+						position: IntegerType(),
+					},
+
+					actions: [
+						{
+							operation: ActionOperation.Create,
+							actionName: "AddRegistrationAction",
+						},
+					],
+				});
+				export default Registration;`),
+			"payment.ts": testhelper.GetCodeWithSchema(
+				`import {EntSchema, ActionOperation, StringType} from "{schema}";
+
+				const Payment = new EntSchema({
+					fields: {
+						externalID: StringType(),
+					},
+
+					actions: [
+						{
+							operation: ActionOperation.Create,
+							actionOnlyFields: [
+								{
+									name: "registrations",
+									type: "Object",
+									list: true,
+									nullable: true,
+									actionName: "AddRegistrationAction",
+								},
+							],
+						},
+					],
+				});
+				export default Payment;`),
+		},
+	)
+	processor, err := codegen.NewTestCodegenProcessor("src/schema", schema, &codegen.CodegenConfig{
+		DisableGraphQLRoot: true,
+	})
+	require.NoError(t, err)
+
+	paymentCfg := schema.Nodes["Payment"]
+	require.NotNil(t, paymentCfg)
+
+	createAction := paymentCfg.NodeData.ActionInfo.GetByName("CreatePaymentAction")
+	require.NotNil(t, createAction)
+
+	createActionCfg, err := buildActionFieldConfig(processor, paymentCfg.NodeData, createAction)
+	require.NoError(t, err)
+
+	contents := strings.Join(createActionCfg.FunctionContents, "\n")
+	assert.Contains(
+		t,
+		contents,
+		"registrations: input.registrations ? input.registrations.map((item: any) =>  ( {...item,  registryId: mustDecodeIDFromGQLID(item.registryId.toString())} )) : input.registrations,",
+	)
+	assert.Contains(t, actionConfigImportNames(createActionCfg), "mustDecodeIDFromGQLID")
+}
+
 func verifyFieldsOverlap(t *testing.T, action action.Action, cfg *fieldConfig) {
 	for _, f := range action.GetFields() {
 		found := false
@@ -94,4 +231,12 @@ func verifyFieldsOverlap(t *testing.T, action action.Action, cfg *fieldConfig) {
 		}
 		assert.True(t, found, "couldn't find field %s in FunctionContents", f.FieldName)
 	}
+}
+
+func actionConfigImportNames(cfg *fieldConfig) []string {
+	var imports []string
+	for _, imp := range cfg.ArgImports {
+		imports = append(imports, imp.Import)
+	}
+	return imports
 }

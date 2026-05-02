@@ -60,6 +60,15 @@ type runtimeVariant struct {
 	PostgresDriver string `yaml:"postgresDriver"`
 }
 
+type fixtureAssertions struct {
+	Contains []fixtureContainsAssertion `yaml:"contains"`
+}
+
+type fixtureContainsAssertion struct {
+	Path string `yaml:"path"`
+	Text string `yaml:"text"`
+}
+
 const (
 	dirMode  os.FileMode = 0o755
 	fileMode os.FileMode = 0o644
@@ -530,11 +539,35 @@ func runCodegenFixture(t *testing.T, repo, appRoot string, fixture fixture) {
 	secondHash := hashGeneratedSnapshot(secondSnapshot)
 	require.Equal(t, firstHash, secondHash, "codegen fixture is not idempotent; changed files: %s\n%s", strings.Join(changedSnapshotFiles(firstSnapshot, secondSnapshot), ", "), snapshotChangeSummary(firstSnapshot, secondSnapshot))
 
+	runFixtureGeneratedAssertions(t, appRoot)
+
 	cmd := exec.Command(filepath.Join(repo, "ts", "node_modules", ".bin", "tsc"), "--noEmit", "--project", filepath.Join(appRoot, "tsconfig.generated.json"))
 	cmd.Dir = appRoot
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("generated TypeScript did not compile:\n%s\n%v", string(out), err)
+	}
+}
+
+func runFixtureGeneratedAssertions(t *testing.T, appRoot string) {
+	t.Helper()
+	path := filepath.Join(appRoot, "codegen_matrix_assertions.yml")
+	b, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return
+	}
+	require.NoError(t, err)
+
+	var assertions fixtureAssertions
+	require.NoError(t, yaml.Unmarshal(b, &assertions))
+	for _, assertion := range assertions.Contains {
+		require.NotEmpty(t, assertion.Path, "generated assertion path is required")
+		require.NotEmpty(t, assertion.Text, "generated assertion text is required for %s", assertion.Path)
+
+		target := filepath.Join(appRoot, assertion.Path)
+		contents, err := os.ReadFile(target)
+		require.NoError(t, err, "read generated assertion target %s", assertion.Path)
+		require.Contains(t, string(contents), assertion.Text, "generated assertion failed for %s", assertion.Path)
 	}
 }
 

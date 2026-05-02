@@ -1003,6 +1003,32 @@ func (t *ListWrapperType) GetTsTypeImports() []*tsimport.ImportPath {
 	return t2.GetTsTypeImports()
 }
 
+func (t *ListWrapperType) CustomGQLRender(cfg Config, v string) string {
+	t2, ok := t.Type.(CustomGQLRenderer)
+	if !ok {
+		return v
+	}
+
+	renderedItem := t2.CustomGQLRender(cfg, "i")
+	if renderedItem == "i" {
+		return v
+	}
+
+	renderedList := fmt.Sprintf("%s.map((i:any) => %s)", v, renderedItem)
+	if t.Nullable {
+		return fmt.Sprintf("%s ? %s : %s", v, renderedList, v)
+	}
+	return renderedList
+}
+
+func (t *ListWrapperType) ArgImports(cfg Config) []*tsimport.ImportPath {
+	t2, ok := t.Type.(CustomGQLRenderer)
+	if !ok {
+		return []*tsimport.ImportPath{}
+	}
+	return t2.ArgImports(cfg)
+}
+
 type enumType struct {
 }
 
@@ -2093,7 +2119,8 @@ func GetEnumType(t Type) (EnumeratedType, bool) {
 func IsListType(t Type) bool {
 	_, ok := t.(*ArrayListType)
 	_, ok2 := t.(*NullableArrayListType)
-	return ok || ok2
+	_, ok3 := t.(*ListWrapperType)
+	return ok || ok2 || ok3
 }
 
 func IsJSONBType(t Type) bool {
