@@ -19,6 +19,7 @@ class Command(object):
 
         alembic_cfg.set_main_option(
             "version_locations", os.path.join(schema_path, "versions"))
+        alembic_cfg.set_main_option("path_separator", "os")
 
         # should probably make some of these configurable eventually
         alembic_cfg.set_main_option(

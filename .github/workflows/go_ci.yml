@@ -55,10 +55,10 @@ jobs:
         cache-dependency-path: python/Pipfile.lock
       
     - name: Install auto_schema
-      # auto_schema==0.0.34 pins SQLAlchemy 2.0.18, which fails during
+      # Older auto_schema releases pin SQLAlchemy 2.0.18, which fails during
       # import on Python 3.14. Keep python-dateutil in the published package:
       # Alembic needs it when auto_schema generates timezone-aware revisions.
-      run: python3 -m pip install wheel auto_schema==0.0.35
+      run: python3 -m pip install wheel auto_schema==0.0.36
 
     - name: Setup nodejs
       uses: actions/setup-node@v6

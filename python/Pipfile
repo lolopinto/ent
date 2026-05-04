@@ -7,9 +7,9 @@ verify_ssl = true
 pytest = ">=8"
 
 [packages]
-alembic = "==1.12.0"
+alembic = "==1.18.4"
 datetime = "==4.3"
-sqlalchemy = "==2.0.45"
+sqlalchemy = "==2.0.49"
 psycopg2 = "==2.9.11"
 ruff = "==0.0.285"
 python-dateutil= "==2.8.2"
