@@ -2,8 +2,80 @@ import uuid
 import pytest
 import sqlalchemy as sa
 
+from auto_schema import schema_item
+
 
 class TestPostgresDevSchema(object):
+    @pytest.mark.parametrize("include_public", ["false", "true"])
+    @pytest.mark.usefixtures("metadata_with_table")
+    def test_compute_changes_empty_after_dev_schema_upgrade(
+        self, new_test_runner, metadata_with_table, empty_metadata, include_public
+    ):
+        prev_runner = None
+        if include_public == "true":
+            prev_runner = new_test_runner(empty_metadata)
+            prev_runner.get_connection().execute(
+                sa.text("CREATE TABLE public.accounts (id INTEGER PRIMARY KEY)")
+            )
+            prev_runner.get_connection().commit()
+
+        schema = f"ent_dev_test_{uuid.uuid4().hex[:8]}"
+        r = new_test_runner(
+            metadata_with_table,
+            prev_runner=prev_runner,
+            args_override={
+                "db_schema": schema,
+                "db_schema_include_public": include_public,
+            },
+        )
+
+        r.run()
+        r.get_connection().commit()
+
+        assert r.compute_changes() == []
+
+    def test_compute_changes_empty_after_dev_schema_upgrade_with_extension_type(
+        self, new_test_runner
+    ):
+        metadata = sa.MetaData()
+        metadata.info["db_extensions"] = {
+            "public": [
+                {
+                    "name": "hstore",
+                    "provisioned_by": "ent",
+                    "version": None,
+                    "install_schema": None,
+                    "runtime_schemas": ["public"],
+                    "drop_cascade": False,
+                }
+            ]
+        }
+        sa.Table(
+            "preferences",
+            metadata,
+            sa.Column("id", sa.Integer(), nullable=False),
+            sa.Column(
+                "attrs",
+                schema_item.CustomSQLAlchemyType("hstore"),
+                nullable=True,
+            ),
+            sa.PrimaryKeyConstraint("id", name="preferences_id_pkey"),
+        )
+
+        schema = f"ent_dev_test_{uuid.uuid4().hex[:8]}"
+        r = new_test_runner(
+            metadata,
+            args_override={
+                "db_schema": schema,
+                "db_schema_include_public": "false",
+            },
+        )
+
+        r.run()
+        r.get_connection().commit()
+
+        assert r.compute_changes() == []
+
     @pytest.mark.usefixtures("metadata_with_table")
     def test_dev_schema_sets_search_path_and_creates_tables(
         self, new_test_runner, metadata_with_table

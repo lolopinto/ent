@@ -107,7 +107,7 @@ def run_migrations_offline():
         include_name=runner.Runner.include_name,
         compare_server_default=runner.Runner.compare_server_default,
         render_item=runner.Runner.render_item,
-        include_schemas=bool(config.schema_name),
+        include_schemas=False,
         output_buffer=output_buffer,
         # transaction_per_migration doesn't seem to apply offline
     )
@@ -151,12 +151,17 @@ def run_migrations_online():
             include_name=runner.Runner.include_name,
             compare_server_default=runner.Runner.compare_server_default,
             render_item=runner.Runner.render_item,
-            include_schemas=bool(config.schema_name),
+            include_schemas=False,
             transaction_per_migration=True,
         )
 
         with context.begin_transaction():
-            context.run_migrations()
+            migration_context = context.get_context()
+            if runner.Runner.is_autogenerate_context(migration_context):
+                with runner.Runner.dev_schema_compare_search_path(connection):
+                    context.run_migrations()
+            else:
+                context.run_migrations()
 
 
 if context.is_offline_mode():
