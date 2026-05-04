@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
-## [0.3.2]
+## [0.3.3]
 
 ### Added
 
@@ -19,7 +19,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Changed
 
 - update auto_schema to the official Alembic package (#1923)
-- update auto_schema to 0.0.36 with Alembic 1.18.4 and SQLAlchemy 2.0.49 (#1989)
+- update auto_schema to 0.0.36 and tsent to v0.3.4 with Alembic 1.18.4 and SQLAlchemy 2.0.49 (#1989)
 - compare full-text index metadata through `pg_catalog` (#1966)
 - replace Go string-case and error helper dependencies with in-repo or standard-library code (#1964, #1965)
 - remove unused auto_schema date/datetime dependencies and add ty checks for auto_schema helpers (#1971, #1972, #1973)
