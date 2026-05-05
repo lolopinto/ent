@@ -8,6 +8,7 @@ import sqlalchemy as sa
 from alembic.autogenerate import comparators
 from alembic.autogenerate.api import AutogenContext
 from alembic.operations import MigrateOperation, Operations
+from alembic.util import DispatchPriority, PriorityDispatchResult
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
@@ -291,7 +292,7 @@ def _create_tuple_key(row, pkeys):
     return tuple(l)
 
 
-@ comparators.dispatch_for('schema')
+@ comparators.dispatch_for('schema', priority=DispatchPriority.LAST)
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
     # https: // github.com/lolopinto/ent/issues/123
@@ -383,7 +384,7 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
             table_name, pkeys, modified_new_rows, modified_old_rows))
 
 
-@ comparators.dispatch_for("schema")
+@ comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
 def compare_schema(autogen_context, upgrade_ops, schemas):
     inspector = autogen_context.inspector
 
@@ -558,7 +559,7 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
                 )
 
 
-@ comparators.dispatch_for("table")
+@ comparators.dispatch_for("table", priority=DispatchPriority.LAST)
 def _compare_indexes(autogen_context: AutogenContext,
                      modify_table_ops: alembicops.ModifyTableOps,
                      schema,
@@ -678,7 +679,7 @@ def _compare_indexes(autogen_context: AutogenContext,
 # this handles computed columns changing and so drops and re-creates the column.
 
 
-@ comparators.dispatch_for("table")
+@ comparators.dispatch_for("table", priority=DispatchPriority.LAST)
 def _compare_generated_column(autogen_context: AutogenContext,
                               modify_table_ops: alembicops.ModifyTableOps,
                               schema,
@@ -1024,7 +1025,32 @@ def _parse_postgres_using_internals(internals: str, index_type: str):
     return {}
 
 
-@ comparators.dispatch_for("table")
+@ comparators.dispatch_for(
+    "column",
+    priority=DispatchPriority.FIRST,
+    subgroup="server_default",
+)
+def _skip_computed_server_default(
+    autogen_context: AutogenContext,
+    alter_column_op: alembicops.AlterColumnOp,
+    schema,
+    tname: str,
+    cname: str,
+    conn_col: sa.Column | None,
+    metadata_col: sa.Column | None,
+) -> PriorityDispatchResult:
+    if (
+        conn_col is not None
+        and isinstance(conn_col.server_default, sa.Computed)
+    ) or (
+        metadata_col is not None
+        and isinstance(metadata_col.server_default, sa.Computed)
+    ):
+        return PriorityDispatchResult.STOP
+    return PriorityDispatchResult.CONTINUE
+
+
+@ comparators.dispatch_for("table", priority=DispatchPriority.LAST)
 def _compare_server_default_nullable(
     autogen_context: AutogenContext,
     modify_table_ops: alembicops.ModifyTableOps,

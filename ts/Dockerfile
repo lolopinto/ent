@@ -1,8 +1,8 @@
-ARG GOLANG_VERSION=v0.3.3
-ARG AUTO_SCHEMA_VERSION=0.0.34
+ARG GOLANG_VERSION=v0.3.4
+ARG AUTO_SCHEMA_VERSION=0.0.36
 ARG NODE_VERSION=24
 ARG BUN_VERSION=1.3.6
-ARG DOCKER_TAG=v0.3.2
+ARG DOCKER_TAG=v0.3.3
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.25-trixie AS golang-image
@@ -16,7 +16,8 @@ ARG TARGETOS TARGETARCH
 # RUN --mount=target=. \
 # --mount=type=cache,target=/root/.cache/go-build \
 # --mount=type=cache,target=/go/pkg \
-RUN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
+RUN env -u GOBIN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION && \
+  if [ -f "/root/go/bin/${TARGETOS}_${TARGETARCH}/tsent" ]; then mv "/root/go/bin/${TARGETOS}_${TARGETARCH}/tsent" /root/go/bin/tsent; fi
 
 # get and install auto_schema
 FROM python:3.12-trixie AS python-image

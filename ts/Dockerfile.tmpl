@@ -5,7 +5,7 @@ ARG BUN_VERSION=1.3.6
 ARG DOCKER_TAG={{.DockerTag}}
 
 # get and install tsent
-FROM golang:1.25-trixie AS golang-image
+FROM --platform=$BUILDPLATFORM golang:1.25-trixie AS golang-image
 ARG GOLANG_VERSION
 ARG DOCKER_TAG
 ENV GOPATH=/root/go
@@ -13,10 +13,12 @@ ENV GOBIN=/root/go/bin
 ENV PATH=$PATH:/root/go/bin
 ARG TARGETOS TARGETARCH
 
+# TODO go install works on its own but not the mounts with "read-only file system"
 # RUN --mount=target=. \
-#   --mount=type=cache,target=/root/.cache/go-build \
-#   --mount=type=cache,target=/go/pkg \
-RUN  GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION
+# --mount=type=cache,target=/root/.cache/go-build \
+# --mount=type=cache,target=/go/pkg \
+RUN env -u GOBIN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION && \
+  if [ -f "/root/go/bin/${TARGETOS}_${TARGETARCH}/tsent" ]; then mv "/root/go/bin/${TARGETOS}_${TARGETARCH}/tsent" /root/go/bin/tsent; fi
 
 # get and install auto_schema
 # psycopg2 error when buildplatform is used...
