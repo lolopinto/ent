@@ -252,10 +252,9 @@ class Runner(object):
     @classmethod
     def is_autogenerate_context(cls, migration_context) -> bool:
         revision_context = migration_context.opts.get("revision_context")
-        command_args = getattr(revision_context, "command_args", None)
-        if command_args is None:
+        if revision_context is None:
             return False
-        return bool(command_args.get("autogenerate"))
+        return bool(revision_context.command_args.get("autogenerate"))
 
     @classmethod
     def _touch_registry(cls, connection, schema_name):
