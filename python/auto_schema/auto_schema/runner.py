@@ -4,6 +4,7 @@ import json
 import os
 import asyncio
 import sys
+from contextlib import contextmanager
 from collections.abc import Mapping
 from alembic.operations import Operations
 from alembic.util.langhelpers import Dispatcher
@@ -90,6 +91,8 @@ class Runner(object):
     @classmethod   
     def get_opts(cls):
         # note that any change here also needs a comparable change in env.py
+        # Dev schema compares use search_path with schema-less metadata. Setting
+        # include_schemas would schema-qualify reflected tables and break matching.
         opts = {
                 "compare_type": Runner.compare_type,
                 "include_object": Runner.include_object,
@@ -98,8 +101,6 @@ class Runner(object):
                 "transaction_per_migration": True,
                 "render_item": Runner.render_item,
             }
-        if config.schema_name:
-            opts["include_schemas"] = True
         return opts
 
     @staticmethod
@@ -190,9 +191,26 @@ class Runner(object):
         else:
             connection.execute(sa.text(f"CREATE SCHEMA IF NOT EXISTS {schema_ident}"))
 
+        search_path = cls._search_path_sql(
+            schema_name,
+            include_public=include_public,
+            extension_schemas=extension_schemas,
+        )
+        connection.execute(sa.text(f"SET search_path TO {search_path}"))
+        if touch_registry:
+            cls._touch_registry(connection, schema_name)
+
+    @classmethod
+    def _search_path_sql(
+        cls,
+        schema_name: str,
+        include_public=False,
+        extension_schemas: list[str] | None = None,
+    ) -> str:
         if include_public is None:
             include_public = False
-        search_path_parts = [schema_ident]
+
+        search_path_parts = [cls._quote_ident(schema_name)]
         seen = {schema_name}
         for schema in extension_schemas or []:
             if schema in seen:
@@ -204,10 +222,39 @@ class Runner(object):
                 search_path_parts.append(cls._quote_ident(schema))
         if include_public and "public" not in seen:
             search_path_parts.append("public")
-        search_path = ", ".join(search_path_parts)
-        connection.execute(sa.text(f"SET search_path TO {search_path}"))
-        if touch_registry:
-            cls._touch_registry(connection, schema_name)
+        return ", ".join(search_path_parts)
+
+    @classmethod
+    @contextmanager
+    def dev_schema_compare_search_path(cls, connection):
+        if not config.schema_name:
+            yield
+            return
+
+        # Runtime may include public for application queries, but compare must
+        # see only the dev schema so public app tables cannot mask missing dev
+        # tables during autogenerate.
+        compare_search_path = cls._search_path_sql(
+            config.schema_name,
+            include_public=False,
+        )
+        runtime_search_path = cls._search_path_sql(
+            config.schema_name,
+            include_public=config.include_public,
+            extension_schemas=cls.get_extension_search_path_schemas(config.metadata),
+        )
+        connection.execute(sa.text(f"SET search_path TO {compare_search_path}"))
+        try:
+            yield
+        finally:
+            connection.execute(sa.text(f"SET search_path TO {runtime_search_path}"))
+
+    @classmethod
+    def is_autogenerate_context(cls, migration_context) -> bool:
+        revision_context = migration_context.opts.get("revision_context")
+        if revision_context is None:
+            return False
+        return bool(revision_context.command_args.get("autogenerate"))
 
     @classmethod
     def _touch_registry(cls, connection, schema_name):
@@ -314,6 +361,9 @@ class Runner(object):
                 return True
 
             schema = metadata_column.table.schema
+            extension_schemas = cls.get_extension_search_path_schemas(
+                metadata_column.table.metadata
+            )
             reflected_type = cls._get_reflected_postgres_column_type(
                 context.connection,
                 metadata_column.table.name,
@@ -322,7 +372,13 @@ class Runner(object):
             )
             if reflected_type is None:
                 return True
-            return cls._normalize_postgres_type(reflected_type) != cls._normalize_postgres_type(metadata_type.type_name)
+            return cls._normalize_postgres_type(
+                reflected_type,
+                extension_schemas=extension_schemas,
+            ) != cls._normalize_postgres_type(
+                metadata_type.type_name,
+                extension_schemas=extension_schemas,
+            )
 
         # going from VARCHAR to Text is accepted && makes sense and we should accept that change.
         if isinstance(inspected_type, sa.VARCHAR) and isinstance(metadata_type, sa.Text):
@@ -336,8 +392,25 @@ class Runner(object):
         return False
 
     @classmethod
-    def _normalize_postgres_type(cls, type_name: str) -> str:
-        return " ".join(str(type_name).strip().lower().split())
+    def _normalize_postgres_type(
+        cls,
+        type_name: str,
+        extension_schemas: list[str] | None = None,
+    ) -> str:
+        normalized = " ".join(str(type_name).strip().lower().split())
+        for schema in extension_schemas or []:
+            schema = str(schema).strip().lower()
+            if not schema:
+                continue
+            quoted_schema = '"' + schema.replace('"', '""') + '".'
+            prefixes = (
+                f"{schema}.",
+                quoted_schema,
+            )
+            for prefix in prefixes:
+                if normalized.startswith(prefix):
+                    return normalized[len(prefix):]
+        return normalized
 
     @classmethod
     def _get_reflected_postgres_column_type(cls, connection, table_name: str, column_name: str, schema: str | None):
@@ -373,9 +446,7 @@ class Runner(object):
                 table = getattr(object, "table", None)
                 if table is not None:
                     schema = getattr(table, "schema", None)
-            if schema is None:
-                schema = "public"
-            if schema != config.schema_name:
+            if schema is not None and schema != config.schema_name:
                 return False
         exclude_tables = Runner.exclude_tables().split(',')
 
@@ -389,11 +460,11 @@ class Runner(object):
         if not config.schema_name:
             return True
         if type == "schema":
-            return name == config.schema_name
-        schema = parent_names.get("schema") if parent_names else None
-        if schema is None:
-            schema = "public"
-        if schema != config.schema_name:
+            return name is None or name == config.schema_name
+        schema = None
+        if parent_names:
+            schema = parent_names.get("schema_name") or parent_names.get("schema")
+        if schema is not None and schema != config.schema_name:
             return False
         return True
 
@@ -492,8 +563,19 @@ class Runner(object):
     def get_connection(self):
         return config.connection
 
+    def _migration_context(self):
+        self.mc = MigrationContext.configure(
+            connection=self.connection,
+            opts=Runner.get_opts(),
+        )
+        return self.mc
+
     def compute_changes(self):
-        migrations = produce_migrations(self.mc, config.metadata)
+        with Runner.dev_schema_compare_search_path(self.connection):
+            migrations = produce_migrations(
+                self._migration_context(),
+                config.metadata,
+            )
         return migrations.upgrade_ops.ops
 
     # sql used for debugging in tests
@@ -523,7 +605,11 @@ class Runner(object):
 
     def revision_message(self, diff=None):
         if diff is None:
-            migrations = produce_migrations(self.mc, config.metadata)
+            with Runner.dev_schema_compare_search_path(self.connection):
+                migrations = produce_migrations(
+                    self._migration_context(),
+                    config.metadata,
+                )
             diff = migrations.upgrade_ops.ops
 
         d = Diff(diff, group_by_table=False)
@@ -828,7 +914,8 @@ class Runner(object):
             dialect_name=dialect,
             opts=Runner.get_opts(),
         )
-        migrations = produce_migrations(mc, self.metadata) 
+        with Runner.dev_schema_compare_search_path(connection):
+            migrations = produce_migrations(mc, self.metadata)
         return (migrations, connection, dialect, mc)
                     
     # doesn't invoke env.py. completely different flow
