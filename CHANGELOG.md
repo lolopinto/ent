@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+- prevent Bun script stdout truncation when schema/codegen JSON exceeds pipe buffering (#1992).
+
 ## [0.2.10]
 
 ### Added

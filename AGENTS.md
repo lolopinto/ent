@@ -94,6 +94,14 @@ How examples pick up local `@snowtop/ent` changes:
   verification, revert it before finishing unless updating the example test
   wiring is part of the intended change.
 
+## Changelog
+
+- Put unreleased changes in a top-level `## [Unreleased]` section above the
+  latest released version.
+- Keep `### Added`, `### Changed`, and `### Fixed` subsections in that order
+  under `## [Unreleased]`, and add PR-specific entries under the matching
+  subsection instead of editing an already released version section.
+
 ## Dev schema isolation (Postgres only)
 
 Default contract:

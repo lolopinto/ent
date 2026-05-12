@@ -28,6 +28,7 @@ import { exit } from "process";
 import { Data } from "../core/base";
 import { spawn } from "child_process";
 import { GRAPHQL_PATH } from "../core/const";
+import { writeJSONToStdout } from "./stdout";
 const { parseArgs } = require("./parse_args");
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
@@ -564,21 +565,19 @@ async function main() {
     buildClasses(fields[k]);
   }
 
-  console.log(
-    JSON.stringify({
-      args,
-      inputs,
-      fields,
-      queries,
-      mutations,
-      classes,
-      objects,
-      interfaces,
-      unions,
-      files: allFiles,
-      customTypes,
-    }),
-  );
+  await writeJSONToStdout({
+    args,
+    inputs,
+    fields,
+    queries,
+    mutations,
+    classes,
+    objects,
+    interfaces,
+    unions,
+    files: allFiles,
+    customTypes,
+  });
 }
 
 main()
