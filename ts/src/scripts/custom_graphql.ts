@@ -280,34 +280,7 @@ async function processJSON(
   }
 }
 
-async function captureCustom(
-  filePath: string,
-  filesCsv: string | undefined,
-  jsonPath: string | undefined,
-  gqlCapture: typeof GQLCapture,
-) {
-  if (jsonPath !== undefined) {
-    const json = parseJSONC(
-      jsonPath,
-      fs.readFileSync(jsonPath, {
-        encoding: "utf8",
-      }),
-    );
-
-    processJSON(gqlCapture, json);
-
-    return;
-  }
-  if (filesCsv !== undefined) {
-    let files = filesCsv.split(",");
-    for (let i = 0; i < files.length; i++) {
-      // TODO fix. we have "src" in the path we get here
-      files[i] = path.join(filePath, "..", files[i]);
-    }
-
-    await requireFiles(files);
-    return;
-  }
+async function loadGraphQLDecoratorFiles(filePath: string) {
   // TODO delete all of this eventually
 
   // TODO configurable paths eventually
@@ -342,6 +315,39 @@ async function captureCustom(
     .filter(fileImportsGraphQLDecorators);
 
   await requireFiles(files);
+}
+
+async function captureCustom(
+  filePath: string,
+  filesCsv: string | undefined,
+  jsonPath: string | undefined,
+  gqlCapture: typeof GQLCapture,
+) {
+  if (jsonPath !== undefined) {
+    const json = parseJSONC(
+      jsonPath,
+      fs.readFileSync(jsonPath, {
+        encoding: "utf8",
+      }),
+    );
+
+    await processJSON(gqlCapture, json);
+    await loadGraphQLDecoratorFiles(filePath);
+
+    return;
+  }
+  if (filesCsv !== undefined) {
+    let files = filesCsv.split(",");
+    for (let i = 0; i < files.length; i++) {
+      // TODO fix. we have "src" in the path we get here
+      files[i] = path.join(filePath, "..", files[i]);
+    }
+
+    await requireFiles(files);
+    return;
+  }
+
+  await loadGraphQLDecoratorFiles(filePath);
 }
 
 function fileImportsGraphQLDecorators(file: string) {

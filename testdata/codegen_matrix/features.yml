@@ -145,6 +145,7 @@ fixtures:
       - index.concurrently
       - index.where
       - custom_graphql.custom_mutation_return
+      - custom_graphql.json_with_decorators
       - pattern.struct_privacy_import
       - polymorphic.struct_field_codegen
       - field_edge.uuid_list_inverse
@@ -862,8 +863,14 @@ features:
 
   - id: custom_graphql.decorators
     owns: [custom_graphql.gqlField, custom_graphql.gqlObjectType, custom_graphql.gqlInputObjectType, custom_graphql.gqlQuery, custom_graphql.gqlMutation, custom_graphql.gqlConnection]
-    mode: skipped
-    skip_reason: Local decorator scanning becomes unstable after generated ent files exist; JSON custom GraphQL keeps mutation codegen covered while decorator scanning gets a focused fix.
+    mode: existing_test
+    test_refs:
+      - internal/graphql/custom_ts_test.go
+    rationale: Focused GraphQL tests cover decorator variants; the matrix covers the JSON-plus-decorator interaction separately.
+  - id: custom_graphql.json_with_decorators
+    owns: []
+    mode: explicit
+    rationale: customGraphQLJSONPath must be additive with decorator-discovered custom GraphQL definitions.
   - id: custom_graphql.custom_mutation_return
     owns: [custom_graphql.mutationReturnType]
     mode: explicit

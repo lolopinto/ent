@@ -1,4 +1,6 @@
 contains:
+  - path: src/graphql/generated/resolvers/decorated_runtime_ready_query_type.ts
+    text: "return r.runtimeReady();"
   - path: src/graphql/generated/mutations/payment/create_matrix_payment_type.ts
     text: "input.studbooks.map((i: any) => mustDecodeIDFromGQLID(i.toString()))"
   - path: src/graphql/generated/mutations/payment/create_matrix_payment_type.ts

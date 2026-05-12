@@ -16,6 +16,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - prevent Bun script stdout truncation when schema/codegen JSON exceeds pipe buffering (#1992).
+- load decorator-discovered custom GraphQL definitions when `customGraphQLJSONPath` is configured (#1993).
 
 ## [0.2.10]
 

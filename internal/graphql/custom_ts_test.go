@@ -492,6 +492,111 @@ func TestCustomQuery(t *testing.T) {
 	})
 }
 
+func TestCustomGraphQLJSONPathAlsoLoadsDecorators(t *testing.T) {
+	m := map[string]string{
+		"contact_schema.ts": testhelper.GetCodeWithSchema(`
+			import {EntSchema, StringType} from "{schema}";
+
+			const ContactSchema = new EntSchema({
+				fields: {
+					firstName: StringType(),
+					lastName: StringType(),
+				},
+			});
+			export default ContactSchema;
+		`),
+	}
+
+	absPath, err := filepath.Abs(".")
+	require.NoError(t, err)
+	dirPath, err := os.MkdirTemp(absPath, "project")
+	defer os.RemoveAll(dirPath)
+	require.NoError(t, err)
+	require.NoError(t, os.WriteFile(filepath.Join(dirPath, "package.json"), []byte(`{"type":"commonjs"}`), os.ModePerm))
+	snowtopDir := filepath.Join(dirPath, "node_modules", "@snowtop")
+	require.NoError(t, os.MkdirAll(snowtopDir, os.ModePerm))
+	require.NoError(t, os.Symlink(input.GetAbsoluteRootPathForTest(), filepath.Join(snowtopDir, "ent")))
+
+	schema := testhelper.ParseSchemaForTest(t, m, testhelper.TempDir(dirPath))
+	tmpCfg := getConfig(t, dirPath)
+
+	enumMap := map[string]string{
+		"NODE": "node",
+		"BUN":  "bun",
+	}
+	cd := CustomData{
+		CustomTypes: map[string]*CustomType{
+			"RuntimeKind": {
+				Type:    "RuntimeKind",
+				EnumMap: enumMap,
+			},
+		},
+	}
+
+	require.NoError(t, file.Write(
+		&file.JSONFileWriter{
+			PathToFile: filepath.Join(dirPath, "src/schema/custom_graphql.json"),
+			Config:     tmpCfg,
+			Data:       cd,
+		},
+	))
+
+	require.NoError(t, file.Write(&file.YamlFileWriter{
+		PathToFile: filepath.Join(dirPath, "ent.yml"),
+		Config:     tmpCfg,
+		Data: &codegen.ConfigurableConfig{
+			CustomGraphQLJSONPath: "src/schema/custom_graphql.json",
+		},
+	}))
+
+	resolverDir := filepath.Join(dirPath, "src", "graphql", "resolvers", "runtime")
+	require.NoError(t, os.MkdirAll(resolverDir, os.ModePerm))
+	code := testhelper.GetCodeWithSchema(`
+		import {gqlQuery} from "@snowtop/ent/graphql";
+
+		export class RuntimeResolver {
+			@gqlQuery({
+				class: "RuntimeResolver",
+				name: "runtimeReady",
+				type: Boolean,
+				async: true,
+			})
+			async runtimeReady() {
+				return true;
+			}
+		}
+	`)
+	require.NoError(t, os.WriteFile(filepath.Join(resolverDir, "runtime.ts"), []byte(code), os.ModePerm))
+
+	processor := &codegen.Processor{
+		Schema: schema,
+		Config: getConfig(t, dirPath),
+	}
+
+	s, err := buildSchema(processor, true)
+	require.NoError(t, err)
+
+	validateDefaultCustomTypes(t, s.customData)
+	enumTyp := s.customData.CustomTypes["RuntimeKind"]
+	require.NotNil(t, enumTyp)
+	require.Equal(t, enumMap, enumTyp.EnumMap)
+
+	require.Len(t, s.customData.Queries, 1)
+	require.Len(t, s.customData.Classes, 1)
+	require.Len(t, s.customData.Files, 1)
+
+	item := s.customData.Queries[0]
+	assert.Equal(t, "RuntimeResolver", item.Node)
+	assert.Equal(t, "runtimeReady", item.GraphQLName)
+	assert.Equal(t, "runtimeReady", item.FunctionName)
+	assert.Equal(t, AsyncFunction, item.FieldType)
+
+	require.Len(t, s.customQueries, 1)
+	gqlNode := s.customQueries[0]
+	assert.Equal(t, gqlNode.Field, &item)
+	assert.True(t, strings.HasSuffix(gqlNode.FilePath, "src/graphql/generated/resolvers/runtime_ready_query_type.ts"))
+}
+
 func TestCustomListQuery(t *testing.T) {
 	m := map[string]string{}
 
