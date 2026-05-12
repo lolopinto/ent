@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+- prevent Bun script stdout truncation when schema/codegen JSON exceeds pipe buffering (#1992).
+
 ## [0.2.10]
 
 ### Added
@@ -21,7 +31,6 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- prevent Bun script stdout truncation when schema/codegen JSON exceeds pipe buffering (#1992).
 - avoid bogus dev-schema autogen diffs for already-upgraded branch schemas (#1990).
 - decode GraphQL global IDs in action-only ID list inputs, including nested object-list inputs (#1988).
 
