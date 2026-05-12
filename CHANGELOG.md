@@ -13,6 +13,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
+- pin JS and Python dependency declarations to locked versions (#1994).
+
 ### Fixed
 
 - prevent Bun script stdout truncation when schema/codegen JSON exceeds pipe buffering (#1992).
