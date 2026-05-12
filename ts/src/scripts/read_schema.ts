@@ -5,8 +5,9 @@ import { parseSchema } from "../parse_schema/parse";
 import { getCustomInfo } from "../tsc/ast";
 import { GlobalSchema } from "../schema/schema";
 import { toClassName } from "../names/names";
+import { writeJSONToStdout } from "./stdout";
 
-function main() {
+async function main() {
   const options = parseArgs(process.argv.slice(2));
 
   if (!options.path) {
@@ -52,16 +53,11 @@ function main() {
   }
   //  console.log(potentialSchemas);
 
-  // NB: do not change this to async/await
-  // doing so runs it buffer limit on linux (65536 bytes) and we lose data reading in go
-  parseSchema(potentialSchemas, globalSchema).then((result) => {
-    console.log(JSON.stringify(result));
-  });
+  const result = await parseSchema(potentialSchemas, globalSchema);
+  await writeJSONToStdout(result);
 }
 
-try {
-  main();
-} catch (err) {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
-}
+});
