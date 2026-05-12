@@ -510,8 +510,8 @@ export class TempDB {
         DB.initDB({
           connectionString: connStr,
           cfg: {
-            max: 200,
-            idleTimeoutMillis: 100,
+            max: 50,
+            idleTimeoutMillis: 10000,
           },
         });
       } else {
@@ -759,11 +759,22 @@ export function setupPostgres(tables: () => Table[], opts?: setupOptions) {
   if (!opts?.disableDeleteAfterEachTest) {
     afterEach(async () => {
       const client = await DB.getInstance().getNewClient();
-      for (const [key, _] of tdb.__getTables()) {
-        const query = `delete from ${key}`;
-        await client.exec(query);
+      let err: unknown;
+      let hadErr = false;
+      try {
+        for (const [key, _] of tdb.__getTables()) {
+          const query = `delete from ${key}`;
+          await client.exec(query);
+        }
+      } catch (e) {
+        err = e;
+        hadErr = true;
+        throw e;
+      } finally {
+        client.release(
+          hadErr ? (err instanceof Error ? err : true) : undefined,
+        );
       }
-      client.release();
     });
   }
 
