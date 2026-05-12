@@ -31,13 +31,13 @@
   "dependencies": {},
   "devDependencies": {
     "@snowtop/ent": "0.2.10",
-    "@types/jest": "^30.0.0",
-    "jest": "^30.2.0",
-    "pg": "^8.16.3",
-    "ts-jest": "^29.4.6"
+    "@types/jest": "30.0.0",
+    "jest": "30.3.0",
+    "pg": "8.20.0",
+    "ts-jest": "29.4.6"
   },
   "peerDependencies": {
     "@snowtop/ent": ">=0.2.8",
-    "pg": ">=8.0.0"
+    "pg": "8.20.0"
   }
 }
