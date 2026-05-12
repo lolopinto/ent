@@ -7,16 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
-## [Unreleased]
-
-### Added
-
-### Changed
-
-- remove the obsolete docs-live branch sync workflow now that Render deploys docs directly from main (#1996).
-
-### Fixed
-
 ## [0.2.11]
 
 ### Changed
