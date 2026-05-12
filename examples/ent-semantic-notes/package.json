@@ -11,7 +11,7 @@
     "upgrade": "npm run db:up && LOCAL_SCRIPT_PATH=true LOCAL_AUTO_SCHEMA=true go run ../../tsent/main.go upgrade"
   },
   "dependencies": {
-    "@snowtop/ent": "0.2.9",
+    "@snowtop/ent": "0.2.10",
     "@snowtop/ent-pgvector": "file:../../ts/packages/ent-pgvector",
     "express": "^4.22.1",
     "graphql": "^16.13.2",
