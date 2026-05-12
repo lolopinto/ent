@@ -7,13 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
-## [Unreleased]
-
-### Added
+## [0.2.11]
 
 ### Changed
 
 - pin JS and Python dependency declarations to locked versions (#1994).
+- bump `@snowtop/ent` package metadata and exact references to 0.2.11.
 
 ### Fixed
 
