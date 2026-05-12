@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
-## [0.2.9]
+## [0.2.10]
 
 ### Added
 
@@ -15,10 +15,19 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - add optional Bun runtime and Bun native Postgres driver support (#1976).
 - add Bun runtime coverage to the codegen feature matrix (#1986).
 
+### Changed
+
+- bump `@snowtop/ent` package metadata and exact references to 0.2.10 (#1991).
+
 ### Fixed
 
 - avoid bogus dev-schema autogen diffs for already-upgraded branch schemas (#1990).
 - decode GraphQL global IDs in action-only ID list inputs, including nested object-list inputs (#1988).
+
+## [0.2.9]
+
+### Fixed
+
 - include the shared `parse_args` helper in the published package so CLI scripts can load without `MODULE_NOT_FOUND` (#1981).
 
 ## [0.2.8]
