@@ -12,7 +12,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Changed
 
 - pin JS and Python dependency declarations to locked versions (#1994).
-- bump `@snowtop/ent` package metadata and exact references to 0.2.11.
+- bump `@snowtop/ent` package metadata and exact references to 0.2.11 (#1995).
 
 ### Fixed
 
