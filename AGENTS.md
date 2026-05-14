@@ -101,6 +101,9 @@ How examples pick up local `@snowtop/ent` changes:
 - Keep `### Added`, `### Changed`, and `### Fixed` subsections in that order
   under `## [Unreleased]`, and add PR-specific entries under the matching
   subsection instead of editing an already released version section.
+- Do not add internal-only implementation, workflow, or repo-maintenance
+  details to changelogs. Changelog entries should describe externally relevant
+  behavior, release contents, dependency/version changes, or user-visible fixes.
 
 ## Dev schema isolation (Postgres only)
 
