@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Fixed
+
+- avoid loading runtime-only GraphQL helper imports during JSON-mode custom GraphQL decorator discovery (#1999).
+
 ## [0.2.11]
 
 ### Changed
