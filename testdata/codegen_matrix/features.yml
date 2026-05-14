@@ -151,6 +151,23 @@ fixtures:
       - field_edge.uuid_list_inverse
       - polymorphic.indexed_query_import
       - transform_read.enum_value_import
+  - id: prettier_formatter
+    path: fixtures/prettier_formatter
+    description: >
+      Focused fixture that opts into legacy Prettier formatting and verifies a
+      project Prettier config is applied to generated TypeScript.
+    surfaces:
+      - parse_ts_schema
+      - ts_codegen
+      - graphql_codegen
+      - generated_tsc
+      - idempotence
+    covers:
+      - codegen.prettier_formatter
+      - schema.nodes
+      - node.actions
+      - field.string
+      - action.mutations
   - id: db_schema_smoke
     path: fixtures/db_schema_smoke
     includes:
@@ -267,6 +284,10 @@ features:
     owns: []
     mode: explicit
     rationale: Bun's native Postgres driver changes generated value/result conversion helpers for enum, list, and custom field types.
+  - id: codegen.prettier_formatter
+    owns: [codegen.prettier]
+    mode: explicit
+    rationale: Legacy Prettier formatting changes generated output and must stay covered for projects that opt into codegen.prettier.
 
   - id: node.table_name
     owns: [input.Node.TableName]

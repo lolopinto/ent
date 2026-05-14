@@ -121,3 +121,25 @@ func TestBiomeConfigPathFallsBackToRepoDefault(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, util.GetAbsolutePath("../../ts/biome.json"), configPath)
 }
+
+func TestPrettierConfigSelectsPrettierFormatter(t *testing.T) {
+	cfg := &Config{
+		config: &ConfigurableConfig{
+			Codegen: &CodegenConfig{
+				Prettier: &PrettierConfig{Custom: true},
+			},
+		},
+	}
+
+	require.True(t, cfg.HasPrettierConfig())
+	require.True(t, cfg.UsePrettierFormatter())
+}
+
+func TestForcePrettierSelectsPrettierFormatter(t *testing.T) {
+	cfg := &Config{
+		forcePrettier: true,
+	}
+
+	require.False(t, cfg.HasPrettierConfig())
+	require.True(t, cfg.UsePrettierFormatter())
+}

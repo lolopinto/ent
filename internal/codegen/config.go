@@ -378,6 +378,16 @@ func (cfg *Config) DummyWrite() bool {
 	return cfg.dummyWrite
 }
 
+func (cfg *Config) HasPrettierConfig() bool {
+	return cfg.config != nil &&
+		cfg.config.Codegen != nil &&
+		cfg.config.Codegen.Prettier != nil
+}
+
+func (cfg *Config) UsePrettierFormatter() bool {
+	return cfg.forcePrettier || cfg.HasPrettierConfig()
+}
+
 func (cfg *Config) GetBiomeConfigPath() (string, error) {
 	for _, name := range []string{"biome.json", "biome.jsonc"} {
 		p := filepath.Join(cfg.GetAbsPathToRoot(), name)
@@ -613,7 +623,6 @@ func (cfg *Config) DisableDefaultExportForActions() bool {
 const DEFAULT_PRETTIER_GLOB = "src/**/*.ts"
 const PRETTIER_FILE_CHUNKS = 20
 
-// use biome instead of prettier to speed up
 // options: https://prettier.io/docs/en/options.html
 var defaultArgs = []string{
 	"--trailing-comma", "all",

@@ -202,7 +202,7 @@ func (p *Processor) GetBuildInfo() *build_info.BuildInfo {
 }
 
 func (p *Processor) FormatTS() error {
-	if p.Config.forcePrettier {
+	if p.Config.UsePrettierFormatter() {
 		return p.formatWithPrettier()
 	}
 
@@ -378,12 +378,9 @@ type constructOption struct {
 	debugFilesMode bool
 	writeAll       bool
 	forceWriteAll  bool
-	// we're using biome as default for now so
-	// this provides a way to force prettier if we want to test or if somehow something
-	// wrong with biome
-	forcePrettier bool
-	buildInfo     *build_info.BuildInfo
-	cfg           *Config
+	forcePrettier  bool
+	buildInfo      *build_info.BuildInfo
+	cfg            *Config
 }
 
 type ConstructOption func(*constructOption)

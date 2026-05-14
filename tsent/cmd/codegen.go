@@ -82,7 +82,7 @@ var codegenCmd = &cobra.Command{
 		if codegenInfo.step != "" {
 			bi.ForceWriteAllNextTime = true
 		}
-		if codegenInfo.forcePrettier {
+		if codegenInfo.forcePrettier || cfg.HasPrettierConfig() {
 			opts = append(opts, codegen.ForcePrettier())
 		} else {
 			// automatically force write-all with biome
