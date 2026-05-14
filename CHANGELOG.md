@@ -17,6 +17,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- fix flaky Postgres test connection reuse in CI (#1998).
+
 ## [0.2.11]
 
 ### Changed
