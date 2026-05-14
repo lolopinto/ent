@@ -567,6 +567,14 @@ func TestCustomGraphQLJSONPathAlsoLoadsDecorators(t *testing.T) {
 		}
 	`)
 	require.NoError(t, os.WriteFile(filepath.Join(resolverDir, "runtime.ts"), []byte(code), os.ModePerm))
+	runtimeOnlyCode := testhelper.GetCodeWithSchema(`
+		import {EntNodeResolver} from "@snowtop/ent/graphql";
+
+		throw new Error("runtime-only GraphQL resolver file should not be loaded");
+
+		export const resolverType = EntNodeResolver;
+	`)
+	require.NoError(t, os.WriteFile(filepath.Join(resolverDir, "runtime_only.ts"), []byte(runtimeOnlyCode), os.ModePerm))
 
 	processor := &codegen.Processor{
 		Schema: schema,

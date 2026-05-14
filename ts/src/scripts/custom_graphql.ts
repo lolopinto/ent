@@ -350,11 +350,64 @@ async function captureCustom(
   await loadGraphQLDecoratorFiles(filePath);
 }
 
+const customGraphQLDecoratorImports = new Set([
+  "gqlArgType",
+  "gqlField",
+  "gqlInputObjectType",
+  "gqlInterfaceType",
+  "gqlMutation",
+  "gqlObjectType",
+  "gqlQuery",
+  "gqlUnionType",
+]);
+
 function fileImportsGraphQLDecorators(file: string) {
   const contents = fs.readFileSync(file, {
     encoding: "utf8",
   });
-  return /@snowtop\/ent\/graphql(?:\/graphql)?/.test(contents);
+  const sourceFile = ts.createSourceFile(
+    file,
+    contents,
+    ts.ScriptTarget.ES2015,
+    true,
+  );
+
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement)) {
+      continue;
+    }
+
+    const moduleSpecifier = statement.moduleSpecifier;
+    if (
+      !ts.isStringLiteral(moduleSpecifier) ||
+      (moduleSpecifier.text !== "@snowtop/ent/graphql" &&
+        moduleSpecifier.text !== "@snowtop/ent/graphql/graphql")
+    ) {
+      continue;
+    }
+
+    if (statement.importClause?.isTypeOnly) {
+      continue;
+    }
+
+    const namedBindings = statement.importClause?.namedBindings;
+    if (!namedBindings || !ts.isNamedImports(namedBindings)) {
+      continue;
+    }
+
+    for (const importSpecifier of namedBindings.elements) {
+      if (importSpecifier.isTypeOnly) {
+        continue;
+      }
+      const importedName =
+        importSpecifier.propertyName?.text ?? importSpecifier.name.text;
+      if (customGraphQLDecoratorImports.has(importedName)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 async function requireFiles(files: string[]) {
