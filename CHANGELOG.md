@@ -18,6 +18,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - fix flaky Postgres test connection reuse in CI (#1998).
+- avoid loading runtime-only GraphQL helper imports during JSON-mode custom GraphQL decorator discovery (#1999).
 
 ## [0.2.11]
 
