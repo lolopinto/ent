@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
+## [0.3.4]
+
+### Changed
+
+- release Docker image v0.3.4 with auto_schema 0.0.37 and tsent v0.3.5 (#2001)
+- move Docker image release pins into version files and restrict the image release workflow trigger to the release driver and those version files (#2001)
+
 ## [0.3.3]
 
 ### Added
