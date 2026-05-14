@@ -68,7 +68,7 @@ RUN mkdir -p "$BUN_INSTALL" && \
 
 RUN apt update && apt --assume-yes install zsh && \
   rm -rf /var/lib/apt/lists/*
-RUN npm install -g typescript@5.3.2 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@2.4.7
+RUN npm install -g typescript@5.3.2 ts-node@11.0.0-beta.1 @swc/core@1.3.100 @swc/cli@0.1.63 @biomejs/biome@2.4.7 prettier@3.8.3
 
 WORKDIR /app
 RUN npm install --save-dev tsconfig-paths@4.2.0 @swc-node/register@1.6.8

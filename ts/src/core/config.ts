@@ -129,7 +129,7 @@ export interface DevSchemaConfig extends RuntimeDevSchemaConfig {
 interface CodegenConfig {
   defaultEntPolicy?: PrivacyConfig;
   defaultActionPolicy?: PrivacyConfig;
-  // legacy fallback only. prefer biome.json or biome.jsonc in the project root.
+  // legacy Prettier formatting. prefer biome.json or biome.jsonc in the project root.
   prettier?: PrettierConfig;
   // use relativeImports in generated files instead of "src/ent/user" etc
   // needed for legacy scenarios or situations where the custom compiler has issues
@@ -212,7 +212,6 @@ interface CodegenConfig {
 
 interface PrettierConfig {
   // indicates you have your own custom prettier configuration and should use that instead of the ent default
-  // only relevant when forcing prettier during codegen
   // https://prettier.io/docs/en/configuration.html
   custom?: boolean;
   // default glob is 'src/**/*.ts', can override this

@@ -18,7 +18,7 @@ Here are the current supported commands:
 - updates the database if there's been any changes
 - generates the code for the Ent and GraphQL layer
 
-Generated TypeScript is formatted with Biome as part of codegen. If the project root contains `biome.json` or `biome.jsonc`, that config is used directly. Otherwise, ent falls back to its bundled Biome config.
+Generated TypeScript is formatted with Biome as part of codegen unless `--force_prettier` is passed. If the project root contains `biome.json` or `biome.jsonc`, that config is used directly. Otherwise, ent falls back to its bundled Biome config.
 
 You can filter to only run one "step" if you don't want to run all steps.
 
@@ -62,6 +62,10 @@ To disable custom graphql during codegen. Used when we need to rebuild everythin
 ### disable_prompts
 
 Disables prompts which asks the developer interactive questions. Use with care.
+
+### force_prettier
+
+Uses Prettier instead of Biome for generated TypeScript. Prettier must be available on `PATH`.
 
 ## upgrade
 

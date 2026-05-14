@@ -868,6 +868,7 @@ func syntheticOwners() []string {
 		"custom_graphql.gqlMutation",
 		"custom_graphql.gqlConnection",
 		"custom_graphql.mutationReturnType",
+		"codegen.prettier",
 	}
 }
 

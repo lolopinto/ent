@@ -1,0 +1,5 @@
+codegen:
+  relativeImports: true
+  generatedHeader: "Prettier matrix fixture"
+  prettier:
+    custom: true
