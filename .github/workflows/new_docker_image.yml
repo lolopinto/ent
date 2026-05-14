@@ -4,8 +4,10 @@ on:
   pull_request:
     branches: [ main, v0.1 ]
     paths:
-      - ts/Dockerfile.tmpl
-      - release_image/**
+      - release_image/main.go
+      - release_image/docker_version.txt
+      - release_image/tsent_version.txt
+      - release_image/auto_schema_version.txt
 
 
 jobs:

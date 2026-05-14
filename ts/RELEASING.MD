@@ -10,20 +10,20 @@ Use `docker container run -it ent /bin/zsh` if you want to run anything on the d
 
 **New docker image?**
 
-* Update `TAG` const in `release_image/main.go` by bumping e.g. from `0.0.17` to `0.0.18`
+* Update `release_image/docker_version.txt` by bumping e.g. from `v0.3.3` to `v0.3.4`.
 
 **Auto schema change?**
 
-* Update `AUTO_SCHEMA_VERSION` const in `release_image/main.go` for new `auto_schema` version.
-* Update `auto_schema` version in `docs/docs/advanced-topics/runnng-locally.md`.
+* Update `release_image/auto_schema_version.txt` for the new `auto_schema` version.
+* Update `auto_schema` version in `docs/docs/advanced-topics/running-locally.md`.
 * Also update `AUTO_SCHEMA_VERSION` arg at the top of `Dockerfile`.
 
 **New Golang release/tag?**
 
-* Update `TSENT_VERSION` const in `release_image/main.go` for new golang release version
-* Update the version in the `go install...` line in `docs/docs/advanced-topics/runnng-locally.md`.
+* Update `release_image/tsent_version.txt` for the new golang release version.
+* Update the version in the `go install...` line in `docs/docs/advanced-topics/running-locally.md`.
 * Also update `GOLANG_VERSION` arg at the top of `Dockerfile`.
-* Run `go install github.com/lolopinto/ent/tsent@v{TAG}` locally from different folder to try and get the new version in [GOPROXY](https://proxy.golang.org/).
+* Run `go install github.com/lolopinto/ent/tsent@{TSENT_VERSION}` locally from different folder to try and get the new version in [GOPROXY](https://proxy.golang.org/).
 
 To manually reproduce locally, we're high level following [these steps](https://docs.github.com/en/free-pro-team@latest/packages/managing-container-images-with-github-container-registry/pushing-and-pulling-docker-images#authenticating-to-github-container-registry):
 

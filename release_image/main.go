@@ -16,9 +16,6 @@ import (
 	"github.com/lolopinto/ent/internal/util"
 )
 
-// next tag to use
-const TAG = "v0.3.3"
-
 // current node gets latest tag...
 const CURRENT_NODE_VERSION = 24
 const REPO = "ghcr.io/lolopinto/ent"
@@ -31,8 +28,9 @@ var NODE_VERSIONS = []int{
 	24,
 }
 
-const AUTO_SCHEMA_VERSION = "0.0.36"
-const TSENT_VERSION = "v0.3.4"
+const DOCKER_VERSION_FILE = "docker_version.txt"
+const AUTO_SCHEMA_VERSION_FILE = "auto_schema_version.txt"
+const TSENT_VERSION_FILE = "tsent_version.txt"
 
 // TODO release notes
 
@@ -47,7 +45,47 @@ var PLATFORMS = []string{
 	"linux/arm64",
 }
 
-func do(version int) error {
+type releaseVersions struct {
+	DockerTag         string
+	TsentVersion      string
+	AutoSchemaVersion string
+}
+
+func readVersionFile(fileName string) (string, error) {
+	data, err := os.ReadFile(util.GetAbsolutePath(fileName))
+	if err != nil {
+		return "", fmt.Errorf("error reading %s: %w", fileName, err)
+	}
+
+	version := strings.TrimSpace(string(data))
+	if version == "" {
+		return "", fmt.Errorf("%s is empty", fileName)
+	}
+	return version, nil
+}
+
+func loadReleaseVersions() (releaseVersions, error) {
+	dockerTag, err := readVersionFile(DOCKER_VERSION_FILE)
+	if err != nil {
+		return releaseVersions{}, err
+	}
+	tsentVersion, err := readVersionFile(TSENT_VERSION_FILE)
+	if err != nil {
+		return releaseVersions{}, err
+	}
+	autoSchemaVersion, err := readVersionFile(AUTO_SCHEMA_VERSION_FILE)
+	if err != nil {
+		return releaseVersions{}, err
+	}
+
+	return releaseVersions{
+		DockerTag:         dockerTag,
+		TsentVersion:      tsentVersion,
+		AutoSchemaVersion: autoSchemaVersion,
+	}, nil
+}
+
+func do(version int, versions releaseVersions) error {
 	var wg sync.WaitGroup
 	wg.Add(len(SUFFIXES))
 	var serr syncerr.Error
@@ -57,10 +95,10 @@ func do(version int) error {
 			suffix := SUFFIXES[j]
 			err := run(dockerfileData{
 				NodeVersion:       version,
-				DockerTag:         TAG,
+				DockerTag:         versions.DockerTag,
 				Suffix:            suffix,
-				TsentVersion:      TSENT_VERSION,
-				AutoSchemaVersion: AUTO_SCHEMA_VERSION,
+				TsentVersion:      versions.TsentVersion,
+				AutoSchemaVersion: versions.AutoSchemaVersion,
 			}, &wg)
 			serr.Append(err)
 		}(j)
@@ -71,10 +109,15 @@ func do(version int) error {
 }
 
 func main() {
+	versions, err := loadReleaseVersions()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	// do node versions sequentially
 	for i := range NODE_VERSIONS {
 		v := NODE_VERSIONS[i]
-		if err := do(v); err != nil {
+		if err := do(v, versions); err != nil {
 			log.Fatal(fmt.Sprintf(`error creating version %d`, v), err)
 		}
 	}
@@ -108,7 +151,7 @@ func createDockerfile(path string, d dockerfileData) error {
 
 func getTags(d dockerfileData) []string {
 	ret := []string{
-		fmt.Sprintf("%s:%s-nodejs-%d-%s", REPO, TAG, d.NodeVersion, d.Suffix),
+		fmt.Sprintf("%s:%s-nodejs-%d-%s", REPO, d.DockerTag, d.NodeVersion, d.Suffix),
 	}
 	// current node development gets latest since it should have full ish
 	if d.NodeVersion == CURRENT_NODE_VERSION && UPDATE_LATEST && d.Development() {
