@@ -13,6 +13,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
+- remove obsolete v0.1 migration docs and CLI support (#1997).
+
 ### Fixed
 
 - fix flaky Postgres test connection reuse in CI (#1998).
