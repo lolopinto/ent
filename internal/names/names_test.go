@@ -91,6 +91,11 @@ func TestToDbColumn(t *testing.T) {
 		{[]string{"cover_photo2"}, "cover_photo2"},
 
 		{[]string{"timeInMs"}, "time_in_ms"},
+		{[]string{"s3Key"}, "s3key"},
+		{[]string{"s3_key"}, "s3_key"},
+		{[]string{"polo1Point5Goal"}, "polo1point5goal"},
+		{[]string{"barrelRacing4d"}, "barrel_racing4d"},
+		{[]string{"version2API"}, "version2api"},
 	}
 
 	for _, tt := range tests {
@@ -107,6 +112,9 @@ func TestGraphQLEnumName(t *testing.T) {
 		{[]string{"typescript"}, "TYPESCRIPT"},
 		{[]string{"C_PLUS_PLUS"}, "C_PLUS_PLUS"},
 		{[]string{"c_plus_plus"}, "C_PLUS_PLUS"},
+		{[]string{"puissance1m9"}, "PUISSANCE1M9"},
+		{[]string{"barrelRacing4d"}, "BARREL_RACING4D"},
+		{[]string{"polo1Point5Goal"}, "POLO1POINT5GOAL"},
 	}
 
 	for i, tt := range tests {
@@ -127,6 +135,9 @@ func TestToClassType(t *testing.T) {
 		{[]string{"UserAuthJWTInputType"}, "UserAuthJWTInputType"},
 		{[]string{"timeInMs"}, "TimeInMs"},
 		{[]string{"timeInMs", "Type"}, "TimeInMsType"},
+		{[]string{"puissance1m9"}, "Puissance1M9"},
+		{[]string{"barrelRacing4d"}, "BarrelRacing4D"},
+		{[]string{"polo1Point5Goal"}, "Polo1Point5Goal"},
 	}
 
 	for i, tt := range tests {
