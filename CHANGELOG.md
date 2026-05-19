@@ -18,6 +18,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - avoid misclassifying imported GraphQL enum custom types as scalars and stop emitting unused GraphQLByte custom metadata (#2004).
+- preserve digit-sensitive generated DB column, TS enum, and GraphQL enum names after in-house case conversion changes (#2003).
 - fix flaky Postgres test connection reuse in CI (#1998).
 - avoid loading runtime-only GraphQL helper imports during JSON-mode custom GraphQL decorator discovery (#1999).
 - use Prettier during codegen when a legacy `codegen.prettier` config is present (#2000).

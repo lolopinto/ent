@@ -7,6 +7,20 @@ contains:
     text: "registryId: mustDecodeIDFromGQLID(item.registryId.toString())"
   - path: .ent/custom_schema.json
     text: '"ImportedDisciplineType":{"type":"ImportedDisciplineType","importPath":"src/graphql/resolvers/imported_discipline_type","tsType":"Discipline","tsImportPath":"src/ent/types"}'
+  - path: src/ent/generated/loaders.ts
+    text: 'dbCol: "s3key"'
+  - path: src/ent/generated/types.ts
+    text: 'Puissance1M9 = "puissance1m9"'
+  - path: src/ent/generated/types.ts
+    text: 'BarrelRacing4D = "barrelRacing4d"'
+  - path: src/ent/generated/types.ts
+    text: 'Polo1Point5Goal = "polo1Point5Goal"'
+  - path: src/graphql/generated/resolvers/enums_type.ts
+    text: "PUISSANCE1M9:"
+  - path: src/graphql/generated/resolvers/enums_type.ts
+    text: "BARREL_RACING4D:"
+  - path: src/graphql/generated/resolvers/enums_type.ts
+    text: "POLO1POINT5GOAL:"
 not_contains:
   - path: .ent/custom_schema.json
     text: '"GraphQLByte"'
