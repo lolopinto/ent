@@ -11,6 +11,7 @@ import {
   gqlConnection,
   gqlInterfaceType,
   gqlUnionType,
+  addCustomType,
 } from "./graphql";
 import { GraphQLBoolean, GraphQLID, GraphQLString } from "graphql";
 import { ID, Viewer } from "../core/base";
@@ -185,6 +186,21 @@ test("mutation with input type", async () => {
   validateNoCustomQueries();
 
   GQLCapture.resolve([]);
+});
+
+test("custom enum type is not captured as scalar", async () => {
+  await addCustomType(
+    {
+      type: "GraphQLOrderByDirection",
+      importPath: "../graphql/scalars/orderby_direction",
+    },
+    GQLCapture,
+  );
+
+  expect(GQLCapture.getCustomTypes().get("GraphQLOrderByDirection")).toEqual({
+    type: "GraphQLOrderByDirection",
+    importPath: "../graphql/scalars/orderby_direction",
+  });
 });
 
 test("mutation with different types", async () => {

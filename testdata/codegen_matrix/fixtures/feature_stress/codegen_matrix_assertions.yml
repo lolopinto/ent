@@ -5,6 +5,8 @@ contains:
     text: "input.studbooks.map((i: any) => mustDecodeIDFromGQLID(i.toString()))"
   - path: src/graphql/generated/mutations/payment/create_matrix_payment_type.ts
     text: "registryId: mustDecodeIDFromGQLID(item.registryId.toString())"
+  - path: .ent/custom_schema.json
+    text: '"ImportedDisciplineType":{"type":"ImportedDisciplineType","importPath":"src/graphql/resolvers/imported_discipline_type","tsType":"Discipline","tsImportPath":"src/ent/types"}'
   - path: src/ent/generated/loaders.ts
     text: 'dbCol: "s3key"'
   - path: src/ent/generated/types.ts
@@ -19,3 +21,8 @@ contains:
     text: "BARREL_RACING4D:"
   - path: src/graphql/generated/resolvers/enums_type.ts
     text: "POLO1POINT5GOAL:"
+not_contains:
+  - path: .ent/custom_schema.json
+    text: '"GraphQLByte"'
+  - path: .ent/custom_schema.json
+    text: '"scalarInfo":{"name":"ImportedDiscipline"}'

@@ -61,7 +61,8 @@ type runtimeVariant struct {
 }
 
 type fixtureAssertions struct {
-	Contains []fixtureContainsAssertion `yaml:"contains"`
+	Contains    []fixtureContainsAssertion `yaml:"contains"`
+	NotContains []fixtureContainsAssertion `yaml:"not_contains"`
 }
 
 type fixtureContainsAssertion struct {
@@ -568,6 +569,15 @@ func runFixtureGeneratedAssertions(t *testing.T, appRoot string) {
 		contents, err := os.ReadFile(target)
 		require.NoError(t, err, "read generated assertion target %s", assertion.Path)
 		require.Contains(t, string(contents), assertion.Text, "generated assertion failed for %s", assertion.Path)
+	}
+	for _, assertion := range assertions.NotContains {
+		require.NotEmpty(t, assertion.Path, "generated assertion path is required")
+		require.NotEmpty(t, assertion.Text, "generated assertion text is required for %s", assertion.Path)
+
+		target := filepath.Join(appRoot, assertion.Path)
+		contents, err := os.ReadFile(target)
+		require.NoError(t, err, "read generated assertion target %s", assertion.Path)
+		require.NotContains(t, string(contents), assertion.Text, "generated negative assertion failed for %s", assertion.Path)
 	}
 }
 
