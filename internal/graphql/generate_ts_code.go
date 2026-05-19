@@ -73,10 +73,30 @@ var knownTsTypes = map[string]string{
 	"BigInt": "bigint",
 }
 
-var knownCustomTypes = map[string]string{
-	"Date": "GraphQLTime",
-	"JSON": "GraphQLJSON",
-	"Byte": "GraphQLByte",
+type knownCustomType struct {
+	Type                     string
+	FallbackImport           *tsimport.ImportPath
+	ScalarInfo               *CustomScalarInfo
+	RenderScalarInfoWhenUsed bool
+}
+
+var knownCustomTypes = map[string]knownCustomType{
+	"Date": {Type: "GraphQLTime"},
+	"JSON": {Type: "GraphQLJSON"},
+	"Byte": {
+		Type:                     "GraphQLByte",
+		FallbackImport:           tsimport.NewGraphQLScalarsImportPath("GraphQLByte"),
+		ScalarInfo:               &CustomScalarInfo{Name: "Byte"},
+		RenderScalarInfoWhenUsed: true,
+	},
+}
+
+var knownCustomScalarTypes = map[string]knownCustomType{
+	"Time": {
+		Type:                     "GraphQLTime",
+		RenderScalarInfoWhenUsed: true,
+	},
+	"Byte": knownCustomTypes["Byte"],
 }
 
 type NullableItem string
@@ -1052,7 +1072,8 @@ type gqlSchema struct {
 	// we need to know where they are so we can import them if referenced by other custom types
 	nestedCustomTypes map[string]string
 	// Query|Mutation|Subscription
-	rootDatas []*gqlRootData
+	rootDatas             []*gqlRootData
+	usedCustomScalarTypes map[string]bool
 }
 
 func (s *gqlSchema) getNodeNameFor(typ string) string {
@@ -1068,16 +1089,36 @@ func (s *gqlSchema) getNodeNameFor(typ string) string {
 	return typ
 }
 
+func (s *gqlSchema) noteUsedCustomScalar(rawType string) {
+	customType, ok := knownCustomScalarTypes[rawType]
+	if !ok || !customType.RenderScalarInfoWhenUsed {
+		return
+	}
+	if s.usedCustomScalarTypes == nil {
+		s.usedCustomScalarTypes = map[string]bool{}
+	}
+	s.usedCustomScalarTypes[customType.Type] = true
+}
+
+func (s *gqlSchema) shouldRenderCustomScalarInfo(customType string) bool {
+	for _, knownType := range knownCustomScalarTypes {
+		if knownType.Type == customType && knownType.RenderScalarInfoWhenUsed {
+			return s.usedCustomScalarTypes[customType]
+		}
+	}
+	return true
+}
+
 func (s *gqlSchema) getImportFor(processor *codegen.Processor, typ string, mutation bool) *tsimport.ImportPath {
 	// handle Date super special
-	typ2, ok := knownCustomTypes[typ]
+	customType, ok := knownCustomTypes[typ]
 	if ok {
-		customTyp, ok := s.customData.CustomTypes[typ2]
+		customTyp, ok := s.customData.CustomTypes[customType.Type]
 		if ok {
 			return customTyp.getGraphQLImportPath(processor.Config)
 		}
-		if typ2 == "GraphQLByte" {
-			return tsimport.NewGraphQLScalarsImportPath("GraphQLByte")
+		if customType.FallbackImport != nil {
+			return customType.FallbackImport.Clone()
 		}
 
 	}
@@ -1690,18 +1731,19 @@ func buildGQLSchema(processor *codegen.Processor) chan *buildGQLSchemaResult {
 		wg2.Wait()
 
 		schema := &gqlSchema{
-			nodes:             nodes,
-			rootQueries:       rootQueries,
-			enums:             enums,
-			actionEnums:       actionEnums,
-			edgeNames:         edgeNames,
-			hasMutations:      hasMutations,
-			hasConnections:    hasConnections,
-			customEdges:       make(map[string]*objectType),
-			otherObjects:      otherNodes,
-			unions:            unions,
-			seenCustomObjects: map[string]bool{},
-			nestedCustomTypes: map[string]string{},
+			nodes:                 nodes,
+			rootQueries:           rootQueries,
+			enums:                 enums,
+			actionEnums:           actionEnums,
+			edgeNames:             edgeNames,
+			hasMutations:          hasMutations,
+			hasConnections:        hasConnections,
+			customEdges:           make(map[string]*objectType),
+			otherObjects:          otherNodes,
+			unions:                unions,
+			seenCustomObjects:     map[string]bool{},
+			nestedCustomTypes:     map[string]string{},
+			usedCustomScalarTypes: map[string]bool{},
 		}
 		result <- &buildGQLSchemaResult{
 			schema: schema,
@@ -3693,9 +3735,6 @@ type fieldType struct {
 	// TODO more types we need to support
 }
 
-var flagTime = false
-var flagByte = false
-
 func getRawType(typ string, s *gqlSchema) string {
 	rawType := typ
 	if strings.HasPrefix(typ, "GraphQL") {
@@ -3712,12 +3751,7 @@ func getRawType(typ string, s *gqlSchema) string {
 			return k
 		}
 	}
-	if rawType == "Time" {
-		flagTime = true
-	}
-	if rawType == "Byte" {
-		flagByte = true
-	}
+	s.noteUsedCustomScalar(rawType)
 	return rawType
 }
 
@@ -4297,8 +4331,7 @@ func writeTSIndexFile(processor *codegen.Processor, s *gqlSchema) error {
 }
 
 func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) error {
-	flagTime = false
-	flagByte = false
+	s.usedCustomScalarTypes = map[string]bool{}
 
 	var sb strings.Builder
 
@@ -4342,17 +4375,19 @@ func generateAlternateSchemaFile(processor *codegen.Processor, s *gqlSchema) err
 	scalarNames := map[string]bool{}
 	for _, ct := range s.customData.CustomTypes {
 		if ct.ScalarInfo != nil {
-			// TODO eventually make this generic instead of this ugliness
-			// this prevents scalar Time from showing up until we make this generic enough
-			if ct.Type == "GraphQLTime" && !flagTime {
+			if !s.shouldRenderCustomScalarInfo(ct.Type) {
 				continue
 			}
 			scalarNames[ct.ScalarInfo.Name] = true
 			scalars = append(scalars, ct.ScalarInfo)
 		}
 	}
-	if flagByte && !scalarNames["Byte"] {
-		scalars = append(scalars, &CustomScalarInfo{Name: "Byte"})
+	for _, customType := range knownCustomScalarTypes {
+		if customType.ScalarInfo == nil || !s.shouldRenderCustomScalarInfo(customType.Type) || scalarNames[customType.ScalarInfo.Name] {
+			continue
+		}
+		scalarNames[customType.ScalarInfo.Name] = true
+		scalars = append(scalars, customType.ScalarInfo)
 	}
 	sort.Slice(scalars, func(i, j int) bool {
 		return scalars[i].Name < scalars[j].Name
