@@ -300,14 +300,11 @@ export const isCustomType = (type: Type): type is CustomTypeInput => {
 };
 
 const isGraphQLScalarType = (type: Type): type is GraphQLScalarType => {
-  return (
-    !isGraphQLEnumType(type) &&
-    !!type &&
+  return !!type &&
     typeof type === "object" &&
     typeof (type as GraphQLScalarType).serialize === "function" &&
     typeof (type as GraphQLScalarType).parseValue === "function" &&
-    typeof (type as GraphQLScalarType).parseLiteral === "function"
-  );
+    typeof (type as GraphQLScalarType).parseLiteral === "function";
 };
 
 const isGraphQLEnumType = (type: Type): type is GraphQLEnumType => {

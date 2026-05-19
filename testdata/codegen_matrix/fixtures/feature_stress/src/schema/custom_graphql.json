@@ -40,13 +40,5 @@
       ],
       "resultType": "ThirdPartyLogin"
     }
-  ],
-  "customTypes": {
-    "ImportedDisciplineType": {
-      "type": "ImportedDisciplineType",
-      "importPath": "src/graphql/resolvers/imported_discipline_type",
-      "tsType": "Discipline",
-      "tsImportPath": "src/ent/types"
-    }
-  }
+  ]
 }

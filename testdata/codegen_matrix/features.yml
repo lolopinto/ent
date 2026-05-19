@@ -147,7 +147,6 @@ fixtures:
       - index.where
       - custom_graphql.custom_mutation_return
       - custom_graphql.json_with_decorators
-      - custom_graphql.custom_type_metadata
       - pattern.struct_privacy_import
       - polymorphic.struct_field_codegen
       - field_edge.uuid_list_inverse
@@ -901,10 +900,6 @@ features:
     owns: [custom_graphql.mutationReturnType]
     mode: explicit
     rationale: Custom mutation object returns must use the declared object type, not a generated payload type.
-  - id: custom_graphql.custom_type_metadata
-    owns: []
-    mode: explicit
-    rationale: Imported custom GraphQL enum types must not be serialized as scalars, and unused optional scalar helpers must not churn custom_schema.json.
 
   - id: transform_write.struct_input_runtime
     owns: []

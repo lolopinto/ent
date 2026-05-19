@@ -39,8 +39,6 @@ func validateDefaultCustomTypes(t *testing.T, customData *CustomData) {
 	// see custom_graphql.ts for blah here
 	assert.Contains(t, []string{codepath.GraphQLPackage, "../graphql/scalars/time"}, time.ImportPath)
 	assert.NotNil(t, time.ScalarInfo)
-
-	assert.NotContains(t, customData.CustomTypes, "GraphQLByte")
 }
 
 func TestCustomMutation(t *testing.T) {

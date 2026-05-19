@@ -19,10 +19,3 @@ contains:
     text: "BARREL_RACING4D:"
   - path: src/graphql/generated/resolvers/enums_type.ts
     text: "POLO1POINT5GOAL:"
-  - path: .ent/custom_schema.json
-    text: '"ImportedDisciplineType":{"type":"ImportedDisciplineType","importPath":"src/graphql/resolvers/imported_discipline_type","tsType":"Discipline","tsImportPath":"src/ent/types"}'
-not_contains:
-  - path: .ent/custom_schema.json
-    text: '"GraphQLByte"'
-  - path: .ent/custom_schema.json
-    text: '"scalarInfo":{"name":"ImportedDiscipline"}'
