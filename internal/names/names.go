@@ -24,7 +24,7 @@ func ToClassType(strs ...string) string {
 			if isSeparatorToken(v.entry) {
 				continue
 			}
-			if v.class == upper || v.class == digit {
+			if v.class == upper {
 				sb.WriteString(v.entry)
 			} else {
 				sb.WriteString(titleWord(v.entry))

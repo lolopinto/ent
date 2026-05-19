@@ -64,6 +64,7 @@ fixtures:
       - field.string_byte
       - field.nullable
       - field.storage_key
+      - field.digit_sensitive_names
       - field.unique
       - field.hide_from_graphql
       - field.private
@@ -510,6 +511,9 @@ features:
     mode: representative
     dialect_coverage: [sqlite, postgres]
     rationale: Storage key changes DB columns and transformWrite input shape.
+  - id: field.digit_sensitive_names
+    mode: representative
+    rationale: Field and enum names with embedded digits have regressed across DB columns, TS enum constants, and GraphQL enum values.
   - id: field.unique
     owns: [input.Field.Unique]
     mode: representative

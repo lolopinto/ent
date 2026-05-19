@@ -89,6 +89,28 @@ func TestEnumDisableUnknownType(t *testing.T) {
 	assert.True(t, GQLEnumEqual(gqlEnum, gqlEnum2))
 }
 
+func TestEnumDigitNameRegressions(t *testing.T) {
+	tsEnum, gqlEnum := GetEnums(&Input{
+		TSName:             "RidingResult",
+		GQLName:            "RidingResult",
+		GQLType:            "RidingResult",
+		Values:             []string{"puissance1m9", "barrelRacing4d", "polo1Point5Goal"},
+		DisableUnknownType: true,
+	})
+	require.NotNil(t, tsEnum)
+	require.NotNil(t, gqlEnum)
+
+	require.Len(t, tsEnum.Values, 3)
+	assert.Equal(t, "Puissance1M9", tsEnum.Values[0].Name)
+	assert.Equal(t, "BarrelRacing4D", tsEnum.Values[1].Name)
+	assert.Equal(t, "Polo1Point5Goal", tsEnum.Values[2].Name)
+
+	require.Len(t, gqlEnum.Values, 3)
+	assert.Equal(t, "PUISSANCE1M9", gqlEnum.Values[0].Name)
+	assert.Equal(t, "BARREL_RACING4D", gqlEnum.Values[1].Name)
+	assert.Equal(t, "POLO1POINT5GOAL", gqlEnum.Values[2].Name)
+}
+
 func TestEnumWithLowercaseunknown(t *testing.T) {
 	values := []string{
 		"areFriends",

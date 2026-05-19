@@ -56,16 +56,39 @@ func toSnakeWord(s string) string {
 
 func snakeWords(split []splitResult) []string {
 	words := make([]string, 0, len(split))
+	prevWasSeparator := false
 	for _, v := range split {
 		if isSeparatorToken(v.entry) {
+			prevWasSeparator = true
 			continue
 		}
 		word := strings.ToLower(v.entry)
-		if v.class == digit && len(words) > 0 {
+		if len(words) > 0 && !prevWasSeparator && shouldJoinSnakeWord(words[len(words)-1], v) {
 			words[len(words)-1] += word
+			prevWasSeparator = false
 			continue
 		}
 		words = append(words, word)
+		prevWasSeparator = false
 	}
 	return words
+}
+
+func shouldJoinSnakeWord(prev string, curr splitResult) bool {
+	if curr.class == digit {
+		return true
+	}
+	return endsWithDigit(prev) && startsWithLetter(curr.entry)
+}
+
+func endsWithDigit(s string) bool {
+	r, _ := utf8.DecodeLastRuneInString(s)
+	return unicode.IsDigit(r)
+}
+
+func startsWithLetter(s string) bool {
+	for _, r := range s {
+		return unicode.IsLetter(r)
+	}
+	return false
 }

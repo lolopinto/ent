@@ -45,6 +45,9 @@ const PaymentSchema = new EntSchema({
     externalID: StringType({
       storageKey: "external_id",
     }),
+    s3Key: StringType({
+      nullable: true,
+    }),
     amount: IntegerType({
       index: true,
       indexConcurrently: true,
@@ -136,6 +139,11 @@ const PaymentSchema = new EntSchema({
         LOW: 1,
         HIGH: 2,
       },
+      nullable: true,
+    }),
+    ridingResult: EnumType({
+      values: ["puissance1m9", "barrelRacing4d", "polo1Point5Goal"],
+      disableUnknownType: true,
       nullable: true,
     }),
     threadID: UUIDType({
