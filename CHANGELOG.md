@@ -12,7 +12,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Changed
 
 - remove obsolete v0.1 migration docs and CLI support (#1997).
-- bump `@snowtop/ent` package metadata and exact references to 0.2.12.
+- bump `@snowtop/ent` package metadata and exact references to 0.2.12 (#2007).
 
 ### Fixed
 
