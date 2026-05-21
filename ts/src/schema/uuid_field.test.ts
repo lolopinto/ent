@@ -528,6 +528,36 @@ test("invalid uuid", async () => {
   });
 });
 
+test.each([
+  ["v6", "1ec9414c-232a-6b00-b3c8-9e6bdeced846"],
+  ["v7", "01890f22-725b-7cc1-98c4-dc0c0c07398f"],
+  ["v8", "00000000-0000-8000-8000-000000000000"],
+  ["v7 with non-RFC-4122 variant", "04d89468-4011-70d0-fb3b-257954ec217c"],
+])("valid uuid accepts %s", async (_name, uuid) => {
+  expect(await UUIDType().valid(uuid)).toBe(true);
+});
+
+test("saving uuid accepts UUIDv7 with non-RFC-4122 variant", async () => {
+  class Account extends User {}
+  const AccountSchema = getBuilderSchemaFromFields(
+    {
+      fake_id: UUIDType(),
+    },
+    Account,
+  );
+  const uuid = "d4c824b8-a0d1-700e-c0e9-e3b7984ddff4";
+
+  await doSQLiteTestFromSchemas([AccountSchema], async () => {
+    const accountAction = getInsertAction(
+      AccountSchema,
+      new Map<string, any>([["fake_id", uuid]]),
+    );
+
+    const account = await accountAction.saveX();
+    expect(account.data.fake_id).toBe(uuid);
+  });
+});
+
 test("builder valid uuid", async () => {
   const UserSchema = getBuilderSchemaFromFields(
     {

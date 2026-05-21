@@ -1,6 +1,5 @@
 import { DateTime } from "luxon";
 import { isPromise } from "util/types";
-import { validate } from "uuid";
 import { Builder } from "../action/action";
 import { Ent, WriteOperation } from "../core/base";
 import DB, { Dialect } from "../core/db";
@@ -16,6 +15,9 @@ import {
   PolymorphicOptions,
   Type,
 } from "./schema";
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export abstract class BaseField {
   name: string;
@@ -115,7 +117,7 @@ export class UUIDField extends BaseField implements Field {
   }
 
   async valid(val: any) {
-    if (typeof val === "string" && !validate(val)) {
+    if (typeof val === "string" && !UUID_REGEX.test(val)) {
       return false;
     }
     if (!this.options?.fieldEdge?.enforceSchema) {
