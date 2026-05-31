@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -85,7 +86,7 @@ func loadReleaseVersions() (releaseVersions, error) {
 	}, nil
 }
 
-func do(version int, versions releaseVersions) error {
+func do(version int, versions releaseVersions, push bool) error {
 	var wg sync.WaitGroup
 	wg.Add(len(SUFFIXES))
 	var serr syncerr.Error
@@ -99,7 +100,7 @@ func do(version int, versions releaseVersions) error {
 				Suffix:            suffix,
 				TsentVersion:      versions.TsentVersion,
 				AutoSchemaVersion: versions.AutoSchemaVersion,
-			}, &wg)
+			}, push, &wg)
 			serr.Append(err)
 		}(j)
 	}
@@ -109,6 +110,9 @@ func do(version int, versions releaseVersions) error {
 }
 
 func main() {
+	push := flag.Bool("push", false, "build and push Docker images")
+	flag.Parse()
+
 	versions, err := loadReleaseVersions()
 	if err != nil {
 		log.Fatal(err)
@@ -117,7 +121,7 @@ func main() {
 	// do node versions sequentially
 	for i := range NODE_VERSIONS {
 		v := NODE_VERSIONS[i]
-		if err := do(v, versions); err != nil {
+		if err := do(v, versions, *push); err != nil {
 			log.Fatal(fmt.Sprintf(`error creating version %d`, v), err)
 		}
 	}
@@ -182,11 +186,11 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 		ret = append(ret, tag)
 	}
 
-	ret = append(ret, "--push", ".")
+	ret = append(ret, ".")
 	return ret
 }
 
-func run(d dockerfileData, wg *sync.WaitGroup) error {
+func run(d dockerfileData, push bool, wg *sync.WaitGroup) error {
 	defer wg.Done()
 	dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
 	info, err := os.Stat(dir)
@@ -211,6 +215,15 @@ func run(d dockerfileData, wg *sync.WaitGroup) error {
 
 	if err != nil {
 		return fmt.Errorf("error creating docker file: %w", err)
+	}
+
+	if !push {
+		fmt.Printf(
+			"dry-run: rendered %s; would run docker %s\n",
+			dockerfile,
+			strings.Join(getCommandArgs(d, "<builder>"), " "),
+		)
+		return nil
 	}
 
 	// create new builder to user here

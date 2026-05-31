@@ -1,18 +1,82 @@
 name: New Docker image
 
-on: 
+on:
   pull_request:
-    branches: [ main, v0.1 ]
+    branches: [ main ]
+    paths:
+      - .github/workflows/new_docker_image.yml
+      - release_image/main.go
+      - release_image/docker_version.txt
+      - release_image/tsent_version.txt
+      - release_image/auto_schema_version.txt
+  push:
+    branches: [ main ]
     paths:
       - release_image/main.go
       - release_image/docker_version.txt
       - release_image/tsent_version.txt
       - release_image/auto_schema_version.txt
 
+permissions:
+  contents: read
+
 
 jobs:
-  build:
+  validate:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Set up Go
+      uses: actions/setup-go@v6
+      with:
+        go-version: '1.25'
+        cache: true
+        cache-dependency-path: go.sum
+
+    - name: Validate release version files
+      run: |
+        set -euo pipefail
+        changed="$(git diff --name-only "${{ github.event.pull_request.base.sha }}...HEAD")"
+        echo "${changed}"
+
+        if echo "${changed}" | grep -Eq '^release_image/(auto_schema_version|tsent_version)\.txt$' &&
+          ! echo "${changed}" | grep -qx 'release_image/docker_version.txt'; then
+          echo "release_image/docker_version.txt must change with auto_schema_version.txt or tsent_version.txt"
+          exit 1
+        fi
+
+    - name: Verify referenced release versions
+      run: |
+        set -euo pipefail
+        auto_schema_version="$(cat release_image/auto_schema_version.txt)"
+        tsent_version="$(cat release_image/tsent_version.txt)"
+
+        python3 -m pip download --no-deps --dest /tmp/auto-schema-check "auto_schema==${auto_schema_version}"
+        go list -m "github.com/lolopinto/ent@${tsent_version}"
+
+    - name: Test release image tooling
+      env:
+        # hack to avoid hitting the db
+        DB_CONNECTION_STRING: sqlite:///
+      run: go test ./release_image
+
+    - name: Render release image files
+      env:
+        # hack to avoid hitting the db
+        DB_CONNECTION_STRING: sqlite:///
+      run: cd release_image && go run .
+
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
 
     steps:
     - uses: actions/checkout@v6
@@ -39,4 +103,4 @@ jobs:
       env:
         # hack to avoid hitting the db
         DB_CONNECTION_STRING: sqlite:///
-      run: cd release_image && go run .
+      run: cd release_image && go run . --push
