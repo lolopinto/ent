@@ -140,7 +140,7 @@ def compare_extensions(autogen_context, upgrade_ops, schemas):
     upgrade_ops.ops[0:0] = extension_ops
 
 
-@comparators.dispatch_for("schema")
+@comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
 def compare_edges(autogen_context, upgrade_ops, schemas):
     db_edges = {}
 
@@ -163,12 +163,13 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
         db_edges[_get_schema_key(sch)] = existing_edges
 
     metadata_edges = autogen_context.metadata.info.setdefault("edges", {})
+    edge_ops = []
 
     # edges in metadata, but not in db, new edges that need to be added
     _process_edges(
         metadata_edges,
         db_edges,
-        upgrade_ops,
+        edge_ops,
         ops.AddEdgesOp,
         _meta_to_db_edge_mismatch,
     )
@@ -177,9 +178,11 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
     _process_edges(
         db_edges,
         metadata_edges,
-        upgrade_ops,
+        edge_ops,
         ops.RemoveEdgesOp,
     )
+
+    _add_edge_ops(upgrade_ops, edge_ops)
 
 
 def _edges_equal(edge1, edge2):
@@ -196,7 +199,7 @@ def _edges_equal(edge1, edge2):
     return bool(edge1.get('symmetric_edge', None)) == bool(edge2.get('symmetric_edge', None))
 
 
-def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mismatch_fn=None):
+def _process_edges(source_edges, compare_edges, edge_ops, upgrade_op, edge_mismatch_fn=None):
     alter_ops = []
 
     for sch, edges in source_edges.items():
@@ -223,12 +226,30 @@ def _process_edges(source_edges, compare_edges, upgrade_ops, upgrade_op, edge_mi
                     pass
 
         if len(new_edges) > 0:
-            upgrade_ops.ops.append(
+            edge_ops.append(
                 upgrade_op(new_edges, schema=sch)
             )
 
         # do any alter operation after the add/remove edge op
-        [upgrade_ops.ops.append(alter_op) for alter_op in alter_ops]
+        [edge_ops.append(alter_op) for alter_op in alter_ops]
+
+
+def _add_edge_ops(upgrade_ops, edge_ops):
+    if len(edge_ops) == 0:
+        return
+
+    # compare_edges runs late so assoc_edge_config inserts are emitted after
+    # table creation. If this migration also drops assoc_edge_config, the edge
+    # cleanup still has to run before that drop.
+    for idx, op in enumerate(upgrade_ops.ops):
+        if (
+            isinstance(op, alembicops.DropTableOp)
+            and op.table_name == "assoc_edge_config"
+        ):
+            upgrade_ops.ops[idx:idx] = edge_ops
+            return
+
+    upgrade_ops.ops.extend(edge_ops)
 
 
 def _dialect_name(autogen_context: AutogenContext) -> str:

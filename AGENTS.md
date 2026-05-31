@@ -105,6 +105,16 @@ How examples pick up local `@snowtop/ent` changes:
   details to changelogs. Changelog entries should describe externally relevant
   behavior, release contents, dependency/version changes, or user-visible fixes.
 
+## Release files
+
+- Do not update `release_image/*.txt` unless the user explicitly asks for a
+  Docker image release or release-image version bump. These files trigger Docker
+  image builds and must move together intentionally.
+- Publishing `auto_schema` to PyPI does not by itself require updating
+  `release_image/auto_schema_version.txt`, `release_image/docker_version.txt`,
+  or the `AUTO_SCHEMA_VERSION` arg in `ts/Dockerfile`. Update those only when
+  cutting a Docker image that should consume the new PyPI package.
+
 ## Dev schema isolation (Postgres only)
 
 Default contract:
