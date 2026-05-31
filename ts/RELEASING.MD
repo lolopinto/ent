@@ -1,10 +1,17 @@
-# Releasing Docker
+# Releasing Docker Images
 
-We use a Github Action to release a new docker image anytime anything relevant changes e.g. auto_schema, golang release etc.
+Docker image releases are separate from publishing `auto_schema`, npm packages,
+or Go tags. Do not update `release_image/*.txt` unless intentionally cutting a
+new Docker image.
 
-To update the Docker image, following steps are needed:
+Docker image PRs validate the requested image contents without registry
+credentials or image pushes. After the PR is merged, the `push` workflow on
+`main` builds and pushes the image.
 
-Update `Dockerfile` and run `docker build -t ent .` locally to confirm simple Docker image builds locally.
+To update the Docker image, the following steps are needed:
+
+Update `Dockerfile` and run `docker build -t ent .` locally to confirm the
+simple Docker image builds locally.
 
 Use `docker container run -it ent /bin/zsh` if you want to run anything on the docker image e.g. to test different commands in isolation.
 
@@ -12,29 +19,35 @@ Use `docker container run -it ent /bin/zsh` if you want to run anything on the d
 
 * Update `release_image/docker_version.txt` by bumping e.g. from `v0.3.3` to `v0.3.4`.
 
-**Auto schema change?**
+**Auto schema change in the Docker image?**
 
 * Update `release_image/auto_schema_version.txt` for the new `auto_schema` version.
-* Update `auto_schema` version in `docs/docs/advanced-topics/running-locally.md`.
 * Also update `AUTO_SCHEMA_VERSION` arg at the top of `Dockerfile`.
 
-**New Golang release/tag?**
+**New Golang release/tag in the Docker image?**
 
 * Update `release_image/tsent_version.txt` for the new golang release version.
-* Update the version in the `go install...` line in `docs/docs/advanced-topics/running-locally.md`.
 * Also update `GOLANG_VERSION` arg at the top of `Dockerfile`.
 * Run `go install github.com/lolopinto/ent/tsent@{TSENT_VERSION}` locally from different folder to try and get the new version in [GOPROXY](https://proxy.golang.org/).
 
-To manually reproduce locally, we're high level following [these steps](https://docs.github.com/en/free-pro-team@latest/packages/managing-container-images-with-github-container-registry/pushing-and-pulling-docker-images#authenticating-to-github-container-registry):
+The pull request workflow checks that `release_image/auto_schema_version.txt`
+or `release_image/tsent_version.txt` changes are paired with
+`release_image/docker_version.txt`, verifies the referenced published versions,
+tests the release image tooling, and renders the Dockerfiles without pushing.
+
+To render release image files locally without building or pushing:
+
+* `cd release_image && DB_CONNECTION_STRING=sqlite:/// go run .`
+
+To manually reproduce a push locally, we're high level following [these steps](https://docs.github.com/en/free-pro-team@latest/packages/managing-container-images-with-github-container-registry/pushing-and-pulling-docker-images#authenticating-to-github-container-registry):
 
 We use [buildx](https://docs.docker.com/buildx/working-with-buildx/#build-multi-platform-images) to build a multi-arch image
 
 * Update `Dockerfile`
 * `echo "{TOKEN}" | docker login ghcr.io -u USERNAME --password-stdin`
-* `docker buildx create --use` to create a new builder
-* `docker buildx build --platform linux/arm64,linux/amd64 --tag ghcr.io/lolopinto/ent:v0.0.23-test --push .` to build and push new image
+* `cd release_image && DB_CONNECTION_STRING=sqlite:/// go run . --push` to build and push the release image variants
 
-If just testing, don't use `latest` tag above.
+If just testing, use the default no-push command instead of `--push`.
 
 Currently, can't get the multi-arch image to be built on an M1 mac so needs to be built on an intel mac.
 

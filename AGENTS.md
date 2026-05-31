@@ -114,6 +114,10 @@ How examples pick up local `@snowtop/ent` changes:
   `release_image/auto_schema_version.txt`, `release_image/docker_version.txt`,
   or the `AUTO_SCHEMA_VERSION` arg in `ts/Dockerfile`. Update those only when
   cutting a Docker image that should consume the new PyPI package.
+- Docker image workflows should validate release-image changes on pull requests
+  without registry credentials or image pushes. Only push Docker images from a
+  `push` workflow on `main`, and require an explicit release-image push flag
+  such as `cd release_image && go run . --push`.
 
 ## Dev schema isolation (Postgres only)
 
