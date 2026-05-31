@@ -11,7 +11,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ### Changed
 
-- release Docker image v0.3.6 with auto_schema 0.0.38 and tsent v0.3.6
+- release Docker image v0.3.6 with auto_schema 0.0.38 and tsent v0.3.6 (#2010)
 
 ## [0.3.5]
 
