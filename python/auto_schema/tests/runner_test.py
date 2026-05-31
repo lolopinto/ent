@@ -1938,6 +1938,58 @@ class TestPostgresRunner(BaseTestRunner):
 
 
 class TestSqliteRunner(BaseTestRunner):
+    @pytest.mark.usefixtures("metadata_with_one_edge", "empty_metadata")
+    def test_remove_last_edge_before_dropping_assoc_edge_config(
+        self, new_test_runner, metadata_with_one_edge, empty_metadata
+    ):
+        r = new_test_runner(metadata_with_one_edge)
+        r.run()
+
+        r2 = new_test_runner(empty_metadata, r)
+        diff = r2.compute_changes()
+        remove_idx = next(
+            idx for idx, op in enumerate(diff) if isinstance(op, ops.RemoveEdgesOp)
+        )
+        drop_idx = next(
+            idx
+            for idx, op in enumerate(diff)
+            if (
+                isinstance(op, alembicops.DropTableOp)
+                and op.table_name == "assoc_edge_config"
+            )
+        )
+        assert remove_idx < drop_idx
+
+        r2.run()
+
+    @pytest.mark.usefixtures("metadata_with_one_edge")
+    def test_all_sql_adds_edges_after_assoc_edge_config_table(
+        self, new_test_runner, metadata_with_one_edge
+    ):
+        r = new_test_runner(metadata_with_one_edge)
+        file = os.path.join(r.get_schema_path(), "schema.sql")
+
+        r.all_sql(file=file)
+
+        with open(file) as f:
+            sql = f.read()
+
+        create_idx = sql.index("CREATE TABLE assoc_edge_config")
+        insert_idx = sql.index("INSERT INTO assoc_edge_config")
+        assert create_idx < insert_idx
+
+        verify_engine = sa.create_engine(
+            "sqlite:///%s" % os.path.join(r.get_schema_path(), "verify.db")
+        )
+        with verify_engine.begin() as conn:
+            raw_conn = conn.connection.driver_connection
+            raw_conn.executescript(sql)
+            row_count = conn.execute(
+                sa.text("SELECT COUNT(*) FROM assoc_edge_config")
+            ).scalar()
+        verify_engine.dispose()
+        assert row_count == 1
+
     def test_db_extensions_error_on_sqlite(self, new_test_runner):
         metadata = _db_extension_metadata(name="pgcrypto")
         r = new_test_runner(metadata)

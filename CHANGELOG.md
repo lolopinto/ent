@@ -17,6 +17,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- emit `assoc_edge_config` inserts after table creation in generated `schema.sql` files (#2008).
 - allow UUID fields to accept canonical UUIDv6, UUIDv7, UUIDv8, and other UUID bit layouts without rejecting them during action validation (#2006).
 - avoid misclassifying imported GraphQL enum custom types as scalars and stop emitting unused GraphQLByte custom metadata (#2004).
 - preserve digit-sensitive generated DB column, TS enum, and GraphQL enum names after in-house case conversion changes (#2003).
