@@ -1025,7 +1025,7 @@ func TestCustomUploadType(t *testing.T) {
 				tsimport.NewGQLClassImportPath("GraphQLNonNull"),
 				{
 					Import:     "GraphQLUpload",
-					ImportPath: "graphql-upload",
+					ImportPath: "@snowtop/ent/graphql/upload",
 				},
 			},
 		},
@@ -1040,10 +1040,10 @@ func TestCustomUploadType(t *testing.T) {
 
 	assert.NotNil(t, typ)
 
-	assert.Equal(t, typ.ImportPath, "graphql-upload")
+	assert.Equal(t, typ.ImportPath, "@snowtop/ent/graphql/upload")
 	assert.Equal(t, typ.Type, "GraphQLUpload")
 	assert.Equal(t, typ.TSType, "FileUpload")
-	assert.Equal(t, typ.TSImportPath, "graphql-upload")
+	assert.Equal(t, typ.TSImportPath, "@snowtop/ent/graphql/upload")
 }
 
 func TestCustomInputEnumType(t *testing.T) {

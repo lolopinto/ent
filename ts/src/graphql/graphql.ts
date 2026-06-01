@@ -1,7 +1,4 @@
-import {
-  GraphQLEnumType,
-  GraphQLScalarType,
-} from "graphql";
+import { GraphQLEnumType, GraphQLScalarType } from "graphql";
 import { Data } from "../core/base";
 import type { FieldMap } from "../schema";
 import {
@@ -1065,12 +1062,14 @@ export const gqlMutation = GQLCapture.gqlMutation;
 export const gqlContextType = GQLCapture.gqlContextType;
 export const gqlConnection = GQLCapture.gqlConnection;
 
-// this requires the developer to npm-install "graphql-upload on their own"
+// Apps that use uploads must install graphql-upload on their own. Keep the
+// runtime import behind @snowtop/ent/graphql/upload so normal GraphQL users do
+// not load the optional peer dependency.
 const gqlFileUpload: CustomTypeInput = {
   type: "GraphQLUpload",
-  importPath: "graphql-upload",
+  importPath: "@snowtop/ent/graphql/upload",
   tsType: "FileUpload",
-  tsImportPath: "graphql-upload",
+  tsImportPath: "@snowtop/ent/graphql/upload",
 };
 
 export { gqlFileUpload };

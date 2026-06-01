@@ -16,7 +16,7 @@ import {
   PassportAuthHandler,
   PassportStrategyHandler,
 } from "@snowtop/ent-passport";
-import { graphqlUploadExpress } from "graphql-upload";
+import { graphqlUploadExpress } from "@snowtop/ent/graphql/upload";
 import { User } from "../ent";
 import { ExampleViewer } from "../viewer/viewer";
 
