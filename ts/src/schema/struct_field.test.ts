@@ -402,13 +402,13 @@ describe("struct as list", () => {
       float: 2.0,
       enum: "yes",
     };
-    const formatted1 = {
+    const formatted1: Record<string, any> = {
       uuid_unique: val.uuidUnique,
       ...val,
       ts: d.toISOString(),
     };
     delete formatted1["uuidUnique"];
-    const formatted2 = {
+    const formatted2: Record<string, any> = {
       uuid_unique: val2.uuidUnique,
       ...val2,
       ts: d2.toISOString(),

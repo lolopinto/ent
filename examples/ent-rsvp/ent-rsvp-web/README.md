@@ -20,4 +20,4 @@ Run `npm run relay` to generate [Relay](https://relay.dev/) artifacts when thing
 
 Run `npm run dev` to start the React app.
 
-Run `npm run build` to build to get a static output.
+Run `npm run build` to build the app and `npm start` to serve it with Next.

@@ -8,6 +8,7 @@
     "downlevelIteration": true,
     "baseUrl": ".",
     "paths": {
+      "@snowtop/ent": ["./node_modules/@snowtop/ent"],
       "src/*": ["src/*"],
       "@snowtop/ent-pgvector": ["../../ts/packages/ent-pgvector/src/pgvector"]
     },

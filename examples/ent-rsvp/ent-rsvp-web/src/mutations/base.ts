@@ -15,10 +15,13 @@ export default function commit<TInput, TResponse>(
   ) {
     return commitMutation(environment, {
       mutation,
-      variables: disableInputWrapping ? input : { input },
-      onCompleted: (response: TResponse, errors) => {
+      variables: (disableInputWrapping ? input : { input }) as Record<
+        string,
+        unknown
+      >,
+      onCompleted: (response, errors) => {
         if (callback) {
-          Promise.resolve(callback(response, errors));
+          Promise.resolve(callback(response as TResponse, errors));
         }
       },
       onError: (err) => console.error(err),

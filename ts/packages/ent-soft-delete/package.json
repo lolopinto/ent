@@ -30,14 +30,25 @@
   "homepage": "https://github.com/lolopinto/ent#readme",
   "devDependencies": {
     "@snowtop/ent": "0.2.13",
-    "@types/jest": "26.0.24",
-    "jest": "26.6.3",
-    "ts-jest": "26.5.6"
+    "@types/jest": "30.0.0",
+    "jest": "30.4.2",
+    "ts-jest": "29.4.11",
+    "typescript": "5.9.3"
   },
   "peerDependencies": {
     "@snowtop/ent": ">= 0.2.8"
   },
   "dependencies": {
-    "@types/express": "4.17.13"
+    "@types/express": "4.17.25"
+  },
+  "overrides": {
+    "@snowtop/ent": {
+      "brace-expansion": "5.0.6",
+      "uuid": "11.1.1"
+    },
+    "anymatch": {
+      "picomatch": "2.3.2"
+    },
+    "diff": "4.0.4"
   }
 }

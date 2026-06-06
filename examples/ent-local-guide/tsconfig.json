@@ -15,6 +15,9 @@
     "strict": true,
     "skipLibCheck": true,
     "paths": {
+      "@snowtop/ent": [
+        "./node_modules/@snowtop/ent"
+      ],
       "@snowtop/ent-postgis": [
         "../../ts/packages/ent-postgis/src/postgis.ts"
       ],

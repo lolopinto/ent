@@ -140,7 +140,7 @@ export default function Register({
             Please provide a Password
           </Form.Control.Feedback>
         </Form.Group>
-        <Button block size="lg" type="submit">
+        <Button className="w-100" size="lg" type="submit">
           Create Account
         </Button>
         <Alert show={showError} variant="danger">

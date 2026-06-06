@@ -384,7 +384,9 @@ describe("session based", () => {
         // pass a function that takes a server that keeps track of cookies etc
         // and use that for this request
         test: (app: Express) => {
-          return supertest.agent(app);
+          return supertest.agent(
+            app,
+          ) as unknown as supertest.SuperTest<supertest.Test>;
         },
         mutation: "authUserSession",
         schema,

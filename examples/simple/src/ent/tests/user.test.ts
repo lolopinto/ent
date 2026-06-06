@@ -178,7 +178,7 @@ test("create user with accountStatus directly", async () => {
       lastName: "Snow",
       accountStatus: UserAccountStatus.VERIFIED,
     }),
-  ).rejects.toThrowError(/account_status/);
+  ).rejects.toThrow(/account_status/);
 });
 
 test("create user with deprecated account_status", async () => {

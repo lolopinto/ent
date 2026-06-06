@@ -98,6 +98,8 @@ export class PassportAuthHandler implements AuthHandler {
       app.use(
         session({
           secret: secret,
+          resave: false,
+          saveUninitialized: false,
         }),
       );
       app.use(passport.initialize());

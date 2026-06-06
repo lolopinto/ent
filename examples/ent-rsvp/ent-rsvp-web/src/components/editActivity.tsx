@@ -94,7 +94,7 @@ export default function EditActivity(props: args) {
         </Col>
       </Row>
 
-      <Form.Row>
+      <Row>
         <Form.Group as={Col} controlId={`location-${i}`}>
           <Form.Label>Location:</Form.Label>
           <Form.Control
@@ -121,9 +121,9 @@ export default function EditActivity(props: args) {
             onChange={(e) => setValue(i, "apartment", e.target.value)}
           />
         </Form.Group>
-      </Form.Row>
+      </Row>
 
-      <Form.Row>
+      <Row>
         <Form.Group as={Col} controlId={`city-${i}`}>
           <Form.Label>City:</Form.Label>
           <Form.Control
@@ -151,8 +151,8 @@ export default function EditActivity(props: args) {
             required
           />
         </Form.Group>
-      </Form.Row>
-      <Form.Row>
+      </Row>
+      <Row>
         <Form.Group controlId={`inviteAllGuests-${i}`}>
           <Form.Check
             type="checkbox"
@@ -161,7 +161,7 @@ export default function EditActivity(props: args) {
             onChange={(e) => setValue(i, "inviteAllGuests", e.target.checked)}
           />
         </Form.Group>
-      </Form.Row>
+      </Row>
       {saveButton && (
         <Button size="sm" variant="primary" type="submit">
           Save

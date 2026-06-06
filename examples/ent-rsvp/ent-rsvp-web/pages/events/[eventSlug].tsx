@@ -545,7 +545,7 @@ function CreateGuestGroup(props: {
             />
           </Form.Group>
           {guests.map((guest, i) => (
-            <Form.Row key={i}>
+            <Row key={i}>
               <Form.Group as={Col} controlId={`name-${i}`}>
                 <Form.Label>Name</Form.Label>
                 <Form.Control
@@ -563,7 +563,7 @@ function CreateGuestGroup(props: {
                   onChange={(e) => setValue(i, "emailAddress", e.target.value)}
                 />
               </Form.Group>
-            </Form.Row>
+            </Row>
           ))}
           <Link href="#">
             <a onClick={addGuest}>Add Guest</a>

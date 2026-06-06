@@ -79,7 +79,7 @@ export default function Login({ visible, environment }) {
             Please provide a valid Password.
           </Form.Control.Feedback>
         </Form.Group>
-        <Button block size="lg" type="submit">
+        <Button className="w-100" size="lg" type="submit">
           Login
         </Button>
         <Alert show={showError} variant="danger">
