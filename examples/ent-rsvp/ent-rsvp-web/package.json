@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "serve out",
+    "start": "next start",
     "relay": "relay-compiler --src ./src --schema schema.graphql --language typescript --artifactDirectory ./src/__generated__",
     "update-graphql": "get-graphql-schema http://localhost:4000/graphql > schema.graphql"
   },
@@ -38,7 +38,6 @@
     "babel-plugin-relay": "21.0.1",
     "relay-compiler": "21.0.1",
     "relay-compiler-language-typescript": "15.0.1",
-    "serve": "14.2.6",
     "typescript": "5.9.3"
   },
   "overrides": {
