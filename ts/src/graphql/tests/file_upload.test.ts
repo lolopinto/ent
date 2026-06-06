@@ -10,7 +10,7 @@ import {
   GraphQLBoolean,
   GraphQLList,
 } from "graphql";
-import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
+import { GraphQLUpload, graphqlUploadExpress } from "../upload";
 import { expectMutation } from "../../testutils/ent-graphql-tests";
 
 const fileContents = ["col1,col2", "data1,data2"].join("\n");

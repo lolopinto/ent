@@ -5,7 +5,7 @@ import {
   gqlFileUpload,
 } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
-import { FileUpload } from "graphql-upload";
+import type { FileUpload } from "@snowtop/ent/graphql/upload";
 import parse from "csv-parse";
 import { User } from "../../ent/user";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
+## [Unreleased]
+
+### Fixed
+
+- support `graphql-upload@15.0.2` for built-in `gqlFileUpload` via an optional Ent upload wrapper (#2011).
+
 ## [0.2.12]
 
 ### Changed

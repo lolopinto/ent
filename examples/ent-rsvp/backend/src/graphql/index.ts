@@ -9,7 +9,7 @@ import {
 } from "graphql-helix";
 import passport from "passport";
 import cors, { CorsOptions, CorsOptionsDelegate } from "cors";
-import { graphqlUploadExpress } from "graphql-upload";
+import { graphqlUploadExpress } from "@snowtop/ent/graphql/upload";
 import * as Sentry from "@sentry/node";
 import * as Tracing from "@sentry/tracing";
 import { config } from "dotenv";

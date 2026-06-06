@@ -3,8 +3,8 @@
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
 import { GraphQLID, GraphQLNonNull } from "graphql";
-import { GraphQLUpload } from "graphql-upload";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
+import { GraphQLUpload } from "@snowtop/ent/graphql/upload";
 import { ImportGuestResolver } from "src/graphql/mutations/import_guests";
 import { EventType } from "src/graphql/resolvers/";
 

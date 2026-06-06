@@ -10,7 +10,8 @@ import {
   GraphQLInt,
   GraphQLEnumType,
 } from "graphql";
-import { GraphQLUpload, graphqlUploadExpress } from "graphql-upload";
+import GraphQLUpload from "graphql-upload/GraphQLUpload.js";
+import graphqlUploadExpress from "graphql-upload/graphqlUploadExpress.js";
 import * as fs from "fs";
 import supertest from "supertest";
 
