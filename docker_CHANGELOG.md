@@ -12,7 +12,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Fixed
 
 - avoid generating redundant or plain btree migrations for existing Postgres
-  full-text expression indexes.
+  full-text expression indexes (#2014).
 
 ## [0.3.6]
 
