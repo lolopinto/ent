@@ -12,7 +12,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - update `uuid`, docs, test-helper, and standalone TypeScript package
-  dependencies to patched versions.
+  dependencies to patched versions (#2013).
 
 ## [0.2.13]
 
