@@ -11,7 +11,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
-- bump `@snowtop/ent` package metadata to 0.2.13 (#2012).
+- bump `@snowtop/ent` package metadata and exact references to 0.2.13 (#2012).
 
 ### Fixed
 
