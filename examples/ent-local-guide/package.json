@@ -29,10 +29,13 @@
   "dependencies": {
     "@snowtop/ent": "0.2.13",
     "@snowtop/ent-postgis": "file:../../ts/packages/ent-postgis",
-    "express": "4.22.1",
+    "express": "4.22.2",
     "graphql": "16.12.0",
     "graphql-helix": "1.13.0",
     "graphql-type-json": "0.3.2",
     "pg": "8.20.0"
+  },
+  "overrides": {
+    "uuid": "11.1.1"
   }
 }

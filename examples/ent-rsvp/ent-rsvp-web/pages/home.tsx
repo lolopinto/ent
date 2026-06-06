@@ -90,8 +90,10 @@ function CreateEvent({ environment, visible }) {
     setSlug(val);
     fetchQuery(environment, eventSlugAvailableQuery, {
       slug: val,
-    }).then((r: eventSlugAvailableQueryResponse) => {
-      setSlugAvailable(r.eventSlugAvailable);
+    }).subscribe({
+      next: (r: eventSlugAvailableQueryResponse) => {
+        setSlugAvailable(r.eventSlugAvailable);
+      },
     });
   }
 

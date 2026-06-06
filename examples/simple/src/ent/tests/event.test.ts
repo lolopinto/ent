@@ -315,7 +315,7 @@ test("delete event rando", async () => {
 
   await expect(
     DeleteEventAction.create(vc, event).saveX(),
-  ).rejects.toThrowError(/ does not have permission to delete Event/);
+  ).rejects.toThrow(/ does not have permission to delete Event/);
 });
 
 describe("validators", () => {
