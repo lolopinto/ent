@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
+## [Unreleased]
+
+### Fixed
+
+- avoid generating redundant or plain btree migrations for existing Postgres
+  full-text expression indexes.
+
 ## [0.3.6]
 
 ### Changed

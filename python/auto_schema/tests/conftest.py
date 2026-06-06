@@ -866,6 +866,25 @@ def metadata_with_multicolumn_fulltext_search_index(metadata_with_table):
     return metadata_with_table
 
 
+def metadata_with_multicolumn_coalesce_fulltext_search_index(metadata_with_table):
+    sa.Table('accounts',
+             metadata_with_table,
+             schema_item.FullTextIndex("accounts_full_text_idx",
+                                       info={
+                                           'postgresql_using': 'gin',
+                                           'postgresql_using_internals': (
+                                               "to_tsvector('english', "
+                                               "coalesce(first_name, '') || "
+                                               "' ' || coalesce(last_name, ''))"
+                                           ),
+                                           'columns': ['first_name', 'last_name'],
+                                       }
+                                       ),
+             extend_existing=True
+             )
+    return metadata_with_table
+
+
 @ pytest.fixture
 def metadata_with_multicolumn_fulltext_search():
     metadata = metadata_with_base_table_restored()

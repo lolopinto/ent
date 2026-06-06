@@ -592,6 +592,7 @@ def _compare_indexes(autogen_context: AutogenContext,
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
     all_conn_indexes = raw_db_indexes.get('all')
+    raw_only_conn_indexes = raw_db_indexes.get('missing')
     conn_indexes = {}
     meta_indexes = {}
 
@@ -623,7 +624,7 @@ def _compare_indexes(autogen_context: AutogenContext,
 
             if is_full_text_index(index):
                 # automerge trying to add it again, remove it from here...
-                to_remove = op.index_name in conn_indexes
+                to_remove = op.index_name in all_conn_indexes
 
                 if to_remove:
                     to_remove_list.append(op)
@@ -670,7 +671,58 @@ def _compare_indexes(autogen_context: AutogenContext,
     for op in to_remove_list:
         modify_table_ops.ops.remove(op)
 
+    for name, raw_index in raw_only_conn_indexes.items():
+        if name in meta_indexes:
+            continue
+        if not _raw_index_is_full_text(raw_index):
+            continue
+        modify_table_ops.ops.append(
+            ops.DropFullTextIndexOp(
+                name,
+                tname,
+                info=_get_full_text_index_info(None, raw_index),
+                table=conn_table,
+            )
+        )
+
     for name, index in meta_indexes.items():
+
+        if is_full_text_index(index) and name in all_conn_indexes:
+            if _full_text_index_signatures_differ(
+                index,
+                conn_indexes.get(name),
+                all_conn_indexes.get(name, {}),
+            ):
+                _remove_generic_index_ops(modify_table_ops, name)
+
+                conn_index = conn_indexes.get(name)
+                if conn_index is None or is_full_text_index(conn_index):
+                    modify_table_ops.ops.append(
+                        ops.DropFullTextIndexOp(
+                            name,
+                            tname,
+                            info=_get_full_text_index_info(
+                                conn_index,
+                                all_conn_indexes.get(name, {}),
+                            ),
+                            table=conn_table,
+                        )
+                    )
+                else:
+                    modify_table_ops.ops.append(
+                        alembicops.DropIndexOp.from_index(conn_index))
+
+                modify_table_ops.ops.append(
+                    ops.CreateFullTextIndexOp(
+                        index.name,
+                        index.table.name,
+                        schema=schema,
+                        table=index.table,
+                        unique=index.unique,
+                        info=index.info,
+                    )
+                )
+            continue
 
         # if index is there and postgresql_using changes, drop the index and add it again
         # should hopefully be a one-time migration change...
@@ -919,6 +971,134 @@ def _get_db_index_storage_rows(
             'schema_name': schema_name,
         },
     )
+
+
+def _remove_generic_index_ops(
+    modify_table_ops: alembicops.ModifyTableOps,
+    name: str,
+):
+    modify_table_ops.ops = [
+        op for op in modify_table_ops.ops
+        if not (
+            isinstance(op, (alembicops.CreateIndexOp, alembicops.DropIndexOp))
+            and op.index_name == name
+        )
+    ]
+
+
+def _normalize_full_text_using(using):
+    if using in (None, False, ''):
+        return 'gin'
+    return str(using)
+
+
+def _normalize_full_text_column(column):
+    normalized = str(column).strip()
+    if normalized.endswith('::text'):
+        normalized = normalized[:-6]
+    if '.' in normalized:
+        normalized = normalized.rsplit('.', 1)[1]
+    return normalized.strip().strip('"')
+
+
+def _normalize_full_text_expression(expression):
+    if expression is None:
+        return None
+    return re.sub(r'\s+', ' ', str(expression).strip())
+
+
+def _get_full_text_index_info(
+    index: sa.Index | None, raw_index: dict[str, Any]
+) -> dict[str, Any]:
+    info = dict(index.info or {}) if index is not None else {}
+    if not info.get('postgresql_using'):
+        info['postgresql_using'] = (
+            raw_index.get('postgresql_using')
+            or (
+                _get_index_kwarg(index, 'postgresql_using')
+                if index is not None else None
+            )
+            or 'gin'
+        )
+    if not info.get('postgresql_using_internals'):
+        internals = raw_index.get('postgresql_using_internals')
+        if (
+            internals is None
+            and index is not None
+            and len(index.expressions) == 1
+        ):
+            internals = normalize_clause_text(index.expressions[0], None)
+        info['postgresql_using_internals'] = internals
+
+    for key in ('postgresql_concurrently', 'postgresql_where'):
+        if info.get(key) not in (None, False):
+            continue
+        if index is None:
+            continue
+        value = _get_index_kwarg(index, key)
+        if value not in (None, False):
+            info[key] = value
+
+    return info
+
+
+def _get_full_text_index_signature(
+    index: sa.Index | None, raw_index: dict[str, Any]
+) -> dict[str, Any]:
+    info = _get_full_text_index_info(index, raw_index)
+    using = _normalize_full_text_using(info.get('postgresql_using'))
+    internals = info.get('postgresql_using_internals')
+    if internals is None:
+        return {
+            'postgresql_using': using,
+            'postgresql_using_internals': None,
+        }
+
+    parsed = _parse_postgres_using_internals(internals, using)
+    fulltext = parsed.get('fulltext') if parsed is not None else None
+    if fulltext is not None:
+        return {
+            'postgresql_using': _normalize_full_text_using(
+                fulltext.get('indexType') or using
+            ),
+            'language': fulltext.get('language'),
+            'columns': [
+                _normalize_full_text_column(col)
+                for col in parsed.get('columns', [])
+            ],
+            'is_full_text_expression': True,
+        }
+
+    if parsed is not None and parsed.get('columns') is not None:
+        return {
+            'postgresql_using': using,
+            'columns': [
+                _normalize_full_text_column(col)
+                for col in parsed.get('columns', [])
+            ],
+            'is_full_text_expression': False,
+        }
+
+    return {
+        'postgresql_using': using,
+        'postgresql_using_internals': _normalize_full_text_expression(internals),
+    }
+
+
+def _full_text_index_signatures_differ(
+    meta_index: sa.Index, conn_index: sa.Index | None, raw_index: dict[str, Any]
+) -> bool:
+    return (
+        _get_full_text_index_signature(meta_index, {})
+        != _get_full_text_index_signature(conn_index, raw_index)
+    )
+
+
+def _raw_index_is_full_text(raw_index: dict[str, Any]) -> bool:
+    return _get_full_text_index_signature(None, raw_index).get(
+        'is_full_text_expression'
+    ) is True
+
 
 def _normalize_index_using(using):
     if using in (None, False, '', 'btree'):
