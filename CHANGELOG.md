@@ -7,7 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
-## [Unreleased]
+## [0.2.13]
+
+### Changed
+
+- bump `@snowtop/ent` package metadata and exact references to 0.2.13 (#2012).
 
 ### Fixed
 
