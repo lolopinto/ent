@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
+## [0.3.8]
+
+### Changed
+
+- release Docker image v0.3.8 with auto_schema 0.0.40 and tsent v0.3.7.
+
 ## [0.3.7]
 
 ### Changed
