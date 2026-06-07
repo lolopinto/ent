@@ -42,6 +42,14 @@ from .schema_item import CustomSQLAlchemyType
 from .util.os import delete_py_files
 
 
+def _normalize_generated_file_text(contents: str) -> str:
+    contents = contents.rstrip()
+    if contents == "":
+        return ""
+
+    return "\n".join(line.rstrip() for line in contents.splitlines()) + "\n"
+
+
 class Runner(object):
     # Dev schema isolation contract (Postgres only):
     # - default include_public = False (strict isolation)
@@ -923,10 +931,7 @@ class Runner(object):
     def all_sql(self, file=None, database=''):
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
     
-        # default is stdout so let's use it
-        buffer = sys.stdout
-        if file is not None:
-            buffer = open(file, 'w')
+        buffer = io.StringIO()
 
         # use different migrations context with as_sql so that we don't have issues
         opts = Runner.get_opts()
@@ -954,20 +959,27 @@ class Runner(object):
 
         operations = Operations(mc2)
 
-        # create alembic table to start
-        mc2._version.create(bind=mc2.connection)
+        try:
+            # create alembic table to start
+            mc2._version.create(bind=mc2.connection)
 
-        for op in migrations.upgrade_ops.ops:
-            invoke(op)
-        
-        custom_sql_buffer = self._get_custom_sql(connection, dialect, as_buffer=True)
+            for op in migrations.upgrade_ops.ops:
+                invoke(op)
 
-        # add custom sql at the end
-        buffer.write(custom_sql_buffer.getvalue())
-        buffer.close()
-        
-        # restore this
-        sa.Table._sorted_constraints = prev_sort
+            custom_sql_buffer = self._get_custom_sql(connection, dialect, as_buffer=True)
+
+            # add custom sql at the end
+            buffer.write(custom_sql_buffer.getvalue())
+            sql = _normalize_generated_file_text(buffer.getvalue())
+        finally:
+            # restore this
+            sa.Table._sorted_constraints = prev_sort
+
+        if file is not None:
+            with open(file, 'w') as f:
+                f.write(sql)
+        else:
+            sys.stdout.write(sql)
         
 
 

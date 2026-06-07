@@ -36,7 +36,23 @@ func (fw *TemplatedBasedFileWriter) generateBytes() ([]byte, error) {
 	if strings.HasSuffix(fw.getPathToFile(), ".ts") {
 		return fw.addImports(buf)
 	}
+	if strings.HasSuffix(fw.getPathToFile(), ".py") {
+		return normalizeGeneratedText(buf.Bytes()), nil
+	}
 	return buf.Bytes(), nil
+}
+
+func normalizeGeneratedText(b []byte) []byte {
+	s := strings.TrimRight(string(b), " \t\r\n")
+	if s == "" {
+		return []byte{}
+	}
+
+	lines := strings.Split(s, "\n")
+	for idx := range lines {
+		lines[idx] = strings.TrimRight(lines[idx], " \t\r")
+	}
+	return []byte(strings.Join(lines, "\n") + "\n")
 }
 
 func (fw *TemplatedBasedFileWriter) addImports(buf *bytes.Buffer) ([]byte, error) {
