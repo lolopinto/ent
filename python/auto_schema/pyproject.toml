@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 # version = "0.0.39"
 # production https://pypi.org/project/auto-schema/
 name = "auto_schema"
-version = "0.0.38"
+version = "0.0.39"
 authors = [{ name = "Ola Okelola", email = "email@email.com" }]
 description = "auto schema for a db"
 readme = "README.md"
