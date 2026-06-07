@@ -969,11 +969,14 @@ class Runner(object):
             custom_sql_buffer = self._get_custom_sql(connection, dialect, as_buffer=True)
 
             # add custom sql at the end
-            buffer.write(custom_sql_buffer.getvalue())
+            custom_sql = custom_sql_buffer.getvalue()
+            custom_sql_buffer.close()
+            buffer.write(custom_sql)
             sql = _normalize_generated_file_text(buffer.getvalue())
         finally:
             # restore this
             sa.Table._sorted_constraints = prev_sort
+            buffer.close()
 
         if file is not None:
             with open(file, 'w') as f:
