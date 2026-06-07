@@ -1681,16 +1681,77 @@ class TestPostgresRunner(BaseTestRunner):
             validate_schema=False
         )
 
-    @ pytest.mark.usefixtures("metadata_with_multicolumn_fulltext_search")
-    # TODO this is failed because of index comparisons
-    # this doesn't work because indexes are wrong. why we have validate false in
-    # make_changes_and_restore
-    @ pytest.mark.xfail()
     def test_multi_col_full_text_create(self, new_test_runner, metadata_with_multicolumn_fulltext_search):
         r = new_test_runner(
             metadata_with_multicolumn_fulltext_search)
         testingutils.run_and_validate_with_standard_metadata_tables(
             r, metadata_with_multicolumn_fulltext_search)
+        assert r.compute_changes() == []
+
+    def test_multi_col_coalesce_full_text_create_no_changes(
+        self,
+        new_test_runner,
+        metadata_with_table,
+    ):
+        conftest.metadata_with_multicolumn_coalesce_fulltext_search_index(
+            metadata_with_table)
+        r = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+        assert r.compute_changes() == []
+
+    def test_multi_col_full_text_index_method_change_uses_full_text_ops(
+        self,
+        new_test_runner,
+        metadata_with_multicolumn_fulltext_search,
+    ):
+        r = new_test_runner(metadata_with_multicolumn_fulltext_search)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_multicolumn_fulltext_search)
+
+        index = next(
+            index for index in r.get_metadata().tables['accounts'].indexes
+            if index.name == 'accounts_full_text_idx'
+        )
+        index.info['postgresql_using'] = 'gist'
+
+        r2 = new_test_runner(r.get_metadata(), r)
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        modify_op = diff[0]
+        assert isinstance(modify_op, alembicops.ModifyTableOps)
+        assert len(modify_op.ops) == 2
+        assert isinstance(modify_op.ops[0], ops.DropFullTextIndexOp)
+        assert isinstance(modify_op.ops[1], ops.CreateFullTextIndexOp)
+        expected_message = (
+            'drop full text index accounts_full_text_idx from accounts\n'
+            'add full text index accounts_full_text_idx to accounts'
+        )
+        assert r2.revision_message(diff) == expected_message
+
+    def test_multi_col_full_text_replaces_plain_index_with_full_text_op(
+        self,
+        new_test_runner,
+        metadata_with_table,
+    ):
+        r = new_test_runner(metadata_with_table)
+        testingutils.run_and_validate_with_standard_metadata_tables(
+            r, metadata_with_table)
+        r.get_connection().execute(sa.text(
+            'CREATE INDEX accounts_full_text_idx '
+            'ON accounts (first_name, last_name)'
+        ))
+
+        conftest.metadata_with_multicolumn_fulltext_search_index(
+            metadata_with_table)
+        r2 = new_test_runner(metadata_with_table, r)
+        diff = r2.compute_changes()
+        assert len(diff) == 1
+        modify_op = diff[0]
+        assert isinstance(modify_op, alembicops.ModifyTableOps)
+        assert len(modify_op.ops) == 2
+        assert isinstance(modify_op.ops[0], alembicops.DropIndexOp)
+        assert isinstance(modify_op.ops[1], ops.CreateFullTextIndexOp)
 
     @ pytest.mark.usefixtures("metadata_with_table")
     def test_multi_col_full_text_index_added_and_removed(self, new_test_runner, metadata_with_table):

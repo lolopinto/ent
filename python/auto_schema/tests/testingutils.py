@@ -1,4 +1,7 @@
 import os
+
+from alembic.autogenerate.api import AutogenContext
+from alembic.migration import MigrationContext
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 from auto_schema.clause_text import get_clause_text
@@ -398,10 +401,52 @@ def _sort_fn(item):
     return type(item).__name__ + item.name
 
 
-def _validate_indexes(schema_table: sa.Table, db_table: sa.Table, metadata: sa.MetaData, dialect: String):
+def _validate_indexes(
+    schema_table: sa.Table,
+    db_table: sa.Table,
+    metadata: sa.MetaData,
+    dialect: String,
+):
     # sort indexes so that the order for both are the same
     schema_indexes = sorted(schema_table.indexes, key=_sort_fn)
     db_indexes = sorted(db_table.indexes, key=_sort_fn)
+
+    if dialect == 'postgresql':
+        migration_context = MigrationContext.configure(connection=metadata.bind)
+        autogen_context = AutogenContext(migration_context)
+        raw_db_indexes = compare._get_raw_db_indexes(
+            autogen_context,
+            db_table,
+        ).get('all', {})
+        validated_full_text_index_names = set()
+        for schema_index in schema_indexes:
+            if not isinstance(schema_index, schema_item.FullTextIndex):
+                continue
+
+            raw_index = raw_db_indexes.get(schema_index.name)
+            assert raw_index is not None
+            db_index = next(
+                (
+                    index for index in db_indexes
+                    if index.name == schema_index.name
+                ),
+                None,
+            )
+            assert not compare._full_text_index_signatures_differ(
+                schema_index,
+                db_index,
+                raw_index,
+            )
+            validated_full_text_index_names.add(schema_index.name)
+
+        schema_indexes = [
+            index for index in schema_indexes
+            if index.name not in validated_full_text_index_names
+        ]
+        db_indexes = [
+            index for index in db_indexes
+            if index.name not in validated_full_text_index_names
+        ]
 
     assert len(schema_indexes) == len(db_indexes)
     for schema_index, db_index in zip(schema_indexes, db_indexes):
