@@ -22,6 +22,20 @@ def _get_revision_file(r, rev="head"):
     return testingutils.find_file_by_revision(r, revisions[0])
 
 
+def test_normalize_generated_file_text_trims_trailing_whitespace():
+    contents = (
+        "CREATE TABLE accounts (" + "  \n"
+        "    id INTEGER" + "\t \n"
+        ");" + " \n\n"
+        "   \n"
+    )
+
+    assert (
+        runner._normalize_generated_file_text(contents)
+        == "CREATE TABLE accounts (\n    id INTEGER\n);\n"
+    )
+
+
 def _db_extension_metadata(
     *,
     name: str,
@@ -2034,6 +2048,10 @@ class TestSqliteRunner(BaseTestRunner):
 
         with open(file) as f:
             sql = f.read()
+
+        assert sql.endswith("\n")
+        assert not sql.endswith("\n\n")
+        assert all(line == line.rstrip() for line in sql.splitlines())
 
         create_idx = sql.index("CREATE TABLE assoc_edge_config")
         insert_idx = sql.index("INSERT INTO assoc_edge_config")

@@ -13,6 +13,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - update `uuid`, docs, test-helper, and standalone TypeScript package
   dependencies to patched versions (#2013).
+- avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
+  after repeated codegen runs (#2016).
 
 ## [0.2.13]
 
