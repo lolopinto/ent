@@ -12,29 +12,32 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Added
 
 - add native ESM code generation with an explicit `moduleFormat: commonjs`
-  compatibility mode, including Node, Bun, and emitted-runtime matrix coverage.
+  compatibility mode, including Node, Bun, and emitted-runtime matrix coverage
+  (#2018).
 
 ### Changed
 
 - publish `@snowtop/ent` and its first-party TypeScript packages as one native
   ESM module graph that remains synchronously requireable from CommonJS on
   Node 20.19.x, Node 22.12 or later, or a later major release. Node 21 and Node
-  22.0 through 22.11 are outside the supported CommonJS compatibility range.
+  22.0 through 22.11 are outside the supported CommonJS compatibility range
+  (#2018).
 - emit explicit `.js` and `index.js` targets for generated ESM imports and use
-  `tsx` to load TypeScript schemas and custom GraphQL code in tooling.
+  `tsx` to load TypeScript schemas and custom GraphQL code in tooling (#2018).
 - remove the historical trailing-slash `@snowtop/ent/schema/` export; use
-  `@snowtop/ent/schema`.
+  `@snowtop/ent/schema` (#2018).
 - ship this Node-floor and default-codegen change as coordinated breaking
   pre-1.0 release lines for Ent, `tsent`, and its first-party companion
   packages. Existing CommonJS projects must select `moduleFormat: commonjs`
-  before upgrading.
+  before upgrading (#2018).
 
 ### Fixed
 
 - validate that `moduleFormat` agrees with TypeScript and package module
   settings, and compile and execute the maintained CommonJS example as a
-  regression test.
-- replace the removed trailing-slash schema path in public documentation.
+  regression test (#2018).
+- replace the removed trailing-slash schema path in public documentation
+  (#2018).
 - update `uuid`, docs, test-helper, and standalone TypeScript package
   dependencies to patched versions (#2013).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
