@@ -1,5 +1,5 @@
 import { AssocEdge } from "@snowtop/ent";
-import { NoteToSavedByQueryBase } from "../../internal";
+import { NoteToSavedByQueryBase } from "../../internal.js";
 
 export class NoteToSavedByEdge extends AssocEdge {}
 

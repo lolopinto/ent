@@ -1,11 +1,3 @@
-import {PlaceReviewBase} from "./internal";
+import { PlaceReviewBase } from "./internal.js";
 
-
-
-
-
-
-export class PlaceReview extends PlaceReviewBase {
-
-
-}
+export class PlaceReview extends PlaceReviewBase {}

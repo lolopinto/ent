@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLNonNull,
@@ -17,8 +17,8 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { Holiday } from "../../../ent";
-import { DayOfWeekAltType, DayOfWeekType } from "../../resolvers/internal";
+import { Holiday } from "../../../ent/index.js";
+import { DayOfWeekAltType, DayOfWeekType } from "../../resolvers/internal.js";
 
 export const HolidayType = new GraphQLObjectType({
   name: "Holiday",

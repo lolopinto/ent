@@ -7,7 +7,7 @@ from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
 
- 
+
 sa.Table("account_created_workspaces_edges", metadata,
     sa.Column("id1", sa.Text(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -19,8 +19,9 @@ sa.Table("account_created_workspaces_edges", metadata,
     sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="account_created_workspaces_edges_id1_edge_type_id2_pkey"),
     sa.Index("account_created_workspaces_edges_time_idx", "time"),
+    sa.Index("account_created_workspaces_edges_id1_edge_type_deleted_at_idx", "id1", "edge_type", "deleted_at"),
 )
-   
+
 sa.Table("accounts", metadata,
     sa.Column("id", sa.Text(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -38,7 +39,7 @@ sa.Table("accounts", metadata,
     sa.PrimaryKeyConstraint("id", name="accounts_id_pkey"),
     sa.UniqueConstraint("phone_number", name="accounts_unique_phone_number"),
 )
-   
+
 sa.Table("assoc_edge_config", metadata,
     sa.Column("edge_type", sa.Text(), nullable=False),
     sa.Column("edge_name", sa.Text(), nullable=False),
@@ -51,7 +52,7 @@ sa.Table("assoc_edge_config", metadata,
     sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
     sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
 )
-   
+
 sa.Table("object_scoped_todos_edges", metadata,
     sa.Column("id1", sa.Text(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -63,8 +64,9 @@ sa.Table("object_scoped_todos_edges", metadata,
     sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="object_scoped_todos_edges_id1_edge_type_id2_pkey"),
     sa.Index("object_scoped_todos_edges_time_idx", "time"),
+    sa.Index("object_scoped_todos_edges_id1_edge_type_deleted_at_idx", "id1", "edge_type", "deleted_at"),
 )
-   
+
 sa.Table("tags", metadata,
     sa.Column("id", sa.Text(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -80,7 +82,7 @@ sa.Table("tags", metadata,
     sa.ForeignKeyConstraint(["owner_id"], ["accounts.id"], name="tags_owner_id_fkey", ondelete="CASCADE"),
     sa.UniqueConstraint("canonical_name", "owner_id", name="uniqueForOwner"),
 )
-   
+
 sa.Table("todo_edges", metadata,
     sa.Column("id1", sa.Text(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -92,8 +94,9 @@ sa.Table("todo_edges", metadata,
     sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="todo_edges_id1_edge_type_id2_pkey"),
     sa.Index("todo_edges_time_idx", "time"),
+    sa.Index("todo_edges_id1_edge_type_deleted_at_idx", "id1", "edge_type", "deleted_at"),
 )
-   
+
 sa.Table("todo_tags_edges", metadata,
     sa.Column("id1", sa.Text(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -105,8 +108,9 @@ sa.Table("todo_tags_edges", metadata,
     sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="todo_tags_edges_id1_edge_type_id2_pkey"),
     sa.Index("todo_tags_edges_time_idx", "time"),
+    sa.Index("todo_tags_edges_id1_edge_type_deleted_at_idx", "id1", "edge_type", "deleted_at"),
 )
-   
+
 sa.Table("todos", metadata,
     sa.Column("id", sa.Text(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -129,7 +133,7 @@ sa.Table("todos", metadata,
     sa.PrimaryKeyConstraint("id", name="todos_id_pkey"),
     sa.ForeignKeyConstraint(["creator_id"], ["accounts.id"], name="todos_creator_id_fkey", ondelete="CASCADE"),
 )
-   
+
 sa.Table("workspace_members_edges", metadata,
     sa.Column("id1", sa.Text(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -141,8 +145,9 @@ sa.Table("workspace_members_edges", metadata,
     sa.Column("deleted_at", sa.TIMESTAMP(), nullable=True),
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_members_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_members_edges_time_idx", "time"),
+    sa.Index("workspace_members_edges_id1_edge_type_deleted_at_idx", "id1", "edge_type", "deleted_at"),
 )
-   
+
 sa.Table("workspaces", metadata,
     sa.Column("id", sa.Text(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -157,7 +162,7 @@ sa.Table("workspaces", metadata,
     sa.ForeignKeyConstraint(["creator_id"], ["accounts.id"], name="workspaces_creator_id_fkey", ondelete="CASCADE"),
     sa.UniqueConstraint("slug", name="workspaces_unique_slug"),
 )
-  
+
 
 metadata.info["edges"] = {
   'public': {

@@ -9,11 +9,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { GuestInput } from "src/ent/generated/guest/actions/guest_builder";
+import type { GuestInput } from "./guest_builder.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Guest } from "src/ent/";
-import { GuestBuilder } from "src/ent/generated/guest/actions/guest_builder";
+import { Guest } from "../../../index.js";
+import { GuestBuilder } from "./guest_builder.js";
 
 export type DeleteGuestActionTriggers = (
   | Trigger<Guest, GuestBuilder<GuestInput, Guest>, Viewer, GuestInput, Guest>

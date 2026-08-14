@@ -3,7 +3,7 @@
  */
 
 import { AssocEdge } from "@snowtop/ent";
-import { UserToFriendsQueryBase } from "../../internal";
+import { UserToFriendsQueryBase } from "../../internal.js";
 export class UserToFriendsEdge extends AssocEdge {}
 
 export class UserToFriendsQuery extends UserToFriendsQueryBase {}

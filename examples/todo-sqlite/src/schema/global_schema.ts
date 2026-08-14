@@ -4,7 +4,7 @@ import {
   StringType,
   StructType,
   StructTypeAsList,
-} from "@snowtop/ent/schema/";
+} from "@snowtop/ent/schema";
 import { GlobalDeletedEdge } from "@snowtop/ent-soft-delete";
 
 const glo: GlobalSchema = {

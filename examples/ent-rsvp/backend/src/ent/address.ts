@@ -1,7 +1,7 @@
 import { AllowIfEntIsVisiblePolicy, PrivacyPolicy } from "@snowtop/ent";
-import { AddressBase } from "src/ent/internal";
-import { getLoaderOptions } from "./generated/loadAny";
-import { NodeType } from "./generated/types";
+import { AddressBase } from "./internal.js";
+import { getLoaderOptions } from "./generated/loadAny.js";
+import { NodeType } from "./generated/types.js";
 
 // we're only writing this once except with --force and packageName provided
 export class Address extends AddressBase {

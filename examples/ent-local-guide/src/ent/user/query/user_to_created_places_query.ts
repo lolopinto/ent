@@ -1,9 +1,6 @@
-import {AssocEdge} from "@snowtop/ent";
-import {UserToCreatedPlacesQueryBase} from "../../internal";
-
-
+import { AssocEdge } from "@snowtop/ent";
+import { UserToCreatedPlacesQueryBase } from "../../internal.js";
 
 export class UserToCreatedPlacesEdge extends AssocEdge {}
 
-export class UserToCreatedPlacesQuery extends UserToCreatedPlacesQueryBase {
-}
+export class UserToCreatedPlacesQuery extends UserToCreatedPlacesQueryBase {}

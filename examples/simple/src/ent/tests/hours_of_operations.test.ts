@@ -1,6 +1,6 @@
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
-import { DayOfWeek, DayOfWeekAlt } from "../generated/types";
-import CreateHoursOfOperationAction from "../hours_of_operation/actions/create_hours_of_operation_action";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
+import { DayOfWeek, DayOfWeekAlt } from "../generated/types.js";
+import CreateHoursOfOperationAction from "../hours_of_operation/actions/create_hours_of_operation_action.js";
 
 test("create", async () => {
   const r = await CreateHoursOfOperationAction.create(

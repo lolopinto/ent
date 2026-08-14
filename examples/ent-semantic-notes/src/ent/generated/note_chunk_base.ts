@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { NoteChunkDBData } from "./loaders";
+import type { NoteChunkDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -22,10 +22,10 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { noteChunkLoader, noteChunkLoaderInfo } from "./loaders";
-import { NodeType } from "./types";
-import { Note, Workspace } from "../internal";
-import schema from "../../schema/note_chunk_schema";
+import { noteChunkLoader, noteChunkLoaderInfo } from "./loaders.js";
+import { NodeType } from "./types.js";
+import { Note, Workspace } from "../internal.js";
+import schema from "../../schema/note_chunk_schema.js";
 
 export class NoteChunkBase implements Ent<Viewer> {
   protected readonly data: NoteChunkDBData;

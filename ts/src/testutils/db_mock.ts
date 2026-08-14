@@ -1,28 +1,28 @@
-import { mocked } from "jest-mock";
+import { fn, mocked } from "jest-mock";
 import { Pool, PoolClient } from "pg";
 import { v4 as uuidv4 } from "uuid";
-import { Data, ID } from "../core/base";
-import { Clause } from "../core/clause";
+import { Data, ID } from "../core/base.js";
+import { Clause } from "../core/clause.js";
 
-import { MockLogs } from "./mock_log";
-import { getDataToReturn, performQuery, queryResult } from "./parse_sql";
+import { MockLogs } from "./mock_log.js";
+import { getDataToReturn, performQuery, queryResult } from "./parse_sql.js";
 
 const eventEmitter = {
-  on: jest.fn(),
-  addListener: jest.fn(),
-  removeListener: jest.fn(),
-  once: jest.fn(),
-  off: jest.fn(),
-  removeAllListeners: jest.fn(),
-  setMaxListeners: jest.fn(),
-  getMaxListeners: jest.fn(),
-  listeners: jest.fn(),
-  rawListeners: jest.fn(),
-  emit: jest.fn(),
-  listenerCount: jest.fn(),
-  prependListener: jest.fn(),
-  prependOnceListener: jest.fn(),
-  eventNames: jest.fn(),
+  on: fn(),
+  addListener: fn(),
+  removeListener: fn(),
+  once: fn(),
+  off: fn(),
+  removeAllListeners: fn(),
+  setMaxListeners: fn(),
+  getMaxListeners: fn(),
+  listeners: fn(),
+  rawListeners: fn(),
+  emit: fn(),
+  listenerCount: fn(),
+  prependListener: fn(),
+  prependOnceListener: fn(),
+  eventNames: fn(),
 };
 
 export interface queryOptions {
@@ -332,32 +332,30 @@ export class QueryRecorder {
         },
         connect: async (): Promise<PoolClient> => {
           return {
-            connect: jest.fn(),
-            release: jest.fn(),
-            setTypeParser: jest.fn(),
-            getTypeParser: jest.fn(),
-            query: jest
-              .fn()
-              .mockImplementation((query: string, values: any[]) => {
-                return QueryRecorder.recordQuery(query, values);
-              }),
-            copyFrom: jest.fn(),
-            copyTo: jest.fn(),
-            pauseDrain: jest.fn(),
-            resumeDrain: jest.fn(),
-            escapeIdentifier: jest.fn(),
-            escapeLiteral: jest.fn(),
+            connect: fn(),
+            release: fn(),
+            setTypeParser: fn(),
+            getTypeParser: fn(),
+            query: fn().mockImplementation((query: string, values: any[]) => {
+              return QueryRecorder.recordQuery(query, values);
+            }),
+            copyFrom: fn(),
+            copyTo: fn(),
+            pauseDrain: fn(),
+            resumeDrain: fn(),
+            escapeIdentifier: fn(),
+            escapeLiteral: fn(),
 
             // EventEmitter
             ...eventEmitter,
-          };
+          } as unknown as PoolClient;
         },
-        end: jest.fn(),
-        query: jest.fn().mockImplementation(QueryRecorder.recordQuery),
+        end: fn(),
+        query: fn().mockImplementation(QueryRecorder.recordQuery),
 
         // EventEmitter
         ...eventEmitter,
-      };
+      } as unknown as Pool;
     });
   }
 }

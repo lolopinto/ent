@@ -3,8 +3,8 @@ import {
   gqlField,
   gqlMutation,
   gqlObjectType,
-} from "../../../graphql/graphql";
-import { ID } from "../../../core/base";
+} from "../../../graphql/graphql.js";
+import { ID } from "../../../core/base.js";
 import { GraphQLID, GraphQLString } from "graphql";
 
 @gqlInputObjectType()

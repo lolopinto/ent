@@ -4,8 +4,8 @@
  */
 
 import { CustomEdgeQueryBase, ID, OrderBy } from "@snowtop/ent";
-import { UserBase, UserStatistics } from "../internal";
-import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import { UserBase, UserStatistics } from "../internal.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 
 export class UserToUserStatisticsQueryBase<
   TEnt extends UserBase = UserBase,

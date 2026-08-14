@@ -19,17 +19,17 @@ import type {
   UserPrefsDiff,
   UserPrefsStruct,
   UserSuperNestedObject,
-} from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+} from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Contact, Event, User } from "../../..";
-import { userLoaderInfo } from "../../loaders";
-import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
+import { Contact, Event, User } from "../../../index.js";
+import { userLoaderInfo } from "../../loaders.js";
+import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder.js";
 import {
   EdgeType,
   NodeType,
@@ -37,8 +37,8 @@ import {
   UserDaysOff,
   UserIntEnum,
   UserPreferredShift,
-} from "../../types";
-import schema from "../../../../schema/user_schema";
+} from "../../types.js";
+import schema from "../../../../schema/user_schema.js";
 
 export interface UserInput {
   firstName?: string;

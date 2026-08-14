@@ -13,9 +13,9 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { ContactEmailDBData } from "./loaders";
-import type { ContactInfoExtra } from "./types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { ContactEmailDBData } from "./loaders.js";
+import type { ContactInfoExtra } from "./types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   applyPrivacyPolicy,
@@ -27,8 +27,8 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
-import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders";
-import { ContactLabel, NodeType, convertContactLabel } from "./types";
+import { contactEmailLoader, contactEmailLoaderInfo } from "./loaders.js";
+import { ContactLabel, NodeType, convertContactLabel } from "./types.js";
 import {
   Contact,
   ContactEmailToCommentsQuery,
@@ -39,8 +39,8 @@ import {
   IContactInfo,
   IFeedback,
   User,
-} from "../internal";
-import schema from "../../schema/contact_email_schema";
+} from "../internal.js";
+import schema from "../../schema/contact_email_schema.js";
 
 export class ContactEmailBase
   extends ContactInfoMixin(

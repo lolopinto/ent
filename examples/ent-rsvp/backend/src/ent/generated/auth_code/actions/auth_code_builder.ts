@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { AuthCode, Guest } from "src/ent/";
-import { authCodeLoaderInfo } from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/generated/types";
-import schema from "src/schema/auth_code_schema";
+import { AuthCode, Guest } from "../../../index.js";
+import { authCodeLoaderInfo } from "../../loaders.js";
+import { NodeType } from "../../types.js";
+import schema from "../../../../schema/auth_code_schema.js";
 
 export interface AuthCodeInput {
   code?: string;

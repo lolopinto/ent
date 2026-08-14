@@ -12,8 +12,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { User, Workspace } from "../../..";
-import { WorkspaceBuilder } from "./workspace_builder";
+import { User, Workspace } from "../../../index.js";
+import { WorkspaceBuilder } from "./workspace_builder.js";
 
 export interface WorkspaceCreateInput {
   name: string;

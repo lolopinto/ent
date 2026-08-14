@@ -1,6 +1,6 @@
 import { Context, ID } from "@snowtop/ent";
 import { Viewer } from "@snowtop/ent";
-import { User } from "../ent";
+import { User } from "../ent/index.js";
 
 export interface ExampleViewerInt extends Viewer<User | null, ID | null> {
   isOmniscient(): boolean;

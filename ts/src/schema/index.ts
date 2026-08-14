@@ -1,4 +1,4 @@
-export type { Schema } from "./schema";
+export type { Schema } from "./schema.js";
 export {
   DBType,
   getFields,
@@ -13,7 +13,7 @@ export {
   SQLStatementOperation,
   getTransformedReadClause,
   getObjectLoaderProperties,
-} from "./schema";
+} from "./schema.js";
 export {
   Timestamps,
   Node,
@@ -21,7 +21,7 @@ export {
   BaseEntSchemaWithTZ,
   EntSchema,
   EntSchemaWithTZ,
-} from "./base_schema";
+} from "./base_schema.js";
 export type {
   Action,
   ActionField,
@@ -47,11 +47,11 @@ export type {
   TransformedUpdateOperation,
   Type,
   UpdateOperation,
-} from "./schema";
-export type { SchemaConfig } from "./base_schema";
+} from "./schema.js";
+export type { SchemaConfig } from "./base_schema.js";
 
-export * from "./field";
-export * from "./json_field";
-export * from "./struct_field";
-export * from "./union_field";
-export * from "./binary_field";
+export * from "./field.js";
+export * from "./json_field.js";
+export * from "./struct_field.js";
+export * from "./union_field.js";
+export * from "./binary_field.js";

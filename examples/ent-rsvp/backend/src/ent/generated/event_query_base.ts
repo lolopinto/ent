@@ -8,7 +8,7 @@ import {
   Guest,
   GuestData,
   GuestGroup,
-} from "src/ent/internal";
+} from "../internal.js";
 
 export class EventToEventActivitiesQueryBase<
   TEnt extends Event = Event,

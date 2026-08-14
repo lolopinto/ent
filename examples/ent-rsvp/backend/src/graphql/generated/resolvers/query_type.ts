@@ -7,7 +7,7 @@ import {
   EventSlugAvailableQueryType,
   NodeQueryType,
   ViewerQueryType,
-} from "src/graphql/resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",

@@ -4,7 +4,7 @@ import {
   getTableName,
   getFieldInfo,
   EntBuilderSchema,
-} from "../testutils/builder";
+} from "../testutils/builder.js";
 import {
   BooleanType,
   EnumType,
@@ -15,27 +15,27 @@ import {
   getFieldsWithPrivacy,
   getStorageKey,
   Schema,
-} from "../schema";
+} from "../schema/index.js";
 import {
   AllowIfViewerInboundEdgeExistsRule,
   AllowIfViewerRule,
   AlwaysDenyPrivacyPolicy,
   AlwaysDenyRule,
-} from "./privacy";
+} from "./privacy.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
   getSchemaTable,
   TempDB,
-} from "../testutils/db/temp_db";
-import { Dialect } from "./db";
-import { LoggedOutViewer } from "./viewer";
-import { WriteOperation } from "../action";
-import { loadEnt } from "./ent";
-import { IDViewer } from "./viewer";
-import { ObjectLoaderFactory } from "./loaders";
-import { loadConfig } from "./config";
-import { createRowForTest } from "../testutils/write";
+} from "../testutils/db/temp_db.js";
+import { Dialect } from "./db.js";
+import { LoggedOutViewer } from "./viewer.js";
+import { WriteOperation } from "../action/index.js";
+import { loadEnt } from "./ent.js";
+import { IDViewer } from "./viewer.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
+import { loadConfig } from "./config.js";
+import { createRowForTest } from "../testutils/write.js";
 import {
   Allow,
   Ent,
@@ -45,11 +45,11 @@ import {
   Skip,
   ID,
   Data,
-} from "./base";
+} from "./base.js";
 
 import email from "email-addresses";
-import { TestContext } from "../testutils/context/test_context";
-import { toDBColumnOrTable } from "../names/names";
+import { TestContext } from "../testutils/context/test_context.js";
+import { toDBColumnOrTable } from "../names/names.js";
 
 function isParsedMailbox(
   mailboxOrGroup: email.ParsedMailbox | email.ParsedGroup | null,

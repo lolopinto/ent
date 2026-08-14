@@ -1,12 +1,12 @@
-import { PlaceBase } from "./internal";
+import { PlaceBase } from "./internal.js";
 import type {
   NearbyPlaceRow,
   NearbyPlacesOptions,
-} from "src/search/nearby_places";
+} from "../search/nearby_places.js";
 import {
   buildNearbyPlacesQuery,
   nearbyPlaces,
-} from "src/search/nearby_places";
+} from "../search/nearby_places.js";
 
 export class Place extends PlaceBase {
   static async nearby(options: NearbyPlacesOptions): Promise<NearbyPlaceRow[]> {

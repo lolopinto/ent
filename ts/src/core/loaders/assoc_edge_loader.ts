@@ -5,8 +5,8 @@ import {
   ID,
   Loader,
   LoaderFactory,
-} from "../base";
-import * as clause from "../clause";
+} from "../base.js";
+import * as clause from "../clause.js";
 import {
   AssocEdge,
   AssocEdgeConstructor,
@@ -19,16 +19,16 @@ import {
   loadEdgeForID2,
   loadTwoWayEdges,
   performRawQuery,
-} from "../ent";
-import { stableStringify } from "../cache_utils";
-import { memoizeNoArgs } from "../memoize";
-import { getOrderByKey, OrderBy } from "../query_impl";
+} from "../ent.js";
+import { stableStringify } from "../cache_utils.js";
+import { memoizeNoArgs } from "../memoize.js";
+import { getOrderByKey, OrderBy } from "../query_impl.js";
 import {
   createLoaderCacheMap,
   InstrumentedDataLoader,
   getCustomLoader,
   getLoaderMaxBatchSize,
-} from "./loader";
+} from "./loader.js";
 
 function getDefaultOrderBy(): OrderBy {
   return [

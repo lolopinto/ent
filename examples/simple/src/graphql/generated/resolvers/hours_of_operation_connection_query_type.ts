@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -18,10 +18,10 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { HoursOfOperation } from "../../../ent/hours_of_operation";
-import { HoursOfOperationArgInputType } from "../mutations/input/hours_of_operation_arg_input_type";
-import { HoursOfOperationSortColumnType } from "./enums_type";
-import { RootToHoursOfOperationConnectionType } from "../../resolvers/internal";
+import { HoursOfOperation } from "../../../ent/hours_of_operation.js";
+import { HoursOfOperationArgInputType } from "../mutations/input/hours_of_operation_arg_input_type.js";
+import { HoursOfOperationSortColumnType } from "./enums_type.js";
+import { RootToHoursOfOperationConnectionType } from "../../resolvers/internal.js";
 
 interface HoursOfOperationConnectionArgs {
   ids: any;

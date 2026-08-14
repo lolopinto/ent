@@ -10,17 +10,17 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Address } from "../../../../ent";
-import type { AddressCreateInput } from "../../../../ent/address/actions/create_address_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Address } from "../../../../ent/index.js";
+import type { AddressCreateInput } from "../../../../ent/address/actions/create_address_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLInputObjectType,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import CreateAddressAction from "../../../../ent/address/actions/create_address_action";
-import { AddressType } from "../../../resolvers";
+import CreateAddressAction from "../../../../ent/address/actions/create_address_action.js";
+import { AddressType } from "../../../resolvers/index.js";
 
 interface AddressCreatePayload {
   address: Address;

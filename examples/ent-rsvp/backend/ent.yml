@@ -1,4 +1,5 @@
 globalSchemaPath: global_schema.ts
+moduleFormat: esm
 log: 
   - query
   - error

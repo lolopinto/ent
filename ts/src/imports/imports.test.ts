@@ -1,5 +1,8 @@
-import { parseCustomImports, PathResult } from "./index";
+import { parseCustomImports, PathResult } from "./index.js";
 import * as path from "path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 let r: PathResult | undefined;
 function parse() {
@@ -32,7 +35,7 @@ test("AuthResolver", () => {
   let importInfo = file.imports.get("ID");
   expect(importInfo).toBeDefined();
   expect(importInfo!.defaultImport).toBeFalsy();
-  expect(importInfo!.importPath).toBe("../../../core/base");
+  expect(importInfo!.importPath).toBe("../../../core/base.js");
 });
 
 test("ViewerResolver", () => {

@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLInt,
   GraphQLList,
@@ -16,11 +16,11 @@ import {
 import {
   UserNestedNestedObjectList,
   UserNestedObjectList,
-} from "../../../ent/generated/types";
+} from "../../../ent/generated/types.js";
 import {
   IntEnumUsedInListType,
   ResponseTypeType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 const UserNestedNestedObjectListType = new GraphQLObjectType({
   name: "UserNestedNestedObjectList",

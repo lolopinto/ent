@@ -1,7 +1,7 @@
 import { RequestContext } from "@snowtop/ent";
 import { gqlContextType, gqlQuery } from "@snowtop/ent/graphql";
 import { GraphQLString } from "graphql";
-import { Event } from "src/ent";
+import { Event } from "../../ent/index.js";
 
 export class EventResolver {
   @gqlQuery({

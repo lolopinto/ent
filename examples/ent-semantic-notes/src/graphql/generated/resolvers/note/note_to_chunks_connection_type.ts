@@ -3,8 +3,8 @@
 import type { Viewer } from "@snowtop/ent";
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { NoteToChunksEdge } from "../../../../ent";
-import { NoteChunkType } from "../../../resolvers/internal";
+import { NoteToChunksEdge } from "../../../../ent/index.js";
+import { NoteChunkType } from "../../../resolvers/internal.js";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

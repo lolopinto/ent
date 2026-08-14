@@ -4,11 +4,11 @@ import {
   FakeUser,
   UserToContactsFkeyQueryDeletedAt,
   UserToContactsFkeyQueryDeletedAtAsc,
-} from "../../testutils/fake_data/index";
-import { MockLogs } from "../../testutils/mock_log";
-import { Context, Viewer } from "../base";
-import * as clause from "../clause";
-import { commonTests } from "./shared_test";
+} from "../../testutils/fake_data/index.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { Context, Viewer } from "../base.js";
+import * as clause from "../clause.js";
+import { commonTests } from "./shared_test.js";
 
 const ml = new MockLogs();
 ml.mock();

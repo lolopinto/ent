@@ -12,8 +12,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Place, PlaceReview } from "../../..";
-import { PlaceReviewBuilder } from "./place_review_builder";
+import { Place, PlaceReview } from "../../../index.js";
+import { PlaceReviewBuilder } from "./place_review_builder.js";
 
 export interface PlaceReviewCreateInput {
   placeId: ID | Builder<Place, Viewer>;

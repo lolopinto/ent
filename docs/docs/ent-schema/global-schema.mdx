@@ -21,7 +21,7 @@ The generated `src/ent/internal.ts` automatically wires the file up by calling `
 Define globals inside the `fields` map. Each entry is a regular field factory, so you can compose nested structs, imported custom types, or globals from other packages. Below is an abbreviated version of `examples/todo-sqlite/src/schema/global_schema.ts`:
 
 ```ts title="src/schema/global_schema.ts"
-import { BooleanType, GlobalSchema, StringType, StructType, StructTypeAsList } from "@snowtop/ent/schema/";
+import { BooleanType, GlobalSchema, StringType, StructType, StructTypeAsList } from "@snowtop/ent/schema";
 import { GlobalDeletedEdge } from "@snowtop/ent-soft-delete";
 
 const globalSchema: GlobalSchema = {

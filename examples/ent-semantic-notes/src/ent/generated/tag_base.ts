@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { TagDBData } from "./loaders";
+import type { TagDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -22,10 +22,10 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { tagLoader, tagLoaderInfo } from "./loaders";
-import { NodeType } from "./types";
-import { TagToNotesQuery, Workspace } from "../internal";
-import schema from "../../schema/tag_schema";
+import { tagLoader, tagLoaderInfo } from "./loaders.js";
+import { NodeType } from "./types.js";
+import { TagToNotesQuery, Workspace } from "../internal.js";
+import schema from "../../schema/tag_schema.js";
 
 export class TagBase implements Ent<Viewer> {
   protected readonly data: TagDBData;

@@ -1,12 +1,12 @@
-import { AllowIfEventCreatorFromActivityRule } from "src/ent/event/privacy/event_creator";
+import { AllowIfEventCreatorFromActivityRule } from "../../../event/privacy/event_creator.js";
 import {
   PrivacyPolicy,
   AlwaysDenyRule,
   PrivacyPolicyRule,
   AllowIfSubPolicyAllowsRule,
 } from "@snowtop/ent";
-import { AddressBuilder } from "../../../generated/address/actions/address_builder";
-import { Address } from "src/ent";
+import { AddressBuilder } from "../../../generated/address/actions/address_builder.js";
+import { Address } from "../../../index.js";
 
 export class EditAddressPrivacy implements PrivacyPolicy<Address> {
   constructor(private builder: AddressBuilder) {}

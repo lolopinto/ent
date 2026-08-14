@@ -1,6 +1,6 @@
 import { GraphQLSchema, GraphQLObjectType, GraphQLString } from "graphql";
 import { GraphQLJSON, GraphQLJSONObject } from "graphql-type-json";
-import { expectQueryFromRoot } from "../../testutils/ent-graphql-tests";
+import { expectQueryFromRoot } from "../../testutils/ent-graphql-tests/index.js";
 
 const val = {
   foo: "foo",

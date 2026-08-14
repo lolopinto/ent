@@ -7,17 +7,17 @@ import {
   QueryDataOptions,
   SelectBaseDataOptions,
   Viewer,
-} from "../base";
-import { AndOptional, Clause } from "../clause";
+} from "../base.js";
+import { AndOptional, Clause } from "../clause.js";
 import {
   applyPrivacyPolicyForRows,
   getDefaultLimit,
   loadRow,
   loadRows,
-} from "../ent";
-import { OrderBy } from "../query_impl";
+} from "../ent.js";
+import { OrderBy } from "../query_impl.js";
 
-import { BaseEdgeQuery, IDInfo } from "./query";
+import { BaseEdgeQuery, IDInfo } from "./query.js";
 
 export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,

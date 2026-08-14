@@ -1,5 +1,5 @@
-import * as clause from "./clause";
-import { buildQueryData, getOrderByKey } from "./query_impl";
+import * as clause from "./clause.js";
+import { buildQueryData, getOrderByKey } from "./query_impl.js";
 
 function distanceExpression(key: string) {
   return clause.ParameterizedExpression(
@@ -15,7 +15,10 @@ describe("query_impl computed expressions", () => {
     const queryData = buildQueryData({
       tableName: "places",
       alias: "p",
-      fields: ["id", { alias: "distance", expression: distanceExpression("d") }],
+      fields: [
+        "id",
+        { alias: "distance", expression: distanceExpression("d") },
+      ],
       clause: clause.Eq("active", true),
       orderby: [
         {

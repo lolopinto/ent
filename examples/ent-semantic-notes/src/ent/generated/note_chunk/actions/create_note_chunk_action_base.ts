@@ -12,8 +12,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Note, NoteChunk, Workspace } from "../../..";
-import { NoteChunkBuilder } from "./note_chunk_builder";
+import { Note, NoteChunk, Workspace } from "../../../index.js";
+import { NoteChunkBuilder } from "./note_chunk_builder.js";
 
 export interface NoteChunkCreateInput {
   noteId: ID | Builder<Note, Viewer>;

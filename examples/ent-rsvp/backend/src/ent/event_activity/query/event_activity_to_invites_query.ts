@@ -1,5 +1,5 @@
 import { AssocEdge } from "@snowtop/ent";
-import { EventActivityToInvitesQueryBase } from "src/ent/internal";
+import { EventActivityToInvitesQueryBase } from "../../internal.js";
 export class EventActivityToInvitesEdge extends AssocEdge {}
 
 export class EventActivityToInvitesQuery extends EventActivityToInvitesQueryBase {}

@@ -10,7 +10,7 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -18,7 +18,7 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import DeleteContactAction from "../../../../ent/contact/actions/delete_contact_action";
+import DeleteContactAction from "../../../../ent/contact/actions/delete_contact_action.js";
 
 interface customContactDeleteInput {
   id: string;

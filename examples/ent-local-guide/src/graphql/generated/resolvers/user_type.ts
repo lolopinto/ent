@@ -19,12 +19,12 @@ import {
   UserToCreatedPlacesQuery,
   UserToFavoritePlacesQuery,
   UserToPlaceReviewsQuery,
-} from "../../../ent";
+} from "../../../ent/index.js";
 import {
   UserToCreatedPlacesConnectionType,
   UserToFavoritePlacesConnectionType,
   UserToPlaceReviewsConnectionType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const UserType = new GraphQLObjectType({
   name: "User",

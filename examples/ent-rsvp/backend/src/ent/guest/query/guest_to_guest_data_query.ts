@@ -1,2 +1,2 @@
-import { GuestToGuestDataQueryBase } from "src/ent/internal";
+import { GuestToGuestDataQueryBase } from "../../internal.js";
 export class GuestToGuestDataQuery extends GuestToGuestDataQueryBase {}

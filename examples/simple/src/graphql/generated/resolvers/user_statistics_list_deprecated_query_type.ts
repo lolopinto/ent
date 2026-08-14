@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -17,8 +17,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { UserStatistics } from "../../../ent/user_statistics";
-import { UserStatisticsType } from "../../resolvers/internal";
+import { UserStatistics } from "../../../ent/user_statistics.js";
+import { UserStatisticsType } from "../../resolvers/internal.js";
 
 interface UserStatisticsListDeprecatedArgs {
   id: any;

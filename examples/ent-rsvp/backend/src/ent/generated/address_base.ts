@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { AddressDBData } from "src/ent/generated/loaders";
+import type { AddressDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -24,15 +24,15 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { loadEntByType, loadEntXByType } from "src/ent/generated/loadAny";
+import { loadEntByType, loadEntXByType } from "./loadAny.js";
 import {
   addressLoader,
   addressLoaderInfo,
   addressOwnerIdLoader,
-} from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/generated/types";
-import { AddressToLocatedAtQuery } from "src/ent/internal";
-import schema from "src/schema/address_schema";
+} from "./loaders.js";
+import { NodeType } from "./types.js";
+import { AddressToLocatedAtQuery } from "../internal.js";
+import schema from "../../schema/address_schema.js";
 
 export class AddressBase implements Ent<Viewer> {
   protected readonly data: AddressDBData;

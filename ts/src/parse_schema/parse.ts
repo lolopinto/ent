@@ -1,4 +1,4 @@
-import { PACKAGE } from "../core/const";
+import { PACKAGE } from "../core/const.js";
 import {
   Pattern,
   Schema,
@@ -7,7 +7,7 @@ import {
   AssocEdgeGroup,
   Action,
   EdgeAction,
-} from "../schema";
+} from "../schema/index.js";
 import {
   ActionField,
   Type,
@@ -18,8 +18,8 @@ import {
   TransformReadBetaResult,
   CanViewerDo,
   EdgeGroupAction,
-} from "../schema/schema";
-import { setGlobalSchema } from "../core/global_schema";
+} from "../schema/schema.js";
+import { setGlobalSchema } from "../core/global_schema.js";
 
 export async function processFields(
   src: FieldMap | Field[],

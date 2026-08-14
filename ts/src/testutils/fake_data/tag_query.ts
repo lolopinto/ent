@@ -1,6 +1,6 @@
-import { ID, Viewer } from "../../core/base";
-import { CustomEdgeQueryBase } from "../../core/query/custom_query";
-import { FakeUser, FakeTag } from "./internal";
+import { ID, Viewer } from "../../core/base.js";
+import { CustomEdgeQueryBase } from "../../core/query/custom_query.js";
+import { FakeUser, FakeTag } from "./internal.js";
 
 export class UserToTagsFkeyQuery extends CustomEdgeQueryBase<
   FakeUser,

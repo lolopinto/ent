@@ -1,4 +1,4 @@
-import { StructTypeAsList, StringType, DateType } from "@snowtop/ent/schema/";
+import { StructTypeAsList, StringType, DateType } from "@snowtop/ent/schema";
 
 describe("date struct list", () => {
   const importantDates = StructTypeAsList({

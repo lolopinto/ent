@@ -15,18 +15,26 @@ fixtures:
       - generated_tsc
       - idempotence
     runtime_variants:
-      - id: node_pg
+      - id: esm_node_pg
         runtime: node
         postgresDriver: pg
-      - id: bun_bun
+        moduleFormat: esm
+      - id: commonjs_node_pg
+        runtime: node
+        postgresDriver: pg
+        moduleFormat: commonjs
+      - id: esm_bun_bun
         runtime: bun
         postgresDriver: bun
+        moduleFormat: esm
     covers:
       - schema.nodes
       - schema.patterns
       - schema.global_schema
       - runtime.bun
       - postgres_driver.bun
+      - module.esm
+      - module.commonjs
       - node.table_name
       - node.field_overrides
       - node.assoc_edges
@@ -228,12 +236,14 @@ fixtures:
       - idempotence
     dialect: postgres
     runtime_variants:
-      - id: node_pg
+      - id: esm_node_pg
         runtime: node
         postgresDriver: pg
-      - id: bun_bun
+        moduleFormat: esm
+      - id: esm_bun_bun
         runtime: bun
         postgresDriver: bun
+        moduleFormat: esm
     covers:
       - schema.nodes
       - node.table_name
@@ -286,6 +296,14 @@ features:
     owns: []
     mode: explicit
     rationale: Bun's native Postgres driver changes generated value/result conversion helpers for enum, list, and custom field types.
+  - id: module.esm
+    owns: []
+    mode: explicit
+    rationale: Native ESM generation changes local module specifiers, TypeScript launcher behavior, package resolution, and emitted runtime loading.
+  - id: module.commonjs
+    owns: []
+    mode: explicit
+    rationale: CommonJS compatibility preserves legacy generated-project execution while requiring the same physical ESM Ent package graph.
   - id: codegen.prettier_formatter
     owns: [codegen.prettier]
     mode: explicit

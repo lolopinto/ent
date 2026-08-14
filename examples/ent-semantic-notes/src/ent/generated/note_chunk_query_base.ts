@@ -2,7 +2,7 @@
 
 import type { ID, OrderBy, Viewer } from "@snowtop/ent";
 import { CustomEdgeQueryBase } from "@snowtop/ent";
-import { NoteBase, NoteChunk, WorkspaceBase } from "../internal";
+import { NoteBase, NoteChunk, WorkspaceBase } from "../internal.js";
 
 export class NoteToNoteChunksQueryBase<
   TEnt extends NoteBase = NoteBase,

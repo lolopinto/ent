@@ -1,2 +1,2 @@
-import { EventToGuestsQueryBase } from "src/ent/internal";
+import { EventToGuestsQueryBase } from "../../internal.js";
 export class EventToGuestsQuery extends EventToGuestsQueryBase {}

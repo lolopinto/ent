@@ -1,3 +1,3 @@
-import { NoteBase } from "./internal";
+import { NoteBase } from "./internal.js";
 
 export class Note extends NoteBase {}

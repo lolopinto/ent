@@ -1,5 +1,5 @@
 import exp from "constants";
-import { EmailType, EmailListType, Email } from "./email";
+import { EmailType, EmailListType, Email } from "./email.js";
 
 function testCase(exp: expectedResult) {
   let typ = EmailType();

@@ -1,6 +1,21 @@
-import { GlobalSchema, StringType } from "@snowtop/ent/schema";
+import {
+  BooleanType,
+  GlobalSchema,
+  StringType,
+  StructType,
+} from "@snowtop/ent/schema";
 
 const globalSchema: GlobalSchema = {
+  fields: {
+    matrix_preferences: StructType({
+      tsType: "MatrixPreferences",
+      graphQLType: "MatrixPreferences",
+      fields: {
+        notificationsEnabled: BooleanType(),
+        locale: StringType(),
+      },
+    }),
+  },
   extraEdgeFields: {
     metadata: StringType({ nullable: true }),
   },

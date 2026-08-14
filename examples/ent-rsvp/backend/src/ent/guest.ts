@@ -1,7 +1,7 @@
-import { GuestBase } from "src/ent/internal";
+import { GuestBase } from "./internal.js";
 import { AllowIfViewerRule, AlwaysDenyRule, PrivacyPolicy } from "@snowtop/ent";
-import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
-import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
+import { AllowIfEventCreatorRule } from "./event/privacy/event_creator.js";
+import { AllowIfGuestInSameGuestGroupRule } from "./guest/privacy/guest_rule_privacy.js";
 
 // we're only writing this once except with --force and packageName provided
 export class Guest extends GuestBase {

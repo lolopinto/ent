@@ -5,15 +5,15 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLNonNull, GraphQLObjectType, GraphQLString } from "graphql";
 import { GraphQLTime } from "@snowtop/ent/graphql";
-import { ContactDate } from "../../../ent/contact_types";
+import { ContactDate } from "../../../ent/contact_types.js";
 import {
   ContactItemType,
   ContactLabelType,
   ContactType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const ContactDateType = new GraphQLObjectType({
   name: "ContactDate",

@@ -1,4 +1,4 @@
-import { memoizeNoArgs } from "./memoize";
+import { memoizeNoArgs } from "./memoize.js";
 
 describe("memoizeNoArgs", () => {
   test("memoizes a synchronous result", () => {

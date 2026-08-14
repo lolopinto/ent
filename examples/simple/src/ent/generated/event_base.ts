@@ -13,9 +13,9 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { EventDBData } from "./loaders";
-import type { Attachment } from "./types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { EventDBData } from "./loaders.js";
+import type { Attachment } from "./types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   applyPrivacyPolicy,
@@ -30,13 +30,13 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields, getFieldsWithPrivacy } from "@snowtop/ent/schema";
-import { eventLoader, eventLoaderInfo } from "./loaders";
+import { eventLoader, eventLoaderInfo } from "./loaders.js";
 import {
   EdgeType,
   EventRsvpStatus,
   NodeType,
   convertNullableAttachmentList,
-} from "./types";
+} from "./types.js";
 import {
   Address,
   EventToAttendingQuery,
@@ -45,8 +45,8 @@ import {
   EventToInvitedQuery,
   EventToMaybeQuery,
   User,
-} from "../internal";
-import schema from "../../schema/event_schema";
+} from "../internal.js";
+import schema from "../../schema/event_schema.js";
 
 export interface EventCanViewerSee {
   addressId: () => Promise<boolean>;

@@ -1,5 +1,5 @@
-import { Builder, WriteOperation } from "../action";
-import { Executor } from "../action/action";
+import { Builder, WriteOperation } from "../action/index.js";
+import { Executor } from "../action/action.js";
 import {
   Context,
   CreateRowOptions,
@@ -10,9 +10,9 @@ import {
   ID,
   LoadEntOptions,
   Viewer,
-} from "../core/base";
-import * as clause from "../core/clause";
-import { Queryer, SyncQueryer } from "../core/db";
+} from "../core/base.js";
+import * as clause from "../core/clause.js";
+import { Queryer, SyncQueryer } from "../core/db.js";
 import {
   AssocEdgeData,
   createRow,
@@ -24,15 +24,15 @@ import {
   loadEdgeData,
   logQuery,
   parameterizedQueryOptions,
-} from "../core/ent";
-import { __getGlobalSchema } from "../core/global_schema";
-import { ObjectLoader } from "../core/loaders";
-import { buildQuery } from "../core/query_impl";
+} from "../core/ent.js";
+import { __getGlobalSchema } from "../core/global_schema.js";
+import { ObjectLoader } from "../core/loaders/index.js";
+import { buildQuery } from "../core/query_impl.js";
 import {
   SQLStatementOperation,
   TransformedEdgeUpdateOperation,
   getStorageKey,
-} from "../schema/schema";
+} from "../schema/schema.js";
 
 export interface UpdatedOperation<
   TEnt extends Ent<TViewer>,

@@ -15,10 +15,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Place, PlaceReview, User } from "../../..";
-import { placeLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType, PlaceCategory } from "../../types";
-import schema from "../../../../schema/place_schema";
+import { Place, PlaceReview, User } from "../../../index.js";
+import { placeLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType, PlaceCategory } from "../../types.js";
+import schema from "../../../../schema/place_schema.js";
 
 export interface PlaceInput {
   name?: string;

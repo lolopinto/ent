@@ -13,8 +13,8 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { CommentDBData } from "./loaders";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { CommentDBData } from "./loaders.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -25,17 +25,17 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { loadEntByType, loadEntXByType } from "./loadAny";
-import { commentLoader, commentLoaderInfo } from "./loaders";
-import { NodeType } from "./types";
+import { loadEntByType, loadEntXByType } from "./loadAny.js";
+import { commentLoader, commentLoaderInfo } from "./loaders.js";
+import { NodeType } from "./types.js";
 import {
   ArticleToCommentsQuery,
   CommentArticleToCommentsQuery,
   CommentToPostQuery,
   CommentsFromAttachmentQuery,
   User,
-} from "../internal";
-import schema from "../../schema/comment_schema";
+} from "../internal.js";
+import schema from "../../schema/comment_schema.js";
 
 export class CommentBase implements Ent<ExampleViewerAlias> {
   protected readonly data: CommentDBData;

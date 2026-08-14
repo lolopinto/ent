@@ -5,10 +5,10 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLInterfaceType, GraphQLNonNull } from "graphql";
-import { ContactItem } from "../../../ent/contact_item";
-import { ContactLabelType, ContactType } from "../../resolvers/internal";
+import { ContactItem } from "../../../ent/contact_item.js";
+import { ContactLabelType, ContactType } from "../../resolvers/internal.js";
 
 export const ContactItemType = new GraphQLInterfaceType({
   name: "ContactItem",

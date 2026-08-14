@@ -10,21 +10,21 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { HoursOfOperation } from "../../../../ent";
-import type { HoursOfOperationCreateInput } from "../../../../ent/hours_of_operation/actions/create_hours_of_operation_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { HoursOfOperation } from "../../../../ent/index.js";
+import type { HoursOfOperationCreateInput } from "../../../../ent/hours_of_operation/actions/create_hours_of_operation_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLInputObjectType,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import CreateHoursOfOperationAction from "../../../../ent/hours_of_operation/actions/create_hours_of_operation_action";
+import CreateHoursOfOperationAction from "../../../../ent/hours_of_operation/actions/create_hours_of_operation_action.js";
 import {
   DayOfWeekAltType,
   DayOfWeekType,
   HoursOfOperationType,
-} from "../../../resolvers";
+} from "../../../resolvers/index.js";
 
 interface HoursOfOperationCreatePayload {
   hoursOfOperation: HoursOfOperation;

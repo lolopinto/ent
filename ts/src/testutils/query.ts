@@ -1,7 +1,7 @@
-import { Data, Ent, Viewer } from "../core/base";
-import { FakeUser } from "./fake_data";
-import { EdgeQuery } from "../core/query";
-import { MockLogs } from "./mock_log";
+import { Data, Ent, Viewer } from "../core/base.js";
+import { FakeUser } from "./fake_data/index.js";
+import { EdgeQuery } from "../core/query/index.js";
+import { MockLogs } from "./mock_log.js";
 
 export function getVerifyAfterEachCursorGeneric<
   TSource extends Ent<Viewer>,

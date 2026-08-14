@@ -12,8 +12,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Tag, Workspace } from "../../..";
-import { TagBuilder } from "./tag_builder";
+import { Tag, Workspace } from "../../../index.js";
+import { TagBuilder } from "./tag_builder.js";
 
 export interface TagCreateInput {
   workspaceId: ID | Builder<Workspace, Viewer>;

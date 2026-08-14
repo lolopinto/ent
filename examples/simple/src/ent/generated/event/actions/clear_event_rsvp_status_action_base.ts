@@ -12,11 +12,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Event } from "../../..";
-import { EventBuilder } from "./event_builder";
-import schema from "../../../../schema/event_schema";
+import { Event } from "../../../index.js";
+import { EventBuilder } from "./event_builder.js";
+import schema from "../../../../schema/event_schema.js";
 
 export interface ClearEventRsvpStatusInput {
   userId: ID;

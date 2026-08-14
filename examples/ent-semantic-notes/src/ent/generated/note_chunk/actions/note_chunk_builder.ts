@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Note, NoteChunk, Workspace } from "../../..";
-import { noteChunkLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType } from "../../types";
-import schema from "../../../../schema/note_chunk_schema";
+import { Note, NoteChunk, Workspace } from "../../../index.js";
+import { noteChunkLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/note_chunk_schema.js";
 
 export interface NoteChunkInput {
   noteId?: ID | Builder<Note, Viewer>;

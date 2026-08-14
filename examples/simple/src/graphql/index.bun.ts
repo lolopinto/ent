@@ -1,4 +1,4 @@
-import { loadExampleRuntimeConfig } from "../runtime_config";
+import { loadExampleRuntimeConfig } from "../runtime_config.js";
 
 loadExampleRuntimeConfig({
   runtime: "bun",
@@ -6,7 +6,7 @@ loadExampleRuntimeConfig({
   dbConnectionString: process.env.DB_CONNECTION_STRING,
 });
 
-import("./index").catch((err) => {
+import("./index.js").catch((err) => {
   console.error(err);
   process.exit(1);
 });

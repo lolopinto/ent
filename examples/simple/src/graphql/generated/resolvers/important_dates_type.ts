@@ -5,10 +5,10 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLNonNull, GraphQLObjectType } from "graphql";
 import { GraphQLDate } from "@snowtop/ent/graphql";
-import { ImportantDates } from "../../../ent/generated/types";
+import { ImportantDates } from "../../../ent/generated/types.js";
 
 export const ImportantDatesType = new GraphQLObjectType({
   name: "ImportantDates",

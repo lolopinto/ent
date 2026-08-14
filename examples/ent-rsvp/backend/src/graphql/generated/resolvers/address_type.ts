@@ -14,8 +14,8 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { Address, AddressToLocatedAtQuery } from "src/ent/";
-import { AddressToLocatedAtConnectionType } from "src/graphql/resolvers/internal";
+import { Address, AddressToLocatedAtQuery } from "../../../ent/index.js";
+import { AddressToLocatedAtConnectionType } from "../../resolvers/internal.js";
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",

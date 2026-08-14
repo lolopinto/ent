@@ -4,8 +4,8 @@ import {
   GraphQLString,
   GraphQLNonNull,
 } from "graphql";
-import { expectMutation } from "../../testutils/ent-graphql-tests";
-import { GraphQLTime } from "./time";
+import { expectMutation } from "../../testutils/ent-graphql-tests/index.js";
+import { GraphQLTime } from "./time.js";
 import { DateTime } from "luxon";
 
 let schema = new GraphQLSchema({

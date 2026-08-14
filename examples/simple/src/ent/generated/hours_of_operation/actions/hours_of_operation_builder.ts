@@ -11,17 +11,17 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { HoursOfOperation } from "../../..";
-import { hoursOfOperationLoaderInfo } from "../../loaders";
-import { DayOfWeek, DayOfWeekAlt, NodeType } from "../../types";
-import schema from "../../../../schema/hours_of_operation_schema";
+import { HoursOfOperation } from "../../../index.js";
+import { hoursOfOperationLoaderInfo } from "../../loaders.js";
+import { DayOfWeek, DayOfWeekAlt, NodeType } from "../../types.js";
+import schema from "../../../../schema/hours_of_operation_schema.js";
 
 export interface HoursOfOperationInput {
   dayOfWeek?: DayOfWeek;

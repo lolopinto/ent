@@ -1,5 +1,5 @@
 import { AlwaysAllowRule, PrivacyPolicy } from "@snowtop/ent";
-import { EventBase } from "src/ent/internal";
+import { EventBase } from "./internal.js";
 
 // we're only writing this once except with --force and packageName provided
 export class Event extends EventBase {

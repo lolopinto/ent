@@ -11,8 +11,8 @@ import {
   EditRowOptions,
   Allow,
   Deny,
-} from "./base";
-import { LoggedOutViewer, IDViewer } from "./viewer";
+} from "./base.js";
+import { LoggedOutViewer, IDViewer } from "./viewer.js";
 import {
   AlwaysDenyRule,
   AllowIfViewerRule,
@@ -20,17 +20,16 @@ import {
   AlwaysAllowPrivacyPolicy,
   AllowIfViewerPrivacyPolicy,
   AllowIfViewerHasIdentityPrivacyPolicy,
-} from "./privacy";
-import { buildInsertQuery, buildUpdateQuery } from "./ent";
-import { queryOptions } from "../testutils/db_mock";
-import { createRowForTest, editRowForTest } from "../testutils/write";
-import * as ent from "./ent";
-import { ContextCache } from "./context";
-import * as clause from "./clause";
-import DB from "./db";
-import each from "jest-each";
-import { ObjectLoaderFactory } from "./loaders";
-import { buildQuery } from "./query_impl";
+} from "./privacy.js";
+import { buildInsertQuery, buildUpdateQuery } from "./ent.js";
+import { queryOptions } from "../testutils/db_mock.js";
+import { createRowForTest, editRowForTest } from "../testutils/write.js";
+import * as ent from "./ent.js";
+import { ContextCache } from "./context.js";
+import * as clause from "./clause.js";
+import DB from "./db.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
+import { buildQuery } from "./query_impl.js";
 
 import {
   integer,
@@ -38,10 +37,10 @@ import {
   text,
   setupSqlite,
   setupPostgres,
-} from "../testutils/db/temp_db";
-import { MockLogs } from "../testutils/mock_log";
-import { clearLogLevels, setLogLevels } from "./logger";
-import { BaseEnt } from "../testutils/builder";
+} from "../testutils/db/temp_db.js";
+import { MockLogs } from "../testutils/mock_log.js";
+import { clearLogLevels, setLogLevels } from "./logger.js";
+import { BaseEnt } from "../testutils/builder.js";
 
 const loggedOutViewer = new LoggedOutViewer();
 
@@ -1798,7 +1797,9 @@ function commonTests() {
       await testLoadRow(addCtx, true);
     };
 
-    each(args).test("with context: %s", async (_name, writeFn, query) => {
+    test.each(
+      args as any,
+    )("with context: %s", async (_name, writeFn, query) => {
       await loadRowFromCache(true);
 
       ml.clear();
@@ -1842,7 +1843,9 @@ function commonTests() {
       );
     });
 
-    each(args).test("without context: %s", async (_name, writeFn, query) => {
+    test.each(
+      args as any,
+    )("without context: %s", async (_name, writeFn, query) => {
       // no context, multiple queries
       await loadRowFromCache(false);
       ml.clear();

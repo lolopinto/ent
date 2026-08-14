@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -18,10 +18,10 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { DefaultsExample } from "../../../ent/defaults_example";
-import { DefaultsExampleArgInputType } from "../mutations/input/defaults_example_arg_input_type";
-import { DefaultsExampleSortColumnType } from "./enums_type";
-import { RootToDefaultsExampleConnectionType } from "../../resolvers/internal";
+import { DefaultsExample } from "../../../ent/defaults_example.js";
+import { DefaultsExampleArgInputType } from "../mutations/input/defaults_example_arg_input_type.js";
+import { DefaultsExampleSortColumnType } from "./enums_type.js";
+import { RootToDefaultsExampleConnectionType } from "../../resolvers/internal.js";
 
 interface DefaultsExampleConnectionArgs {
   ids: any;

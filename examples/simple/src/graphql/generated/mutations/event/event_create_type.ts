@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Event } from "../../../../ent";
-import type { EventCreateInput } from "../../../../ent/event/actions/create_event_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Event } from "../../../../ent/index.js";
+import type { EventCreateInput } from "../../../../ent/event/actions/create_event_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -27,9 +27,9 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import CreateEventAction from "../../../../ent/event/actions/create_event_action";
-import { AttachmentInputType } from "../input/attachment_input_type";
-import { EventType } from "../../../resolvers";
+import CreateEventAction from "../../../../ent/event/actions/create_event_action.js";
+import { AttachmentInputType } from "../input/attachment_input_type.js";
+import { EventType } from "../../../resolvers/index.js";
 
 interface customEventCreateInput extends Omit<EventCreateInput, "location"> {
   creatorId: string;
@@ -117,20 +117,22 @@ export const EventCreateType: GraphQLFieldConfig<
       ),
       coverPhoto: input.coverPhoto,
       coverPhoto2: input.coverPhoto2,
-      attachments: input.attachments?.map((item: any) => ({
-        ...item,
-        fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
-        dupeFileId: item.dupeFileId
-          ? mustDecodeNullableIDFromGQLID(
-              item.dupeFileId?.toString() ?? item.dupeFileId,
-            )
-          : undefined,
-        creatorId: item.creatorId
-          ? mustDecodeNullableIDFromGQLID(
-              item.creatorId?.toString() ?? item.creatorId,
-            )
-          : undefined,
-      })),
+      attachments: input.attachments
+        ? input.attachments.map((item: any) => ({
+            ...item,
+            fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+            dupeFileId: item.dupeFileId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.dupeFileId?.toString() ?? item.dupeFileId,
+                )
+              : undefined,
+            creatorId: item.creatorId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.creatorId?.toString() ?? item.creatorId,
+                )
+              : undefined,
+          }))
+        : input.attachments,
     }).saveX();
     return { event: event };
   },

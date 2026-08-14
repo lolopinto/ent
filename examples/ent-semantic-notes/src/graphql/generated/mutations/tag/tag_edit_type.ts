@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Tag } from "../../../../ent";
-import type { TagEditInput } from "../../../../ent/tag/actions/edit_tag_action";
+import type { Tag } from "../../../../ent/index.js";
+import type { TagEditInput } from "../../../../ent/tag/actions/edit_tag_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,8 +17,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditTagAction from "../../../../ent/tag/actions/edit_tag_action";
-import { TagType } from "../../../resolvers";
+import EditTagAction from "../../../../ent/tag/actions/edit_tag_action.js";
+import { TagType } from "../../../resolvers/index.js";
 
 interface customTagEditInput extends TagEditInput {
   id: string;

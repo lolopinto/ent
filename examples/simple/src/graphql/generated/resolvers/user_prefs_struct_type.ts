@@ -5,16 +5,16 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
 } from "graphql";
-import { Address } from "../../../ent";
-import { UserPrefsStruct } from "../../../ent/generated/types";
-import { AddressType, NotifTypeType } from "../../resolvers/internal";
+import { Address } from "../../../ent/index.js";
+import { UserPrefsStruct } from "../../../ent/generated/types.js";
+import { AddressType, NotifTypeType } from "../../resolvers/internal.js";
 
 export const UserPrefsStructType = new GraphQLObjectType({
   name: "UserPrefsStruct",

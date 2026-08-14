@@ -11,8 +11,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { GuestGroup } from "src/ent/";
-import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_group_builder";
+import { GuestGroup } from "../../../index.js";
+import { GuestGroupBuilder } from "./guest_group_builder.js";
 
 export interface GuestGroupEditInput {
   invitationName?: string;

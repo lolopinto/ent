@@ -6,11 +6,11 @@ import {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import { gqlField } from "@snowtop/ent/graphql";
-import { Event, EventActivityBase } from "src/ent/internal";
-import { Address, Guest } from ".";
-import { EdgeType } from "./generated/const";
-import { EventActivityRsvpStatus } from "./generated/types";
-import { AllowIfEventCreatorRule } from "./event/privacy/event_creator";
+import { Event, EventActivityBase } from "./internal.js";
+import { Address, Guest } from "./index.js";
+import { EdgeType } from "./generated/const.js";
+import { EventActivityRsvpStatus } from "./generated/types.js";
+import { AllowIfEventCreatorRule } from "./event/privacy/event_creator.js";
 
 // we're only writing this once except with --force and packageName provided
 export class EventActivity extends EventActivityBase {

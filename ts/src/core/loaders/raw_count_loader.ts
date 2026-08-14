@@ -6,15 +6,15 @@ import {
   Loader,
   LoaderFactory,
   SelectBaseDataOptions,
-} from "../base";
-import { loadRow, loadRows } from "../ent";
-import * as clause from "../clause";
+} from "../base.js";
+import { loadRow, loadRows } from "../ent.js";
+import * as clause from "../clause.js";
 import {
   createLoaderCacheMap,
   InstrumentedDataLoader,
   getLoader,
   getLoaderMaxBatchSize,
-} from "./loader";
+} from "./loader.js";
 
 interface QueryCountOptions {
   tableName: string;

@@ -13,9 +13,9 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Place, User } from "../../..";
-import { PlaceBuilder } from "./place_builder";
-import { PlaceCategory } from "../../types";
+import { Place, User } from "../../../index.js";
+import { PlaceBuilder } from "./place_builder.js";
+import { PlaceCategory } from "../../types.js";
 
 export interface PlaceEditInput {
   name?: string;

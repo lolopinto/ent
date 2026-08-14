@@ -4,8 +4,8 @@ import {
   Field,
   DBType,
   DeprecatedImportType,
-} from "./schema";
-import { BaseField, ListField } from "./field";
+} from "./schema.js";
+import { BaseField, ListField } from "./field.js";
 
 export interface JSONOptions extends FieldOptions {
   validator?: (val: any) => boolean;

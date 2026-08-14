@@ -6,7 +6,7 @@ import {
   GraphQLConnectionType,
   GraphQLNodeInterface,
 } from "@snowtop/ent/graphql";
-import { AddressToLocatedAtEdge } from "src/ent/";
+import { AddressToLocatedAtEdge } from "../../../../ent/index.js";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

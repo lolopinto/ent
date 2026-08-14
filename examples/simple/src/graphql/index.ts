@@ -7,7 +7,7 @@ import {
   shouldRenderGraphiQL,
   renderGraphiQL,
 } from "graphql-helix";
-import schema from "./generated/schema";
+import schema from "./generated/schema.js";
 import passport from "passport";
 import session from "express-session";
 import { DB, ID, RequestContext } from "@snowtop/ent";
@@ -17,8 +17,8 @@ import {
   PassportStrategyHandler,
 } from "@snowtop/ent-passport";
 import { graphqlUploadExpress } from "@snowtop/ent/graphql/upload";
-import { User } from "../ent";
-import { ExampleViewer } from "../viewer/viewer";
+import { User } from "../ent/index.js";
+import { ExampleViewer } from "../viewer/viewer.js";
 
 let app = express();
 app.use(express.json());

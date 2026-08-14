@@ -13,8 +13,8 @@ import {
   Skip,
   Viewer,
   EdgeQueryableDataOptionsConfigureLoader,
-} from "./base";
-import { AssocEdge, loadEdgeForID2, loadEnt } from "./ent";
+} from "./base.js";
+import { AssocEdge, loadEdgeForID2, loadEnt } from "./ent.js";
 
 // copied from ./base
 enum privacyResult {

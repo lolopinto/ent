@@ -14,7 +14,7 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import DeleteEventActivityAction from "src/ent/event_activity/actions/delete_event_activity_action";
+import DeleteEventActivityAction from "../../../../ent/event_activity/actions/delete_event_activity_action.js";
 
 interface customEventActivityDeleteInput {
   id: string;

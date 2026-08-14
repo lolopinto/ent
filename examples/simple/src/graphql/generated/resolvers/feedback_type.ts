@@ -9,7 +9,7 @@ import {
   ContactPhoneNumberType,
   ContactType,
   UserType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const FeedbackType = new GraphQLUnionType({
   name: "Feedback",

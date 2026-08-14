@@ -1,5 +1,5 @@
-import type { TagCreateInput } from "../../generated/tag/actions/create_tag_action_base";
-import { CreateTagActionBase } from "../../generated/tag/actions/create_tag_action_base";
+import type { TagCreateInput } from "../../generated/tag/actions/create_tag_action_base.js";
+import { CreateTagActionBase } from "../../generated/tag/actions/create_tag_action_base.js";
 
 export type { TagCreateInput };
 

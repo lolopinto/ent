@@ -110,6 +110,73 @@ func TestImportPath(t *testing.T) {
 	}
 }
 
+func TestESMImportPath(t *testing.T) {
+	cfg := &testCfg{
+		relPaths:         true,
+		importExtensions: true,
+	}
+	tests := map[string]pathTestCase{
+		"project file": {
+			filePath:   "src/ent/user.ts",
+			importPath: "src/ent/internal",
+			expResult:  "./internal.js",
+		},
+		"project directory uses explicit index": {
+			filePath:   "src/ent/user/actions/create_user_action.ts",
+			importPath: "src/ent/",
+			expResult:  "../../index.js",
+		},
+		"relative file": {
+			filePath:   "src/ent/generated/loaders.ts",
+			importPath: "./types",
+			expResult:  "./types.js",
+		},
+		"relative typescript extension": {
+			filePath:   "src/ent/generated/loaders.ts",
+			importPath: "../user.ts",
+			expResult:  "../user.js",
+		},
+		"relative directory uses explicit index": {
+			filePath:   "src/ent/generated/user_base.ts",
+			importPath: "../",
+			expResult:  "../index.js",
+		},
+		"dot-relative directory keeps relative prefix": {
+			filePath:   "src/ent/generated/user_base.ts",
+			importPath: "./actions/",
+			expResult:  "./actions/index.js",
+		},
+		"current directory keeps relative prefix": {
+			filePath:   "src/ent/generated/user_base.ts",
+			importPath: ".",
+			expResult:  "./index.js",
+		},
+		"javascript extension is preserved": {
+			filePath:   "src/ent/generated/loaders.ts",
+			importPath: "./runtime.js",
+			expResult:  "./runtime.js",
+		},
+		"json extension is preserved": {
+			filePath:   "src/ent/generated/loaders.ts",
+			importPath: "./metadata.json",
+			expResult:  "./metadata.json",
+		},
+		"package import is unchanged": {
+			filePath:   "src/ent/generated/user_base.ts",
+			importPath: "@snowtop/ent/action",
+			expResult:  "@snowtop/ent/action",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			actual, err := getImportPath(cfg, test.filePath, test.importPath)
+			require.NoError(t, err)
+			assert.Equal(t, test.expResult, actual)
+		})
+	}
+}
+
 func TestNewLocalGraphQLInputEntImportPath(t *testing.T) {
 	ip := NewLocalGraphQLInputEntImportPath("UserAuthJWT")
 	assert.Equal(t, "UserAuthJWTInputType", ip.Import)
@@ -117,7 +184,8 @@ func TestNewLocalGraphQLInputEntImportPath(t *testing.T) {
 }
 
 type testCfg struct {
-	relPaths bool
+	relPaths         bool
+	importExtensions bool
 }
 
 func (cfg *testCfg) GetAbsPathToRoot() string {
@@ -126,6 +194,10 @@ func (cfg *testCfg) GetAbsPathToRoot() string {
 
 func (cfg *testCfg) ShouldUseRelativePaths() bool {
 	return cfg.relPaths
+}
+
+func (cfg *testCfg) ShouldAddImportExtensions() bool {
+	return cfg.importExtensions
 }
 
 func (cfg *testCfg) DebugMode() bool {

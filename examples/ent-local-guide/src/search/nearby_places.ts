@@ -57,8 +57,9 @@ export function buildNearbyPlacesQuery(
 
 export async function nearbyPlaces(
   options: NearbyPlacesOptions,
+  loader: typeof loadRows = loadRows,
 ): Promise<NearbyPlaceRow[]> {
-  const rows = await loadRows(buildNearbyPlacesQuery(options));
+  const rows = await loader(buildNearbyPlacesQuery(options));
   return rows as NearbyPlaceRow[];
 }
 

@@ -14,7 +14,7 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import DeleteGuestAction from "src/ent/guest/actions/delete_guest_action";
+import DeleteGuestAction from "../../../../ent/guest/actions/delete_guest_action.js";
 
 interface customGuestDeleteInput {
   id: string;

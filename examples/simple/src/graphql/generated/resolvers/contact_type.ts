@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -24,7 +24,7 @@ import {
   ContactCommentsFromAttachmentQuery,
   ContactToCommentsQuery,
   ContactToLikersQuery,
-} from "../../../ent";
+} from "../../../ent/index.js";
 import {
   AttachmentType,
   ContactCommentsFromAttachmentConnectionType,
@@ -38,7 +38,7 @@ import {
   EmailInfoType,
   ImportantDatesType,
   UserType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const ContactType = new GraphQLObjectType({
   name: "Contact",

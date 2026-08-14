@@ -1,6 +1,6 @@
-import { FieldMap, Pattern, FieldOverrideMap } from "./schema";
+import { FieldMap, Pattern, FieldOverrideMap } from "./schema.js";
 import { v4 as uuidv4 } from "uuid";
-import { TimestampType, UUIDType } from "./field";
+import { TimestampType, UUIDType } from "./field.js";
 import type {
   Action,
   AssocEdgeGroup,
@@ -8,8 +8,8 @@ import type {
   Edge,
   Index,
   Schema,
-} from "./schema";
-import { PrivacyPolicy } from "../core/base";
+} from "./schema.js";
+import { PrivacyPolicy } from "../core/base.js";
 
 let tsFields: FieldMap = {
   createdAt: TimestampType({

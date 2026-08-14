@@ -13,14 +13,14 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   WriteOperation,
   maybeConvertRelativeInputPlusExpressions,
 } from "@snowtop/ent/action";
-import { UserStatistics } from "../../..";
-import { UserStatisticsBuilder } from "./user_statistics_builder";
-import schema from "../../../../schema/user_statistics_schema";
+import { UserStatistics } from "../../../index.js";
+import { UserStatisticsBuilder } from "./user_statistics_builder.js";
+import schema from "../../../../schema/user_statistics_schema.js";
 
 export interface UserStatisticsEditRelativeInput {
   authCodeEmailsSent?: number | RelativeNumberValue<number>;

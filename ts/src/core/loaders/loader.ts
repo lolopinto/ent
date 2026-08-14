@@ -1,7 +1,7 @@
 import DataLoader from "dataloader";
-import { Loader, LoaderFactory, Context, DataOptions } from "../base";
-import { log, logEnabled } from "../logger";
-import { getOnDataLoaderBatch, getOnDataLoaderCacheHit } from "../metrics";
+import { Loader, LoaderFactory, Context, DataOptions } from "../base.js";
+import { log, logEnabled } from "../logger.js";
+import { getOnDataLoaderBatch, getOnDataLoaderCacheHit } from "../metrics.js";
 
 const DEFAULT_MAX_BATCH_SIZE = 1000;
 let loaderMaxBatchSize = DEFAULT_MAX_BATCH_SIZE;

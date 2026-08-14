@@ -5,9 +5,9 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLObjectType, GraphQLString } from "graphql";
-import { DefaultsPayload } from "../../../ent/generated/types";
+import { DefaultsPayload } from "../../../ent/generated/types.js";
 
 export const DefaultsPayloadType = new GraphQLObjectType({
   name: "DefaultsPayload",

@@ -13,8 +13,8 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { UserStatisticsDBData } from "./loaders";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { UserStatisticsDBData } from "./loaders.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -31,10 +31,10 @@ import {
   userStatisticsLoader,
   userStatisticsLoaderInfo,
   userStatisticsUserIdLoader,
-} from "./loaders";
-import { NodeType } from "./types";
-import { User } from "../internal";
-import schema from "../../schema/user_statistics_schema";
+} from "./loaders.js";
+import { NodeType } from "./types.js";
+import { User } from "../internal.js";
+import schema from "../../schema/user_statistics_schema.js";
 
 export class UserStatisticsBase implements Ent<ExampleViewerAlias> {
   protected readonly data: UserStatisticsDBData;

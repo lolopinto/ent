@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Event, Guest, GuestData } from "src/ent/";
-import { guestDataLoaderInfo } from "src/ent/generated/loaders";
-import { GuestDataSource, NodeType } from "src/ent/generated/types";
-import schema from "src/schema/guest_data_schema";
+import { Event, Guest, GuestData } from "../../../index.js";
+import { guestDataLoaderInfo } from "../../loaders.js";
+import { GuestDataSource, NodeType } from "../../types.js";
+import schema from "../../../../schema/guest_data_schema.js";
 
 export interface GuestDataInput {
   guestId?: ID | Builder<Guest, Viewer>;

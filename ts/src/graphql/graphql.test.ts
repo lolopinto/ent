@@ -4,7 +4,7 @@ import {
   gqlArgType,
   CustomFieldType,
   gqlConnection,
-} from "./graphql";
+} from "./graphql.js";
 import {
   GraphQLInt,
   GraphQLFloat,
@@ -14,7 +14,7 @@ import {
   GraphQLEnumType,
   GraphQLBoolean,
 } from "graphql";
-import { Kind, ValueNode } from "graphql/language";
+import { Kind, ValueNode } from "graphql/language/index.js";
 
 import {
   validateOneCustomField,
@@ -23,7 +23,7 @@ import {
   validateNoCustom,
   validateCustomArgs,
   validateCustomTypes,
-} from "./graphql_field_helpers";
+} from "./graphql_field_helpers.js";
 
 beforeEach(() => {
   GQLCapture.clear();

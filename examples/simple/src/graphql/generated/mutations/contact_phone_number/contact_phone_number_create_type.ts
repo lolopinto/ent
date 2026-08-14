@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ContactPhoneNumber } from "../../../../ent";
-import type { ContactPhoneNumberCreateInput } from "../../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ContactPhoneNumber } from "../../../../ent/index.js";
+import type { ContactPhoneNumberCreateInput } from "../../../../ent/contact_phone_number/actions/create_contact_phone_number_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,9 +21,12 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import CreateContactPhoneNumberAction from "../../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
-import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
-import { ContactLabelType, ContactPhoneNumberType } from "../../../resolvers";
+import CreateContactPhoneNumberAction from "../../../../ent/contact_phone_number/actions/create_contact_phone_number_action.js";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type.js";
+import {
+  ContactLabelType,
+  ContactPhoneNumberType,
+} from "../../../resolvers/index.js";
 
 interface customContactPhoneNumberCreateInput
   extends ContactPhoneNumberCreateInput {

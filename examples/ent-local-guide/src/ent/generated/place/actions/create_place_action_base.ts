@@ -12,9 +12,9 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Place } from "../../..";
-import { PlaceBuilder } from "./place_builder";
-import { PlaceCategory } from "../../types";
+import { Place } from "../../../index.js";
+import { PlaceBuilder } from "./place_builder.js";
+import { PlaceCategory } from "../../types.js";
 
 export interface PlaceCreateInput {
   name: string;

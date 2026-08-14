@@ -1,10 +1,10 @@
 import type { Trigger, Validator } from "@snowtop/ent/action";
-import { ConfirmEditPhoneNumberActionBase } from "../../generated/user/actions/confirm_edit_phone_number_action_base";
-import type { ConfirmEditPhoneNumberInput } from "../../generated/user/actions/confirm_edit_phone_number_action_base";
-import { User } from "../..";
-import { UserBuilder } from "../../generated/user/actions/user_builder";
-import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
-import { ExampleViewer } from "../../../viewer/viewer";
+import { ConfirmEditPhoneNumberActionBase } from "../../generated/user/actions/confirm_edit_phone_number_action_base.js";
+import type { ConfirmEditPhoneNumberInput } from "../../generated/user/actions/confirm_edit_phone_number_action_base.js";
+import { User } from "../../index.js";
+import { UserBuilder } from "../../generated/user/actions/user_builder.js";
+import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action.js";
+import { ExampleViewer } from "../../../viewer/viewer.js";
 export type { ConfirmEditPhoneNumberInput };
 async function findAuthCode(
   builder: UserBuilder,

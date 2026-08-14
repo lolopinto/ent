@@ -13,12 +13,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { AuthResolver } from "src/graphql/mutations/auth/auth";
+import { AuthResolver } from "../../mutations/auth/auth.js";
 import {
   AuthGuestInput,
   AuthGuestPayload,
-} from "src/graphql/mutations/auth/auth_types";
-import { ViewerType } from "src/graphql/resolvers/internal";
+} from "../../mutations/auth/auth_types.js";
+import { ViewerType } from "../../resolvers/internal.js";
 
 export const AuthGuestInputType = new GraphQLInputObjectType({
   name: "AuthGuestInput",

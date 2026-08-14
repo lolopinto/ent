@@ -1,4 +1,4 @@
-import "src/global_augment";
+import "../global_augment.js";
 import { DB, loadConfig } from "@snowtop/ent";
 import { PostGISExtension } from "@snowtop/ent-postgis";
 

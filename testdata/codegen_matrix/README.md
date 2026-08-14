@@ -15,6 +15,8 @@ Run one fixture while iterating with:
 ```sh
 ENT_CODEGEN_MATRIX_FIXTURE=feature_stress go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
 ENT_CODEGEN_MATRIX_FIXTURE=feature_stress ENT_CODEGEN_MATRIX_RUNTIME=bun go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
+ENT_CODEGEN_MATRIX_FIXTURE=feature_stress ENT_CODEGEN_MATRIX_MODULE=esm go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
+ENT_CODEGEN_MATRIX_FIXTURE=feature_stress ENT_CODEGEN_MATRIX_MODULE=commonjs go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
 ENT_CODEGEN_MATRIX_FIXTURE=db_schema_smoke go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
 ENT_CODEGEN_MATRIX_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres ENT_CODEGEN_MATRIX_FIXTURE=postgres_schema_smoke go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
 ENT_CODEGEN_MATRIX_POSTGRES_URL=postgres://postgres:postgres@localhost:5432/postgres ENT_CODEGEN_MATRIX_FIXTURE=postgres_schema_smoke ENT_CODEGEN_MATRIX_RUNTIME=bun go test ./internal/codegenmatrix -run TestCodegenMatrixFixtures -count=1 -v
@@ -27,9 +29,10 @@ The matrix catalog lives in `features.yml`.
 - `feature_stress` runs TS schema parsing, `tsent codegen --step codegen`,
   `tsent codegen --step graphql`, generated TypeScript typechecking, and
   idempotence checks over a broad schema surface.
-  It runs once with the default Node/pg launcher settings and once with
-  Bun/Bun SQL settings, so generated Bun-specific resolver exports and
-  Postgres value conversion helpers stay covered by the same broad fixture.
+  It runs in native ESM with Node/pg and Bun/Bun SQL, plus a Node/pg CommonJS
+  compatibility variant. This covers generated module specifiers, the shared
+  ESM Ent package through both `import` and `require`, Bun-specific resolver
+  exports, and Postgres value conversion helpers in one broad fixture.
 - `db_schema_smoke` runs the same checks and also includes
   `tsent codegen --step db` against SQLite-compatible schema features. Its
   idempotence snapshot includes DB-generated schema and migration files. It
@@ -54,7 +57,10 @@ The harness builds the current checked-out `tsent` and package-shaped
 `ts/node_modules` entries plus the freshly built `@snowtop/ent` package, runs
 real codegen steps, checks the generated tree is stable across repeated runs,
 checks any fixture-local `codegen_matrix_assertions.yml` generated-file
-snippets, and then runs `tsc --noEmit` against the generated app.
+snippets, and then compiles the generated app with `tsc`.
+The module variants emit JavaScript and execute a runtime smoke entry as well:
+ESM verifies that `import` and `require` resolve the same Ent module instance,
+while the CommonJS variant verifies synchronous compatibility loading.
 It locates the repository from the Go test source path, so it does not require
 `git rev-parse` at runtime.
 
@@ -99,8 +105,10 @@ The bar is:
    `includes`. DB fixtures must also declare `dialect: sqlite` or
    `dialect: postgres`.
 3. Add `runtime_variants` only when the fixture should exercise non-default
-   runtime behavior. Omitted variants mean one Node/pg run; Bun SQL variants
-   should use `runtime: bun` with `postgresDriver: bun`.
+   runtime or module behavior. Omitted variants mean one ESM Node/pg run; Bun
+   SQL variants should use `runtime: bun`, `postgresDriver: bun`, and
+   `moduleFormat: esm`. Add a focused `moduleFormat: commonjs` variant when the
+   feature needs compatibility coverage rather than multiplying every fixture.
 4. Add or update feature entries so every active feature is covered.
 5. Add `codegen_matrix_assertions.yml` when a regression requires a specific
    generated snippet that plain typechecking would not catch.

@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { PlaceReview } from "../../../../ent";
-import type { PlaceReviewEditInput } from "../../../../ent/place_review/actions/edit_place_review_action";
+import type { PlaceReview } from "../../../../ent/index.js";
+import type { PlaceReviewEditInput } from "../../../../ent/place_review/actions/edit_place_review_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,8 +21,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import EditPlaceReviewAction from "../../../../ent/place_review/actions/edit_place_review_action";
-import { PlaceReviewType } from "../../../resolvers";
+import EditPlaceReviewAction from "../../../../ent/place_review/actions/edit_place_review_action.js";
+import { PlaceReviewType } from "../../../resolvers/index.js";
 
 interface customPlaceReviewEditInput extends PlaceReviewEditInput {
   id: string;

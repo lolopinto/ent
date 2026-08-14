@@ -10,8 +10,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { DeleteUserInput2 } from "../../../../ent/user/actions/delete_user_action2";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { DeleteUserInput2 } from "../../../../ent/user/actions/delete_user_action2.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -20,7 +20,7 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import DeleteUserAction2 from "../../../../ent/user/actions/delete_user_action2";
+import DeleteUserAction2 from "../../../../ent/user/actions/delete_user_action2.js";
 
 interface customDeleteUserInput2 extends DeleteUserInput2 {
   id: string;

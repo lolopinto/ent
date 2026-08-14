@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -18,10 +18,10 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Event } from "../../../ent/event";
-import { EventArgInputType } from "../mutations/input/event_arg_input_type";
-import { EventSortColumnType } from "./enums_type";
-import { RootToEventConnectionType } from "../../resolvers/internal";
+import { Event } from "../../../ent/event.js";
+import { EventArgInputType } from "../mutations/input/event_arg_input_type.js";
+import { EventSortColumnType } from "./enums_type.js";
+import { RootToEventConnectionType } from "../../resolvers/internal.js";
 
 interface EventConnectionArgs {
   ids: any;

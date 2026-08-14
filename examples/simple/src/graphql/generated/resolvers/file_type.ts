@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLNonNull,
@@ -13,8 +13,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { File } from "../../../ent";
-import { UserType } from "../../resolvers/internal";
+import { File } from "../../../ent/index.js";
+import { UserType } from "../../resolvers/internal.js";
 
 export const FileType = new GraphQLObjectType({
   name: "File",

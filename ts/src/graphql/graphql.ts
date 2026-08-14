@@ -1,11 +1,14 @@
 import { GraphQLEnumType, GraphQLScalarType } from "graphql";
-import { Data } from "../core/base";
-import type { FieldMap } from "../schema";
+import { createRequire } from "node:module";
+import { Data } from "../core/base.js";
+import type { FieldMap } from "../schema/index.js";
 import {
   processFields,
   ProcessedField as ParsedProcessedField,
-} from "../parse_schema/parse";
-import { ImportPath } from "../schema/schema";
+} from "../parse_schema/parse.js";
+import { ImportPath } from "../schema/schema.js";
+
+const require = createRequire(import.meta.url);
 
 interface ClassType<T = any> {
   new (...args: any[]): T;

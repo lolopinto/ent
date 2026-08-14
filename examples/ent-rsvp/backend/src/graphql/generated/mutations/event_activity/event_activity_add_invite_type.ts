@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { EventActivity } from "src/ent/";
-import type { EventActivityAddInviteInput } from "src/ent/event_activity/actions/event_activity_add_invite_action";
+import type { EventActivity } from "../../../../ent/index.js";
+import type { EventActivityAddInviteInput } from "../../../../ent/event_activity/actions/event_activity_add_invite_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,8 +17,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
-import { EventActivityType } from "src/graphql/resolvers/";
+import EventActivityAddInviteAction from "../../../../ent/event_activity/actions/event_activity_add_invite_action.js";
+import { EventActivityType } from "../../../resolvers/index.js";
 
 interface customEventActivityAddInviteInput
   extends EventActivityAddInviteInput {

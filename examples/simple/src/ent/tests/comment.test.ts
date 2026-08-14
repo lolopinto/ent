@@ -1,15 +1,15 @@
-import { randomEmail, randomPhoneNumber } from "src/util/random";
-import { LoggedOutExampleViewer } from "src/viewer/viewer";
-import CreateCommentAction from "../comment/actions/create_comment_action";
-import EditCommentAction from "../comment/actions/edit_comment_action";
-import CreateUserAction from "../user/actions/create_user_action";
-import EditUserAction from "../user/actions/edit_user_action";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
+import CreateCommentAction from "../comment/actions/create_comment_action.js";
+import EditCommentAction from "../comment/actions/edit_comment_action.js";
+import CreateUserAction from "../user/actions/create_user_action.js";
+import EditUserAction from "../user/actions/edit_user_action.js";
 import {
   ArticleToCommentsQuery,
   CommentArticleToCommentsQuery,
   UserArticleToCommentsQuery,
   AuthorToCommentsQuery,
-} from "..";
+} from "../index.js";
 
 const createUser = async () => {
   return CreateUserAction.create(new LoggedOutExampleViewer(), {

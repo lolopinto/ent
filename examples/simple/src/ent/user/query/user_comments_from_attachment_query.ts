@@ -3,8 +3,8 @@
  */
 
 import { OrderBy } from "@snowtop/ent";
-import { CommentsFromAttachmentQuery, UserBase } from "../../internal";
-import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import { CommentsFromAttachmentQuery, UserBase } from "../../internal.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 
 export class UserCommentsFromAttachmentQuery extends CommentsFromAttachmentQuery {
   constructor(

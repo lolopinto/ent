@@ -5,14 +5,18 @@ import {
   DelayedResultRule,
   DenyIfLoggedOutRule,
 } from "@snowtop/ent/core/privacy";
-import { Guest, GuestData } from "src/ent";
-import { EdgeType } from "src/ent/generated/const";
-import { EditEventActivityRsvpStatusActionBase } from "src/ent/generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
-import type { EditEventActivityRsvpStatusInput, EventActivityRsvpStatusInput, EditEventActivityRsvpStatusActionTriggers } from "src/ent/generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
-import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
-import DeleteGuestDataAction from "src/ent/guest_data/actions/delete_guest_data_action";
-import CreateGuestDataAction from "../../guest_data/actions/create_guest_data_action";
-import { EventActivityBuilder } from "../../generated/event_activity/actions/event_activity_builder";
+import { Guest, GuestData } from "../../index.js";
+import { EdgeType } from "../../generated/const.js";
+import { EditEventActivityRsvpStatusActionBase } from "../../generated/event_activity/actions/edit_event_activity_rsvp_status_action_base.js";
+import type {
+  EditEventActivityRsvpStatusInput,
+  EventActivityRsvpStatusInput,
+  EditEventActivityRsvpStatusActionTriggers,
+} from "../../generated/event_activity/actions/edit_event_activity_rsvp_status_action_base.js";
+import { AllowIfGuestInSameGuestGroupRule } from "../../guest/privacy/guest_rule_privacy.js";
+import DeleteGuestDataAction from "../../guest_data/actions/delete_guest_data_action.js";
+import CreateGuestDataAction from "../../guest_data/actions/create_guest_data_action.js";
+import { EventActivityBuilder } from "../../generated/event_activity/actions/event_activity_builder.js";
 
 export type { EditEventActivityRsvpStatusInput };
 export type { EventActivityRsvpStatusInput };

@@ -18,8 +18,8 @@ import {
 import { IncomingHttpHeaders } from "http";
 import supertest from "supertest";
 import { inspect } from "util";
-import { buildContext, registerAuthHandler } from "../../auth";
-import { Viewer } from "../../core/base";
+import { buildContext, registerAuthHandler } from "../../auth/index.js";
+import { Viewer } from "../../core/base.js";
 
 const bunAgentServerClose = Symbol("bunAgentServerClose");
 const bunAgentServerCleanups = new Set<() => Promise<void>>();
@@ -187,7 +187,8 @@ async function createBunTestHarness(
       } else {
         agent = supertest.agent(url);
       }
-      (agent as any)[bunAgentServerClose] = registerBunAgentServerCleanup(close);
+      (agent as any)[bunAgentServerClose] =
+        registerBunAgentServerCleanup(close);
       return { agent };
     } catch (err) {
       await close();

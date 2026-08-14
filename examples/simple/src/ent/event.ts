@@ -1,5 +1,5 @@
 import { gqlField } from "@snowtop/ent/graphql";
-import { EventBase } from "./internal";
+import { EventBase } from "./internal.js";
 import { PrivacyPolicy, AlwaysAllowRule } from "@snowtop/ent";
 
 // we're only writing this once except with --force and packageName provided

@@ -26,6 +26,10 @@ func (c fakeImportConfig) ShouldUseRelativePaths() bool {
 	return false
 }
 
+func (c fakeImportConfig) ShouldAddImportExtensions() bool {
+	return false
+}
+
 func (c fakeImportConfig) DebugMode() bool {
 	return false
 }

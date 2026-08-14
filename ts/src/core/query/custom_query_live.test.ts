@@ -2,11 +2,11 @@ import {
   FakeUser,
   UserToContactsFkeyQuery,
   UserToContactsFkeyQueryAsc,
-} from "../../testutils/fake_data/index";
-import { MockLogs } from "../../testutils/mock_log";
-import { Viewer } from "../base";
-import { Eq } from "../clause";
-import { commonTests } from "./shared_test";
+} from "../../testutils/fake_data/index.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { Viewer } from "../base.js";
+import { Eq } from "../clause.js";
+import { commonTests } from "./shared_test.js";
 
 const ml = new MockLogs();
 ml.mock();

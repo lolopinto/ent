@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -17,8 +17,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Holiday } from "../../../ent/holiday";
-import { HolidayType } from "../../resolvers/internal";
+import { Holiday } from "../../../ent/holiday.js";
+import { HolidayType } from "../../resolvers/internal.js";
 
 interface HolidayListDeprecatedArgs {
   id: any;

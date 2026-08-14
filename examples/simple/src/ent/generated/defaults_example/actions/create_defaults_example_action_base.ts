@@ -12,12 +12,12 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { DefaultsPayload } from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { DefaultsPayload } from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { DefaultsExample } from "../../..";
-import { DefaultsExampleBuilder } from "./defaults_example_builder";
+import { DefaultsExample } from "../../../index.js";
+import { DefaultsExampleBuilder } from "./defaults_example_builder.js";
 
 export interface DefaultsExampleCreateInput {
   creatorId?: ID;

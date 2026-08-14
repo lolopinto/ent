@@ -7,9 +7,11 @@ type filterMapCallback<T, U> = (
   return: U;
 };
 
-interface Array<T> {
-  filterNulls(): NonNullable<Array<T>>;
-  filterMap<U extends any>(fn: filterMapCallback<T, U>): Array<U>;
+declare global {
+  interface Array<T> {
+    filterNulls(): NonNullable<Array<T>>;
+    filterMap<U extends any>(fn: filterMapCallback<T, U>): Array<U>;
+  }
 }
 
 Array.prototype.filterNulls = function filterNulls() {

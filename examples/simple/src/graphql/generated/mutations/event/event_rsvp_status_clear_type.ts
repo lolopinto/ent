@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Event } from "../../../../ent";
-import type { ClearEventRsvpStatusInput } from "../../../../ent/event/actions/clear_event_rsvp_status_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Event } from "../../../../ent/index.js";
+import type { ClearEventRsvpStatusInput } from "../../../../ent/event/actions/clear_event_rsvp_status_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -20,8 +20,8 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import ClearEventRsvpStatusAction from "../../../../ent/event/actions/clear_event_rsvp_status_action";
-import { EventType } from "../../../resolvers";
+import ClearEventRsvpStatusAction from "../../../../ent/event/actions/clear_event_rsvp_status_action.js";
+import { EventType } from "../../../resolvers/index.js";
 
 interface customClearEventRsvpStatusInput extends ClearEventRsvpStatusInput {
   id: string;

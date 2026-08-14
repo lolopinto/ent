@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { User } from "../../../../ent";
-import type { ConfirmEditEmailAddressInput } from "../../../../ent/user/actions/confirm_edit_email_address_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { User } from "../../../../ent/index.js";
+import type { ConfirmEditEmailAddressInput } from "../../../../ent/user/actions/confirm_edit_email_address_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,8 +21,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import ConfirmEditEmailAddressAction from "../../../../ent/user/actions/confirm_edit_email_address_action";
-import { UserType } from "../../../resolvers";
+import ConfirmEditEmailAddressAction from "../../../../ent/user/actions/confirm_edit_email_address_action.js";
+import { UserType } from "../../../resolvers/index.js";
 
 interface customConfirmEditEmailAddressInput
   extends ConfirmEditEmailAddressInput {

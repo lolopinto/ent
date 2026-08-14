@@ -48,6 +48,13 @@ const (
 	PostgresDriverBun PostgresDriver = "bun"
 )
 
+type ModuleFormat string
+
+const (
+	ModuleFormatESM      ModuleFormat = "esm"
+	ModuleFormatCommonJS ModuleFormat = "commonjs"
+)
+
 type ImportedObject struct {
 	Path  string `yaml:"path"`
 	Name  string `yaml:"name"`
@@ -90,6 +97,7 @@ type Config interface {
 	GetAbsPathToRoot() string
 	Runtime() Runtime
 	PostgresDriver() PostgresDriver
+	ModuleFormat() ModuleFormat
 	DebugMode() bool
 	DebugFilesMode() bool
 	// doesn't actually writes the files, just keeps track of which files were going to be written
@@ -127,6 +135,10 @@ func (cfg *DummyConfig) Runtime() Runtime {
 
 func (cfg *DummyConfig) PostgresDriver() PostgresDriver {
 	return PostgresDriverPG
+}
+
+func (cfg *DummyConfig) ModuleFormat() ModuleFormat {
+	return ModuleFormatESM
 }
 
 func (cfg *DummyConfig) DebugMode() bool {

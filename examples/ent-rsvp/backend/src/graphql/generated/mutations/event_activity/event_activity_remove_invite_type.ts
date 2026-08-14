@@ -7,7 +7,7 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { EventActivity } from "src/ent/";
+import type { EventActivity } from "../../../../ent/index.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -15,8 +15,8 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EventActivityRemoveInviteAction from "src/ent/event_activity/actions/event_activity_remove_invite_action";
-import { EventActivityType } from "src/graphql/resolvers/";
+import EventActivityRemoveInviteAction from "../../../../ent/event_activity/actions/event_activity_remove_invite_action.js";
+import { EventActivityType } from "../../../resolvers/index.js";
 
 interface customEventActivityRemoveInviteInput {
   id: string;

@@ -11,10 +11,10 @@ import (
 var prefix = "src/"
 
 func getImportPath(cfg Config, filePath, importPath string) (string, error) {
-	if !cfg.ShouldUseRelativePaths() || filePath == "" {
-		return importPath, nil
+	if isRelativeImportPath(importPath) {
+		return formatRelativeImportPath(cfg, importPath), nil
 	}
-	if filePath == "" {
+	if !cfg.ShouldUseRelativePaths() || filePath == "" {
 		return importPath, nil
 	}
 	wd := cfg.GetAbsPathToRoot()
@@ -28,24 +28,63 @@ func getImportPath(cfg Config, filePath, importPath string) (string, error) {
 	if !path.IsAbs(filePath) {
 		filePath = path.Join(wd, filePath)
 	}
+	if isDir && cfg.ShouldAddImportExtensions() {
+		importPath = path.Join(importPath, "index")
+	}
+	addedTypeScriptExtension := false
+	if !isDir && path.Ext(importPath) == "" {
+		importPath += ".ts"
+		addedTypeScriptExtension = true
+	}
 	importPath = path.Join(wd, importPath)
 
-	if !isDir {
-		importPath = importPath + ".ts"
-	}
 	relPath, err := filepath.Rel(path.Dir(filePath), importPath)
 	if err != nil {
 		return "", err
 	}
-	// retrim the suffix we added above
-	if !isDir {
-		relPath = strings.TrimSuffix(relPath, ".ts")
-	}
+	relPath = filepath.ToSlash(relPath)
 
 	if !strings.HasPrefix(relPath, "..") {
 		relPath = "./" + relPath
 	}
-	return relPath, nil
+	if addedTypeScriptExtension && !cfg.ShouldAddImportExtensions() {
+		relPath = strings.TrimSuffix(relPath, ".ts")
+	}
+	return formatRelativeImportPath(cfg, relPath), nil
+}
+
+func isRelativeImportPath(importPath string) bool {
+	return importPath == "." || importPath == ".." ||
+		strings.HasPrefix(importPath, "./") || strings.HasPrefix(importPath, "../")
+}
+
+func formatRelativeImportPath(cfg Config, importPath string) string {
+	importPath = filepath.ToSlash(importPath)
+	if !cfg.ShouldAddImportExtensions() {
+		return importPath
+	}
+
+	if strings.HasSuffix(importPath, "/") || importPath == "." || importPath == ".." {
+		dotRelative := importPath == "." || strings.HasPrefix(importPath, "./")
+		importPath = path.Join(importPath, "index")
+		if dotRelative && !strings.HasPrefix(importPath, "./") {
+			importPath = "./" + importPath
+		}
+	}
+
+	ext := path.Ext(importPath)
+	switch ext {
+	case "":
+		return importPath + ".js"
+	case ".ts", ".tsx":
+		return strings.TrimSuffix(importPath, ext) + ".js"
+	case ".mts":
+		return strings.TrimSuffix(importPath, ext) + ".mjs"
+	case ".cts":
+		return strings.TrimSuffix(importPath, ext) + ".cjs"
+	default:
+		return importPath
+	}
 }
 
 func getErrorPath(cfg Config, filePath string) string {

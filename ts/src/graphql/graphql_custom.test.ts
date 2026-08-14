@@ -12,9 +12,9 @@ import {
   gqlInterfaceType,
   gqlUnionType,
   addCustomType,
-} from "./graphql";
+} from "./graphql.js";
 import { GraphQLBoolean, GraphQLID, GraphQLString } from "graphql";
-import { ID, Viewer } from "../core/base";
+import { ID, Viewer } from "../core/base.js";
 
 import {
   validateCustomFields,
@@ -29,8 +29,8 @@ import {
   validateCustomTypes,
   validateCustomInterfaces,
   validateCustomUnions,
-} from "./graphql_field_helpers";
-import { RequestContext } from "../core/context";
+} from "./graphql_field_helpers.js";
+import { RequestContext } from "../core/context.js";
 
 beforeEach(() => {
   GQLCapture.clear();
@@ -192,14 +192,14 @@ test("custom enum type is not captured as scalar", async () => {
   await addCustomType(
     {
       type: "GraphQLOrderByDirection",
-      importPath: "../graphql/scalars/orderby_direction",
+      importPath: "../graphql/scalars/orderby_direction.js",
     },
     GQLCapture,
   );
 
   expect(GQLCapture.getCustomTypes().get("GraphQLOrderByDirection")).toEqual({
     type: "GraphQLOrderByDirection",
-    importPath: "../graphql/scalars/orderby_direction",
+    importPath: "../graphql/scalars/orderby_direction.js",
   });
 });
 

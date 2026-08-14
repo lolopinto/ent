@@ -1,10 +1,10 @@
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { graphqlUploadExpress } from "@snowtop/ent/graphql/upload";
-import CreateUserAction from "../../ent/user/actions/create_user_action";
-import schema from "../generated/schema";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
+import CreateUserAction from "../../ent/user/actions/create_user_action.js";
+import schema from "../generated/schema.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
 
 test("bulk upload", async () => {
   const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {

@@ -7,14 +7,14 @@ import {
 } from "@snowtop/ent/graphql";
 import { RequestContext } from "@snowtop/ent";
 import { useAndVerifyAuth, useAndVerifyAuthJWT } from "@snowtop/ent-passport";
-import { User } from "../../ent/user";
+import { User } from "../../ent/user.js";
 import {
   UserAuthInput,
   UserAuthJWTInput,
   UserAuthJWTLogin,
   UserAuthJWTPayload,
   UserAuthPayload,
-} from "./auth_types";
+} from "./auth_types.js";
 import { GraphQLString } from "graphql";
 
 @gqlInputObjectType({

@@ -6,7 +6,7 @@ import {
   ContactEmail,
   ObjectToLikersEdge,
   ObjectToLikersQuery,
-} from "../../internal";
+} from "../../internal.js";
 
 export class ContactEmailToLikersEdge extends ObjectToLikersEdge {}
 

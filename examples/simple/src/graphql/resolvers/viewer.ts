@@ -2,9 +2,9 @@ import { gqlContextType, gqlQuery } from "@snowtop/ent/graphql";
 import { GraphQLString } from "graphql";
 import { RequestContext } from "@snowtop/ent";
 
-import { ExampleViewer } from "../../viewer/viewer";
+import { ExampleViewer } from "../../viewer/viewer.js";
 import { DateTime } from "luxon";
-import { GQLViewer } from "./gql_viewer";
+import { GQLViewer } from "./gql_viewer.js";
 
 export class ViewerResolver {
   @gqlQuery({

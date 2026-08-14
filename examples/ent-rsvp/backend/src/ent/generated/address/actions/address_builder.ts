@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Address } from "src/ent/";
-import { addressLoaderInfo } from "src/ent/generated/loaders";
-import { EdgeType, NodeType } from "src/ent/generated/types";
-import schema from "src/schema/address_schema";
+import { Address } from "../../../index.js";
+import { addressLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/address_schema.js";
 
 export interface AddressInput {
   street?: string;

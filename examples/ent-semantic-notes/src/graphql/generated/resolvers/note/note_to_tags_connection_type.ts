@@ -3,8 +3,8 @@
 import type { Viewer } from "@snowtop/ent";
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { NoteToTagsEdge } from "../../../../ent";
-import { TagType } from "../../../resolvers/internal";
+import { NoteToTagsEdge } from "../../../../ent/index.js";
+import { TagType } from "../../../resolvers/internal.js";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, NoteToTagsEdge, Viewer>;
 

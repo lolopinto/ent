@@ -2,12 +2,12 @@ import {
   expectMutation,
   expectQueryFromRoot,
 } from "@snowtop/ent-graphql-tests";
-import { Event } from "src/ent";
+import { Event } from "../../ent/index.js";
 import { ID, loadConfig } from "@snowtop/ent";
-import schema from "src/graphql/generated/schema";
+import schema from "../generated/schema.js";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { createUser } from "src/testutils";
-import DeleteEventAction from "src/ent/event/actions/delete_event_action";
+import { createUser } from "../../testutils/index.js";
+import DeleteEventAction from "../../ent/event/actions/delete_event_action.js";
 
 afterEach(() => {
   loadConfig(Buffer.from(`log: error`));

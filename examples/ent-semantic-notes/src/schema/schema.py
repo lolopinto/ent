@@ -7,7 +7,7 @@ from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
 
- 
+
 sa.Table("assoc_edge_config", metadata,
     sa.Column("edge_type", postgresql.UUID(), nullable=False),
     sa.Column("edge_name", sa.Text(), nullable=False),
@@ -20,7 +20,7 @@ sa.Table("assoc_edge_config", metadata,
     sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
     sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
 )
-   
+
 sa.Table("note_chunks", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -36,7 +36,7 @@ sa.Table("note_chunks", metadata,
     sa.PrimaryKeyConstraint("id", name="note_chunks_id_pkey"),
     sa.Index("note_chunks_unique_ordinal", "note_id", "ordinal", unique=True),
 )
-   
+
 sa.Table("note_chunks_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -48,7 +48,7 @@ sa.Table("note_chunks_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_chunks_edges_id1_edge_type_id2_pkey"),
     sa.Index("note_chunks_edges_time_idx", "time"),
 )
-   
+
 sa.Table("note_saved_by_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -60,7 +60,7 @@ sa.Table("note_saved_by_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_saved_by_edges_id1_edge_type_id2_pkey"),
     sa.Index("note_saved_by_edges_time_idx", "time"),
 )
-   
+
 sa.Table("note_tags_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -72,7 +72,7 @@ sa.Table("note_tags_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="note_tags_edges_id1_edge_type_id2_pkey"),
     sa.Index("note_tags_edges_time_idx", "time"),
 )
-   
+
 sa.Table("notes", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -88,7 +88,7 @@ sa.Table("notes", metadata,
     sa.PrimaryKeyConstraint("id", name="notes_id_pkey"),
     sa.Index("workspace_notes_status_idx", "workspace_id", "status"),
 )
-   
+
 sa.Table("tags", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -100,7 +100,7 @@ sa.Table("tags", metadata,
     sa.PrimaryKeyConstraint("id", name="tags_id_pkey"),
     sa.Index("workspace_tags_unique_name", "workspace_id", "name", unique=True),
 )
-   
+
 sa.Table("user_created_workspaces_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -112,7 +112,7 @@ sa.Table("user_created_workspaces_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_created_workspaces_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_created_workspaces_edges_time_idx", "time"),
 )
-   
+
 sa.Table("user_notes_authored_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -124,7 +124,7 @@ sa.Table("user_notes_authored_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_notes_authored_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_notes_authored_edges_time_idx", "time"),
 )
-   
+
 sa.Table("users", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -135,7 +135,7 @@ sa.Table("users", metadata,
     sa.PrimaryKeyConstraint("id", name="users_id_pkey"),
     sa.UniqueConstraint("email_address", name="users_unique_email_address"),
 )
-   
+
 sa.Table("workspace_members_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -147,7 +147,7 @@ sa.Table("workspace_members_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_members_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_members_edges_time_idx", "time"),
 )
-   
+
 sa.Table("workspace_note_chunks_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -159,7 +159,7 @@ sa.Table("workspace_note_chunks_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_note_chunks_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_note_chunks_edges_time_idx", "time"),
 )
-   
+
 sa.Table("workspace_notes_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -171,7 +171,7 @@ sa.Table("workspace_notes_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_notes_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_notes_edges_time_idx", "time"),
 )
-   
+
 sa.Table("workspace_tags_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -183,7 +183,7 @@ sa.Table("workspace_tags_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="workspace_tags_edges_id1_edge_type_id2_pkey"),
     sa.Index("workspace_tags_edges_time_idx", "time"),
 )
-   
+
 sa.Table("workspaces", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -197,7 +197,7 @@ sa.Table("workspaces", metadata,
     sa.PrimaryKeyConstraint("id", name="workspaces_id_pkey"),
     sa.UniqueConstraint("slug", name="workspaces_unique_slug"),
 )
-  
+
 
 metadata.info["edges"] = {
   'public': {

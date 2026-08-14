@@ -1,4 +1,5 @@
 globalSchemaPath: global_schema.ts
+moduleFormat: commonjs
 codegen:
   disableBase64Encoding: true
   generateRootResolvers: true

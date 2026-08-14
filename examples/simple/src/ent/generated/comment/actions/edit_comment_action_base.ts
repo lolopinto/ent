@@ -13,11 +13,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Comment } from "../../..";
-import { CommentBuilder } from "./comment_builder";
+import { Comment } from "../../../index.js";
+import { CommentBuilder } from "./comment_builder.js";
 
 export interface CommentEditInput {
   body?: string;

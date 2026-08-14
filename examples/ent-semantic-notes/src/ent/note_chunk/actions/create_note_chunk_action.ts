@@ -1,6 +1,6 @@
 import { type Data, IDViewer } from "@snowtop/ent";
-import type { NoteChunkCreateInput } from "../../generated/note_chunk/actions/create_note_chunk_action_base";
-import { CreateNoteChunkActionBase } from "../../generated/note_chunk/actions/create_note_chunk_action_base";
+import type { NoteChunkCreateInput } from "../../generated/note_chunk/actions/create_note_chunk_action_base.js";
+import { CreateNoteChunkActionBase } from "../../generated/note_chunk/actions/create_note_chunk_action_base.js";
 
 export type { NoteChunkCreateInput };
 

@@ -7,7 +7,7 @@ import {
 } from "@snowtop/ent";
 import { MockLogs } from "@snowtop/ent/testutils/mock_log";
 import { TestContext } from "@snowtop/ent/testutils/context/test_context";
-import { User, Contact, Event, ArticleToCommentsQuery } from "..";
+import { User, Contact, Event, ArticleToCommentsQuery } from "../index.js";
 import {
   UserDaysOff,
   UserPreferredShift,
@@ -25,28 +25,28 @@ import {
   UserAccountStatus,
   ContactLabel,
   ResponseType,
-} from "../generated/types";
+} from "../generated/types.js";
 import { v1 as uuidv1, v4 as uuidv4, validate } from "uuid";
-import { random, randomEmail, randomPhoneNumber } from "../../util/random";
+import { random, randomEmail, randomPhoneNumber } from "../../util/random.js";
 import CreateUserAction, {
   UserCreateInput,
-} from "../user/actions/create_user_action";
-import EditUserAction from "../user/actions/edit_user_action";
-import DeleteUserAction from "../user/actions/delete_user_action";
-import CreateEventAction from "../event/actions/create_event_action";
-import CreateContactAction from "../contact/actions/create_contact_action";
+} from "../user/actions/create_user_action.js";
+import EditUserAction from "../user/actions/edit_user_action.js";
+import DeleteUserAction from "../user/actions/delete_user_action.js";
+import CreateEventAction from "../event/actions/create_event_action.js";
+import CreateContactAction from "../contact/actions/create_contact_action.js";
 import { FakeLogger } from "@snowtop/ent/testutils/fake_log";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
-import EditEmailAddressAction from "../user/actions/edit_email_address_action";
-import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action";
-import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
-import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
-import CreateCommentAction from "../comment/actions/create_comment_action";
-import DeleteUserAction2 from "../user/actions/delete_user_action_2";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
-import EditUserAllFieldsAction from "../user/actions/edit_user_all_fields_action";
+import EditEmailAddressAction from "../user/actions/edit_email_address_action.js";
+import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_address_action.js";
+import EditPhoneNumberAction from "../user/actions/edit_phone_number_action.js";
+import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action.js";
+import CreateCommentAction from "../comment/actions/create_comment_action.js";
+import DeleteUserAction2 from "../user/actions/delete_user_action_2.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
+import EditUserAllFieldsAction from "../user/actions/edit_user_all_fields_action.js";
 import { getSimpleInsertAction } from "@snowtop/ent/action/experimental_action";
-import { UserBuilder } from "../generated/user/actions/user_builder";
+import { UserBuilder } from "../generated/user/actions/user_builder.js";
 import { buildInsertQuery } from "@snowtop/ent/core/ent";
 
 const loggedOutViewer = new LoggedOutExampleViewer();

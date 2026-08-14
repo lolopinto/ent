@@ -7,8 +7,8 @@ import {
   StructTypeAsList,
   StructType,
   DateType,
-} from "@snowtop/ent/schema/";
-import Feedback from "./patterns/feedback";
+} from "@snowtop/ent/schema";
+import Feedback from "./patterns/feedback.js";
 
 const ContactSchema = new EntSchema({
   patterns: [new Feedback()],

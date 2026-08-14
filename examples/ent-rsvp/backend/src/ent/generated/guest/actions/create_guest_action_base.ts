@@ -12,9 +12,15 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Address, Event, Guest, GuestData, GuestGroup } from "src/ent/";
-import { GuestBuilder } from "src/ent/generated/guest/actions/guest_builder";
-import { GuestTag } from "src/ent/generated/types";
+import {
+  Address,
+  Event,
+  Guest,
+  GuestData,
+  GuestGroup,
+} from "../../../index.js";
+import { GuestBuilder } from "./guest_builder.js";
+import { GuestTag } from "../../types.js";
 
 export interface GuestCreateInput {
   addressId?: ID | null | Builder<Address, Viewer>;

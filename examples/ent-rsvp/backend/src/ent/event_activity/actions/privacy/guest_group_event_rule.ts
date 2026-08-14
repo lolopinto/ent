@@ -1,7 +1,7 @@
 import { Allow, Ent, ID, PrivacyPolicyRule, Skip, Viewer } from "@snowtop/ent";
 import { EdgeInputData } from "@snowtop/ent/action";
-import { GuestGroup } from "src/ent/";
-import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_group_builder";
+import { GuestGroup } from "../../../index.js";
+import { GuestGroupBuilder } from "../../../generated/guest_group/actions/guest_group_builder.js";
 
 export class AllowIfGuestGroupPartOfEventRule implements PrivacyPolicyRule {
   constructor(

@@ -2,8 +2,98 @@
   "name": "@snowtop/ent",
   "version": "0.2.13",
   "description": "snowtop ent framework",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "entToolingContract": 1,
+  "type": "module",
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "module-sync": "./index.js",
+      "import": "./index.js",
+      "require": "./index.js",
+      "default": "./index.js"
+    },
+    "./action": {
+      "types": "./action/index.d.ts",
+      "module-sync": "./action/index.js",
+      "import": "./action/index.js",
+      "require": "./action/index.js",
+      "default": "./action/index.js"
+    },
+    "./auth": {
+      "types": "./auth/index.d.ts",
+      "module-sync": "./auth/index.js",
+      "import": "./auth/index.js",
+      "require": "./auth/index.js",
+      "default": "./auth/index.js"
+    },
+    "./core/loaders": {
+      "types": "./core/loaders/index.d.ts",
+      "module-sync": "./core/loaders/index.js",
+      "import": "./core/loaders/index.js",
+      "require": "./core/loaders/index.js",
+      "default": "./core/loaders/index.js"
+    },
+    "./core/query": {
+      "types": "./core/query/index.d.ts",
+      "module-sync": "./core/query/index.js",
+      "import": "./core/query/index.js",
+      "require": "./core/query/index.js",
+      "default": "./core/query/index.js"
+    },
+    "./graphql": {
+      "types": "./graphql/index.d.ts",
+      "module-sync": "./graphql/index.js",
+      "import": "./graphql/index.js",
+      "require": "./graphql/index.js",
+      "default": "./graphql/index.js"
+    },
+    "./imports": {
+      "types": "./imports/index.d.ts",
+      "module-sync": "./imports/index.js",
+      "import": "./imports/index.js",
+      "require": "./imports/index.js",
+      "default": "./imports/index.js"
+    },
+    "./schema": {
+      "types": "./schema/index.d.ts",
+      "module-sync": "./schema/index.js",
+      "import": "./schema/index.js",
+      "require": "./schema/index.js",
+      "default": "./schema/index.js"
+    },
+    "./testutils/ent-graphql-tests": {
+      "types": "./testutils/ent-graphql-tests/index.d.ts",
+      "module-sync": "./testutils/ent-graphql-tests/index.js",
+      "import": "./testutils/ent-graphql-tests/index.js",
+      "require": "./testutils/ent-graphql-tests/index.js",
+      "default": "./testutils/ent-graphql-tests/index.js"
+    },
+    "./testutils/fake_data": {
+      "types": "./testutils/fake_data/index.d.ts",
+      "module-sync": "./testutils/fake_data/index.js",
+      "import": "./testutils/fake_data/index.js",
+      "require": "./testutils/fake_data/index.js",
+      "default": "./testutils/fake_data/index.js"
+    },
+    "./package.json": "./package.json",
+    "./*/": null,
+    "./*.js": {
+      "types": "./*.d.ts",
+      "module-sync": "./*.js",
+      "import": "./*.js",
+      "require": "./*.js",
+      "default": "./*.js"
+    },
+    "./*": {
+      "types": "./*.d.ts",
+      "module-sync": "./*.js",
+      "import": "./*.js",
+      "require": "./*.js",
+      "default": "./*.js"
+    }
+  },
   "directories": {
     "example": "examples"
   },
@@ -11,17 +101,16 @@
     "@types/node": "25.0.3",
     "dataloader": "2.2.3",
     "glob": "13.0.0",
+    "jest-mock": "30.2.0",
     "js-yaml": "4.1.1",
     "luxon": "3.7.2",
     "pg": "8.16.3",
-    "ts-node": "11.0.0-beta.1",
-    "tsconfig-paths": "4.2.0",
     "tslib": "2.8.1",
+    "tsx": "4.23.0",
     "typescript": "5.9.3",
     "uuid": "11.1.1"
   },
   "peerDependencies": {
-    "@swc-node/register": "1.6.8",
     "better-sqlite3": "12.5.0",
     "graphql": "16.12.0",
     "graphql-upload": "15.0.2"
@@ -32,18 +121,13 @@
     },
     "better-sqlite3": {
       "optional": true
-    },
-    "@swc-node/register": {
-      "optional": true
     }
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=20.19.0 <21 || >=22.12.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.7",
-    "@swc/core": "1.15.8",
-    "@swc/jest": "0.2.39",
     "@types/better-sqlite3": "7.6.13",
     "@types/express": "4.17.25",
     "@types/jest": "30.0.0",
@@ -65,7 +149,6 @@
     "jest-date-mock": "1.0.10",
     "jest-each": "30.2.0",
     "jest-expect-message": "1.1.3",
-    "jest-mock": "30.2.0",
     "node-sql-parser": "5.3.13",
     "pg-copy-streams": "7.0.0",
     "pluralize": "8.0.0",
@@ -74,10 +157,13 @@
   },
   "scripts": {
     "compile": "tsc",
-    "test": "jest",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:package": "node scripts/package_smoke.mjs",
+    "test:package:unsupported-node": "node scripts/package_unsupported_node_smoke.mjs",
+    "test:engine-contract": "node scripts/node_engine_contract.mjs",
     "clean": "rm -rf dist",
-    "format": "biome format --write biome.json package.json tsconfig.json jest.config.js src",
-    "format:check": "biome check --diagnostic-level=error biome.json package.json tsconfig.json jest.config.js src",
+    "format": "biome format --write biome.json package.json tsconfig.json tsconfig.jest.json jest.config.cjs jest.setup.ts scripts src",
+    "format:check": "biome check --diagnostic-level=error biome.json package.json tsconfig.json tsconfig.jest.json jest.config.cjs jest.setup.ts scripts src",
     "prepare-code": "npm run clean && npm run compile && node src/setupPackage.js",
     "prepare-code-legacy": "npm run clean && npm run compile && node src/setupPackage.js --legacy",
     "actual-publish": "npm login && npm run prepare-code && npm publish ./dist --verbose --access public",

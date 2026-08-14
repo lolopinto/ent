@@ -13,8 +13,8 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { FileDBData } from "./loaders";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { FileDBData } from "./loaders.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -25,10 +25,10 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { fileLoader, fileLoaderInfo } from "./loaders";
-import { NodeType } from "./types";
-import { User } from "../internal";
-import schema from "../../schema/file_schema";
+import { fileLoader, fileLoaderInfo } from "./loaders.js";
+import { NodeType } from "./types.js";
+import { User } from "../internal.js";
+import schema from "../../schema/file_schema.js";
 
 export class FileBase implements Ent<ExampleViewerAlias> {
   protected readonly data: FileDBData;

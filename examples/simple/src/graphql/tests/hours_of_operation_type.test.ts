@@ -1,11 +1,11 @@
 import { ID } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
-import schema from "../generated/schema";
+import schema from "../generated/schema.js";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { HoursOfOperation } from "src/ent";
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
+import { HoursOfOperation } from "../../ent/index.js";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
 import { DBTimeZone } from "@snowtop/ent/testutils/db_time_zone";
-import { DayOfWeek, DayOfWeekAlt } from "../../ent/generated/types";
+import { DayOfWeek, DayOfWeekAlt } from "../../ent/generated/types.js";
 
 test("create hours of operation", async () => {
   let id: ID;

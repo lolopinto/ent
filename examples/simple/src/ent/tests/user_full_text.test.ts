@@ -1,11 +1,11 @@
 import { DB } from "@snowtop/ent";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
 import CreateUserAction, {
   UserCreateInput,
-} from "../user/actions/create_user_action";
-import { User } from "../../ent";
+} from "../user/actions/create_user_action.js";
+import { User } from "../index.js";
 import * as clause from "@snowtop/ent/core/clause";
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -93,9 +93,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await DB.getInstance().getPool().exec(
-    "TRUNCATE TABLE users RESTART IDENTITY CASCADE",
-  );
+  await DB.getInstance()
+    .getPool()
+    .exec("TRUNCATE TABLE users RESTART IDENTITY CASCADE");
 });
 
 async function create(opts: Partial<UserCreateInput>): Promise<User> {

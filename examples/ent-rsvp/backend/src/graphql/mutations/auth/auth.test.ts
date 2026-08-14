@@ -4,16 +4,18 @@ import {
   expectQueryFromRoot,
   Option,
 } from "@snowtop/ent-graphql-tests";
-import { createUser, createAndInvitePlusGuests } from "src/testutils";
-import schema from "src/graphql/generated/schema";
-import { AuthCode } from "src/ent/auth_code";
+import {
+  createUser,
+  createAndInvitePlusGuests,
+} from "../../../testutils/index.js";
+import schema from "../../generated/schema.js";
+import { AuthCode } from "../../../ent/auth_code.js";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
 import supertest from "supertest";
-import { Guest, User } from "src/ent";
-import each from "jest-each";
+import { Guest, User } from "../../../ent/index.js";
 
-async function confirmNoViewer(st?: supertest.SuperTest<supertest.Test>) {
+async function confirmNoViewer(st?: supertest.Agent) {
   await expectQueryFromRoot(
     {
       root: "viewer",
@@ -31,7 +33,7 @@ test("logged out viewer", async () => {
   await confirmNoViewer();
 });
 
-each([[true], [false]]).test("log guest in. any: %s", async (any: boolean) => {
+test.each([[true], [false]])("log guest in. any: %s", async (any: boolean) => {
   const [_, guests] = await createAndInvitePlusGuests(0);
   const guest = guests[0];
 
@@ -41,7 +43,7 @@ each([[true], [false]]).test("log guest in. any: %s", async (any: boolean) => {
   expect(code.guestId).toBe(guest.id);
 
   let jwtToken: string = "";
-  let st: supertest.SuperTest<supertest.Test>;
+  let st: supertest.Agent;
 
   let mutation = "authGuest";
   let args: Data = {
@@ -130,11 +132,11 @@ test("incorrect guest credentials", async () => {
   await confirmNoViewer(st);
 });
 
-each([[true], [false]]).test("log user in. any: %s", async (any: boolean) => {
+test.each([[true], [false]])("log user in. any: %s", async (any: boolean) => {
   const user = await createUser();
 
   let jwtToken: string = "";
-  let st: supertest.SuperTest<supertest.Test>;
+  let st: supertest.Agent;
 
   let mutation = "authUser";
   let args: Data = {

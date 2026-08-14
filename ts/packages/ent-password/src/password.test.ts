@@ -1,6 +1,6 @@
 import PasswordValidator from "password-validator";
-import { PasswordType, Password } from "./password";
-import * as bcrypt from "bcryptjs";
+import { PasswordType, Password } from "./password.js";
+import bcrypt from "bcryptjs";
 
 let schema = new PasswordValidator();
 schema

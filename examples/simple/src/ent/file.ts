@@ -3,8 +3,8 @@
  */
 
 import { AllowIfViewerIsEntPropertyRule, PrivacyPolicy } from "@snowtop/ent";
-import { ExampleViewer } from "src/viewer/viewer";
-import { FileBase } from "./internal";
+import { ExampleViewer } from "../viewer/viewer.js";
+import { FileBase } from "./internal.js";
 
 export class File extends FileBase {
   getPrivacyPolicy(): PrivacyPolicy<this, ExampleViewer> {

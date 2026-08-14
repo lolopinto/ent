@@ -1,15 +1,16 @@
 {
   "name": "simple",
   "version": "0.0.1",
+  "type": "module",
   "description": "simple ts app",
   "main": ".",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "build:ent": "npm --prefix ../../ts run compile && cd ../../ts/packages/ent-graphql-tests && ../../node_modules/.bin/tsc -p tsconfig.json && cd ../../../examples/simple && bun scripts/sync_local_ent_packages.ts",
-    "test": "npm run build:ent && bun test --preload ./src/testsetup/bun.ts --max-concurrency=1 --timeout 20000",
-    "compile": "npm run build:ent && rm -rf dist && bunx ent-custom-compiler",
+    "build:ent": "node ../scripts/sync_local_ent_packages.mjs",
+    "test": "rm -rf dist && npm run build:ent && bun test --preload ./src/testsetup/bun.ts --max-concurrency=1 --timeout 20000",
+    "compile": "npm run build:ent && rm -rf dist && ./node_modules/.bin/tsc -p tsconfig.json",
     "start": "docker compose -f docker-compose.dev.yml up --build",
     "codegen": "npm run build:ent && ENT_RUNTIME=bun ENT_POSTGRES_DRIVER=bun go run ../../tsent/main.go codegen --disable_upgrade",
     "upgrade": "docker compose -f docker-compose.dev.yml run --rm app tsent upgrade",
@@ -20,6 +21,9 @@
   },
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=20.19.0 <21 || >=22.12.0"
+  },
   "devDependencies": {
     "@snowtop/ent-graphql-tests": "0.1.0",
     "@types/bcryptjs": "2.4.2",
@@ -38,7 +42,8 @@
     "supertest": "7.2.2",
     "ts-jest": "29.4.11",
     "ts-node": "10.9.2",
-    "tsconfig-paths": "3.11.0"
+    "tsconfig-paths": "3.11.0",
+    "typescript": "5.9.3"
   },
   "dependencies": {
     "@snowtop/ent": "0.2.13",

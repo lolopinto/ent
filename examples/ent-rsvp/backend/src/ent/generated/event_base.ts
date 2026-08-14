@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { EventDBData } from "src/ent/generated/loaders";
+import type { EventDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -24,20 +24,16 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import {
-  eventLoader,
-  eventLoaderInfo,
-  eventSlugLoader,
-} from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/generated/types";
+import { eventLoader, eventLoaderInfo, eventSlugLoader } from "./loaders.js";
+import { NodeType } from "./types.js";
 import {
   EventToEventActivitiesQuery,
   EventToGuestDataQuery,
   EventToGuestGroupsQuery,
   EventToGuestsQuery,
   User,
-} from "src/ent/internal";
-import schema from "src/schema/event_schema";
+} from "../internal.js";
+import schema from "../../schema/event_schema.js";
 
 export class EventBase implements Ent<Viewer> {
   protected readonly data: EventDBData;

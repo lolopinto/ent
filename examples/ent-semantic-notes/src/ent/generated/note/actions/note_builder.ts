@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Note, NoteChunk, Tag, User, Workspace } from "../../..";
-import { noteLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType, NoteStatus } from "../../types";
-import schema from "../../../../schema/note_schema";
+import { Note, NoteChunk, Tag, User, Workspace } from "../../../index.js";
+import { noteLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType, NoteStatus } from "../../types.js";
+import schema from "../../../../schema/note_schema.js";
 
 export interface NoteInput {
   workspaceId?: ID | Builder<Workspace, Viewer>;

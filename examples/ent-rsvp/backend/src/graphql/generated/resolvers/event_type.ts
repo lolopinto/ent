@@ -19,13 +19,13 @@ import {
   EventToEventActivitiesQuery,
   EventToGuestGroupsQuery,
   EventToGuestsQuery,
-} from "src/ent/";
+} from "../../../ent/index.js";
 import {
   EventToEventActivitiesConnectionType,
   EventToGuestGroupsConnectionType,
   EventToGuestsConnectionType,
   UserType,
-} from "src/graphql/resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const EventType = new GraphQLObjectType({
   name: "Event",

@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Event, EventActivity, GuestGroup } from "src/ent/";
-import { guestGroupLoaderInfo } from "src/ent/generated/loaders";
-import { EdgeType, GuestTag, NodeType } from "src/ent/generated/types";
-import schema from "src/schema/guest_group_schema";
+import { Event, EventActivity, GuestGroup } from "../../../index.js";
+import { guestGroupLoaderInfo } from "../../loaders.js";
+import { EdgeType, GuestTag, NodeType } from "../../types.js";
+import schema from "../../../../schema/guest_group_schema.js";
 
 export interface GuestGroupInput {
   invitationName?: string;

@@ -7,7 +7,7 @@ import {
   AssocEdgeQueryBase,
   CustomEdgeQueryBase,
 } from "@snowtop/ent";
-import { EdgeType } from "./types";
+import { EdgeType } from "./types.js";
 import {
   Note,
   NoteChunk,
@@ -23,7 +23,7 @@ import {
   UserToSavedNotesQuery,
   UserToWorkspacesQuery,
   WorkspaceBase,
-} from "../internal";
+} from "../internal.js";
 
 export const noteToChunksCountLoaderFactory = new AssocEdgeCountLoaderFactory(
   EdgeType.NoteToChunks,

@@ -12,12 +12,12 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ContactPhoneNumberInput } from "./contact_phone_number_builder";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ContactPhoneNumberInput } from "./contact_phone_number_builder.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { ContactPhoneNumber } from "../../..";
-import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder";
+import { ContactPhoneNumber } from "../../../index.js";
+import { ContactPhoneNumberBuilder } from "./contact_phone_number_builder.js";
 
 export type DeleteContactPhoneNumberActionTriggers = (
   | Trigger<

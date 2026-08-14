@@ -1,10 +1,10 @@
 import { AlwaysDenyRule } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { EventActivityAddInviteActionBase } from "src/ent/generated/event_activity/actions/event_activity_add_invite_action_base";
-import type { EventActivityAddInviteInput } from "src/ent/generated/event_activity/actions/event_activity_add_invite_action_base";
-import { EdgeType } from "src/ent/generated/types";
-import { AllowIfGuestGroupPartOfEventRule } from "src/ent/event_activity/actions/privacy/guest_group_event_rule";
-import { DenyIfNotEventCreatorRule } from "src/ent/event/privacy/event_creator";
+import { EventActivityAddInviteActionBase } from "../../generated/event_activity/actions/event_activity_add_invite_action_base.js";
+import type { EventActivityAddInviteInput } from "../../generated/event_activity/actions/event_activity_add_invite_action_base.js";
+import { EdgeType } from "../../generated/types.js";
+import { AllowIfGuestGroupPartOfEventRule } from "./privacy/guest_group_event_rule.js";
+import { DenyIfNotEventCreatorRule } from "../../event/privacy/event_creator.js";
 
 export type { EventActivityAddInviteInput };
 

@@ -24,9 +24,10 @@ async function main() {
     const temp = camelCase(query);
     const node = temp.charAt(0).toUpperCase() + temp.substring(1);
 
-    const schema: Schema = require(
-      "../schema/" + p.substring(0, p.length - 3),
-    ).default;
+    const schemaModule = await import(
+      `../schema/${p.substring(0, p.length - 3)}.js`
+    );
+    const schema: Schema = schemaModule.default;
     if (schema.hideFromGraphQL) {
       continue;
     }

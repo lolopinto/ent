@@ -1,6 +1,7 @@
 # bun mode for codegen/runtime launcher coverage
 runtime: bun
 postgresDriver: bun
+moduleFormat: esm
 
 # log:
 #   - query

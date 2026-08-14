@@ -1,9 +1,9 @@
 import { gqlField, gqlObjectType, encodeGQLID } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 
-import { User } from "../../ent/user";
-import { ExampleViewer } from "../../viewer/viewer";
-import { UserPrefsStruct, NotifType } from "../../ent/generated/types";
+import { User } from "../../ent/user.js";
+import { ExampleViewer } from "../../viewer/viewer.js";
+import { UserPrefsStruct, NotifType } from "../../ent/generated/types.js";
 
 @gqlObjectType({ name: "Viewer" })
 // TODO when this wasn't exported, it didn't work...

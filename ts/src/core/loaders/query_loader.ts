@@ -7,25 +7,29 @@ import {
   LoaderFactory,
   PrimableLoader,
   SelectBaseDataOptions,
-} from "../base";
-import * as clause from "../clause";
+} from "../base.js";
+import * as clause from "../clause.js";
 import {
   buildGroupQuery,
   getDefaultLimit,
   loadRows,
   performRawQuery,
-} from "../ent";
-import { stableStringify } from "../cache_utils";
-import { memoizeNoArgs } from "../memoize";
-import { getOrderByKey, OrderBy, orderByHasExpressions } from "../query_impl";
+} from "../ent.js";
+import { stableStringify } from "../cache_utils.js";
+import { memoizeNoArgs } from "../memoize.js";
+import {
+  getOrderByKey,
+  OrderBy,
+  orderByHasExpressions,
+} from "../query_impl.js";
 import {
   createLoaderCacheMap,
   InstrumentedDataLoader,
   getCustomLoader,
   getLoader,
   getLoaderMaxBatchSize,
-} from "./loader";
-import { ObjectLoaderFactory } from "./object_loader";
+} from "./loader.js";
+import { ObjectLoaderFactory } from "./object_loader.js";
 
 function getOrderByLocal(
   options: QueryOptions,

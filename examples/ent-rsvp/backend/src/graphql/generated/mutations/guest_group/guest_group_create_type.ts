@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { GuestGroup } from "src/ent/";
-import type { GuestGroupCreateInput } from "src/ent/guest_group/actions/create_guest_group_action";
+import type { GuestGroup } from "../../../../ent/index.js";
+import type { GuestGroupCreateInput } from "../../../../ent/guest_group/actions/create_guest_group_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,9 +17,12 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
-import { GuestGroupType, GuestTagType } from "src/graphql/resolvers/";
+import {
+  mustDecodeIDFromGQLID,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
+import CreateGuestGroupAction from "../../../../ent/guest_group/actions/create_guest_group_action.js";
+import { GuestGroupType, GuestTagType } from "../../../resolvers/index.js";
 
 interface customGuestGroupCreateInput extends GuestGroupCreateInput {
   eventId: string;
@@ -107,7 +110,21 @@ export const GuestGroupCreateType: GraphQLFieldConfig<
         invitationName: input.invitationName,
         eventId: mustDecodeIDFromGQLID(input.eventId.toString()),
         tag: input.tag,
-        guests: input.guests,
+        guests: input.guests
+          ? input.guests.map((item: any) => ({
+              ...item,
+              addressId: item.addressId
+                ? mustDecodeNullableIDFromGQLID(
+                    item.addressId?.toString() ?? item.addressId,
+                  )
+                : undefined,
+              guestDataId: item.guestDataId
+                ? mustDecodeNullableIDFromGQLID(
+                    item.guestDataId?.toString() ?? item.guestDataId,
+                  )
+                : undefined,
+            }))
+          : input.guests,
       },
     ).saveX();
     return { guestGroup: guestGroup };

@@ -1,4 +1,3 @@
-import { advanceBy, advanceTo } from "jest-date-mock";
 import { Viewer } from "@snowtop/ent";
 import {
   expectMutation,
@@ -7,18 +6,18 @@ import {
 } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import schema from "../generated/schema";
-import CreateUserAction from "../../ent/user/actions/create_user_action";
-import { Contact, User } from "../../ent";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
-import EditUserAction from "../../ent/user/actions/edit_user_action";
-import CreateContactAction from "../../ent/contact/actions/create_contact_action";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
-import { ContactLabel, NodeType } from "src/ent/generated/types";
-import EditContactAction from "src/ent/contact/actions/edit_contact_action";
-import CreateContactEmailAction from "src/ent/contact_email/actions/create_contact_email_action";
-import CreateContactPhoneNumberAction from "src/ent/contact_phone_number/actions/create_contact_phone_number_action";
-import CreateFileAction from "src/ent/file/actions/create_file_action";
+import schema from "../generated/schema.js";
+import CreateUserAction from "../../ent/user/actions/create_user_action.js";
+import { Contact, User } from "../../ent/index.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import EditUserAction from "../../ent/user/actions/edit_user_action.js";
+import CreateContactAction from "../../ent/contact/actions/create_contact_action.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
+import { ContactLabel, NodeType } from "../../ent/generated/types.js";
+import EditContactAction from "../../ent/contact/actions/edit_contact_action.js";
+import CreateContactEmailAction from "../../ent/contact_email/actions/create_contact_email_action.js";
+import CreateContactPhoneNumberAction from "../../ent/contact_phone_number/actions/create_contact_phone_number_action.js";
+import CreateFileAction from "../../ent/file/actions/create_file_action.js";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -131,10 +130,11 @@ test("likes", async () => {
     createContact(user),
   ]);
   const action = EditUserAction.create(user.viewer, user, {});
+  let edgeTime = Date.now();
   for (const contact of [contact1, contact2, contact3]) {
-    advanceBy(1000);
+    edgeTime += 1000;
     action.builder.addLikeID(contact.id, contact.nodeType, {
-      time: new Date(),
+      time: new Date(edgeTime),
     });
   }
   // for privacy
@@ -342,7 +342,6 @@ test("create contact with attachments", async () => {
     path: "/tmp/test.png2",
   }).saveX();
   const d = new Date();
-  advanceTo(d);
 
   const email = randomEmail();
 

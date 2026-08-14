@@ -18,7 +18,7 @@ import {
   Guest,
   GuestToAttendingEventsQuery,
   GuestToDeclinedEventsQuery,
-} from "src/ent/";
+} from "../../../ent/index.js";
 import {
   AddressType,
   EventType,
@@ -26,7 +26,7 @@ import {
   GuestTagType,
   GuestToAttendingEventsConnectionType,
   GuestToDeclinedEventsConnectionType,
-} from "src/graphql/resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const GuestType = new GraphQLObjectType({
   name: "Guest",

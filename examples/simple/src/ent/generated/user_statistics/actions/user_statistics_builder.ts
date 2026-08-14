@@ -11,17 +11,17 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { UserStatistics } from "../../..";
-import { userStatisticsLoaderInfo } from "../../loaders";
-import { NodeType } from "../../types";
-import schema from "../../../../schema/user_statistics_schema";
+import { UserStatistics } from "../../../index.js";
+import { userStatisticsLoaderInfo } from "../../loaders.js";
+import { NodeType } from "../../types.js";
+import schema from "../../../../schema/user_statistics_schema.js";
 
 export interface UserStatisticsInput {
   userId?: ID;

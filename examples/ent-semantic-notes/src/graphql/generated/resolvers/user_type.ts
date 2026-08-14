@@ -20,13 +20,13 @@ import {
   UserToNotesAuthoredQuery,
   UserToSavedNotesQuery,
   UserToWorkspacesQuery,
-} from "../../../ent";
+} from "../../../ent/index.js";
 import {
   UserToCreatedWorkspacesConnectionType,
   UserToNotesAuthoredConnectionType,
   UserToSavedNotesConnectionType,
   UserToWorkspacesConnectionType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const UserType = new GraphQLObjectType({
   name: "User",

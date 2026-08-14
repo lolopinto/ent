@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -18,10 +18,10 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { User } from "../../../ent/user";
-import { UserArgInputType } from "../mutations/input/user_arg_input_type";
-import { UserSortColumnType } from "./enums_type";
-import { RootToUserConnectionType } from "../../resolvers/internal";
+import { User } from "../../../ent/user.js";
+import { UserArgInputType } from "../mutations/input/user_arg_input_type.js";
+import { UserSortColumnType } from "./enums_type.js";
+import { RootToUserConnectionType } from "../../resolvers/internal.js";
 
 interface UserConnectionArgs {
   ids: any;

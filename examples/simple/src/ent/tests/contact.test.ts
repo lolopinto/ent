@@ -1,18 +1,21 @@
-import { User, Contact, ContactEmail } from "../../ent";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
-import CreateUserAction from "../user/actions/create_user_action";
+import { User, Contact, ContactEmail } from "../index.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import CreateUserAction from "../user/actions/create_user_action.js";
 import CreateContactAction, {
   ContactCreateInput,
-} from "../contact/actions/create_contact_action";
-import { UserToContactsQuery } from "../user/query/user_to_contacts_query";
-import EditContactAction from "../contact/actions/edit_contact_action";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+} from "../contact/actions/create_contact_action.js";
+import { UserToContactsQuery } from "../user/query/user_to_contacts_query.js";
+import EditContactAction from "../contact/actions/edit_contact_action.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
 import { query } from "@snowtop/ent";
 import { v4 } from "uuid";
-import { ContactLabel, ContactInfoSource, NodeType } from "../generated/types";
+import {
+  ContactLabel,
+  ContactInfoSource,
+  NodeType,
+} from "../generated/types.js";
 import { Transaction } from "@snowtop/ent/action";
-import CreateFileAction from "../file/actions/create_file_action";
-import { advanceTo } from "jest-date-mock";
+import CreateFileAction from "../file/actions/create_file_action.js";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 
@@ -109,7 +112,6 @@ test("create contact with explicit attachments", async () => {
     path: "/tmp/test.png2",
   }).saveX();
   const d = new Date();
-  advanceTo(d);
   const contact = await create(user, "Sansa", "Stark", {
     attachments: [
       {

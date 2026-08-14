@@ -7,13 +7,16 @@ import {
   PrivacyPolicy,
   Context,
   WriteOperation,
-} from "../core/base";
-import { loadEdgeForID2, AssocEdge } from "../core/ent";
-import { DataOperation, AssocEdgeInputOptions } from "./operations";
-import { Queryer } from "../core/db";
-import { log } from "../core/logger";
-import { TransformedUpdateOperation, UpdateOperation } from "../schema";
-import { FieldInfoMap } from "../schema/schema";
+} from "../core/base.js";
+import { loadEdgeForID2, AssocEdge } from "../core/ent.js";
+import { DataOperation, AssocEdgeInputOptions } from "./operations.js";
+import { Queryer } from "../core/db.js";
+import { log } from "../core/logger.js";
+import {
+  TransformedUpdateOperation,
+  UpdateOperation,
+} from "../schema/index.js";
+import { FieldInfoMap } from "../schema/schema.js";
 
 export { WriteOperation };
 

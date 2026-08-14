@@ -5,13 +5,13 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLID, GraphQLNonNull } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import { GraphQLUpload } from "@snowtop/ent/graphql/upload";
-import { GraphQLContactLabel2 } from "../../mutations/custom_enum";
-import { ImportContactResolver } from "../../mutations/import_contact";
-import { ContactLabelType, UserType } from "../../resolvers";
+import { GraphQLContactLabel2 } from "../../mutations/custom_enum.js";
+import { ImportContactResolver } from "../../mutations/import_contact.js";
+import { ContactLabelType, UserType } from "../../resolvers/index.js";
 
 interface BulkUploadContactArgs {
   userId: any;

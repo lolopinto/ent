@@ -11,9 +11,9 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation, setEdgeTypeInGroup } from "@snowtop/ent/action";
-import { EventActivity } from "src/ent/";
-import { EventActivityBuilder } from "src/ent/generated/event_activity/actions/event_activity_builder";
-import { NodeType } from "src/ent/generated/types";
+import { EventActivity } from "../../../index.js";
+import { EventActivityBuilder } from "./event_activity_builder.js";
+import { NodeType } from "../../types.js";
 
 export enum EventActivityRsvpStatusInput {
   Attending = "attending",

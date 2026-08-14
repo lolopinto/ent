@@ -15,11 +15,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { NoteInput } from "./note_builder";
+import type { NoteInput } from "./note_builder.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Note, User } from "../../..";
-import { NoteBuilder } from "./note_builder";
+import { Note, User } from "../../../index.js";
+import { NoteBuilder } from "./note_builder.js";
 
 export type NoteAddSavedByActionTriggers = (
   | Trigger<Note, NoteBuilder<NoteInput, Note>, Viewer, NoteInput, Note>

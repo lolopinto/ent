@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { User } from "../../../../ent";
-import type { UserCreateInput } from "../../../../ent/user/actions/create_user_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { User } from "../../../../ent/index.js";
+import type { UserCreateInput } from "../../../../ent/user/actions/create_user_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -26,17 +26,17 @@ import {
   mustDecodeNullableIDFromGQLID,
   transformUnionTypes,
 } from "@snowtop/ent/graphql";
-import CreateUserAction from "../../../../ent/user/actions/create_user_action";
-import { UserNestedObjectListInputType } from "../input/user_nested_object_list_input_type";
-import { UserPrefsDiffInputType } from "../input/user_prefs_diff_input_type";
-import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type";
-import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type";
+import CreateUserAction from "../../../../ent/user/actions/create_user_action.js";
+import { UserNestedObjectListInputType } from "../input/user_nested_object_list_input_type.js";
+import { UserPrefsDiffInputType } from "../input/user_prefs_diff_input_type.js";
+import { UserPrefsStructInputType } from "../input/user_prefs_struct_input_type.js";
+import { UserSuperNestedObjectInputType } from "../input/user_super_nested_object_input_type.js";
 import {
   UserDaysOffType,
   UserIntEnumType,
   UserPreferredShiftType,
   UserType,
-} from "../../../resolvers";
+} from "../../../resolvers/index.js";
 
 interface UserCreatePayload {
   user: User;
@@ -160,21 +160,23 @@ export const UserCreateType: GraphQLFieldConfig<
       funUuids: input.funUuids
         ? input.funUuids.map((i: any) => mustDecodeIDFromGQLID(i.toString()))
         : undefined,
-      prefsList: input.prefsList?.map((item: any) => ({
-        ...item,
-        homeAddressId: item.homeAddressId
-          ? mustDecodeNullableIDFromGQLID(
-              item.homeAddressId?.toString() ?? item.homeAddressId,
-            )
-          : undefined,
-        allAddressIds: item.allAddressIds
-          ? item.allAddressIds
-            ? item.allAddressIds.map((i: any) =>
-                mustDecodeIDFromGQLID(i.toString()),
-              )
-            : undefined
-          : undefined,
-      })),
+      prefsList: input.prefsList
+        ? input.prefsList.map((item: any) => ({
+            ...item,
+            homeAddressId: item.homeAddressId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.homeAddressId?.toString() ?? item.homeAddressId,
+                )
+              : undefined,
+            allAddressIds: item.allAddressIds
+              ? item.allAddressIds
+                ? item.allAddressIds.map((i: any) =>
+                    mustDecodeIDFromGQLID(i.toString()),
+                  )
+                : undefined
+              : undefined,
+          }))
+        : input.prefsList,
       superNestedObject: input.superNestedObject,
       nestedList: input.nestedList,
       intEnum: input.intEnum,

@@ -6,7 +6,7 @@ import {
   ContactPhoneNumber,
   ObjectToCommentsEdge,
   ObjectToCommentsQuery,
-} from "../../internal";
+} from "../../internal.js";
 
 export class ContactPhoneNumberToCommentsEdge extends ObjectToCommentsEdge {}
 

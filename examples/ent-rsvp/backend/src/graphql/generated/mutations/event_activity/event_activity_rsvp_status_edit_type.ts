@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { EventActivity } from "src/ent/";
-import type { EditEventActivityRsvpStatusInput } from "src/ent/event_activity/actions/edit_event_activity_rsvp_status_action";
+import type { EventActivity } from "../../../../ent/index.js";
+import type { EditEventActivityRsvpStatusInput } from "../../../../ent/event_activity/actions/edit_event_activity_rsvp_status_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,9 +17,9 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditEventActivityRsvpStatusAction from "src/ent/event_activity/actions/edit_event_activity_rsvp_status_action";
-import { EventActivityRsvpStatusInputType } from "src/graphql/generated/mutations/input_enums_type";
-import { EventActivityType } from "src/graphql/resolvers/";
+import EditEventActivityRsvpStatusAction from "../../../../ent/event_activity/actions/edit_event_activity_rsvp_status_action.js";
+import { EventActivityRsvpStatusInputType } from "../input_enums_type.js";
+import { EventActivityType } from "../../../resolvers/index.js";
 
 interface customEventActivityRsvpStatusEditInput
   extends EditEventActivityRsvpStatusInput {

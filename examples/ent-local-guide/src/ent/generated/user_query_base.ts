@@ -6,7 +6,7 @@ import {
   AssocEdgeLoaderFactory,
   AssocEdgeQueryBase,
 } from "@snowtop/ent";
-import { EdgeType } from "./types";
+import { EdgeType } from "./types.js";
 import {
   Place,
   PlaceReview,
@@ -16,7 +16,7 @@ import {
   UserToCreatedPlacesEdge,
   UserToFavoritePlacesEdge,
   UserToPlaceReviewsEdge,
-} from "../internal";
+} from "../internal.js";
 
 export const userToCreatedPlacesCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.UserToCreatedPlaces);

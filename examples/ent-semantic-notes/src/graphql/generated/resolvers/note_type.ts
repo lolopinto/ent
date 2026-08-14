@@ -19,7 +19,7 @@ import {
   NoteToChunksQuery,
   NoteToSavedByQuery,
   NoteToTagsQuery,
-} from "../../../ent";
+} from "../../../ent/index.js";
 import {
   NoteStatusType,
   NoteToChunksConnectionType,
@@ -27,7 +27,7 @@ import {
   NoteToTagsConnectionType,
   UserType,
   WorkspaceType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const NoteType = new GraphQLObjectType({
   name: "Note",

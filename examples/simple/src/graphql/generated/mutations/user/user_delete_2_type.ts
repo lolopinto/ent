@@ -18,8 +18,8 @@ import { RequestContext } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
 import DeleteUserAction2, {
   DeleteUserInput2,
-} from "../../../../ent/user/actions/delete_user_action_2";
-import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+} from "../../../../ent/user/actions/delete_user_action_2.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 
 interface customDeleteUserInput2 extends DeleteUserInput2 {
   id: string;

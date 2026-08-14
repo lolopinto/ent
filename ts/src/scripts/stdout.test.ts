@@ -1,4 +1,4 @@
-import { writeJSONToStdout } from "./stdout";
+import { writeJSONToStdout } from "./stdout.js";
 
 describe("writeJSONToStdout", () => {
   afterEach(() => {

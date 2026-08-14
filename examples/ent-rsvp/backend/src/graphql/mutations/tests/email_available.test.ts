@@ -5,9 +5,9 @@ import {
 // import { encodeGQLID } from "@snowtop/ent/graphql";
 // import { createGuestPlus } from "src/testutils";
 // this needs to be the last line becasue of load order or at least after src/testutils
-import { randomEmail } from "src/util/random";
-import schema from "src/graphql/generated/schema";
-import { createUser } from "src/testutils";
+import { randomEmail } from "../../../util/random.js";
+import schema from "../../generated/schema.js";
+import { createUser } from "../../../testutils/index.js";
 
 describe("mutation", () => {
   test("available", async () => {

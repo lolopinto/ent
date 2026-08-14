@@ -105,7 +105,7 @@ import {
   WorkspaceToMembersConnectionType,
   WorkspaceToScopedTodosConnectionType,
   WorkspaceType,
-} from "src/graphql/resolvers";
+} from "src/graphql/resolvers/";
 
 export default new GraphQLSchema({
   query: QueryType,

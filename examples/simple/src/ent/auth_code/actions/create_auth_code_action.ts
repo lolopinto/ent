@@ -1,20 +1,20 @@
-import { CreateAuthCodeActionBase } from "../../generated/auth_code/actions/create_auth_code_action_base";
+import { CreateAuthCodeActionBase } from "../../generated/auth_code/actions/create_auth_code_action_base.js";
 import type {
   AuthCodeCreateInput,
   CreateAuthCodeActionTriggers,
   CreateAuthCodeActionObservers,
-} from "../../generated/auth_code/actions/create_auth_code_action_base";
-import { AuthCodeBuilder } from "../../generated/auth_code/actions/auth_code_builder";
+} from "../../generated/auth_code/actions/create_auth_code_action_base.js";
+import { AuthCodeBuilder } from "../../generated/auth_code/actions/auth_code_builder.js";
 
-import { ExampleViewer } from "../../../viewer/viewer";
-import { AuthCode, UserStatistics } from "../../";
+import { ExampleViewer } from "../../../viewer/viewer.js";
+import { AuthCode, UserStatistics } from "../../index.js";
 import type { Validator } from "@snowtop/ent/action";
 import { query } from "@snowtop/ent";
 import type { Data, UpdateOperation } from "@snowtop/ent";
 import type { TransformedUpdateOperation } from "@snowtop/ent";
 import { SQLStatementOperation } from "@snowtop/ent";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
-import EditUserStatisticsAction from "src/ent/user_statistics/actions/edit_user_statistics_action";
+import EditUserStatisticsAction from "../../user_statistics/actions/edit_user_statistics_action.js";
 export type { AuthCodeCreateInput };
 // we're only writing this once except with --force and packageName provided
 export default class CreateAuthCodeAction extends CreateAuthCodeActionBase {

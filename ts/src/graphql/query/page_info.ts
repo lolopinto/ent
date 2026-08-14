@@ -5,8 +5,8 @@ import {
   GraphQLString,
   GraphQLObjectType,
 } from "graphql";
-import { RequestContext } from "../../core/context";
-import { PaginationInfo } from "../../core/query/query";
+import { RequestContext } from "../../core/context.js";
+import { PaginationInfo } from "../../core/query/query.js";
 
 // NB: if this changes, need to update renderer.go also
 export const GraphQLPageInfo = new GraphQLObjectType({

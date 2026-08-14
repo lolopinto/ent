@@ -1,11 +1,11 @@
-import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
-import { EditPhoneNumberActionBase } from "../../generated/user/actions/edit_phone_number_action_base";
-import type { EditPhoneNumberInput } from "../../generated/user/actions/edit_phone_number_action_base";
-import { UserBuilder } from "../../generated/user/actions/user_builder";
-import { User } from "../..";
-import { EditUserPrivacy } from "./edit_user_privacy";
+import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action.js";
+import { EditPhoneNumberActionBase } from "../../generated/user/actions/edit_phone_number_action_base.js";
+import type { EditPhoneNumberInput } from "../../generated/user/actions/edit_phone_number_action_base.js";
+import { UserBuilder } from "../../generated/user/actions/user_builder.js";
+import { User } from "../../index.js";
+import { EditUserPrivacy } from "./edit_user_privacy.js";
 
-import { ExampleViewer } from "../../../viewer/viewer";
+import { ExampleViewer } from "../../../viewer/viewer.js";
 import type { Validator, Trigger } from "@snowtop/ent/action";
 export type { EditPhoneNumberInput };
 class NewAuthCode {

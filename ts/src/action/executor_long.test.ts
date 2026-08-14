@@ -1,12 +1,17 @@
-import { Viewer } from "../core/base";
-import { loadRows } from "../core/ent";
-import * as clause from "../core/clause";
-import { WriteOperation } from "../action/action";
+import { Viewer } from "../core/base.js";
+import { loadRows } from "../core/ent.js";
+import * as clause from "../core/clause.js";
+import { WriteOperation } from "../action/action.js";
 
-import { User, Group, SimpleAction, BuilderSchema } from "../testutils/builder";
-import { LoggedOutViewer } from "../core/viewer";
+import {
+  User,
+  Group,
+  SimpleAction,
+  BuilderSchema,
+} from "../testutils/builder.js";
+import { LoggedOutViewer } from "../core/viewer.js";
 
-import { setupPostgres } from "../testutils/db/temp_db";
+import { setupPostgres } from "../testutils/db/temp_db.js";
 import {
   createGroup,
   createUser,
@@ -14,7 +19,7 @@ import {
   GroupSchema,
   MessageAction,
   setupTest,
-} from "../testutils/action/complex_schemas";
+} from "../testutils/action/complex_schemas.js";
 
 setupTest();
 

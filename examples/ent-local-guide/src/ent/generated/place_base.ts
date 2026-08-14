@@ -12,7 +12,7 @@ import type {
 } from "@snowtop/ent";
 import type { GeoPoint } from "@snowtop/ent-postgis";
 import type { Field } from "@snowtop/ent/schema";
-import type { PlaceDBData } from "./loaders";
+import type { PlaceDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -25,10 +25,10 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { placeLoader, placeLoaderInfo, placeSlugLoader } from "./loaders";
-import { NodeType, PlaceCategory } from "./types";
-import { PlaceToFansQuery, PlaceToReviewsQuery, User } from "../internal";
-import schema from "../../schema/place_schema";
+import { placeLoader, placeLoaderInfo, placeSlugLoader } from "./loaders.js";
+import { NodeType, PlaceCategory } from "./types.js";
+import { PlaceToFansQuery, PlaceToReviewsQuery, User } from "../internal.js";
+import schema from "../../schema/place_schema.js";
 
 export class PlaceBase implements Ent<Viewer> {
   protected readonly data: PlaceDBData;

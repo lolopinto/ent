@@ -1,8 +1,8 @@
 import { RequestContext, loadRow, query } from "@snowtop/ent";
 import { gqlContextType, gqlMutation, gqlQuery } from "@snowtop/ent/graphql";
 import { useAndVerifyAuthJWT } from "@snowtop/ent-passport";
-import { Guest, User } from "src/ent";
-import { GraphQLViewer } from "../../resolvers/viewer_type";
+import { Guest, User } from "../../../ent/index.js";
+import { GraphQLViewer } from "../../resolvers/viewer_type.js";
 import { GraphQLString } from "graphql";
 import {
   AuthGuestInput,
@@ -11,7 +11,7 @@ import {
   AuthUserPayload,
   AuthAnyInput,
   AuthAnyPayload,
-} from "./auth_types";
+} from "./auth_types.js";
 
 export class AuthResolver {
   @gqlMutation({

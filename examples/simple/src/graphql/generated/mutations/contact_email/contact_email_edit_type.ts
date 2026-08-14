@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ContactEmail } from "../../../../ent";
-import type { ContactEmailEditInput } from "../../../../ent/contact_email/actions/edit_contact_email_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ContactEmail } from "../../../../ent/index.js";
+import type { ContactEmailEditInput } from "../../../../ent/contact_email/actions/edit_contact_email_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,9 +21,12 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditContactEmailAction from "../../../../ent/contact_email/actions/edit_contact_email_action";
-import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
-import { ContactEmailType, ContactLabelType } from "../../../resolvers";
+import EditContactEmailAction from "../../../../ent/contact_email/actions/edit_contact_email_action.js";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type.js";
+import {
+  ContactEmailType,
+  ContactLabelType,
+} from "../../../resolvers/index.js";
 
 interface customContactEmailEditInput extends ContactEmailEditInput {
   id: string;

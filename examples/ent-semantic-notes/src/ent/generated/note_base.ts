@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { NoteDBData } from "./loaders";
+import type { NoteDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -22,16 +22,16 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { noteLoader, noteLoaderInfo } from "./loaders";
-import { NodeType, NoteStatus, convertNoteStatus } from "./types";
+import { noteLoader, noteLoaderInfo } from "./loaders.js";
+import { NodeType, NoteStatus, convertNoteStatus } from "./types.js";
 import {
   NoteToChunksQuery,
   NoteToSavedByQuery,
   NoteToTagsQuery,
   User,
   Workspace,
-} from "../internal";
-import schema from "../../schema/note_schema";
+} from "../internal.js";
+import schema from "../../schema/note_schema.js";
 
 export class NoteBase implements Ent<Viewer> {
   protected readonly data: NoteDBData;

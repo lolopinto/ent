@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { PlaceReviewDBData } from "./loaders";
+import type { PlaceReviewDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -22,10 +22,10 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { placeReviewLoader, placeReviewLoaderInfo } from "./loaders";
-import { NodeType } from "./types";
-import { Place, User } from "../internal";
-import schema from "../../schema/place_review_schema";
+import { placeReviewLoader, placeReviewLoaderInfo } from "./loaders.js";
+import { NodeType } from "./types.js";
+import { Place, User } from "../internal.js";
+import schema from "../../schema/place_review_schema.js";
 
 export class PlaceReviewBase implements Ent<Viewer> {
   protected readonly data: PlaceReviewDBData;

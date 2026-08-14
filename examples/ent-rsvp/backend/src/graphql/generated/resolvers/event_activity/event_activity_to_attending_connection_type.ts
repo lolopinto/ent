@@ -4,8 +4,8 @@ import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
 import { GraphQLObjectType, GraphQLString } from "graphql";
 import { GraphQLConnectionType, GraphQLEdge } from "@snowtop/ent/graphql";
-import { EventActivityToAttendingEdge } from "src/ent/";
-import { GuestType } from "src/graphql/resolvers/internal";
+import { EventActivityToAttendingEdge } from "../../../../ent/index.js";
+import { GuestType } from "../../../resolvers/internal.js";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

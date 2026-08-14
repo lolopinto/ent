@@ -2,6 +2,6 @@
  * Copyright whaa whaa
  */
 
-import { DeleteFileActionBase } from "../../generated/file/actions/delete_file_action_base";
+import { DeleteFileActionBase } from "../../generated/file/actions/delete_file_action_base.js";
 
 export default class DeleteFileAction extends DeleteFileActionBase {}

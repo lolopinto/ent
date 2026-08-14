@@ -1,16 +1,9 @@
-jest.mock("@snowtop/ent", () => {
-  const actual = jest.requireActual("@snowtop/ent");
-  return {
-    ...actual,
-    loadRows: jest.fn(),
-  };
-});
-
-import { buildQueryData, loadRows } from "@snowtop/ent";
+import { jest } from "@jest/globals";
+import { buildQueryData, type loadRows } from "@snowtop/ent";
 import { geoPoint } from "@snowtop/ent-postgis";
-import globalSchema from "src/schema/global_schema";
-import { nearbyPlaces } from "src/search/nearby_places";
-import { Place } from "src/ent/place";
+import globalSchema from "../schema/global_schema.js";
+import { nearbyPlaces } from "./nearby_places.js";
+import { Place } from "../ent/place.js";
 
 describe("local guide nearby search", () => {
   test("declares postgis in the example global schema", () => {
@@ -47,7 +40,7 @@ describe("local guide nearby search", () => {
   });
 
   test("loads nearby places through the example search helper", async () => {
-    const mockedLoadRows = loadRows as jest.MockedFunction<typeof loadRows>;
+    const mockedLoadRows = jest.fn<typeof loadRows>();
     mockedLoadRows.mockResolvedValueOnce([
       {
         id: "place_1",
@@ -59,12 +52,15 @@ describe("local guide nearby search", () => {
       },
     ]);
 
-    const rows = await nearbyPlaces({
-      center: geoPoint(-122.40061, 37.7875),
-      radiusMeters: 2500,
-      category: "coffee",
-      limit: 1,
-    });
+    const rows = await nearbyPlaces(
+      {
+        center: geoPoint(-122.40061, 37.7875),
+        radiusMeters: 2500,
+        category: "coffee",
+        limit: 1,
+      },
+      mockedLoadRows,
+    );
 
     expect(rows).toEqual([
       {

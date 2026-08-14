@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { User } from "src/ent/";
-import { userLoaderInfo } from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/generated/types";
-import schema from "src/schema/user_schema";
+import { User } from "../../../index.js";
+import { userLoaderInfo } from "../../loaders.js";
+import { NodeType } from "../../types.js";
+import schema from "../../../../schema/user_schema.js";
 
 export interface UserInput {
   firstName?: string;

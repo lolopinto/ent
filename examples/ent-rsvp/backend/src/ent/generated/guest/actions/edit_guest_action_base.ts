@@ -11,8 +11,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Guest } from "src/ent/";
-import { GuestBuilder } from "src/ent/generated/guest/actions/guest_builder";
+import { Guest } from "../../../index.js";
+import { GuestBuilder } from "./guest_builder.js";
 
 export interface GuestEditInput {
   name?: string;

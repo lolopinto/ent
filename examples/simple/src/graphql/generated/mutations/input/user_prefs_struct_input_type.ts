@@ -11,7 +11,7 @@ import {
   GraphQLList,
   GraphQLNonNull,
 } from "graphql";
-import { NotifTypeType } from "../../../resolvers";
+import { NotifTypeType } from "../../../resolvers/index.js";
 
 export const UserPrefsStructInputType = new GraphQLInputObjectType({
   name: "UserPrefsStructInput",

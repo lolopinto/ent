@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Place } from "../../../../ent";
-import type { PlaceEditInput } from "../../../../ent/place/actions/edit_place_action";
+import type { Place } from "../../../../ent/index.js";
+import type { PlaceEditInput } from "../../../../ent/place/actions/edit_place_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,8 +21,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import EditPlaceAction from "../../../../ent/place/actions/edit_place_action";
-import { PlaceCategoryType, PlaceType } from "../../../resolvers";
+import EditPlaceAction from "../../../../ent/place/actions/edit_place_action.js";
+import { PlaceCategoryType, PlaceType } from "../../../resolvers/index.js";
 
 interface customPlaceEditInput extends PlaceEditInput {
   id: string;

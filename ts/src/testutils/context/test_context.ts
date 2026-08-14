@@ -1,6 +1,6 @@
-import { Context, Viewer } from "../../core/base";
-import { ContextCache } from "../../core/context";
-import { LoggedOutViewer } from "../../core/viewer";
+import { Context, Viewer } from "../../core/base.js";
+import { ContextCache } from "../../core/context.js";
+import { LoggedOutViewer } from "../../core/viewer.js";
 
 interface viewerWithContext extends Viewer {
   setContext(ctx: Context): any;

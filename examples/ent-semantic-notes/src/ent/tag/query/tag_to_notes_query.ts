@@ -1,5 +1,5 @@
 import { AssocEdge } from "@snowtop/ent";
-import { TagToNotesQueryBase } from "../../internal";
+import { TagToNotesQueryBase } from "../../internal.js";
 
 export class TagToNotesEdge extends AssocEdge {}
 

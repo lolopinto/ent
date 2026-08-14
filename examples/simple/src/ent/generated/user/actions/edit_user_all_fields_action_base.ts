@@ -21,21 +21,21 @@ import type {
   UserPrefsDiff,
   UserPrefsStruct,
   UserSuperNestedObject,
-} from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+} from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import {
   WriteOperation,
   maybeConvertRelativeInputPlusExpressions,
 } from "@snowtop/ent/action";
-import { User } from "../../..";
+import { User } from "../../../index.js";
 import {
   UserAccountStatus,
   UserDaysOff,
   UserIntEnum,
   UserPreferredShift,
-} from "../../types";
-import { UserBuilder } from "./user_builder";
+} from "../../types.js";
+import { UserBuilder } from "./user_builder.js";
 
 export interface EditUserAllFieldsRelativeInput {
   firstName?: string;

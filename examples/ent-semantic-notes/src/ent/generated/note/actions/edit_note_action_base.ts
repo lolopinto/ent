@@ -11,9 +11,9 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Note } from "../../..";
-import { NoteBuilder } from "./note_builder";
-import { NoteStatus } from "../../types";
+import { Note } from "../../../index.js";
+import { NoteBuilder } from "./note_builder.js";
+import { NoteStatus } from "../../types.js";
 
 export interface NoteEditInput {
   title?: string;

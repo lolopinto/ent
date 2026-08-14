@@ -2,9 +2,9 @@
 
 import type { ID } from "@snowtop/ent";
 import type { GeoPoint } from "@snowtop/ent-postgis";
-import type { PlaceCategory } from "./types";
+import type { PlaceCategory } from "./types.js";
 import { ObjectLoaderFactory } from "@snowtop/ent";
-import { NodeType } from "./types";
+import { NodeType } from "./types.js";
 
 export interface PlaceDBData {
   id: ID;

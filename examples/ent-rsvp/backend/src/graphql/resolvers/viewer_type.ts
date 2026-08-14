@@ -1,6 +1,6 @@
 import { gqlField, gqlObjectType } from "@snowtop/ent/graphql";
 import { Viewer } from "@snowtop/ent";
-import { Guest, User } from "src/ent/";
+import { Guest, User } from "../../ent/index.js";
 
 // TODO we should expecially throw for "Viewer"
 @gqlObjectType({ name: "Viewer" })

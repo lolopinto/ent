@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { File } from "../../../../ent";
-import type { FileCreateInput } from "../../../../ent/file/actions/create_file_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { File } from "../../../../ent/index.js";
+import type { FileCreateInput } from "../../../../ent/file/actions/create_file_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,8 +21,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import CreateFileAction from "../../../../ent/file/actions/create_file_action";
-import { FileType } from "../../../resolvers";
+import CreateFileAction from "../../../../ent/file/actions/create_file_action.js";
+import { FileType } from "../../../resolvers/index.js";
 
 interface customFileCreateInput extends FileCreateInput {
   creatorId: string;

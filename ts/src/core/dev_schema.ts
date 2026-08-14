@@ -1,7 +1,7 @@
 import { createHash } from "crypto";
 import * as fs from "fs";
 import * as path from "path";
-import type { RuntimeDevSchemaConfig } from "./config";
+import type { RuntimeDevSchemaConfig } from "./config.js";
 
 const STATE_DIR = ".ent";
 const STATE_FILE = "dev_schema.json";

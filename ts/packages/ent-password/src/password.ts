@@ -8,7 +8,7 @@ import {
   StringType,
 } from "@snowtop/ent/schema";
 
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 
 export class Password extends BaseField implements Field {
   type: Type = { dbType: DBType.String };

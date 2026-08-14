@@ -7,7 +7,7 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Workspace } from "../../../../ent";
+import type { Workspace } from "../../../../ent/index.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -15,8 +15,8 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import WorkspaceAddMemberAction from "../../../../ent/workspace/actions/workspace_add_member_action";
-import { WorkspaceType } from "../../../resolvers";
+import WorkspaceAddMemberAction from "../../../../ent/workspace/actions/workspace_add_member_action.js";
+import { WorkspaceType } from "../../../resolvers/index.js";
 
 interface customWorkspaceAddMemberInput {
   id: string;

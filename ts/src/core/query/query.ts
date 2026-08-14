@@ -9,12 +9,16 @@ import {
   QueryableDataOptions,
   SelectBaseDataOptions,
   Viewer,
-} from "../base";
-import * as clause from "../clause";
-import { decodeCursorPayload, getCursor, getDefaultLimit } from "../ent";
-import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
-import { memoizeNoArgs } from "../memoize";
-import { OrderBy, orderByHasExpressions, reverseOrderBy } from "../query_impl";
+} from "../base.js";
+import * as clause from "../clause.js";
+import { decodeCursorPayload, getCursor, getDefaultLimit } from "../ent.js";
+import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy.js";
+import { memoizeNoArgs } from "../memoize.js";
+import {
+  OrderBy,
+  orderByHasExpressions,
+  reverseOrderBy,
+} from "../query_impl.js";
 
 export interface EdgeQuery<
   TSource extends Ent,

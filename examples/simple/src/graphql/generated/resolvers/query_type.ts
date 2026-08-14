@@ -31,7 +31,7 @@ import {
   UserStatisticsConnectionQueryType,
   UserStatisticsListDeprecatedQueryType,
   ViewerQueryType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const QueryType = new GraphQLObjectType({
   name: "Query",

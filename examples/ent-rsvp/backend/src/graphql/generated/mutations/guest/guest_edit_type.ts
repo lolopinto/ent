@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Guest } from "src/ent/";
-import type { GuestEditInput } from "src/ent/guest/actions/edit_guest_action";
+import type { Guest } from "../../../../ent/index.js";
+import type { GuestEditInput } from "../../../../ent/guest/actions/edit_guest_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,8 +17,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditGuestAction from "src/ent/guest/actions/edit_guest_action";
-import { GuestType } from "src/graphql/resolvers/";
+import EditGuestAction from "../../../../ent/guest/actions/edit_guest_action.js";
+import { GuestType } from "../../../resolvers/index.js";
 
 interface customGuestEditInput extends GuestEditInput {
   id: string;

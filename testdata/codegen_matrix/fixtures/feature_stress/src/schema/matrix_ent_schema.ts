@@ -4,6 +4,7 @@ import {
   EntSchema,
   IntegerType,
   StringType,
+  StructType,
 } from "@snowtop/ent/schema";
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 
@@ -22,6 +23,13 @@ const MatrixEntSchema = new EntSchema({
     rank: IntegerType({
       nullable: true,
       index: true,
+    }),
+    preferences: StructType({
+      globalType: "MatrixPreferences",
+      serverDefault: {
+        notificationsEnabled: true,
+        locale: "en_US",
+      },
     }),
   },
   actions: [

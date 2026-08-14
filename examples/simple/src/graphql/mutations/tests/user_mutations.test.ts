@@ -2,13 +2,16 @@ import { Viewer } from "@snowtop/ent";
 import { expectMutation, mutationRootConfig } from "@snowtop/ent-graphql-tests";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { mustDecodeIDFromGQLID, encodeGQLID } from "@snowtop/ent/graphql";
-import schema from "../../generated/schema";
-import { User } from "../../../ent";
-import { randomEmail, randomPhoneNumber } from "../../../util/random";
+import schema from "../../generated/schema.js";
+import { User } from "../../../ent/index.js";
+import { randomEmail, randomPhoneNumber } from "../../../util/random.js";
 import CreateUserAction, {
   UserCreateInput,
-} from "../../../ent/user/actions/create_user_action";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../../viewer/viewer";
+} from "../../../ent/user/actions/create_user_action.js";
+import {
+  LoggedOutExampleViewer,
+  ExampleViewer,
+} from "../../../viewer/viewer.js";
 
 afterEach(() => {
   clearAuthHandlers();

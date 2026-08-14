@@ -1,4 +1,4 @@
-import { Data } from "../../core/base";
+import { Data } from "../../core/base.js";
 
 // this transforms an input for union types from graphql format to TS format
 // in graphql, we represent it as UnionType =  {foo: FooType, bar: BarType, baz: BazType}

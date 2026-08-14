@@ -23,9 +23,9 @@ import type {
   UserPrefsDiff,
   UserPrefsStruct,
   UserSuperNestedObject,
-} from "./types";
+} from "./types.js";
 import { ObjectLoaderFactory } from "@snowtop/ent";
-import { NodeType } from "./types";
+import { NodeType } from "./types.js";
 
 export interface AddressDBData {
   id: ID;

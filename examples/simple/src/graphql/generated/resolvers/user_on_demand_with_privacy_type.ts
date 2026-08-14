@@ -5,9 +5,9 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLNonNull, GraphQLObjectType, GraphQLString } from "graphql";
-import { UserOnDemandWithPrivacy } from "../../../ent/generated/types";
+import { UserOnDemandWithPrivacy } from "../../../ent/generated/types.js";
 
 export const UserOnDemandWithPrivacyType = new GraphQLObjectType({
   name: "UserOnDemandWithPrivacy",

@@ -10,7 +10,7 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -18,11 +18,11 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { AuthResolver } from "../../mutations/auth";
+import { AuthResolver } from "../../mutations/auth.js";
 import {
   UserAuthJWTInput,
   UserAuthJWTPayload,
-} from "../../mutations/auth_types";
+} from "../../mutations/auth_types.js";
 
 export const UserAuthJWTInputType = new GraphQLInputObjectType({
   name: "UserAuthJWTInput",

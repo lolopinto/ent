@@ -10,8 +10,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Event } from "../../../../ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Event } from "../../../../ent/index.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -19,8 +19,8 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EventRemoveHostAction from "../../../../ent/event/actions/event_remove_host_action";
-import { EventType } from "../../../resolvers";
+import EventRemoveHostAction from "../../../../ent/event/actions/event_remove_host_action.js";
+import { EventType } from "../../../resolvers/index.js";
 
 interface customEventRemoveHostInput {
   id: string;

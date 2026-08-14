@@ -9,14 +9,14 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLInputObjectType,
   GraphQLNonNull,
   GraphQLString,
 } from "graphql";
-import { AuthResolver, PhoneAvailableInput } from "../../mutations/auth";
+import { AuthResolver, PhoneAvailableInput } from "../../mutations/auth.js";
 
 export const PhoneAvailableArgType = new GraphQLInputObjectType({
   name: "PhoneAvailableArg",

@@ -1,7 +1,7 @@
 import fs from "fs";
 import os from "os";
 import path from "path";
-import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema";
+import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema.js";
 
 function writeHead(gitDir: string, head: string) {
   fs.mkdirSync(gitDir, { recursive: true });

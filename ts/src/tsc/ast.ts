@@ -1,10 +1,11 @@
-import { Data } from "../core/base";
+import { Data } from "../core/base.js";
 import ts from "typescript";
 import * as path from "path";
 import { load } from "js-yaml";
-import { ConfigWithCodegen } from "../core/config";
+import { ConfigWithCodegen } from "../core/config.js";
 import * as fs from "fs";
-import { PACKAGE } from "../core/const";
+import { PACKAGE } from "../core/const.js";
+import { normalizeModuleSpecifierPath } from "./moduleSpecifier.js";
 
 export function getPreText(
   fileContents: string,
@@ -301,9 +302,20 @@ export function transformRelative(
   }
 
   const fileFullPath = path.join(process.cwd(), file);
-  const impFullPath = path.join(process.cwd(), importPath);
+  let impFullPath = path.join(process.cwd(), importPath);
+  if (fs.existsSync(impFullPath + ".ts")) {
+    impFullPath += ".js";
+  } else if (fs.existsSync(path.join(impFullPath, "index.ts"))) {
+    impFullPath = path.join(impFullPath, "index.js");
+  } else if (!path.extname(impFullPath)) {
+    impFullPath += ".js";
+  }
   // relative path is from directory
-  return normalizePath(path.relative(path.dirname(fileFullPath), impFullPath));
+  return normalizePath(
+    normalizeModuleSpecifierPath(
+      path.relative(path.dirname(fileFullPath), impFullPath),
+    ),
+  );
 }
 
 function normalizePath(p: string) {

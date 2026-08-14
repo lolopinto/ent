@@ -1,5 +1,5 @@
-import { DeleteAddressActionBase } from "src/ent/generated/address/actions/delete_address_action_base";
-import { EditAddressPrivacy } from "src/ent/address/actions/privacy/edit_address_privacy";
+import { DeleteAddressActionBase } from "../../generated/address/actions/delete_address_action_base.js";
+import { EditAddressPrivacy } from "./privacy/edit_address_privacy.js";
 
 // we're only writing this once except with --force and packageName provided
 export default class DeleteAddressAction extends DeleteAddressActionBase {

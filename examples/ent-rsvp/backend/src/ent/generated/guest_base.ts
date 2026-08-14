@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { GuestDBData } from "src/ent/generated/loaders";
+import type { GuestDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -22,8 +22,8 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { guestLoader, guestLoaderInfo } from "src/ent/generated/loaders";
-import { GuestTag, NodeType } from "src/ent/generated/types";
+import { guestLoader, guestLoaderInfo } from "./loaders.js";
+import { GuestTag, NodeType } from "./types.js";
 import {
   Address,
   Event,
@@ -35,8 +35,8 @@ import {
   GuestToGuestDataQuery,
   IWithAddress,
   WithAddressMixin,
-} from "src/ent/internal";
-import schema from "src/schema/guest_schema";
+} from "../internal.js";
+import schema from "../../schema/guest_schema.js";
 
 export class GuestBase
   extends WithAddressMixin(class {} as new (...args: any[]) => IWithAddress)

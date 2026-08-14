@@ -1,13 +1,13 @@
-import { GuestGroup } from "src/ent";
+import { GuestGroup } from "../index.js";
 import { IDViewer } from "@snowtop/ent";
-import { randomEmail } from "src/util/random";
-import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
+import { randomEmail } from "../../util/random.js";
+import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action.js";
 import CreateGuestAction, {
   GuestCreateInput,
-} from "src/ent/guest/actions/create_guest_action";
-import { Guest } from "../guest";
-import { AuthCode } from "../auth_code";
-import { createEvent } from "src/testutils";
+} from "../guest/actions/create_guest_action.js";
+import { Guest } from "../guest.js";
+import { AuthCode } from "../auth_code.js";
+import { createEvent } from "../../testutils/index.js";
 
 type input = Pick<GuestCreateInput, "name" | "emailAddress">;
 async function createGuestGroup(guests: input[]) {

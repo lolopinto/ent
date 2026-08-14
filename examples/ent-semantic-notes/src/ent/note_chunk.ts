@@ -1,3 +1,3 @@
-import { NoteChunkBase } from "./internal";
+import { NoteChunkBase } from "./internal.js";
 
 export class NoteChunk extends NoteChunkBase {}

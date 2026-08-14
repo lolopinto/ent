@@ -1,13 +1,13 @@
 import { advanceBy, advanceTo } from "jest-date-mock";
-import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { Context, Data, Ent } from "../../core/base";
-import { AssocEdge, loadEdgeData } from "../../core/ent";
-import { createRowForTest } from "../write";
+import { IDViewer, LoggedOutViewer } from "../../core/viewer.js";
+import { Context, Data, Ent } from "../../core/base.js";
+import { AssocEdge, loadEdgeData } from "../../core/ent.js";
+import { createRowForTest } from "../write.js";
 import {
   TempDB,
   assoc_edge_config_table,
   assoc_edge_table,
-} from "../db/temp_db";
+} from "../db/temp_db.js";
 
 import {
   createUser,
@@ -20,15 +20,15 @@ import {
   SymmetricEdges,
   InverseEdges,
   FakeUserSchema,
-} from ".";
-import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event";
-import { NodeType } from "./const";
-import { MockDate } from "./../mock_date";
-import { BuilderSchema, SimpleAction } from "../builder";
-import { WriteOperation } from "../../action";
-import { FakeTag } from "./fake_tag";
-import { Dialect } from "../../core/db";
-import { toDBColumnOrTable } from "../../names/names";
+} from "./index.js";
+import { EventCreateInput, FakeEvent, getEventBuilder } from "./fake_event.js";
+import { NodeType } from "./const.js";
+import { MockDate } from "./../mock_date.js";
+import { BuilderSchema, SimpleAction } from "../builder.js";
+import { WriteOperation } from "../../action/index.js";
+import { FakeTag } from "./fake_tag.js";
+import { Dialect } from "../../core/db.js";
+import { toDBColumnOrTable } from "../../names/names.js";
 
 export function getContactInput(
   user: FakeUser,

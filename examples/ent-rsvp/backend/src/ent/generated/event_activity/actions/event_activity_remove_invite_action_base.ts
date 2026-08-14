@@ -9,11 +9,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { EventActivityInput } from "src/ent/generated/event_activity/actions/event_activity_builder";
+import type { EventActivityInput } from "./event_activity_builder.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { EventActivity, GuestGroup } from "src/ent/";
-import { EventActivityBuilder } from "src/ent/generated/event_activity/actions/event_activity_builder";
+import { EventActivity, GuestGroup } from "../../../index.js";
+import { EventActivityBuilder } from "./event_activity_builder.js";
 
 export type EventActivityRemoveInviteActionTriggers = (
   | Trigger<

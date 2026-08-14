@@ -8,7 +8,7 @@ import {
 } from "graphql-helix";
 import { DB } from "@snowtop/ent";
 import { buildContext } from "@snowtop/ent/auth";
-import schema from "./generated/schema";
+import schema from "./generated/schema.js";
 
 let app = express();
 app.use(express.json());

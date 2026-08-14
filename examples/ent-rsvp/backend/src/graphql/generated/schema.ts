@@ -4,89 +4,89 @@ import { GraphQLSchema } from "graphql";
 import {
   AddressCreateInputType,
   AddressCreatePayloadType,
-} from "src/graphql/generated/mutations/address/address_create_type";
+} from "./mutations/address/address_create_type.js";
 import {
   AddressDeleteInputType,
   AddressDeletePayloadType,
-} from "src/graphql/generated/mutations/address/address_delete_type";
+} from "./mutations/address/address_delete_type.js";
 import {
   AddressEditInputType,
   AddressEditPayloadType,
-} from "src/graphql/generated/mutations/address/address_edit_type";
+} from "./mutations/address/address_edit_type.js";
 import {
   AuthAnyInputType,
   AuthAnyPayloadType,
-} from "src/graphql/generated/mutations/auth_any_type";
+} from "./mutations/auth_any_type.js";
 import {
   AuthGuestInputType,
   AuthGuestPayloadType,
-} from "src/graphql/generated/mutations/auth_guest_type";
+} from "./mutations/auth_guest_type.js";
 import {
   AuthUserInputType,
   AuthUserPayloadType,
-} from "src/graphql/generated/mutations/auth_user_type";
+} from "./mutations/auth_user_type.js";
 import {
   ActivityEventCreateInput,
   EventCreateInputType,
   EventCreatePayloadType,
-} from "src/graphql/generated/mutations/event/event_create_type";
+} from "./mutations/event/event_create_type.js";
 import {
   EventActivityAddInviteInputType,
   EventActivityAddInvitePayloadType,
-} from "src/graphql/generated/mutations/event_activity/event_activity_add_invite_type";
+} from "./mutations/event_activity/event_activity_add_invite_type.js";
 import {
   AddressEventActivityCreateInput,
   EventActivityCreateInputType,
   EventActivityCreatePayloadType,
-} from "src/graphql/generated/mutations/event_activity/event_activity_create_type";
+} from "./mutations/event_activity/event_activity_create_type.js";
 import {
   EventActivityDeleteInputType,
   EventActivityDeletePayloadType,
-} from "src/graphql/generated/mutations/event_activity/event_activity_delete_type";
+} from "./mutations/event_activity/event_activity_delete_type.js";
 import {
   EventActivityEditInputType,
   EventActivityEditPayloadType,
-} from "src/graphql/generated/mutations/event_activity/event_activity_edit_type";
+} from "./mutations/event_activity/event_activity_edit_type.js";
 import {
   EventActivityRemoveInviteInputType,
   EventActivityRemoveInvitePayloadType,
-} from "src/graphql/generated/mutations/event_activity/event_activity_remove_invite_type";
+} from "./mutations/event_activity/event_activity_remove_invite_type.js";
 import {
   EventActivityRsvpStatusEditInputType,
   EventActivityRsvpStatusEditPayloadType,
-} from "src/graphql/generated/mutations/event_activity/event_activity_rsvp_status_edit_type";
+} from "./mutations/event_activity/event_activity_rsvp_status_edit_type.js";
 import {
   GuestCreateInputType,
   GuestCreatePayloadType,
-} from "src/graphql/generated/mutations/guest/guest_create_type";
+} from "./mutations/guest/guest_create_type.js";
 import {
   GuestDeleteInputType,
   GuestDeletePayloadType,
-} from "src/graphql/generated/mutations/guest/guest_delete_type";
+} from "./mutations/guest/guest_delete_type.js";
 import {
   GuestEditInputType,
   GuestEditPayloadType,
-} from "src/graphql/generated/mutations/guest/guest_edit_type";
+} from "./mutations/guest/guest_edit_type.js";
 import {
   GuestGroupCreateInputType,
   GuestGroupCreatePayloadType,
   GuestGuestGroupCreateInput,
-} from "src/graphql/generated/mutations/guest_group/guest_group_create_type";
+} from "./mutations/guest_group/guest_group_create_type.js";
 import {
   GuestGroupDeleteInputType,
   GuestGroupDeletePayloadType,
-} from "src/graphql/generated/mutations/guest_group/guest_group_delete_type";
+} from "./mutations/guest_group/guest_group_delete_type.js";
 import {
   GuestGroupEditInputType,
   GuestGroupEditPayloadType,
-} from "src/graphql/generated/mutations/guest_group/guest_group_edit_type";
-import { EventActivityRsvpStatusInputType } from "src/graphql/generated/mutations/input_enums_type";
-import { MutationType } from "src/graphql/generated/mutations/mutation_type";
+} from "./mutations/guest_group/guest_group_edit_type.js";
+import { EventActivityRsvpStatusInputType } from "./mutations/input_enums_type.js";
+import { MutationType } from "./mutations/mutation_type.js";
 import {
   UserCreateInputType,
   UserCreatePayloadType,
-} from "src/graphql/generated/mutations/user/user_create_type";
-import { QueryType } from "src/graphql/generated/resolvers/query_type";
+} from "./mutations/user/user_create_type.js";
+import { QueryType } from "./resolvers/query_type.js";
 import {
   AddressToLocatedAtConnectionType,
   AddressType,
@@ -111,7 +111,7 @@ import {
   UserType,
   ViewerType,
   WithAddressType,
-} from "src/graphql/resolvers";
+} from "../resolvers/index.js";
 
 export default new GraphQLSchema({
   query: QueryType,

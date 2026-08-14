@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Place } from "../../../../ent";
-import type { PlaceCreateInput } from "../../../../ent/place/actions/create_place_action";
+import type { Place } from "../../../../ent/index.js";
+import type { PlaceCreateInput } from "../../../../ent/place/actions/create_place_action.js";
 import {
   GraphQLInputObjectType,
   GraphQLNonNull,
@@ -16,8 +16,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { GraphQLJSON } from "graphql-type-json";
-import CreatePlaceAction from "../../../../ent/place/actions/create_place_action";
-import { PlaceCategoryType, PlaceType } from "../../../resolvers";
+import CreatePlaceAction from "../../../../ent/place/actions/create_place_action.js";
+import { PlaceCategoryType, PlaceType } from "../../../resolvers/index.js";
 
 interface PlaceCreatePayload {
   place: Place;

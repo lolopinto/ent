@@ -4,7 +4,7 @@ import { Viewer } from "@snowtop/ent";
 import {
   IWithAddressBase,
   WithAddressBaseMixin,
-} from "src/ent/generated/mixins/with_address_base";
+} from "../generated/mixins/with_address_base.js";
 
 export interface IWithAddress<TViewer extends Viewer = Viewer>
   extends IWithAddressBase<TViewer> {

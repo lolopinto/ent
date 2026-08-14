@@ -24,3 +24,5 @@ jobs:
 
       - run: npm ci 
       - run: npm run build 
+      - name: Build draft documentation
+        run: npm run build -- --dev --out-dir build-with-drafts

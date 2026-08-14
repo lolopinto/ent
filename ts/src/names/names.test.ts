@@ -1,4 +1,4 @@
-import { toFieldName, toDBColumnOrTable, _splitCamelCase } from "./names";
+import { toFieldName, toDBColumnOrTable, _splitCamelCase } from "./names.js";
 
 test.each([
   ["ID", "id"],

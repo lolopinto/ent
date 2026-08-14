@@ -1,4 +1,4 @@
-import { EnumType, GlobalSchema } from "@snowtop/ent/schema/";
+import { EnumType, GlobalSchema } from "@snowtop/ent/schema";
 
 const glo: GlobalSchema = {
   fields: {

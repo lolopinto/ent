@@ -4,7 +4,7 @@ import type { Viewer } from "@snowtop/ent";
 import { GraphQLObjectType } from "graphql";
 import { Data } from "@snowtop/ent";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { GuestGroupType } from "src/graphql/resolvers/internal";
+import { GuestGroupType } from "../../../resolvers/internal.js";
 
 var connType: GraphQLConnectionType<GraphQLObjectType, Data, Viewer>;
 

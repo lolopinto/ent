@@ -1,4 +1,4 @@
-import { Data } from "../core/base";
+import { Data } from "../core/base.js";
 
 import type {
   AST,

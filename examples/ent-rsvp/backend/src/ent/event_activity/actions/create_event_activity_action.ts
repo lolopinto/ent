@@ -1,12 +1,15 @@
 import { Viewer, ID } from "@snowtop/ent";
-import { CreateEventActivityActionBase } from "src/ent/generated/event_activity/actions/create_event_activity_action_base";
-import type { EventActivityCreateInput, CreateEventActivityActionTriggers } from "src/ent/generated/event_activity/actions/create_event_activity_action_base";
-import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
+import { CreateEventActivityActionBase } from "../../generated/event_activity/actions/create_event_activity_action_base.js";
+import type {
+  EventActivityCreateInput,
+  CreateEventActivityActionTriggers,
+} from "../../generated/event_activity/actions/create_event_activity_action_base.js";
+import { AllowIfEventCreatorPrivacyPolicy } from "../../event/privacy/event_creator.js";
 export type { EventActivityCreateInput };
 import { Builder } from "@snowtop/ent/action";
-import CreateAddressAction from "src/ent/address/actions/create_address_action";
-import { NodeType } from "src/ent/generated/const";
-import { Event, EventToGuestGroupsQuery } from "src/ent";
+import CreateAddressAction from "../../address/actions/create_address_action.js";
+import { NodeType } from "../../generated/const.js";
+import { Event, EventToGuestGroupsQuery } from "../../index.js";
 
 // we're only writing this once except with --force and packageName provided
 export default class CreateEventActivityAction extends CreateEventActivityActionBase {

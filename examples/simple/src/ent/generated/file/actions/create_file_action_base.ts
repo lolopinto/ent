@@ -13,11 +13,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { File, User } from "../../..";
-import { FileBuilder } from "./file_builder";
+import { File, User } from "../../../index.js";
+import { FileBuilder } from "./file_builder.js";
 
 export interface FileCreateInput {
   name: string;

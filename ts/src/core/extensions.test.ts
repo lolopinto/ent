@@ -5,7 +5,7 @@ import {
   initializeExtensions,
   registerExtensionRuntime,
   resolveExtensions,
-} from "./extensions";
+} from "./extensions.js";
 
 describe("extension config resolution", () => {
   test("defaults to an empty extension list when runtime config is absent", () => {

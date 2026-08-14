@@ -1,10 +1,10 @@
-import { stableStringify } from "./cache_utils";
+import { stableStringify } from "./cache_utils.js";
 import {
   QueryableDataOptions,
   SelectExpressionField,
   SelectField,
-} from "./base";
-import { QueryExpression } from "./query_expression";
+} from "./base.js";
+import { QueryExpression } from "./query_expression.js";
 
 export interface OrderByOption {
   column: string;
@@ -37,7 +37,9 @@ function getCacheKeyForExpression(expression: QueryExpression): string {
   return expression.instanceKey();
 }
 
-export function getSelectFieldsKey(fields: QueryableDataOptions["fields"]): string {
+export function getSelectFieldsKey(
+  fields: QueryableDataOptions["fields"],
+): string {
   return fields
     .map((field) => {
       if (typeof field === "string") {

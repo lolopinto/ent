@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -17,8 +17,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { DefaultsExample } from "../../../ent/defaults_example";
-import { DefaultsExampleType } from "../../resolvers/internal";
+import { DefaultsExample } from "../../../ent/defaults_example.js";
+import { DefaultsExampleType } from "../../resolvers/internal.js";
 
 interface DefaultsExampleListDeprecatedArgs {
   id: any;

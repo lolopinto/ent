@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -22,7 +22,7 @@ import {
   ContactPhoneNumber,
   ContactPhoneNumberToCommentsQuery,
   ContactPhoneNumberToLikersQuery,
-} from "../../../ent";
+} from "../../../ent/index.js";
 import {
   ContactInfoExtraType,
   ContactItemType,
@@ -31,7 +31,7 @@ import {
   ContactPhoneNumberToLikersConnectionType,
   ContactType,
   UserType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const ContactPhoneNumberType = new GraphQLObjectType({
   name: "ContactPhoneNumber",

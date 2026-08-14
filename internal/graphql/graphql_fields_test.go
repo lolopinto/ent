@@ -153,6 +153,21 @@ func TestActionOnlyObjectListFieldConfigDecodesNestedGraphQLIDs(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(
 		t,
 		map[string]string{
+			"registry_detail.ts": testhelper.GetCodeWithSchema(
+				`import {EntSchema, ActionOperation, StringType} from "{schema}";
+
+				const RegistryDetail = new EntSchema({
+					fields: {
+						code: StringType(),
+					},
+
+					actions: [
+						{
+							operation: ActionOperation.Create,
+						},
+					],
+				});
+				export default RegistryDetail;`),
 			"registration.ts": testhelper.GetCodeWithSchema(
 				`import {EntSchema, ActionOperation, IntegerType, UUIDType} from "{schema}";
 
@@ -166,6 +181,13 @@ func TestActionOnlyObjectListFieldConfigDecodesNestedGraphQLIDs(t *testing.T) {
 						{
 							operation: ActionOperation.Create,
 							actionName: "AddRegistrationAction",
+							actionOnlyFields: [
+								{
+									name: "detail",
+									type: "Object",
+									actionName: "CreateRegistryDetailAction",
+								},
+							],
 						},
 					],
 				});
@@ -209,6 +231,8 @@ func TestActionOnlyObjectListFieldConfigDecodesNestedGraphQLIDs(t *testing.T) {
 
 	createActionCfg, err := buildActionFieldConfig(processor, paymentCfg.NodeData, createAction)
 	require.NoError(t, err)
+	createInput, err := buildActionInputNode(processor, paymentCfg.NodeData, createAction)
+	require.NoError(t, err)
 
 	contents := strings.Join(createActionCfg.FunctionContents, "\n")
 	assert.Contains(
@@ -217,6 +241,15 @@ func TestActionOnlyObjectListFieldConfigDecodesNestedGraphQLIDs(t *testing.T) {
 		"registrations: input.registrations ? input.registrations.map((item: any) =>  ( {...item,  registryId: mustDecodeIDFromGQLID(item.registryId.toString())} )) : input.registrations,",
 	)
 	assert.Contains(t, actionConfigImportNames(createActionCfg), "mustDecodeIDFromGQLID")
+	var dependentInput string
+	for _, imp := range createInput.Imports {
+		if strings.Contains(imp.ImportPath, "/registration/") {
+			dependentInput = imp.Import
+			break
+		}
+	}
+	require.NotEmpty(t, dependentInput, actionInputImports(createInput))
+	assert.True(t, (&gqlobjectData{GQLNodes: []*objectType{createInput}}).ForeignImport(dependentInput))
 }
 
 func verifyFieldsOverlap(t *testing.T, action action.Action, cfg *fieldConfig) {
@@ -237,6 +270,14 @@ func actionConfigImportNames(cfg *fieldConfig) []string {
 	var imports []string
 	for _, imp := range cfg.ArgImports {
 		imports = append(imports, imp.Import)
+	}
+	return imports
+}
+
+func actionInputImports(input *objectType) []string {
+	var imports []string
+	for _, imp := range input.Imports {
+		imports = append(imports, imp.Import+"|"+imp.ImportPath)
 	}
 	return imports
 }

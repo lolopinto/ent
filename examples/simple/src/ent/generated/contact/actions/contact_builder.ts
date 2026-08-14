@@ -11,19 +11,19 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { Attachment, ImportantDates } from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Attachment, ImportantDates } from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Contact, User } from "../../..";
-import { contactLoaderInfo } from "../../loaders";
-import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
-import { EdgeType, NodeType } from "../../types";
-import schema from "../../../../schema/contact_schema";
+import { Contact, User } from "../../../index.js";
+import { contactLoaderInfo } from "../../loaders.js";
+import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder.js";
+import { EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/contact_schema.js";
 
 export interface ContactInput {
   emailIds?: ID[];

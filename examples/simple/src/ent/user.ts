@@ -1,5 +1,5 @@
-import { UserBase, Contact, Comment } from "./internal";
-import { EdgeType } from "./generated/types";
+import { UserBase, Contact, Comment } from "./internal.js";
+import { EdgeType } from "./generated/types.js";
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
@@ -8,12 +8,12 @@ import {
   PrivacyPolicy,
   ID,
 } from "@snowtop/ent";
-import { AllowIfOmniRule } from "./../privacy/omni";
+import { AllowIfOmniRule } from "../privacy/omni.js";
 import { GraphQLString } from "graphql";
 import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 import { CustomEdgeQueryBase } from "@snowtop/ent";
-import { ExampleViewer } from "src/viewer/viewer";
+import { ExampleViewer } from "../viewer/viewer.js";
 
 class UserToCommentsAuthoredQuery extends CustomEdgeQueryBase<
   User,

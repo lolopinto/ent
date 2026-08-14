@@ -6,7 +6,7 @@ import {
   StructType,
   UUIDType,
 } from "@snowtop/ent";
-import { getLoaderInfoFromSchema } from "../../ent/generated/loaders";
+import { getLoaderInfoFromSchema } from "../../ent/generated/loaders.js";
 
 // contrived pattern here with struct types to be shared with email and phone
 

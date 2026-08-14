@@ -1,6 +1,6 @@
 import { types as pgTypes } from "pg";
-import type { PostgresDriver, RuntimeDBExtension } from "./config";
-import type { ResolvedDevSchema } from "./dev_schema";
+import type { PostgresDriver, RuntimeDBExtension } from "./config.js";
+import type { ResolvedDevSchema } from "./dev_schema.js";
 
 const TEXT_ARRAY_OID = 1009;
 
@@ -352,7 +352,10 @@ export async function initializeExtensions(
 
   if (postgresDriver === "bun") {
     const unsupportedExtensions = normalizedExtensions
-      .filter((extension) => (runtimeHandlers.get(extension.name)?.types || []).length > 0)
+      .filter(
+        (extension) =>
+          (runtimeHandlers.get(extension.name)?.types || []).length > 0,
+      )
       .map((extension) => extension.name);
     if (unsupportedExtensions.length > 0) {
       throw new Error(

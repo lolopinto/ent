@@ -3,7 +3,7 @@
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
 import { GraphQLBoolean, GraphQLNonNull, GraphQLString } from "graphql";
-import { AuthResolver } from "src/graphql/mutations/auth/auth";
+import { AuthResolver } from "../../mutations/auth/auth.js";
 
 interface EmailAvailableArgs {
   email: string;

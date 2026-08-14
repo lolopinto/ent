@@ -1,10 +1,10 @@
-import { randomEmail, randomPhoneNumber } from "src/util/random";
-import { User, UserStatistics } from "..";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import { User, UserStatistics } from "../index.js";
 import CreateUserAction, {
   UserCreateInput,
-} from "../user/actions/create_user_action";
-import { LoggedOutExampleViewer } from "src/viewer/viewer";
-import CreateAuthCodeAction from "../auth_code/actions/create_auth_code_action";
+} from "../user/actions/create_user_action.js";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
+import CreateAuthCodeAction from "../auth_code/actions/create_auth_code_action.js";
 import { FakeComms, Mode } from "@snowtop/ent/testutils/fake_comms";
 
 beforeEach(() => {

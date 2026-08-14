@@ -1,9 +1,9 @@
 import { expectMutation } from "@snowtop/ent-graphql-tests";
-import { User } from "src/ent";
+import { User } from "../../ent/index.js";
 import { IDViewer } from "@snowtop/ent";
-import schema from "src/graphql/generated/schema";
+import schema from "../generated/schema.js";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { randomEmail } from "src/util/random";
+import { randomEmail } from "../../util/random.js";
 
 test("create user", async () => {
   const email = randomEmail();

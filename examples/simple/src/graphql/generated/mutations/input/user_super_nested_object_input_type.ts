@@ -21,7 +21,7 @@ import {
   DogBreedType,
   RabbitBreedType,
   ResponseTypeType,
-} from "../../../resolvers";
+} from "../../../resolvers/index.js";
 
 const UserNestedObjectInputType = new GraphQLInputObjectType({
   name: "UserNestedObjectInput",

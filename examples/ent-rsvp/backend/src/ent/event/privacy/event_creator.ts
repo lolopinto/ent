@@ -10,8 +10,8 @@ import {
   Data,
 } from "@snowtop/ent";
 import { Builder } from "@snowtop/ent/action";
-import { EventActivity } from "src/ent";
-import { Event } from "src/ent/internal";
+import { EventActivity } from "../../index.js";
+import { Event } from "../../internal.js";
 
 export class AllowIfEventCreatorRule implements PrivacyPolicyRule {
   constructor(

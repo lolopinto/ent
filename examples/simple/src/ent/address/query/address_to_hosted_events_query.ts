@@ -3,7 +3,7 @@
  */
 
 import { AssocEdge } from "@snowtop/ent";
-import { AddressToHostedEventsQueryBase } from "../../internal";
+import { AddressToHostedEventsQueryBase } from "../../internal.js";
 export class AddressToHostedEventsEdge extends AssocEdge {}
 
 export class AddressToHostedEventsQuery extends AddressToHostedEventsQueryBase {}
