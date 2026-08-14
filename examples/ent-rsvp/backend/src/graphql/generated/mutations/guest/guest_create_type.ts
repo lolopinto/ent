@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Guest } from "src/ent/";
-import type { GuestCreateInput } from "src/ent/guest/actions/create_guest_action";
+import type { Guest } from "../../../../ent/index.js";
+import type { GuestCreateInput } from "../../../../ent/guest/actions/create_guest_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -20,8 +20,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import CreateGuestAction from "src/ent/guest/actions/create_guest_action";
-import { GuestTagType, GuestType } from "src/graphql/resolvers/";
+import CreateGuestAction from "../../../../ent/guest/actions/create_guest_action.js";
+import { GuestTagType, GuestType } from "../../../resolvers/index.js";
 
 interface customGuestCreateInput extends GuestCreateInput {
   addressId?: string;

@@ -9,12 +9,12 @@ import {
   LoaderFactory,
   PrimableLoader,
   DataOptions,
-} from "../base";
-import { loadRow, loadRows } from "../ent";
-import { mapWithConcurrency } from "../async_utils";
-import * as clause from "../clause";
-import { log } from "../logger";
-import { getCombinedClause } from "../clause";
+} from "../base.js";
+import { loadRow, loadRows } from "../ent.js";
+import { mapWithConcurrency } from "../async_utils.js";
+import * as clause from "../clause.js";
+import { log } from "../logger.js";
+import { getCombinedClause } from "../clause.js";
 
 import {
   getLoader,
@@ -23,8 +23,8 @@ import {
   createLoaderCacheMap,
   getCustomLoader,
   getLoaderMaxBatchSize,
-} from "./loader";
-import { memoizeNoArgs } from "../memoize";
+} from "./loader.js";
+import { memoizeNoArgs } from "../memoize.js";
 
 const DEFAULT_CLAUSE_LOADER_CONCURRENCY = 10;
 let clauseLoaderConcurrency = DEFAULT_CLAUSE_LOADER_CONCURRENCY;

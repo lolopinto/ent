@@ -1,3 +1,3 @@
-import { NoteToNoteChunksQueryBase } from "../../internal";
+import { NoteToNoteChunksQueryBase } from "../../internal.js";
 
 export class NoteToNoteChunksQuery extends NoteToNoteChunksQueryBase {}

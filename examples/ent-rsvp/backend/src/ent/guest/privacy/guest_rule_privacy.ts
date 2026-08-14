@@ -1,4 +1,4 @@
-import { Guest } from "src/ent/";
+import { Guest } from "../../index.js";
 import { ID, PrivacyPolicyRule, Viewer, Ent, Skip, Allow } from "@snowtop/ent";
 
 export class AllowIfGuestInSameGuestGroupRule implements PrivacyPolicyRule {

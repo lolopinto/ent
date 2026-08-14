@@ -3,10 +3,10 @@ import {
   gqlObjectType,
   gqlContextType,
   gqlQuery,
-} from "../../../graphql/graphql";
-import { Viewer } from "../../../core/base";
+} from "../../../graphql/graphql.js";
+import { Viewer } from "../../../core/base.js";
 import { GraphQLID } from "graphql";
-import { RequestContext } from "../../../core/context";
+import { RequestContext } from "../../../core/context.js";
 
 @gqlObjectType({ name: "Viewer" })
 class ViewerType {

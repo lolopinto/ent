@@ -1,4 +1,9 @@
-import { loadRows, query, type Clause, type QueryableDataOptions } from "@snowtop/ent";
+import {
+  loadRows,
+  query,
+  type Clause,
+  type QueryableDataOptions,
+} from "@snowtop/ent";
 import {
   cosineSimilarity,
   nearestNeighbor,
@@ -70,7 +75,8 @@ export function buildSemanticChunkSearchQuery(
 
 export async function semanticChunkSearch(
   options: SemanticChunkSearchOptions,
+  loader: typeof loadRows = loadRows,
 ): Promise<SemanticChunkSearchRow[]> {
-  const rows = await loadRows(buildSemanticChunkSearchQuery(options));
+  const rows = await loader(buildSemanticChunkSearchQuery(options));
   return rows as SemanticChunkSearchRow[];
 }

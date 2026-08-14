@@ -12,19 +12,13 @@ import {
   GraphQLNonNull,
   GraphQLObjectType,
 } from "graphql";
-import {
-  AuthGuestInputType,
-  AuthGuestPayloadType,
-} from "src/graphql/generated/mutations/auth_guest_type";
-import {
-  AuthUserInputType,
-  AuthUserPayloadType,
-} from "src/graphql/generated/mutations/auth_user_type";
-import { AuthResolver } from "src/graphql/mutations/auth/auth";
+import { AuthGuestInputType, AuthGuestPayloadType } from "./auth_guest_type.js";
+import { AuthUserInputType, AuthUserPayloadType } from "./auth_user_type.js";
+import { AuthResolver } from "../../mutations/auth/auth.js";
 import {
   AuthAnyInput,
   AuthAnyPayload,
-} from "src/graphql/mutations/auth/auth_types";
+} from "../../mutations/auth/auth_types.js";
 
 export const AuthAnyInputType = new GraphQLInputObjectType({
   name: "AuthAnyInput",

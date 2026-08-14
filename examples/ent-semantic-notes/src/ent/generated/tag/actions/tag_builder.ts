@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Note, Tag, Workspace } from "../../..";
-import { tagLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType } from "../../types";
-import schema from "../../../../schema/tag_schema";
+import { Note, Tag, Workspace } from "../../../index.js";
+import { tagLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/tag_schema.js";
 
 export interface TagInput {
   workspaceId?: ID | Builder<Workspace, Viewer>;

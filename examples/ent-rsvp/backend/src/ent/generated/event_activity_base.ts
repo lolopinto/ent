@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { EventActivityDBData } from "src/ent/generated/loaders";
+import type { EventActivityDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   getEdgeTypeInGroup,
@@ -23,15 +23,8 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import {
-  eventActivityLoader,
-  eventActivityLoaderInfo,
-} from "src/ent/generated/loaders";
-import {
-  EdgeType,
-  EventActivityRsvpStatus,
-  NodeType,
-} from "src/ent/generated/types";
+import { eventActivityLoader, eventActivityLoaderInfo } from "./loaders.js";
+import { EdgeType, EventActivityRsvpStatus, NodeType } from "./types.js";
 import {
   Address,
   Event,
@@ -41,8 +34,8 @@ import {
   Guest,
   IWithAddress,
   WithAddressMixin,
-} from "src/ent/internal";
-import schema from "src/schema/event_activity_schema";
+} from "../internal.js";
+import schema from "../../schema/event_activity_schema.js";
 
 export class EventActivityBase
   extends WithAddressMixin(class {} as new (...args: any[]) => IWithAddress)

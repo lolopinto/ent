@@ -1,5 +1,5 @@
-import { Ent, LoadEntOptions } from "../../core/base";
-import { FakeContact, FakeEvent, FakeUser, FakeTag } from "./internal";
+import { Ent, LoadEntOptions } from "../../core/base.js";
+import { FakeContact, FakeEvent, FakeUser, FakeTag } from "./internal.js";
 
 export enum EdgeType {
   UserToContacts = "userToContacts",

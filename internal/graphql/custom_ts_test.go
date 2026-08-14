@@ -514,7 +514,7 @@ func TestCustomGraphQLJSONPathAlsoLoadsDecorators(t *testing.T) {
 	dirPath, err := os.MkdirTemp(absPath, "project")
 	defer os.RemoveAll(dirPath)
 	require.NoError(t, err)
-	require.NoError(t, os.WriteFile(filepath.Join(dirPath, "package.json"), []byte(`{"type":"commonjs"}`), os.ModePerm))
+	require.NoError(t, os.WriteFile(filepath.Join(dirPath, "package.json"), []byte(`{"type":"module"}`), os.ModePerm))
 	snowtopDir := filepath.Join(dirPath, "node_modules", "@snowtop")
 	require.NoError(t, os.MkdirAll(snowtopDir, os.ModePerm))
 	require.NoError(t, os.Symlink(input.GetAbsoluteRootPathForTest(), filepath.Join(snowtopDir, "ent")))

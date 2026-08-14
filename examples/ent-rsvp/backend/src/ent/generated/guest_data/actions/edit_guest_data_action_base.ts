@@ -12,9 +12,9 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Event, Guest, GuestData } from "src/ent/";
-import { GuestDataBuilder } from "src/ent/generated/guest_data/actions/guest_data_builder";
-import { GuestDataSource } from "src/ent/generated/types";
+import { Event, Guest, GuestData } from "../../../index.js";
+import { GuestDataBuilder } from "./guest_data_builder.js";
+import { GuestDataSource } from "../../types.js";
 
 export interface GuestDataEditInput {
   guestId?: ID | Builder<Guest, Viewer>;

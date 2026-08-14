@@ -4,7 +4,7 @@ import {
   gqlField,
   gqlObjectType,
 } from "@snowtop/ent/graphql";
-import { GraphQLViewer } from "../../resolvers/viewer_type";
+import { GraphQLViewer } from "../../resolvers/viewer_type.js";
 import { GraphQLString } from "graphql";
 
 @gqlInputObjectType()

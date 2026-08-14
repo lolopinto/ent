@@ -47,12 +47,17 @@ type Runtime = codegenapi.Runtime
 
 type PostgresDriver = codegenapi.PostgresDriver
 
+type ModuleFormat = codegenapi.ModuleFormat
+
 const (
 	RuntimeNode = codegenapi.RuntimeNode
 	RuntimeBun  = codegenapi.RuntimeBun
 
 	PostgresDriverPG  = codegenapi.PostgresDriverPG
 	PostgresDriverBun = codegenapi.PostgresDriverBun
+
+	ModuleFormatESM      = codegenapi.ModuleFormatESM
+	ModuleFormatCommonJS = codegenapi.ModuleFormatCommonJS
 )
 
 // Clone doesn't clone changes and changedTSFiles
@@ -113,6 +118,34 @@ func ParsePostgresDriverValue(driver string) (PostgresDriver, error) {
 func normalizePostgresDriver(driver string) PostgresDriver {
 	val, _ := ParsePostgresDriverValue(driver)
 	return val
+}
+
+func ParseModuleFormatValue(moduleFormat string) (ModuleFormat, error) {
+	switch moduleFormat {
+	case "", string(ModuleFormatESM):
+		return ModuleFormatESM, nil
+	case string(ModuleFormatCommonJS):
+		return ModuleFormatCommonJS, nil
+	default:
+		return "", fmt.Errorf("invalid moduleFormat %q. valid values: %s, %s", moduleFormat, ModuleFormatESM, ModuleFormatCommonJS)
+	}
+}
+
+func normalizeModuleFormat(moduleFormat string) ModuleFormat {
+	val, _ := ParseModuleFormatValue(moduleFormat)
+	return val
+}
+
+func moduleFormatEnvOverride() (string, bool, error) {
+	moduleFormat, ok := os.LookupEnv("ENT_MODULE_FORMAT")
+	if !ok {
+		return "", false, nil
+	}
+	val, err := ParseModuleFormatValue(moduleFormat)
+	if err != nil {
+		return "", false, err
+	}
+	return string(val), true, nil
 }
 
 func NewConfig(configPath, modulePath string) (*Config, error) {
@@ -283,11 +316,25 @@ func (cfg *Config) PostgresDriver() codegenapi.PostgresDriver {
 	return PostgresDriverPG
 }
 
+func (cfg *Config) ModuleFormat() codegenapi.ModuleFormat {
+	if cfg.config != nil {
+		return cfg.config.ModuleFormatValue()
+	}
+	return ModuleFormatESM
+}
+
 func (cfg *Config) ShouldUseRelativePaths() bool {
+	if cfg.ModuleFormat() == ModuleFormatESM {
+		return true
+	}
 	if codegen := cfg.getCodegenConfig(); codegen != nil {
 		return codegen.RelativeImports
 	}
 	return false
+}
+
+func (cfg *Config) ShouldAddImportExtensions() bool {
+	return cfg.ModuleFormat() == ModuleFormatESM
 }
 
 func (cfg *Config) DisableBase64Encoding() bool {
@@ -703,6 +750,10 @@ type ImportPackage struct {
 }
 
 func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
+	moduleFormatOverride, hasModuleFormatOverride, err := moduleFormatEnvOverride()
+	if err != nil {
+		return nil, err
+	}
 	paths := []string{
 		"ent.yml",
 		"src/ent.yml",
@@ -738,10 +789,19 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 		if _, err := ParsePostgresDriverValue(c.PostgresDriver); err != nil {
 			return nil, err
 		}
+		if _, err := ParseModuleFormatValue(c.ModuleFormat); err != nil {
+			return nil, err
+		}
+		if hasModuleFormatOverride {
+			c.ModuleFormat = moduleFormatOverride
+		}
 		if c.Codegen != nil {
 			c.Codegen.init()
 		}
 		return &c, nil
+	}
+	if hasModuleFormatOverride {
+		return &ConfigurableConfig{ModuleFormat: moduleFormatOverride}, nil
 	}
 	return nil, nil
 }
@@ -756,6 +816,7 @@ type ConfigurableConfig struct {
 	DevSchema                          *DevSchemaConfig         `yaml:"devSchema"`
 	Runtime                            string                   `yaml:"runtime"`
 	PostgresDriver                     string                   `yaml:"postgresDriver"`
+	ModuleFormat                       string                   `yaml:"moduleFormat"`
 	CustomGraphQLJSONPath              string                   `yaml:"customGraphQLJSONPath"`
 	DynamicScriptCustomGraphQLJSONPath string                   `yaml:"dynamicScriptCustomGraphQLJSONPath"`
 	GlobalSchemaPath                   string                   `yaml:"globalSchemaPath"`
@@ -768,6 +829,7 @@ func (cfg *ConfigurableConfig) Clone() *ConfigurableConfig {
 		DevSchema:                          cloneDevSchema(cfg.DevSchema),
 		Runtime:                            cfg.Runtime,
 		PostgresDriver:                     cfg.PostgresDriver,
+		ModuleFormat:                       cfg.ModuleFormat,
 		CustomGraphQLJSONPath:              cfg.CustomGraphQLJSONPath,
 		DynamicScriptCustomGraphQLJSONPath: cfg.DynamicScriptCustomGraphQLJSONPath,
 		GlobalSchemaPath:                   cfg.GlobalSchemaPath,
@@ -786,6 +848,13 @@ func (cfg *ConfigurableConfig) PostgresDriverValue() PostgresDriver {
 		return PostgresDriverPG
 	}
 	return normalizePostgresDriver(cfg.PostgresDriver)
+}
+
+func (cfg *ConfigurableConfig) ModuleFormatValue() ModuleFormat {
+	if cfg == nil {
+		return ModuleFormatESM
+	}
+	return normalizeModuleFormat(cfg.ModuleFormat)
 }
 
 func cloneConfig(cfg *ConfigurableConfig) *ConfigurableConfig {

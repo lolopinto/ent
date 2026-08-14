@@ -3,8 +3,11 @@
  */
 
 import { clearEdgeTypeInGroup } from "@snowtop/ent/action/action";
-import { ClearEventRsvpStatusActionBase } from "../../generated/event/actions/clear_event_rsvp_status_action_base";
-import type { ClearEventRsvpStatusActionTriggers, ClearEventRsvpStatusInput } from "../../generated/event/actions/clear_event_rsvp_status_action_base";
+import { ClearEventRsvpStatusActionBase } from "../../generated/event/actions/clear_event_rsvp_status_action_base.js";
+import type {
+  ClearEventRsvpStatusActionTriggers,
+  ClearEventRsvpStatusInput,
+} from "../../generated/event/actions/clear_event_rsvp_status_action_base.js";
 export type { ClearEventRsvpStatusInput };
 export default class ClearEventRsvpStatusAction extends ClearEventRsvpStatusActionBase {
   getTriggers(): ClearEventRsvpStatusActionTriggers {

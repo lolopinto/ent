@@ -7,7 +7,7 @@ import { GraphQLUnionType } from "graphql";
 import {
   ContactEmailType,
   ContactPhoneNumberType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const ContactInfoType = new GraphQLUnionType({
   name: "ContactInfo",

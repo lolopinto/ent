@@ -4,7 +4,7 @@ import {
   TimeType,
   TimetzType,
 } from "@snowtop/ent";
-import WithDayOfWeek from "./patterns/day_of_week";
+import WithDayOfWeek from "./patterns/day_of_week.js";
 
 const HoursOfOperationSchema = new EntSchemaWithTZ({
   patterns: [new WithDayOfWeek()],

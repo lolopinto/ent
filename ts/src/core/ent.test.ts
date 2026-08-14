@@ -1,15 +1,15 @@
-import { WriteOperation } from "../action";
+import { WriteOperation } from "../action/index.js";
 import {
   User,
   BuilderSchema,
   SimpleBuilder,
   SimpleAction,
   BaseEnt,
-} from "../testutils/builder";
-import { IDViewer, LoggedOutViewer } from "./viewer";
-import { FieldMap, StringType, UUIDType } from "../schema";
-import { createRowForTest } from "../testutils/write";
-import { Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base";
+} from "../testutils/builder.js";
+import { IDViewer, LoggedOutViewer } from "./viewer.js";
+import { FieldMap, StringType, UUIDType } from "../schema/index.js";
+import { createRowForTest } from "../testutils/write.js";
+import { Data, PrivacyPolicy, Viewer, LoadEntOptions } from "./base.js";
 import {
   AssocEdge,
   assocEdgeLoader,
@@ -24,10 +24,10 @@ import {
   loadEntXViaKey,
   decodeCursorPayload,
   getCursor,
-} from "./ent";
-import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy";
-import { TestContext } from "../testutils/context/test_context";
-import { ObjectLoaderFactory } from "./loaders";
+} from "./ent.js";
+import { AlwaysDenyRule, AllowIfViewerRule } from "./privacy.js";
+import { TestContext } from "../testutils/context/test_context.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
 import { validate as validatev4 } from "uuid";
 import {
   table,
@@ -36,10 +36,10 @@ import {
   assoc_edge_config_table,
   assoc_edge_table,
   TempDB,
-} from "../testutils/db/temp_db";
-import { setLogLevels } from "./logger";
-import { MockLogs } from "../testutils/mock_log";
-import DB, { Dialect } from "./db";
+} from "../testutils/db/temp_db.js";
+import { setLogLevels } from "./logger.js";
+import { MockLogs } from "../testutils/mock_log.js";
+import DB, { Dialect } from "./db.js";
 
 class UserSchema implements BuilderSchema<User> {
   ent = User;
@@ -159,7 +159,7 @@ function commonTests() {
         ["id", "550e8400-e29b-41d4-a716-446655440000"],
       ]);
     });
-  
+
     test("ASCII-only cursor matches legacy btoa base64 (backward compatible)", () => {
       const row = { name: "Plain ASCII", id: "a" };
       const encoded = getCursor({ row, cursorKeys: ["name", "id"] });
@@ -171,7 +171,7 @@ function commonTests() {
       );
       expect(encoded).toBe(legacy);
     });
-  
+
     test("Date columns are ISO strings in the cursor payload", () => {
       const d = new Date("2024-06-01T12:00:00.000Z");
       const row = { created_at: d, id: "x" };

@@ -11,18 +11,18 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { DefaultsPayload } from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { DefaultsPayload } from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { DefaultsExample } from "../../..";
-import { defaultsExampleLoaderInfo } from "../../loaders";
-import { NodeType } from "../../types";
-import schema from "../../../../schema/defaults_example_schema";
+import { DefaultsExample } from "../../../index.js";
+import { defaultsExampleLoaderInfo } from "../../loaders.js";
+import { NodeType } from "../../types.js";
+import schema from "../../../../schema/defaults_example_schema.js";
 
 export interface DefaultsExampleInput {
   creatorId?: ID;

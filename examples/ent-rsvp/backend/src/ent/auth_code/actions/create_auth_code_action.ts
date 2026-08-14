@@ -1,5 +1,5 @@
-import { CreateAuthCodeActionBase } from "src/ent/generated/auth_code/actions/create_auth_code_action_base";
-import type { AuthCodeCreateInput } from "src/ent/generated/auth_code/actions/create_auth_code_action_base";
+import { CreateAuthCodeActionBase } from "../../generated/auth_code/actions/create_auth_code_action_base.js";
+import type { AuthCodeCreateInput } from "../../generated/auth_code/actions/create_auth_code_action_base.js";
 
 export type { AuthCodeCreateInput };
 

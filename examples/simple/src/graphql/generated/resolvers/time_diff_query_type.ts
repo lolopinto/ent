@@ -5,11 +5,11 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLNonNull, GraphQLString } from "graphql";
 import { GraphQLJSON } from "graphql-type-json";
 import { GraphQLTime } from "@snowtop/ent/graphql";
-import { ViewerResolver } from "../../resolvers/viewer";
+import { ViewerResolver } from "../../resolvers/viewer.js";
 
 interface TimeDiffArgs {
   time: Date;

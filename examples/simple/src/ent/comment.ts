@@ -3,7 +3,7 @@
  */
 
 import { AlwaysAllowPrivacyPolicy, PrivacyPolicy } from "@snowtop/ent";
-import { CommentBase } from "./internal";
+import { CommentBase } from "./internal.js";
 
 export class Comment extends CommentBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {

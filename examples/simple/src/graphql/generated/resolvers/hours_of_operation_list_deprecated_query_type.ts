@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -17,8 +17,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { HoursOfOperation } from "../../../ent/hours_of_operation";
-import { HoursOfOperationType } from "../../resolvers/internal";
+import { HoursOfOperation } from "../../../ent/hours_of_operation.js";
+import { HoursOfOperationType } from "../../resolvers/internal.js";
 
 interface HoursOfOperationListDeprecatedArgs {
   id: any;

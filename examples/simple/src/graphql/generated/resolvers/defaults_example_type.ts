@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -15,8 +15,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { DefaultsExample } from "../../../ent";
-import { DefaultsPayloadType } from "../../resolvers/internal";
+import { DefaultsExample } from "../../../ent/index.js";
+import { DefaultsPayloadType } from "../../resolvers/internal.js";
 
 export const DefaultsExampleType = new GraphQLObjectType({
   name: "DefaultsExample",

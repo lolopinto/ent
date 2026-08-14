@@ -1,11 +1,11 @@
 import { ID } from "@snowtop/ent";
-import { User, UserToFriendsQuery, UserToSelfContactQuery } from "..";
+import { User, UserToFriendsQuery, UserToSelfContactQuery } from "../index.js";
 import CreateUserAction, {
   UserCreateInput,
-} from "../user/actions/create_user_action";
-import CreateEventAction from "../event/actions/create_event_action";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
-import { LoggedOutExampleViewer, ExampleViewer } from "src/viewer/viewer";
+} from "../user/actions/create_user_action.js";
+import CreateEventAction from "../event/actions/create_event_action.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 

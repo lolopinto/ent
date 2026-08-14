@@ -7,7 +7,7 @@ import {
   Skip,
   PrivacyPolicy,
   WriteOperation,
-} from "./base";
+} from "./base.js";
 import {
   applyPrivacyPolicy,
   applyPrivacyPolicyX,
@@ -31,28 +31,28 @@ import {
   DenyIfEdgeExistsFromEntToViewerRule,
   DenyIfEdgeExistsFromViewerToEntPropertyRule,
   DenyIfEdgeExistsFromEntPropertyToViewerRule,
-} from "./privacy";
+} from "./privacy.js";
 
-import { LoggedOutViewer, IDViewer } from "./viewer";
-import { createRowForTest } from "../testutils/write";
-import { ObjectLoaderFactory } from "./loaders";
+import { LoggedOutViewer, IDViewer } from "./viewer.js";
+import { createRowForTest } from "../testutils/write.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
   setupPostgres,
   table,
   text,
-} from "../testutils/db/temp_db";
+} from "../testutils/db/temp_db.js";
 import {
   BaseEnt,
   SimpleAction,
   SimpleBuilder,
   getBuilderSchemaFromFields,
-} from "../testutils/builder";
-import { loadEdgeData } from "./ent";
+} from "../testutils/builder.js";
+import { loadEdgeData } from "./ent.js";
 import { v1 } from "uuid";
-import { setGlobalSchema } from "./global_schema";
-import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema";
+import { setGlobalSchema } from "./global_schema.js";
+import { testEdgeGlobalSchema } from "../testutils/test_edge_global_schema.js";
 
 const loggedOutViewer = new LoggedOutViewer();
 

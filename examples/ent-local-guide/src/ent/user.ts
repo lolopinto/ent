@@ -1,11 +1,3 @@
-import {UserBase} from "./internal";
+import { UserBase } from "./internal.js";
 
-
-
-
-
-
-export class User extends UserBase {
-
-
-}
+export class User extends UserBase {}

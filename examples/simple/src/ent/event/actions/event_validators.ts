@@ -2,9 +2,9 @@ import type { Validator } from "@snowtop/ent/action";
 import {
   EventBuilder,
   EventInput,
-} from "../../generated/event/actions/event_builder";
-import { Event } from "../../../ent";
-import { ExampleViewer } from "../../../viewer/viewer";
+} from "../../generated/event/actions/event_builder.js";
+import { Event } from "../../index.js";
+import { ExampleViewer } from "../../../viewer/viewer.js";
 
 export class EventTimeValidator
   implements Validator<Event, EventBuilder, ExampleViewer, EventInput>

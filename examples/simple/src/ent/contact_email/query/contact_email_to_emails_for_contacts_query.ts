@@ -3,7 +3,7 @@
  */
 
 import { AssocEdge } from "@snowtop/ent";
-import { ContactEmailToEmailsForContactsQueryBase } from "../../internal";
+import { ContactEmailToEmailsForContactsQueryBase } from "../../internal.js";
 
 export class ContactEmailToEmailsForContactsEdge extends AssocEdge {}
 

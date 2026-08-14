@@ -10,11 +10,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { Address } from "src/ent/";
+import type { Address } from "../../../index.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Event } from "src/ent/";
-import { EventBuilder } from "src/ent/generated/event/actions/event_builder";
+import { Event } from "../../../index.js";
+import { EventBuilder } from "./event_builder.js";
 
 interface customActivityInput {
   addressId?: ID | null | Builder<Address, Viewer>;

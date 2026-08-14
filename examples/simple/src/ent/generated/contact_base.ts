@@ -13,9 +13,9 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { ContactDBData } from "./loaders";
-import type { Attachment, ImportantDates } from "./types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { ContactDBData } from "./loaders.js";
+import type { Attachment, ImportantDates } from "./types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   convertList,
@@ -28,12 +28,12 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { contactLoader, contactLoaderInfo } from "./loaders";
+import { contactLoader, contactLoaderInfo } from "./loaders.js";
 import {
   NodeType,
   convertNullableAttachmentList,
   convertNullableImportantDates,
-} from "./types";
+} from "./types.js";
 import {
   ContactCommentsFromAttachmentQuery,
   ContactEmail,
@@ -44,8 +44,8 @@ import {
   FeedbackMixin,
   IFeedback,
   User,
-} from "../internal";
-import schema from "../../schema/contact_schema";
+} from "../internal.js";
+import schema from "../../schema/contact_schema.js";
 
 export class ContactBase
   extends FeedbackMixin(class {} as new (...args: any[]) => IFeedback)

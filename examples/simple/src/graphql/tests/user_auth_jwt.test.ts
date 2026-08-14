@@ -10,13 +10,13 @@ import { Data } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID } from "@snowtop/ent/graphql";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
-import schema from "../generated/schema";
+import schema from "../generated/schema.js";
 import CreateUserAction, {
   UserCreateInput,
-} from "../../ent/user/actions/create_user_action";
-import { randomEmail, random, randomPhoneNumber } from "../../util/random";
-import { User } from "../../ent";
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
+} from "../../ent/user/actions/create_user_action.js";
+import { randomEmail, random, randomPhoneNumber } from "../../util/random.js";
+import { User } from "../../ent/index.js";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -84,7 +84,7 @@ test("right credentials", async () => {
     password: pw,
   });
 
-  let st: supertest.SuperTest<supertest.Test>;
+  let st: supertest.Agent;
   let bearerToken: string | undefined;
 
   st = await expectMutation(
@@ -92,9 +92,7 @@ test("right credentials", async () => {
       // pass a function that takes a server that keeps track of cookies etc
       // and use that for this request
       test: (app: Express) => {
-        return supertest.agent(
-          app,
-        ) as unknown as supertest.SuperTest<supertest.Test>;
+        return supertest.agent(app);
       },
       init: PassportStrategyHandler.testInitJWTFunction({
         secretOrKey: "secret",

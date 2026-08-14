@@ -7,9 +7,9 @@ import {
   Skip,
   LoadEntOptions,
   LoadCustomEntOptions,
-} from "./base";
-import { LoggedOutViewer, IDViewer } from "./viewer";
-import { AlwaysDenyRule, EntPrivacyError } from "./privacy";
+} from "./base.js";
+import { LoggedOutViewer, IDViewer } from "./viewer.js";
+import { AlwaysDenyRule, EntPrivacyError } from "./privacy.js";
 import {
   getEntLoader,
   loadCustomEnts,
@@ -17,13 +17,13 @@ import {
   loadEnts,
   loadEntX,
   rowIsError,
-} from "./ent";
+} from "./ent.js";
 import {
   createRowForTest,
   deleteRowsForTest,
   editRowForTest,
-} from "../testutils/write";
-import * as clause from "./clause";
+} from "../testutils/write.js";
+import * as clause from "./clause.js";
 
 import {
   integer,
@@ -31,12 +31,12 @@ import {
   text,
   TempDB,
   setupSqlite,
-} from "../testutils/db/temp_db";
-import DB, { Dialect } from "./db";
-import { ObjectLoaderFactory } from "./loaders";
-import { TestContext } from "../testutils/context/test_context";
-import { BaseEnt } from "../testutils/builder";
-import { loadConfig } from "./config";
+} from "../testutils/db/temp_db.js";
+import DB, { Dialect } from "./db.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
+import { TestContext } from "../testutils/context/test_context.js";
+import { BaseEnt } from "../testutils/builder.js";
+import { loadConfig } from "./config.js";
 
 class User extends BaseEnt {
   accountID: string;

@@ -3,8 +3,8 @@
  */
 
 import { OrderBy } from "@snowtop/ent";
-import { ArticleToCommentsQuery, CommentBase } from "../../internal";
-import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import { ArticleToCommentsQuery, CommentBase } from "../../internal.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 
 export class CommentArticleToCommentsQuery extends ArticleToCommentsQuery {
   constructor(

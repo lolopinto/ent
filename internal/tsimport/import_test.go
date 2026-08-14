@@ -11,13 +11,14 @@ import (
 )
 
 type testCase struct {
-	filePath      string
-	fn            func(*Imports)
-	expectedLines []string
-	errorThrown   bool
-	only          bool
-	relPaths      bool
-	skip          bool
+	filePath         string
+	fn               func(*Imports)
+	expectedLines    []string
+	errorThrown      bool
+	only             bool
+	relPaths         bool
+	importExtensions bool
+	skip             bool
 }
 
 func getLine(line string, paths ...string) string {
@@ -651,6 +652,34 @@ func TestImports(t *testing.T) {
 				getLine("import {loadEnt, loadEntX} from {path};", codepath.Package),
 			},
 		},
+		"esm import and type import": {
+			filePath:         "src/ent/generated/user_base.ts",
+			relPaths:         true,
+			importExtensions: true,
+			fn: func(imps *Imports) {
+				require.NoError(t, reserveImport(imps, "src/ent/user", "User"))
+				require.NoError(t, reserveTypeImport(imps, "src/ent/user", "UserInput"))
+				require.NoError(t, useImport(imps, "User"))
+				require.NoError(t, useTypeImport(imps, "UserInput"))
+			},
+			expectedLines: []string{
+				getLine("import type {UserInput} from {path};", "../user.js"),
+				getLine("import {User} from {path};", "../user.js"),
+			},
+		},
+		"esm exports": {
+			filePath:         "src/ent/index.ts",
+			relPaths:         true,
+			importExtensions: true,
+			fn: func(imps *Imports) {
+				require.NoError(t, exportAll(imps, "./internal"))
+				require.NoError(t, exportType(imps, "src/ent/generated/types", "NodeType"))
+			},
+			expectedLines: []string{
+				getLine("export * from {path};", "./internal.js"),
+				getLine("export type {NodeType} from {path};", "./generated/types.js"),
+			},
+		},
 	}
 
 	filterOnly := false
@@ -666,7 +695,8 @@ func TestImports(t *testing.T) {
 			continue
 		}
 		cfg := &testCfg{
-			relPaths: tt.relPaths,
+			relPaths:         tt.relPaths,
+			importExtensions: tt.importExtensions,
 		}
 		t.Run(key, func(t *testing.T) {
 			imps := NewImports(cfg, tt.filePath)

@@ -4,13 +4,13 @@
  */
 
 import type { EdgeQuerySource, ID } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AssocEdgeCountLoaderFactory,
   AssocEdgeLoaderFactory,
   AssocEdgeQueryBase,
 } from "@snowtop/ent";
-import { EdgeType } from "./types";
+import { EdgeType } from "./types.js";
 import {
   Address,
   AddressToHostedEventsEdge,
@@ -20,7 +20,7 @@ import {
   EventToHostsQuery,
   EventToInvitedQuery,
   EventToMaybeQuery,
-} from "../internal";
+} from "../internal.js";
 
 export const addressToHostedEventsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.AddressToHostedEvents);

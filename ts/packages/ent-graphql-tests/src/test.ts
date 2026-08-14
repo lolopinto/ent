@@ -21,7 +21,7 @@ import {
   expectQueryFromRoot,
   expectMutation,
   cleanupBunGraphQLTestAgent,
-} from "./index";
+} from "./index.js";
 
 import { GraphQLNodeInterface } from "@snowtop/ent/graphql";
 import { buildContext } from "@snowtop/ent/auth";
@@ -1420,6 +1420,16 @@ describe("file upload", () => {
         },
         disableInputWrapping: true,
         expectedStatus: 400,
+        // Drain the multipart body before the GraphQL handler rejects it. Without
+        // upload middleware, responding while the client is still writing can
+        // surface as EPIPE instead of the intended 400 response.
+        customHandlers: [
+          (req, _res, next) => {
+            req.on("error", next);
+            req.on("end", next);
+            req.resume();
+          },
+        ],
         // TODO not sure where this error from is but it's failing as expected which is fine
         expectedError: /Must provide query string/,
       },

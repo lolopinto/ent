@@ -3,7 +3,11 @@
 import ts from "typescript";
 import * as path from "path";
 import * as glob from "glob";
-import { readCompilerOptions } from "../tsc/compilerOptions";
+import {
+  readCompilerOptions,
+  validateProjectModuleContract,
+} from "../tsc/compilerOptions.js";
+import { normalizeModuleSpecifierPath } from "../tsc/moduleSpecifier.js";
 
 // TODO this should probably be its own package but for now it's here
 
@@ -22,6 +26,7 @@ class Compiler {
     private moduleSearchLocations: string[],
   ) {
     this.options = readCompilerOptions(".");
+    validateProjectModuleContract(".", this.options);
     if (this.options.paths) {
       for (let key in this.options.paths) {
         if (key === "*") {
@@ -221,40 +226,30 @@ class Compiler {
           if (idx === -1 || strIdx === -1) {
             continue;
           }
-          relPath = path.relative(
-            // just because of how imports work. it's relative from directory not current path
-            path.dirname(fullPath),
-            path.join(
-              text.substring(0, idx).replace(r, str.substring(0, strIdx)),
-              text.substring(idx),
+          let targetPath = path.join(
+            text.substring(0, idx).replace(r, str.substring(0, strIdx)),
+            text.substring(idx),
+          );
+          if (ts.sys.fileExists(targetPath + ".ts")) {
+            targetPath += ".ts";
+          } else if (ts.sys.fileExists(path.join(targetPath, "index.ts"))) {
+            targetPath = path.join(targetPath, "index.ts");
+          }
+          relPath = normalizeModuleSpecifierPath(
+            path.relative(
+              // imports are relative to the containing directory, not the file.
+              path.dirname(fullPath),
+              targetPath,
             ),
           );
-          // if file ends with "..", we've reached a case where we're trying to
-          // import something like foo/contact(.ts) from within foo/contact/bar/baz/page.ts
-          // and we're confused about it so we need to detect that case and handle it
-          if (relPath.endsWith("..")) {
-            // there's an actual local file here not root of directory, try that instead
-            // (if root of directory and there's ambiguity, we should use "contact/")
-            if (ts.sys.fileExists(text + ".ts")) {
-              let text2 = text + ".ts";
-              relPath = path.relative(
-                // just because of how imports work. it's relative from directory not current path
-                path.dirname(fullPath),
-                path.join(
-                  text2.substring(0, idx).replace(r, str.substring(0, strIdx)),
-                  text2.substring(idx),
-                ),
-              );
-            }
-          }
           if (!relPath.startsWith("..")) {
             relPath = "./" + relPath;
           }
 
-          // tsc removes this by default so we need to also do it
-          let tsIdx = relPath.indexOf(".ts");
-          if (tsIdx !== -1) {
-            relPath = relPath.substring(0, tsIdx);
+          if (relPath.endsWith(".ts")) {
+            relPath = relPath.slice(0, -3) + ".js";
+          } else if (!path.extname(relPath)) {
+            relPath += ".js";
           }
           return relPath;
         }
@@ -323,9 +318,14 @@ class Compiler {
 // todo this should be configurable
 // TODO this should be broken into its own repo and npm module
 // TODO use includes and exclude in tsconfig.json if it exists
-new Compiler(
-  glob.sync("**/*.ts", {
-    ignore: ["node_modules/**", "tests/**", "**/*.test.ts"],
-  }),
-  ["node_modules/@types/node"],
-).compile();
+try {
+  new Compiler(
+    glob.sync("**/*.ts", {
+      ignore: ["node_modules/**", "tests/**", "**/*.test.ts"],
+    }),
+    ["node_modules/@types/node"],
+  ).compile();
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+}

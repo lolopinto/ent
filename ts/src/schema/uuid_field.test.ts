@@ -4,20 +4,20 @@ import {
   UUIDListType,
   StringType,
   PolymorphicStringField,
-} from "./field";
-import { DBType, PolymorphicOptions, Type, FieldOptions } from "./schema";
+} from "./field.js";
+import { DBType, PolymorphicOptions, Type, FieldOptions } from "./schema.js";
 import {
   User,
   SimpleAction,
   getBuilderSchemaFromFields,
   BuilderSchema,
-} from "../testutils/builder";
-import { LoggedOutViewer } from "../core/viewer";
-import { ObjectLoaderFactory } from "../core/loaders/object_loader";
-import { Ent } from "../core/base";
-import { WriteOperation } from "../action";
-import { doSQLiteTestFromSchemas } from "../testutils/db/temp_db";
-import { convertList } from "../core/convert";
+} from "../testutils/builder.js";
+import { LoggedOutViewer } from "../core/viewer.js";
+import { ObjectLoaderFactory } from "../core/loaders/object_loader.js";
+import { Ent } from "../core/base.js";
+import { WriteOperation } from "../action/index.js";
+import { doSQLiteTestFromSchemas } from "../testutils/db/temp_db.js";
+import { convertList } from "../core/convert.js";
 
 test("polymorphic true", () => {
   doTest(true, {

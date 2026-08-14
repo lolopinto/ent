@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { UserDBData } from "src/ent/generated/loaders";
+import type { UserDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -28,10 +28,10 @@ import {
   userEmailAddressLoader,
   userLoader,
   userLoaderInfo,
-} from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/generated/types";
-import { UserToEventsQuery } from "src/ent/internal";
-import schema from "src/schema/user_schema";
+} from "./loaders.js";
+import { NodeType } from "./types.js";
+import { UserToEventsQuery } from "../internal.js";
+import schema from "../../schema/user_schema.js";
 
 export class UserBase implements Ent<Viewer> {
   protected readonly data: UserDBData;

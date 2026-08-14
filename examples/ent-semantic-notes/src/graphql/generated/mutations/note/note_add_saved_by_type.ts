@@ -7,7 +7,7 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Note } from "../../../../ent";
+import type { Note } from "../../../../ent/index.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -15,8 +15,8 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import NoteAddSavedByAction from "../../../../ent/note/actions/note_add_saved_by_action";
-import { NoteType } from "../../../resolvers";
+import NoteAddSavedByAction from "../../../../ent/note/actions/note_add_saved_by_action.js";
+import { NoteType } from "../../../resolvers/index.js";
 
 interface customNoteAddSavedByInput {
   id: string;

@@ -10,7 +10,7 @@ import {
   postgisRuntimeHandler,
   selectDistance,
   toEWKT,
-} from "./postgis";
+} from "./postgis.js";
 
 describe("PostGIS extension helper", () => {
   test("uses public as the default runtime schema", () => {

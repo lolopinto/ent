@@ -24,10 +24,10 @@ import {
   EventActivityToDeclinedQuery,
   EventActivityToInvitesQuery,
   Guest,
-} from "src/ent/";
-import EditEventActivityRsvpStatusAction from "src/ent/event_activity/actions/edit_event_activity_rsvp_status_action";
-import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
-import { EventActivityRsvpStatusInputType } from "src/graphql/generated/mutations/input_enums_type";
+} from "../../../ent/index.js";
+import EditEventActivityRsvpStatusAction from "../../../ent/event_activity/actions/edit_event_activity_rsvp_status_action.js";
+import EventActivityAddInviteAction from "../../../ent/event_activity/actions/event_activity_add_invite_action.js";
+import { EventActivityRsvpStatusInputType } from "../mutations/input_enums_type.js";
 import {
   AddressType,
   EventActivityRsvpStatusType,
@@ -35,7 +35,7 @@ import {
   EventActivityToDeclinedConnectionType,
   EventActivityToInvitesConnectionType,
   EventType,
-} from "src/graphql/resolvers/internal";
+} from "../../resolvers/internal.js";
 
 class EventActivityCanViewerDo {
   constructor(

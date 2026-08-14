@@ -1,4 +1,4 @@
-import { mapWithConcurrency } from "./async_utils";
+import { mapWithConcurrency } from "./async_utils.js";
 
 describe("mapWithConcurrency", () => {
   const delays = [30, 10, 25, 5, 20];

@@ -1,8 +1,8 @@
-import type { AddPaymentWatcherInput } from "./ent/generated/payment/actions/add_payment_watcher_action_base";
+import type { AddPaymentWatcherInput } from "./ent/generated/payment/actions/add_payment_watcher_action_base.js";
 import {
   PaymentPaymentReviewStatusInput,
   type SetPaymentReviewStatusInput,
-} from "./ent/generated/payment/actions/set_payment_review_status_action_base";
+} from "./ent/generated/payment/actions/set_payment_review_status_action_base.js";
 
 const addPaymentWatcherInput: AddPaymentWatcherInput = {
   reason: "watching for review",

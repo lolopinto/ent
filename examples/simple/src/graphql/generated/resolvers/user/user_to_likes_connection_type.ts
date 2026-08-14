@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { GraphQLNonNull, GraphQLObjectType } from "graphql";
 import {
   GraphQLConnectionType,
@@ -13,7 +13,7 @@ import {
   GraphQLNodeInterface,
   GraphQLTime,
 } from "@snowtop/ent/graphql";
-import { UserToLikesEdge } from "../../../../ent";
+import { UserToLikesEdge } from "../../../../ent/index.js";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

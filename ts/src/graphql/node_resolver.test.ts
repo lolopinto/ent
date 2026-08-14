@@ -10,16 +10,16 @@ import {
   UserToFriendRequestsQuery,
   ViewerWithAccessToken,
   FakeTag,
-} from "../testutils/fake_data";
+} from "../testutils/fake_data/index.js";
 import {
   createTestUser,
   createTestEvent,
   createEdges,
   createAllContacts,
   tempDBTables,
-} from "../testutils/fake_data/test_helpers";
-import { Viewer, ID, Ent, LoadEntOptions } from "../core/base";
-import { loadEnt } from "../core/ent";
+} from "../testutils/fake_data/test_helpers.js";
+import { Viewer, ID, Ent, LoadEntOptions } from "../core/base.js";
+import { loadEnt } from "../core/ent.js";
 import {
   NodeResolver,
   EntNodeResolver,
@@ -27,11 +27,11 @@ import {
   registerResolver,
   nodeIDEncoder,
   clearResolvers,
-} from "./node_resolver";
-import { IDViewer } from "../core/viewer";
-import { RequestContext } from "../core/context";
-import { SimpleBuilder } from "../testutils/builder";
-import { WriteOperation } from "../action";
+} from "./node_resolver.js";
+import { IDViewer } from "../core/viewer.js";
+import { RequestContext } from "../core/context.js";
+import { SimpleBuilder } from "../testutils/builder.js";
+import { WriteOperation } from "../action/index.js";
 import {
   GraphQLObjectType,
   GraphQLNonNull,
@@ -39,12 +39,12 @@ import {
   GraphQLSchema,
   GraphQLString,
 } from "graphql";
-import { GraphQLNodeInterface } from "./builtins/node";
+import { GraphQLNodeInterface } from "./builtins/node.js";
 import {
   queryRootConfig,
   expectQueryFromRoot,
-} from "../testutils/ent-graphql-tests";
-import { setupSqlite, setupPostgres } from "../testutils/db/temp_db";
+} from "../testutils/ent-graphql-tests/index.js";
+import { setupSqlite, setupPostgres } from "../testutils/db/temp_db.js";
 
 async function loadEntByType(
   viewer: Viewer,

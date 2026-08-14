@@ -5,12 +5,12 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLNonNull, GraphQLObjectType, GraphQLString } from "graphql";
 import { GraphQLNodeInterface, GraphQLTime } from "@snowtop/ent/graphql";
-import { File, loadEntByType } from "../../../ent";
-import { Attachment, NodeType } from "../../../ent/generated/types";
-import { FileType } from "../../resolvers/internal";
+import { File, loadEntByType } from "../../../ent/index.js";
+import { Attachment, NodeType } from "../../../ent/generated/types.js";
+import { FileType } from "../../resolvers/internal.js";
 
 export const AttachmentType = new GraphQLObjectType({
   name: "Attachment",

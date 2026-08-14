@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Workspace } from "../../../../ent";
-import type { WorkspaceEditInput } from "../../../../ent/workspace/actions/edit_workspace_action";
+import type { Workspace } from "../../../../ent/index.js";
+import type { WorkspaceEditInput } from "../../../../ent/workspace/actions/edit_workspace_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,8 +17,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditWorkspaceAction from "../../../../ent/workspace/actions/edit_workspace_action";
-import { WorkspaceType } from "../../../resolvers";
+import EditWorkspaceAction from "../../../../ent/workspace/actions/edit_workspace_action.js";
+import { WorkspaceType } from "../../../resolvers/index.js";
 
 interface customWorkspaceEditInput extends WorkspaceEditInput {
   id: string;

@@ -4,9 +4,9 @@ import {
   convertUserPreferredShiftList,
   IntEnumUsedInList,
   UserPreferredShift,
-} from "../ent/generated/types";
-import { loadExampleRuntimeConfig } from "../runtime_config";
-import { createDB } from "../testsetup/db_setup";
+} from "../ent/generated/types.js";
+import { loadExampleRuntimeConfig } from "../runtime_config.js";
+import { createDB } from "../testsetup/db_setup.js";
 
 async function main() {
   const { db, user, password, client } = await createDB();

@@ -1,10 +1,10 @@
-import { IDViewer, LoggedOutViewer } from "../../core/viewer";
-import { RequestContext } from "../../core/context";
-import { AssocEdge } from "../../core/ent";
+import { IDViewer, LoggedOutViewer } from "../../core/viewer.js";
+import { RequestContext } from "../../core/context.js";
+import { AssocEdge } from "../../core/ent.js";
 import { advanceBy } from "jest-date-mock";
 
-import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection";
-import { GraphQLConnectionType } from "./connection_type";
+import { GraphQLEdge, GraphQLEdgeConnection } from "./edge_connection.js";
+import { GraphQLConnectionType } from "./connection_type.js";
 import {
   GraphQLObjectType,
   GraphQLNonNull,
@@ -14,11 +14,11 @@ import {
   GraphQLFieldMap,
   GraphQLFieldConfigMap,
 } from "graphql";
-import { GraphQLNodeInterface } from "../builtins/node";
+import { GraphQLNodeInterface } from "../builtins/node.js";
 import {
   expectQueryFromRoot,
   queryRootConfig,
-} from "../../testutils/ent-graphql-tests";
+} from "../../testutils/ent-graphql-tests/index.js";
 import {
   FakeUser,
   EdgeType,
@@ -27,13 +27,13 @@ import {
   FakeEvent,
   EventToInvitedQuery,
   UserToHostedEventsQuery,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   inputs,
   getUserInput,
   createTestUser,
   createTestEvent,
-} from "../../testutils/fake_data/test_helpers";
+} from "../../testutils/fake_data/test_helpers.js";
 
 export function sharedAssocTests() {
   // pretty sure this works for custom ents but need tests for this eventually

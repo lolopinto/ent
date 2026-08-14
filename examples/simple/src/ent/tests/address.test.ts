@@ -1,5 +1,5 @@
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
-import CreateAddressAction from "../address/actions/create_address_action";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
+import CreateAddressAction from "../address/actions/create_address_action.js";
 
 const vc = new LoggedOutExampleViewer();
 

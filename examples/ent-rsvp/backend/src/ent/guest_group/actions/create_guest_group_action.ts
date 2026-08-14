@@ -1,11 +1,14 @@
-import { CreateGuestGroupActionBase } from "src/ent/generated/guest_group/actions/create_guest_group_action_base";
-import type { GuestGroupCreateInput, CreateGuestGroupActionTriggers } from "src/ent/generated/guest_group/actions/create_guest_group_action_base";
-import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
-import { Event, EventToEventActivitiesQuery } from "src/ent";
-import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
+import { CreateGuestGroupActionBase } from "../../generated/guest_group/actions/create_guest_group_action_base.js";
+import type {
+  GuestGroupCreateInput,
+  CreateGuestGroupActionTriggers,
+} from "../../generated/guest_group/actions/create_guest_group_action_base.js";
+import { AllowIfEventCreatorPrivacyPolicy } from "../../event/privacy/event_creator.js";
+import { Event, EventToEventActivitiesQuery } from "../../index.js";
+import EventActivityAddInviteAction from "../../event_activity/actions/event_activity_add_invite_action.js";
 import { Builder } from "@snowtop/ent/action";
 import { ID, Viewer } from "@snowtop/ent";
-import CreateGuestAction from "src/ent/guest/actions/create_guest_action";
+import CreateGuestAction from "../../guest/actions/create_guest_action.js";
 
 export type { GuestGroupCreateInput };
 

@@ -7,7 +7,7 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Note } from "../../../../ent";
+import type { Note } from "../../../../ent/index.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -15,8 +15,8 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import NoteAddTagAction from "../../../../ent/note/actions/note_add_tag_action";
-import { NoteType } from "../../../resolvers";
+import NoteAddTagAction from "../../../../ent/note/actions/note_add_tag_action.js";
+import { NoteType } from "../../../resolvers/index.js";
 
 interface customNoteAddTagInput {
   id: string;

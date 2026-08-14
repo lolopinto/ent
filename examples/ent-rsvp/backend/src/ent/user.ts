@@ -1,6 +1,6 @@
 import { Data } from "@snowtop/ent";
-import { UserBase } from "src/ent/internal";
-import * as bcrypt from "bcryptjs";
+import { UserBase } from "./internal.js";
+import bcrypt from "bcryptjs";
 
 // we're only writing this once except with --force and packageName provided
 export class User extends UserBase {

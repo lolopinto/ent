@@ -42,7 +42,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [20.x, 22.x, 24.x]
+        node-version: [20.19.0, 22.12.0, 24.x]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
@@ -59,4 +59,65 @@ jobs:
     - run: npm test -- --runInBand
       env:
         POSTGRES_PASSWORD: 'postgres'
-        POSTGRES_USER: 'postgres'    
+        POSTGRES_USER: 'postgres'
+    - run: npm run test:engine-contract
+    - run: npm run prepare-code
+    - run: npm run test:package
+
+  unsupported-commonjs-boundary:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+    - name: Use Node.js 22.11.0
+      uses: actions/setup-node@v6
+      with:
+        node-version: 22.11.0
+        cache: 'npm'
+        cache-dependency-path: ts/package-lock.json
+
+    - run: npm ci
+    - run: npm run prepare-code
+    - run: npm run test:package:unsupported-node
+
+  companion-packages:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - ent-email
+          - ent-graphql-tests
+          - ent-passport
+          - ent-password
+          - ent-pgvector
+          - ent-phonenumber
+          - ent-postgis
+          - ent-soft-delete
+
+    steps:
+    - uses: actions/checkout@v6
+    - name: Use Node.js 24.x
+      uses: actions/setup-node@v6
+      with:
+        node-version: 24.x
+        cache: 'npm'
+        cache-dependency-path: ts/packages/${{ matrix.package }}/package-lock.json
+
+    - run: npm ci
+      working-directory: ./ts
+    - run: npm run prepare-code
+      working-directory: ./ts
+    - run: npm ci
+      working-directory: ./ts/packages/${{ matrix.package }}
+    - run: node ts/scripts/install_local_ent.mjs ts/packages/${{ matrix.package }}
+      working-directory: ./
+    - run: npm run build
+      working-directory: ./ts/packages/${{ matrix.package }}
+    - run: npm test -- --runInBand
+      working-directory: ./ts/packages/${{ matrix.package }}
+    - run: node ts/scripts/companion_package_smoke.mjs ts/packages/${{ matrix.package }}
+      working-directory: ./
+    - run: npm pack --dry-run
+      working-directory: ./ts/packages/${{ matrix.package }}

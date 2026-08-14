@@ -2,7 +2,8 @@ import { DB } from "@snowtop/ent";
 import { Client as PGClient } from "pg";
 import * as path from "path";
 import * as fs from "fs";
-import { loadExampleRuntimeConfig } from "../runtime_config";
+import { fileURLToPath } from "url";
+import { loadExampleRuntimeConfig } from "../runtime_config.js";
 
 type TestDBSetup = {
   db: string;
@@ -52,7 +53,10 @@ export async function createDB(dbName?: string): Promise<TestDBSetup> {
   }
   await client.query(`CREATE DATABASE ${db}`);
 
-  const fullPath = path.join(__dirname, sqlPath);
+  const fullPath = path.join(
+    path.dirname(fileURLToPath(import.meta.url)),
+    sqlPath,
+  );
   const sql = fs.readFileSync(fullPath).toString();
 
   const dbClient = new PGClient({

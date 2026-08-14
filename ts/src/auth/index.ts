@@ -3,5 +3,5 @@ export {
   clearAuthHandlers,
   getLoggedInViewer,
   buildContext,
-} from "./auth";
-export type { AuthHandler, AuthViewer } from "./auth";
+} from "./auth.js";
+export type { AuthHandler, AuthViewer } from "./auth.js";

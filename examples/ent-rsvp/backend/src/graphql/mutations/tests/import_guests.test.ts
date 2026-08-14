@@ -1,9 +1,9 @@
-import { randomEmail } from "src/util/random";
+import { randomEmail } from "../../../util/random.js";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
 import { encodeGQLID } from "@snowtop/ent/graphql";
-import schema from "src/graphql/generated/schema";
+import schema from "../../generated/schema.js";
 import { graphqlUploadExpress } from "@snowtop/ent/graphql/upload";
-import { createEvent } from "src/testutils";
+import { createEvent } from "../../../testutils/index.js";
 
 test("bulk upload. required columns not provided", async () => {
   const event = await createEvent();

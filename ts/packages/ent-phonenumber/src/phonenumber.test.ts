@@ -2,7 +2,7 @@ import {
   PhoneNumberType,
   PhoneNumber,
   PhoneNumberListType,
-} from "./phonenumber";
+} from "./phonenumber.js";
 
 function testCase(exp: expectedResult) {
   let typ = PhoneNumberType();

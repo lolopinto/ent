@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -17,8 +17,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Comment } from "../../../ent/comment";
-import { CommentType } from "../../resolvers/internal";
+import { Comment } from "../../../ent/comment.js";
+import { CommentType } from "../../resolvers/internal.js";
 
 interface CommentListDeprecatedArgs {
   id: any;

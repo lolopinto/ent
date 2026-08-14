@@ -1,6 +1,6 @@
-import { EditAddressActionBase } from "src/ent/generated/address/actions/edit_address_action_base";
-import type { AddressEditInput } from "src/ent/generated/address/actions/edit_address_action_base";
-import { EditAddressPrivacy } from "src/ent/address/actions/privacy/edit_address_privacy";
+import { EditAddressActionBase } from "../../generated/address/actions/edit_address_action_base.js";
+import type { AddressEditInput } from "../../generated/address/actions/edit_address_action_base.js";
+import { EditAddressPrivacy } from "./privacy/edit_address_privacy.js";
 export type { AddressEditInput };
 
 // we're only writing this once except with --force and packageName provided

@@ -3,7 +3,7 @@ import {
   EntSchema,
   UUIDType,
   StringType,
-} from "@snowtop/ent/schema/";
+} from "@snowtop/ent/schema";
 
 const FileSchema = new EntSchema({
   fields: {

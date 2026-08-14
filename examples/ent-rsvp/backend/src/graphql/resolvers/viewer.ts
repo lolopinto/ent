@@ -1,6 +1,6 @@
 import { gqlContextType, gqlQuery } from "@snowtop/ent/graphql";
 import { RequestContext } from "@snowtop/ent";
-import { GraphQLViewer } from "./viewer_type";
+import { GraphQLViewer } from "./viewer_type.js";
 
 export default class ViewerResolver {
   @gqlQuery({

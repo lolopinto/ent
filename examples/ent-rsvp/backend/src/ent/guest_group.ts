@@ -1,4 +1,4 @@
-import { Guest, GuestGroupBase } from "src/ent/internal";
+import { Guest, GuestGroupBase } from "./internal.js";
 import {
   PrivacyPolicyRule,
   PrivacyPolicy,
@@ -8,7 +8,7 @@ import {
   Skip,
   AlwaysDenyRule,
 } from "@snowtop/ent";
-import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
+import { AllowIfEventCreatorRule } from "./event/privacy/event_creator.js";
 
 class AllowIfGuestInGuestGroupRule implements PrivacyPolicyRule {
   async apply(viewer: Viewer, ent: GuestGroup | undefined) {

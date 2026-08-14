@@ -1,14 +1,16 @@
-import { createCountDataLoader } from "./loaders/raw_count_loader";
-import { ContextCache } from "./context";
-import { setMetricsHook } from "./metrics";
-import { loadRows } from "./ent";
-import * as clause from "./clause";
-import type { QueryOptions } from "./base";
+import type { QueryOptions } from "./base.js";
+import { jest } from "@jest/globals";
 
-jest.mock("./ent", () => ({
+(jest as any).unstable_mockModule("./ent", () => ({
   loadRow: jest.fn(),
   loadRows: jest.fn(),
 }));
+
+const { createCountDataLoader } = await import("./loaders/raw_count_loader.js");
+const { ContextCache } = await import("./context.js");
+const { setMetricsHook } = await import("./metrics.js");
+const { loadRows } = await import("./ent.js");
+const clause = await import("./clause.js");
 
 describe("metrics hooks", () => {
   beforeEach(() => {

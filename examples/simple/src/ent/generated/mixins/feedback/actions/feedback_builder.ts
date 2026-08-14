@@ -5,10 +5,10 @@
 
 import type { AssocEdgeInputOptions, Ent, ID } from "@snowtop/ent";
 import type { Builder, Orchestrator } from "@snowtop/ent/action";
-import type { IFeedback } from "../../../../internal";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../../viewer/viewer";
-import { EdgeType, NodeType } from "../../../types";
-import { Comment, User } from "../../../../internal";
+import type { IFeedback } from "../../../../internal.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../../viewer/viewer.js";
+import { EdgeType, NodeType } from "../../../types.js";
+import { Comment, User } from "../../../../internal.js";
 
 export interface IFeedbackBuilder<T extends IFeedback> {
   addComment(...nodes: (ID | Comment | Builder<Comment, any>)[]): this;

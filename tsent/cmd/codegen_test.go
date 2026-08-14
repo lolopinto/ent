@@ -558,6 +558,11 @@ func TestCustomInputType(t *testing.T) {
 	rootDir, err := os.MkdirTemp(os.TempDir(), "root")
 	require.Nil(t, err)
 	defer os.RemoveAll(rootDir)
+	require.NoError(t, os.WriteFile(
+		filepath.Join(rootDir, "package.json"),
+		[]byte(`{"type":"module"}`),
+		os.ModePerm,
+	))
 
 	code := testhelper.GetCodeWithSchema(`
 			import {RequestContext} from "{root}";
@@ -697,5 +702,5 @@ func validateLineExistsInFile(t *testing.T, root, path, expected string) {
 			return
 		}
 	}
-	assert.Fail(t, "line %s not found", expected)
+	assert.Fail(t, "line not found", "expected %q in:\n%s", expected, str)
 }

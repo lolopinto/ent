@@ -13,8 +13,8 @@ import {
   ByteaType,
   BinaryTextType,
   StructTypeAsList,
-} from "@snowtop/ent/schema/";
-import { EdgeType } from "../ent/generated/types";
+} from "@snowtop/ent/schema";
+import { EdgeType } from "../ent/generated/types.js";
 
 /// explicit schema
 const EventSchema = new EntSchema({

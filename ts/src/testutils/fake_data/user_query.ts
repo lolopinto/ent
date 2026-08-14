@@ -1,20 +1,20 @@
 import { clear } from "jest-date-mock";
-import { getLoaderOptions } from ".";
-import { Data, Ent, ID, Viewer } from "../../core/base";
-import * as clause from "../../core/clause";
-import { AssocEdge } from "../../core/ent";
-import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader";
-import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader";
-import { QueryLoaderFactory } from "../../core/loaders/query_loader";
-import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader";
-import { AllowIfViewerPrivacyPolicy } from "../../core/privacy";
+import { getLoaderOptions } from "./index.js";
+import { Data, Ent, ID, Viewer } from "../../core/base.js";
+import * as clause from "../../core/clause.js";
+import { AssocEdge } from "../../core/ent.js";
+import { AssocEdgeCountLoaderFactory } from "../../core/loaders/assoc_count_loader.js";
+import { AssocEdgeLoaderFactory } from "../../core/loaders/assoc_edge_loader.js";
+import { QueryLoaderFactory } from "../../core/loaders/query_loader.js";
+import { RawCountLoaderFactory } from "../../core/loaders/raw_count_loader.js";
+import { AllowIfViewerPrivacyPolicy } from "../../core/privacy.js";
 import {
   AssocEdgeQueryBase,
   EdgeQuerySource,
-} from "../../core/query/assoc_query";
-import { CustomEdgeQueryBase } from "../../core/query/custom_query";
-import { MockDate } from "./../mock_date";
-import { contactLoader } from "./fake_contact";
+} from "../../core/query/assoc_query.js";
+import { CustomEdgeQueryBase } from "../../core/query/custom_query.js";
+import { MockDate } from "./../mock_date.js";
+import { contactLoader } from "./fake_contact.js";
 import {
   EdgeType,
   EventToAttendeesQuery,
@@ -25,7 +25,7 @@ import {
   FakeContact,
   FakeEvent,
   FakeUser,
-} from "./internal";
+} from "./internal.js";
 
 export class UserToContactsQuery extends AssocEdgeQueryBase<
   FakeUser,

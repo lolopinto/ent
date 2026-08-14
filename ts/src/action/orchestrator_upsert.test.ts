@@ -1,9 +1,9 @@
-import { Observer, WriteOperation } from "../action";
-import { Ent } from "../core/base";
-import { loadEdges, loadRow } from "../core/ent";
-import { buildQuery } from "../core/query_impl";
-import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { StringType, TimestampType, UUIDType } from "../schema/field";
+import { Observer, WriteOperation } from "../action/index.js";
+import { Ent } from "../core/base.js";
+import { loadEdges, loadRow } from "../core/ent.js";
+import { buildQuery } from "../core/query_impl.js";
+import { LoggedOutViewer, IDViewer } from "../core/viewer.js";
+import { StringType, TimestampType, UUIDType } from "../schema/field.js";
 import {
   User,
   Event,
@@ -14,13 +14,13 @@ import {
   BuilderSchema,
   getTableName,
   getDbFields,
-} from "../testutils/builder";
-import { FakeComms, Mode } from "../testutils/fake_comms";
-import { createRowForTest } from "../testutils/write";
-import * as clause from "../core/clause";
-import { clearLogLevels, setLogLevels } from "../core/logger";
+} from "../testutils/builder.js";
+import { FakeComms, Mode } from "../testutils/fake_comms.js";
+import { createRowForTest } from "../testutils/write.js";
+import * as clause from "../core/clause.js";
+import { clearLogLevels, setLogLevels } from "../core/logger.js";
 
-import { MockLogs } from "../testutils/mock_log";
+import { MockLogs } from "../testutils/mock_log.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -28,11 +28,11 @@ import {
   setupPostgres,
   setupSqlite,
   Table,
-} from "../testutils/db/temp_db";
-import { ConstraintType } from "../schema";
-import { randomEmail } from "../testutils/db/value";
-import DB, { Dialect } from "../core/db";
-import { toDBColumnOrTable } from "../names/names";
+} from "../testutils/db/temp_db.js";
+import { ConstraintType } from "../schema/index.js";
+import { randomEmail } from "../testutils/db/value.js";
+import DB, { Dialect } from "../core/db.js";
+import { toDBColumnOrTable } from "../names/names.js";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge", "uniqueEdge"];
 beforeEach(async () => {

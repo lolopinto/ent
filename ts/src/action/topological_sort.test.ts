@@ -1,4 +1,4 @@
-import { TopologicalGraph } from "./topological_sort";
+import { TopologicalGraph } from "./topological_sort.js";
 
 function expectNodeBefore(
   sorted: string[],

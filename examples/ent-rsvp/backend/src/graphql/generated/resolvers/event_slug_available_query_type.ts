@@ -3,7 +3,7 @@
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
 import { GraphQLBoolean, GraphQLNonNull, GraphQLString } from "graphql";
-import { EventResolver } from "src/graphql/resolvers/event";
+import { EventResolver } from "../../resolvers/event.js";
 
 interface EventSlugAvailableArgs {
   slug: string;

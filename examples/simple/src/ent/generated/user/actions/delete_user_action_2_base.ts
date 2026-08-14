@@ -14,9 +14,9 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { User } from "../../..";
-import { UserBuilder } from "./user_builder";
-import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import { User } from "../../../index.js";
+import { UserBuilder } from "./user_builder.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 
 export interface DeleteUserInput2 {
   log: boolean;

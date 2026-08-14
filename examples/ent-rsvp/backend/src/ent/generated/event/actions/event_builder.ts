@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Event, User } from "src/ent/";
-import { eventLoaderInfo } from "src/ent/generated/loaders";
-import { NodeType } from "src/ent/generated/types";
-import schema from "src/schema/event_schema";
+import { Event, User } from "../../../index.js";
+import { eventLoaderInfo } from "../../loaders.js";
+import { NodeType } from "../../types.js";
+import schema from "../../../../schema/event_schema.js";
 
 export interface EventInput {
   name?: string;

@@ -4,16 +4,16 @@ import {
   EventActivityToAttendingQuery,
   GuestToAttendingEventsQuery,
   AddressToLocatedAtQuery,
-} from "src/ent";
+} from "../index.js";
 import { AssocEdge, EdgeQuery, IDViewer } from "@snowtop/ent";
-import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action";
-import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action";
-import EventActivityAddInviteAction from "../event_activity/actions/event_activity_add_invite_action";
-import EventActivityRemoveInviteAction from "../event_activity/actions/event_activity_remove_invite_action";
-import { Guest } from "../guest";
-import EditEventActivityRsvpStatusAction from "../event_activity/actions/edit_event_activity_rsvp_status_action";
-import { EventActivityRsvpStatusInput } from "../generated/event_activity/actions/edit_event_activity_rsvp_status_action_base";
-import { EventActivityRsvpStatus } from "../generated/types";
+import CreateEventActivityAction from "../event_activity/actions/create_event_activity_action.js";
+import CreateGuestGroupAction from "../guest_group/actions/create_guest_group_action.js";
+import EventActivityAddInviteAction from "../event_activity/actions/event_activity_add_invite_action.js";
+import EventActivityRemoveInviteAction from "../event_activity/actions/event_activity_remove_invite_action.js";
+import { Guest } from "../guest.js";
+import EditEventActivityRsvpStatusAction from "../event_activity/actions/edit_event_activity_rsvp_status_action.js";
+import { EventActivityRsvpStatusInput } from "../generated/event_activity/actions/edit_event_activity_rsvp_status_action_base.js";
+import { EventActivityRsvpStatus } from "../generated/types.js";
 
 import {
   createUser,
@@ -23,8 +23,8 @@ import {
   createAndInvite,
   createAndInvitePlusGuests,
   createGuests,
-} from "src/testutils";
-import CreateAddressAction from "../address/actions/create_address_action";
+} from "../../testutils/index.js";
+import CreateAddressAction from "../address/actions/create_address_action.js";
 
 describe("create event activity", () => {
   test("valid", async () => {

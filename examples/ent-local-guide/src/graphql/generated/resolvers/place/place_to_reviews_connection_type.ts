@@ -3,8 +3,8 @@
 import type { Viewer } from "@snowtop/ent";
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { PlaceToReviewsEdge } from "../../../../ent";
-import { PlaceReviewType } from "../../../resolvers/internal";
+import { PlaceToReviewsEdge } from "../../../../ent/index.js";
+import { PlaceReviewType } from "../../../resolvers/internal.js";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

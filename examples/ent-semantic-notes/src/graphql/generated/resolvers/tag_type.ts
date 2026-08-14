@@ -14,11 +14,11 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { Tag, TagToNotesQuery } from "../../../ent";
+import { Tag, TagToNotesQuery } from "../../../ent/index.js";
 import {
   TagToNotesConnectionType,
   WorkspaceType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const TagType = new GraphQLObjectType({
   name: "Tag",

@@ -4,9 +4,9 @@
  */
 
 import type { Data, Ent, Viewer } from "@snowtop/ent";
-import type { DayOfWeek, DayOfWeekAlt } from "../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { convertDayOfWeek, convertNullableDayOfWeekAlt } from "../types";
+import type { DayOfWeek, DayOfWeekAlt } from "../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
+import { convertDayOfWeek, convertNullableDayOfWeekAlt } from "../types.js";
 
 export interface IWithDayOfWeekBase<
   TViewer extends ExampleViewerAlias = ExampleViewerAlias,

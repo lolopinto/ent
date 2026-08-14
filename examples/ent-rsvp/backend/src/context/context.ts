@@ -1,7 +1,7 @@
 import { IncomingMessage, ServerResponse } from "http";
 import { Ent, ID, RequestContext, Viewer, LoggedOutViewer } from "@snowtop/ent";
 import { PassportStrategyHandler } from "@snowtop/ent-passport";
-import { User } from "src/ent";
+import { User } from "../ent/index.js";
 
 export class OurContext
   implements RequestContext<Viewer<Ent<any> | null, ID | null>>

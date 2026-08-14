@@ -12,8 +12,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { AuthCode, Guest } from "src/ent/";
-import { AuthCodeBuilder } from "src/ent/generated/auth_code/actions/auth_code_builder";
+import { AuthCode, Guest } from "../../../index.js";
+import { AuthCodeBuilder } from "./auth_code_builder.js";
 
 export interface AuthCodeCreateInput {
   code: string;

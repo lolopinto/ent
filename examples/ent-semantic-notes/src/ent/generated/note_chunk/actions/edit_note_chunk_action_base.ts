@@ -15,8 +15,8 @@ import {
   WriteOperation,
   maybeConvertRelativeInputPlusExpressions,
 } from "@snowtop/ent/action";
-import { NoteChunk } from "../../..";
-import { NoteChunkBuilder } from "./note_chunk_builder";
+import { NoteChunk } from "../../../index.js";
+import { NoteChunkBuilder } from "./note_chunk_builder.js";
 
 export interface NoteChunkEditRelativeInput {
   ordinal?: number | RelativeNumberValue<number>;

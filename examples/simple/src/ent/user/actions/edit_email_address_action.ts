@@ -1,11 +1,11 @@
-import { EditEmailAddressActionBase } from "../../generated/user/actions/edit_email_address_action_base";
-import type { EditEmailAddressInput } from "../../generated/user/actions/edit_email_address_action_base";
-import { UserBuilder } from "../../generated/user/actions/user_builder";
-import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action";
-import { User } from "../..";
-import { EditUserPrivacy } from "./edit_user_privacy";
+import { EditEmailAddressActionBase } from "../../generated/user/actions/edit_email_address_action_base.js";
+import type { EditEmailAddressInput } from "../../generated/user/actions/edit_email_address_action_base.js";
+import { UserBuilder } from "../../generated/user/actions/user_builder.js";
+import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action.js";
+import { User } from "../../index.js";
+import { EditUserPrivacy } from "./edit_user_privacy.js";
 
-import { ExampleViewer } from "../../../viewer/viewer";
+import { ExampleViewer } from "../../../viewer/viewer.js";
 import type { Validator, Trigger } from "@snowtop/ent/action";
 export type { EditEmailAddressInput };
 class NewAuthCode {

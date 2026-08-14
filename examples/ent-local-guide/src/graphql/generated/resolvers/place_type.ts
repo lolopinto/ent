@@ -15,13 +15,17 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { Place, PlaceToFansQuery, PlaceToReviewsQuery } from "../../../ent";
+import {
+  Place,
+  PlaceToFansQuery,
+  PlaceToReviewsQuery,
+} from "../../../ent/index.js";
 import {
   PlaceCategoryType,
   PlaceToFansConnectionType,
   PlaceToReviewsConnectionType,
   UserType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const PlaceType = new GraphQLObjectType({
   name: "Place",

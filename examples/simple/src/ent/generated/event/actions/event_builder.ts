@@ -11,18 +11,18 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { Attachment } from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Attachment } from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Address, Event, User } from "../../..";
-import { eventLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType } from "../../types";
-import schema from "../../../../schema/event_schema";
+import { Address, Event, User } from "../../../index.js";
+import { eventLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/event_schema.js";
 
 export interface EventInput {
   name?: string;

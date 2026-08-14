@@ -2,8 +2,8 @@
  * Copyright whaa whaa
  */
 
-import { Contact } from "../..";
-import { ObjectToLikersEdge, ObjectToLikersQuery } from "../../internal";
+import { Contact } from "../../index.js";
+import { ObjectToLikersEdge, ObjectToLikersQuery } from "../../internal.js";
 export class ContactToLikersEdge extends ObjectToLikersEdge {}
 
 export class ContactToLikersQuery extends ObjectToLikersQuery {

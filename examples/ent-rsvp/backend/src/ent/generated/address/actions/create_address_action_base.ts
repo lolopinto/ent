@@ -12,8 +12,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Address } from "src/ent/";
-import { AddressBuilder } from "src/ent/generated/address/actions/address_builder";
+import { Address } from "../../../index.js";
+import { AddressBuilder } from "./address_builder.js";
 
 export interface AddressCreateInput {
   street: string;

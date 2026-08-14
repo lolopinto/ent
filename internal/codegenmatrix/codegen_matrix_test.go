@@ -58,6 +58,7 @@ type runtimeVariant struct {
 	ID             string `yaml:"id"`
 	Runtime        string `yaml:"runtime"`
 	PostgresDriver string `yaml:"postgresDriver"`
+	ModuleFormat   string `yaml:"moduleFormat"`
 }
 
 type fixtureAssertions struct {
@@ -175,6 +176,7 @@ func validateFixtureRuntimeVariants(t *testing.T, fixture fixture) {
 		seen[variant.ID] = true
 		require.Contains(t, validRuntimes(), variant.Runtime, "fixture %s runtime variant %s has unknown runtime", fixture.ID, variant.ID)
 		require.Contains(t, validPostgresDrivers(), variant.PostgresDriver, "fixture %s runtime variant %s has unknown postgres driver", fixture.ID, variant.ID)
+		require.Contains(t, validModuleFormats(), variant.ModuleFormat, "fixture %s runtime variant %s has unknown module format", fixture.ID, variant.ID)
 		if variant.PostgresDriver == "bun" {
 			require.Equal(t, "bun", variant.Runtime, "fixture %s runtime variant %s cannot use Bun postgres driver outside Bun runtime", fixture.ID, variant.ID)
 		}
@@ -183,16 +185,24 @@ func validateFixtureRuntimeVariants(t *testing.T, fixture fixture) {
 
 func validateFixtureRuntimeCoverage(t *testing.T, fixture fixture) {
 	t.Helper()
-	var hasBunRuntime, hasBunPostgresDriver bool
+	var hasBunRuntime, hasBunPostgresDriver, hasESM, hasCommonJS bool
 	for _, variant := range runtimeVariantsForFixture(fixture) {
 		hasBunRuntime = hasBunRuntime || variant.Runtime == "bun"
 		hasBunPostgresDriver = hasBunPostgresDriver || variant.PostgresDriver == "bun"
+		hasESM = hasESM || variant.ModuleFormat == "esm"
+		hasCommonJS = hasCommonJS || variant.ModuleFormat == "commonjs"
 	}
 	if fixtureCovers(fixture, "runtime.bun") {
 		require.True(t, hasBunRuntime, "fixture %s claims runtime.bun coverage without a Bun runtime variant", fixture.ID)
 	}
 	if fixtureCovers(fixture, "postgres_driver.bun") {
 		require.True(t, hasBunPostgresDriver, "fixture %s claims postgres_driver.bun coverage without a Bun postgres driver variant", fixture.ID)
+	}
+	if fixtureCovers(fixture, "module.esm") {
+		require.True(t, hasESM, "fixture %s claims module.esm coverage without an ESM variant", fixture.ID)
+	}
+	if fixtureCovers(fixture, "module.commonjs") {
+		require.True(t, hasCommonJS, "fixture %s claims module.commonjs coverage without a CommonJS variant", fixture.ID)
 	}
 }
 
@@ -269,12 +279,20 @@ func validPostgresDrivers() map[string]bool {
 	}
 }
 
+func validModuleFormats() map[string]bool {
+	return map[string]bool{
+		"esm":      true,
+		"commonjs": true,
+	}
+}
+
 func TestCodegenMatrixFixtures(t *testing.T) {
 	c := loadCatalog(t)
 	repo := repoRoot(t)
 	entDist := buildEntDist(t, repo)
 	fixtureFilter := os.Getenv("ENT_CODEGEN_MATRIX_FIXTURE")
 	runtimeFilter := os.Getenv("ENT_CODEGEN_MATRIX_RUNTIME")
+	moduleFilter := os.Getenv("ENT_CODEGEN_MATRIX_MODULE")
 
 	for _, fixture := range c.Fixtures {
 		fixture := fixture
@@ -290,11 +308,14 @@ func TestCodegenMatrixFixtures(t *testing.T) {
 				if runtimeFilter != "" && runtimeFilter != variant.ID && runtimeFilter != variant.Runtime {
 					continue
 				}
+				if moduleFilter != "" && moduleFilter != variant.ModuleFormat {
+					continue
+				}
 				t.Run(variant.ID, func(t *testing.T) {
 					appRoot := copyFixture(t, repo, fixture)
-					writeGeneratedHarnessFiles(t, repo, appRoot, entDist)
 					applyRuntimeVariantConfig(t, appRoot, variant)
-					runCodegenFixture(t, repo, appRoot, fixture)
+					writeGeneratedHarnessFiles(t, repo, appRoot, entDist, variant)
+					runCodegenFixture(t, repo, appRoot, fixture, variant)
 				})
 			}
 		})
@@ -358,14 +379,18 @@ func normalizeRuntimeVariant(variant runtimeVariant) runtimeVariant {
 	if variant.PostgresDriver == "" {
 		variant.PostgresDriver = "pg"
 	}
+	if variant.ModuleFormat == "" {
+		variant.ModuleFormat = "esm"
+	}
 	return variant
 }
 
 func defaultRuntimeVariant() runtimeVariant {
 	return runtimeVariant{
-		ID:             "node_pg",
+		ID:             "esm_node_pg",
 		Runtime:        "node",
 		PostgresDriver: "pg",
+		ModuleFormat:   "esm",
 	}
 }
 
@@ -380,12 +405,13 @@ func applyRuntimeVariantConfig(t *testing.T, appRoot string, variant runtimeVari
 	}
 	cfg["runtime"] = variant.Runtime
 	cfg["postgresDriver"] = variant.PostgresDriver
+	cfg["moduleFormat"] = variant.ModuleFormat
 	out, err := yaml.Marshal(cfg)
 	require.NoError(t, err)
 	require.NoError(t, os.WriteFile(path, out, fileMode))
 }
 
-func writeGeneratedHarnessFiles(t *testing.T, repo, appRoot, entDist string) {
+func writeGeneratedHarnessFiles(t *testing.T, repo, appRoot, entDist string, variant runtimeVariant) {
 	t.Helper()
 	nodeModules := filepath.Join(appRoot, "node_modules")
 	if _, err := os.Lstat(nodeModules); err == nil {
@@ -393,14 +419,9 @@ func writeGeneratedHarnessFiles(t *testing.T, repo, appRoot, entDist string) {
 	}
 	linkHarnessNodeModules(t, filepath.Join(repo, "ts", "node_modules"), nodeModules, entDist)
 
-	writeHarnessTSConfig(t, filepath.Join(appRoot, "tsconfig.json"), entPathMapping{
-		packageRoot:     filepath.Join(repo, "ts", "src", "index.ts"),
-		packageWildcard: filepath.Join(repo, "ts", "src", "*"),
-	})
-	writeHarnessTSConfig(t, filepath.Join(appRoot, "tsconfig.generated.json"), entPathMapping{
-		packageRoot:     filepath.Join(entDist, "index.d.ts"),
-		packageWildcard: filepath.Join(entDist, "*"),
-	})
+	writeHarnessPackageJSON(t, appRoot, variant.ModuleFormat)
+	writeHarnessTSConfig(t, filepath.Join(appRoot, "tsconfig.json"), variant.ModuleFormat)
+	writeHarnessTSConfig(t, filepath.Join(appRoot, "tsconfig.generated.json"), variant.ModuleFormat)
 	replaceHarnessPlaceholders(t, appRoot)
 }
 
@@ -450,37 +471,46 @@ func ensureSnowtopEntLink(t *testing.T, snowtopDir, entDist string) {
 	require.NoError(t, os.Symlink(entDist, entLink))
 }
 
-type entPathMapping struct {
-	packageRoot     string
-	packageWildcard string
-}
-
-func writeHarnessTSConfig(t *testing.T, path string, entPaths entPathMapping) {
+func writeHarnessTSConfig(t *testing.T, path, moduleFormat string) {
 	t.Helper()
-	// tsconfig.json maps to source for schema loading; tsconfig.generated.json
-	// maps to dist declarations to typecheck generated code like a package user.
+	// Both schema loading and generated compilation resolve the freshly built
+	// package through node_modules, exercising its real exports and CLI scripts.
+	module, moduleResolution := "NodeNext", "NodeNext"
+	if moduleFormat == "commonjs" {
+		module, moduleResolution = "commonjs", "node"
+	}
 	tsconfig := fmt.Sprintf(`{
   "compilerOptions": {
     "lib": ["es2018", "esnext.asynciterable"],
     "target": "es2020",
-    "module": "commonjs",
+	"module": %q,
     "downlevelIteration": true,
     "baseUrl": ".",
     "paths": {
-      "src/*": ["src/*"],
-      "@snowtop/ent": [%q],
-      "@snowtop/ent/*": [%q]
+	  "src/*": ["src/*"]
     },
-    "moduleResolution": "node",
+	"moduleResolution": %q,
     "esModuleInterop": true,
     "strict": false,
-    "skipLibCheck": true
+	"skipLibCheck": true,
+	"rootDir": "src",
+	"outDir": "dist"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
-`, entPaths.packageRoot, entPaths.packageWildcard)
+`, module, moduleResolution)
 	require.NoError(t, os.WriteFile(path, []byte(tsconfig), fileMode))
+}
+
+func writeHarnessPackageJSON(t *testing.T, appRoot, moduleFormat string) {
+	t.Helper()
+	packageType := "module"
+	if moduleFormat == "commonjs" {
+		packageType = "commonjs"
+	}
+	contents := fmt.Sprintf("{\n  \"private\": true,\n  \"type\": %q\n}\n", packageType)
+	require.NoError(t, os.WriteFile(filepath.Join(appRoot, "package.json"), []byte(contents), fileMode))
 }
 
 func replaceHarnessPlaceholders(t *testing.T, appRoot string) {
@@ -519,12 +549,10 @@ func buildEntDist(t *testing.T, repo string) string {
 	return filepath.Join(repo, "ts", "dist")
 }
 
-func runCodegenFixture(t *testing.T, repo, appRoot string, fixture fixture) {
+func runCodegenFixture(t *testing.T, repo, appRoot string, fixture fixture, variant runtimeVariant) {
 	t.Helper()
 	envPath := filepath.Join(repo, "ts", "node_modules", ".bin") + string(os.PathListSeparator) + os.Getenv("PATH")
 	t.Setenv("PATH", envPath)
-	t.Setenv("LOCAL_SCRIPT_PATH", "true")
-	t.Setenv("GRAPHQL_PATH", filepath.Join(repo, "ts", "src", "graphql"))
 	configureFixtureDatabase(t, fixture)
 	tsentBinary := buildTsentBinary(t, repo)
 
@@ -541,12 +569,56 @@ func runCodegenFixture(t *testing.T, repo, appRoot string, fixture fixture) {
 	require.Equal(t, firstHash, secondHash, "codegen fixture is not idempotent; changed files: %s\n%s", strings.Join(changedSnapshotFiles(firstSnapshot, secondSnapshot), ", "), snapshotChangeSummary(firstSnapshot, secondSnapshot))
 
 	runFixtureGeneratedAssertions(t, appRoot)
+	writeModuleSmokeFile(t, appRoot, variant.ModuleFormat)
 
-	cmd := exec.Command(filepath.Join(repo, "ts", "node_modules", ".bin", "tsc"), "--noEmit", "--project", filepath.Join(appRoot, "tsconfig.generated.json"))
+	cmd := exec.Command(filepath.Join(repo, "ts", "node_modules", ".bin", "tsc"), "--project", filepath.Join(appRoot, "tsconfig.generated.json"))
 	cmd.Dir = appRoot
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("generated TypeScript did not compile:\n%s\n%v", string(out), err)
+	}
+
+	runGeneratedModuleSmoke(t, appRoot, variant)
+}
+
+func writeModuleSmokeFile(t *testing.T, appRoot, moduleFormat string) {
+	t.Helper()
+	var contents string
+	if moduleFormat == "commonjs" {
+		contents = `const importedEnt = require("@snowtop/ent");
+require("./ent/index.js");
+require("./graphql/generated/schema.js");
+
+if (!importedEnt.DB) {
+  throw new Error("CommonJS compatibility load did not expose Ent exports");
+}
+`
+	} else {
+		contents = `import * as importedEnt from "@snowtop/ent";
+import { createRequire } from "node:module";
+import "./ent/index.js";
+import "./graphql/generated/schema.js";
+
+const requiredEnt = createRequire(import.meta.url)("@snowtop/ent");
+if (importedEnt.DB !== requiredEnt.DB) {
+  throw new Error("import and require resolved different Ent module instances");
+}
+`
+	}
+	require.NoError(t, os.WriteFile(filepath.Join(appRoot, "src", "module_smoke.ts"), []byte(contents), fileMode))
+}
+
+func runGeneratedModuleSmoke(t *testing.T, appRoot string, variant runtimeVariant) {
+	t.Helper()
+	runtimeName := "node"
+	if variant.Runtime == "bun" {
+		runtimeName = "bun"
+	}
+	cmd := exec.Command(runtimeName, filepath.Join(appRoot, "dist", "module_smoke.js"))
+	cmd.Dir = appRoot
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("generated %s module smoke failed with %s:\n%s\n%v", variant.ModuleFormat, runtimeName, string(out), err)
 	}
 }
 

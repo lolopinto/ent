@@ -9,19 +9,19 @@ import {
   Allow,
   Skip,
   LoadCustomEntOptions,
-} from "./base";
-import { LoggedOutViewer, IDViewer } from "./viewer";
-import { AlwaysDenyRule } from "./privacy";
+} from "./base.js";
+import { LoggedOutViewer, IDViewer } from "./viewer.js";
+import { AlwaysDenyRule } from "./privacy.js";
 import {
   loadCustomCount,
   loadCustomData,
   loadCustomEnts,
   loadEnt,
   loadEnts,
-} from "./ent";
-import { createRowForTest, editRowForTest } from "../testutils/write";
-import { ContextCache } from "./context";
-import * as clause from "./clause";
+} from "./ent.js";
+import { createRowForTest, editRowForTest } from "../testutils/write.js";
+import { ContextCache } from "./context.js";
+import * as clause from "./clause.js";
 
 import {
   integer,
@@ -30,14 +30,14 @@ import {
   setupSqlite,
   timestamp,
   TempDB,
-} from "../testutils/db/temp_db";
-import { MockLogs } from "../testutils/mock_log";
-import { clearLogLevels, setLogLevels } from "./logger";
-import DB, { Dialect } from "./db";
-import { ObjectLoaderFactory } from "./loaders";
-import { CustomEdgeQueryBase } from "./query";
-import { BaseEnt } from "../testutils/builder";
-import { OrderBy } from "./query_impl";
+} from "../testutils/db/temp_db.js";
+import { MockLogs } from "../testutils/mock_log.js";
+import { clearLogLevels, setLogLevels } from "./logger.js";
+import DB, { Dialect } from "./db.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
+import { CustomEdgeQueryBase } from "./query/index.js";
+import { BaseEnt } from "../testutils/builder.js";
+import { OrderBy } from "./query_impl.js";
 
 let ctx: Context;
 const ml = new MockLogs();

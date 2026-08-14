@@ -4,8 +4,8 @@
  */
 
 import type { Ent } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { ObjectToCommentsQuery, ObjectToLikersQuery } from "../../internal";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
+import { ObjectToCommentsQuery, ObjectToLikersQuery } from "../../internal.js";
 
 export interface IFeedbackBase<
   TViewer extends ExampleViewerAlias = ExampleViewerAlias,

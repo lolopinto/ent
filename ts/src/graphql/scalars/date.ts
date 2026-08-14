@@ -1,5 +1,5 @@
 import { GraphQLScalarType, GraphQLError } from "graphql";
-import { Kind, ValueNode } from "graphql/language";
+import { Kind, ValueNode } from "graphql/language/index.js";
 import { DateTime } from "luxon";
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;

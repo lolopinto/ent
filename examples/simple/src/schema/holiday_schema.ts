@@ -4,7 +4,7 @@ import {
   DateType,
   ActionOperation,
 } from "@snowtop/ent";
-import WithDayOfWeek from "./patterns/day_of_week";
+import WithDayOfWeek from "./patterns/day_of_week.js";
 
 const HolidaySchema = new EntSchemaWithTZ({
   patterns: [new WithDayOfWeek()],

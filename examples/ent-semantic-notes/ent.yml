@@ -1,3 +1,4 @@
+moduleFormat: esm
 codegen:
   relativeImports: true
   schemaSQLFilePath: "src/schema/schema.sql"

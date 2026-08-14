@@ -1,16 +1,16 @@
-import { ID, Ent, Viewer, Context, Data } from "../core/base";
-import { logQuery } from "../core/ent";
-import { Changeset, Executor } from "../action/action";
-import { Builder, WriteOperation } from "../action";
-import { OrchestratorOptions } from "./orchestrator";
-import DB, { Client, Queryer, SyncClient } from "../core/db";
-import { log } from "../core/logger";
-import { TopologicalGraph } from "./topological_sort";
+import { ID, Ent, Viewer, Context, Data } from "../core/base.js";
+import { logQuery } from "../core/ent.js";
+import { Changeset, Executor } from "../action/action.js";
+import { Builder, WriteOperation } from "../action/index.js";
+import { OrchestratorOptions } from "./orchestrator.js";
+import DB, { Client, Queryer, SyncClient } from "../core/db.js";
+import { log } from "../core/logger.js";
+import { TopologicalGraph } from "./topological_sort.js";
 import {
   ConditionalNodeOperation,
   ConditionalOperation,
   DataOperation,
-} from "./operations";
+} from "./operations.js";
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {

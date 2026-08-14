@@ -12,11 +12,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Address } from "../../..";
-import { AddressBuilder } from "./address_builder";
+import { Address } from "../../../index.js";
+import { AddressBuilder } from "./address_builder.js";
 
 export interface AddressCreateInput {
   streetName: string;

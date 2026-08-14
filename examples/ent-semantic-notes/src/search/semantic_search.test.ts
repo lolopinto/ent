@@ -1,10 +1,11 @@
-import * as ent from "@snowtop/ent";
+import { jest } from "@jest/globals";
+import type { loadRows } from "@snowtop/ent";
 import { buildQueryData } from "@snowtop/ent/core/query_impl";
 import {
   buildSemanticChunkSearchQuery,
   semanticChunkSearch,
-} from "src/search/semantic_search";
-import globalSchema from "src/schema/__global__schema";
+} from "./semantic_search.js";
+import globalSchema from "../schema/__global__schema.js";
 
 describe("semantic notes search", () => {
   test("declares pgvector in the example global schema", () => {
@@ -42,9 +43,8 @@ describe("semantic notes search", () => {
   });
 
   test("semanticChunkSearch delegates through ent loadRows", async () => {
-    const loadRowsSpy = jest
-      .spyOn(ent, "loadRows")
-      .mockResolvedValue([{ id: "chunk-1" }] as never);
+    const loadRowsSpy = jest.fn<typeof loadRows>();
+    loadRowsSpy.mockResolvedValue([{ id: "chunk-1" }] as never);
 
     const options = {
       workspaceID: "workspace-1",
@@ -52,7 +52,7 @@ describe("semantic notes search", () => {
       limit: 2,
     };
 
-    const rows = await semanticChunkSearch(options);
+    const rows = await semanticChunkSearch(options, loadRowsSpy);
     const queryOptions = loadRowsSpy.mock.calls[0][0];
 
     expect(loadRowsSpy).toHaveBeenCalledTimes(1);

@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Note } from "../../../../ent";
-import type { NoteCreateInput } from "../../../../ent/note/actions/create_note_action";
+import type { Note } from "../../../../ent/index.js";
+import type { NoteCreateInput } from "../../../../ent/note/actions/create_note_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,8 +17,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import CreateNoteAction from "../../../../ent/note/actions/create_note_action";
-import { NoteStatusType, NoteType } from "../../../resolvers";
+import CreateNoteAction from "../../../../ent/note/actions/create_note_action.js";
+import { NoteStatusType, NoteType } from "../../../resolvers/index.js";
 
 interface customNoteCreateInput extends NoteCreateInput {
   workspaceId: string;

@@ -1,7 +1,7 @@
-import DB, { Dialect } from "./db";
-import { integer, table, text, TempDB } from "../testutils/db/temp_db";
-import { createRowForTest } from "../testutils/write";
-import { loadConfig } from "./config";
+import DB, { Dialect } from "./db.js";
+import { integer, table, text, TempDB } from "../testutils/db/temp_db.js";
+import { createRowForTest } from "../testutils/write.js";
+import { loadConfig } from "./config.js";
 
 const tdb = new TempDB(Dialect.Postgres, [
   table(

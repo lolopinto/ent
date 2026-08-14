@@ -8,9 +8,9 @@ import {
   CustomEdgeQueryBase,
   Ent,
 } from "@snowtop/ent";
-import { getLoaderOptions } from "src/ent/generated/loadAny";
-import { EdgeType, NodeType } from "src/ent/generated/types";
-import { Address, AddressToLocatedAtEdge } from "src/ent/internal";
+import { getLoaderOptions } from "./loadAny.js";
+import { EdgeType, NodeType } from "./types.js";
+import { Address, AddressToLocatedAtEdge } from "../internal.js";
 
 export const addressToLocatedAtCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.AddressToLocatedAt);

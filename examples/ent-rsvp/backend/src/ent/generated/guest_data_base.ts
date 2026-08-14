@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { GuestDataDBData } from "src/ent/generated/loaders";
+import type { GuestDataDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -22,17 +22,14 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import {
-  guestDataLoader,
-  guestDataLoaderInfo,
-} from "src/ent/generated/loaders";
+import { guestDataLoader, guestDataLoaderInfo } from "./loaders.js";
 import {
   GuestDataSource,
   NodeType,
   convertNullableGuestDataSource,
-} from "src/ent/generated/types";
-import { Event, Guest } from "src/ent/internal";
-import schema from "src/schema/guest_data_schema";
+} from "./types.js";
+import { Event, Guest } from "../internal.js";
+import schema from "../../schema/guest_data_schema.js";
 
 export class GuestDataBase implements Ent<Viewer> {
   protected readonly data: GuestDataDBData;

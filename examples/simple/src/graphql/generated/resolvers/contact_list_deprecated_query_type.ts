@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -17,8 +17,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Contact } from "../../../ent/contact";
-import { ContactType } from "../../resolvers/internal";
+import { Contact } from "../../../ent/contact.js";
+import { ContactType } from "../../resolvers/internal.js";
 
 interface ContactListDeprecatedArgs {
   id: any;

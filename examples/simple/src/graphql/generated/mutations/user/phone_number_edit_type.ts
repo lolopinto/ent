@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { User } from "../../../../ent";
-import type { EditPhoneNumberInput } from "../../../../ent/user/actions/edit_phone_number_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { User } from "../../../../ent/index.js";
+import type { EditPhoneNumberInput } from "../../../../ent/user/actions/edit_phone_number_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,8 +21,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditPhoneNumberAction from "../../../../ent/user/actions/edit_phone_number_action";
-import { UserType } from "../../../resolvers";
+import EditPhoneNumberAction from "../../../../ent/user/actions/edit_phone_number_action.js";
+import { UserType } from "../../../resolvers/index.js";
 
 interface customEditPhoneNumberInput extends EditPhoneNumberInput {
   id: string;

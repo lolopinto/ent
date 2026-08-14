@@ -1,13 +1,13 @@
-import { Data, Ent, Viewer, WriteOperation } from "../core/base";
-import { BaseEnt, BuilderSchema, SimpleAction } from "../testutils/builder";
-import { Schema, FieldMap } from "./index";
-import { BinaryTextType, ByteaType } from "./binary_field";
-import { TempDB, getSchemaTable } from "../testutils/db/temp_db";
-import DB, { Dialect } from "../core/db";
-import { loadConfig } from "../core/config";
-import { LoggedOutViewer } from "../core/viewer";
+import { Data, Ent, Viewer, WriteOperation } from "../core/base.js";
+import { BaseEnt, BuilderSchema, SimpleAction } from "../testutils/builder.js";
+import { Schema, FieldMap } from "./index.js";
+import { BinaryTextType, ByteaType } from "./binary_field.js";
+import { TempDB, getSchemaTable } from "../testutils/db/temp_db.js";
+import DB, { Dialect } from "../core/db.js";
+import { loadConfig } from "../core/config.js";
+import { LoggedOutViewer } from "../core/viewer.js";
 import { readFileSync } from "fs";
-import { convertTextToBuffer } from "../core/convert";
+import { convertTextToBuffer } from "../core/convert.js";
 
 class Image extends BaseEnt implements Ent {
   nodeType = "Image";

@@ -5,7 +5,7 @@ import {
   Trigger,
   Validator,
   Observer,
-} from "../action";
+} from "../action/index.js";
 import {
   Ent,
   Viewer,
@@ -15,15 +15,15 @@ import {
   DenyWithReason,
   Skip,
   Allow,
-} from "../core/base";
-import { loadRows } from "../core/ent";
+} from "../core/base.js";
+import { loadRows } from "../core/ent.js";
 import {
   EditNodeOperation,
   DeleteNodeOperation,
   DataOperation,
-} from "./operations";
-import { LoggedOutViewer, IDViewer } from "../core/viewer";
-import { Changeset } from "../action";
+} from "./operations.js";
+import { LoggedOutViewer, IDViewer } from "../core/viewer.js";
+import { Changeset } from "../action/index.js";
 import {
   EnumField,
   EnumOptions,
@@ -33,8 +33,8 @@ import {
   TimestampType,
   UUIDListType,
   UUIDType,
-} from "../schema/field";
-import { JSONBType } from "../schema/json_field";
+} from "../schema/field.js";
+import { JSONBType } from "../schema/json_field.js";
 import {
   User,
   Event,
@@ -44,8 +44,8 @@ import {
   SimpleAction,
   getBuilderSchemaFromFields,
   BaseEnt,
-} from "../testutils/builder";
-import { FakeComms, Mode } from "../testutils/fake_comms";
+} from "../testutils/builder.js";
+import { FakeComms, Mode } from "../testutils/fake_comms.js";
 import {
   AllowIfViewerRule,
   AlwaysAllowRule,
@@ -56,12 +56,12 @@ import {
   AlwaysDenyPrivacyPolicy,
   AlwaysAllowPrivacyPolicy,
   AllowIfViewerIsEntPropertyRule,
-} from "../core/privacy";
-import { createRowForTest } from "../testutils/write";
-import * as clause from "../core/clause";
-import { clearLogLevels, setLogLevels } from "../core/logger";
+} from "../core/privacy.js";
+import { createRowForTest } from "../testutils/write.js";
+import * as clause from "../core/clause.js";
+import { clearLogLevels, setLogLevels } from "../core/logger.js";
 
-import { MockLogs } from "../testutils/mock_log";
+import { MockLogs } from "../testutils/mock_log.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -69,19 +69,19 @@ import {
   setupPostgres,
   setupSqlite,
   Table,
-} from "../testutils/db/temp_db";
-import DB, { Dialect } from "../core/db";
+} from "../testutils/db/temp_db.js";
+import DB, { Dialect } from "../core/db.js";
 import {
   convertBool,
   convertDate,
   convertJSON,
   convertList,
-} from "../core/convert";
+} from "../core/convert.js";
 import { v4 } from "uuid";
-import { NumberOps } from "./relative_value";
-import { StructType, StructTypeAsList, BooleanType } from "../schema";
-import { randomEmail } from "../testutils/db/value";
-import { toDBColumnOrTable } from "../names/names";
+import { NumberOps } from "./relative_value.js";
+import { StructType, StructTypeAsList, BooleanType } from "../schema/index.js";
+import { randomEmail } from "../testutils/db/value.js";
+import { toDBColumnOrTable } from "../names/names.js";
 
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 

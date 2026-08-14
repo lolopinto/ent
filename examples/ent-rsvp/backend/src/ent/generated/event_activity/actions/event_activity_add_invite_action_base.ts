@@ -17,8 +17,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { EventActivity, GuestGroup } from "src/ent/";
-import { EventActivityBuilder } from "src/ent/generated/event_activity/actions/event_activity_builder";
+import { EventActivity, GuestGroup } from "../../../index.js";
+import { EventActivityBuilder } from "./event_activity_builder.js";
 
 export interface EventActivityAddInviteInput {
   test?: string;

@@ -1,4 +1,4 @@
-export * from "./core/base";
+export * from "./core/base.js";
 export {
   loadEnt,
   loadCustomData,
@@ -28,25 +28,25 @@ export {
   getEdgeTypeInGroup,
   setEntLoaderPrivacyConcurrencyLimit,
   getEntLoaderPrivacyConcurrencyLimit,
-} from "./core/ent";
-export type { CustomQuery } from "./core/ent";
+} from "./core/ent.js";
+export type { CustomQuery } from "./core/ent.js";
 // TODO should these even be exported from the root?
 export {
   EditNodeOperation,
   RawQueryOperation,
   EdgeOperation,
   DeleteNodeOperation,
-} from "./action/operations";
+} from "./action/operations.js";
 export type {
   AssocEdgeInput,
   AssocEdgeInputOptions,
   DataOperation,
   EditNodeOptions,
-} from "./action/operations";
-export { setGlobalSchema } from "./core/global_schema";
-export { registerExtensionRuntime } from "./core/extensions";
-import DB from "./core/db";
-export * from "./core/loaders";
+} from "./action/operations.js";
+export { setGlobalSchema } from "./core/global_schema.js";
+export { registerExtensionRuntime } from "./core/extensions.js";
+import DB from "./core/db.js";
+export * from "./core/loaders/index.js";
 export { DB };
 
 // TODO figure out if this should be its own import path e.g. @snowtop/ent/privacy
@@ -89,15 +89,15 @@ export {
   AllowIfSubPolicyAllowsRule,
   AllowIfViewerPrivacyPolicy,
   AllowIfViewerHasIdentityPrivacyPolicy,
-} from "./core/privacy";
-export * from "./core/query";
-export * from "./core/query_impl";
-export type { QueryExpression } from "./core/query_expression";
+} from "./core/privacy.js";
+export * from "./core/query/index.js";
+export * from "./core/query_impl.js";
+export type { QueryExpression } from "./core/query_expression.js";
 
-export * from "./schema/";
-import * as q from "./core/clause";
-export { Expression, ParameterizedExpression } from "./core/clause";
-export type { Clause } from "./core/clause";
+export * from "./schema/index.js";
+import * as q from "./core/clause.js";
+export { Expression, ParameterizedExpression } from "./core/clause.js";
+export type { Clause } from "./core/clause.js";
 const query = {
   Eq: q.Eq,
   NotEq: q.NotEq,
@@ -143,15 +143,15 @@ const query = {
 
 export { query };
 
-export { ContextCache } from "./core/context";
-export type { RequestContext } from "./core/context";
+export { ContextCache } from "./core/context.js";
+export type { RequestContext } from "./core/context.js";
 
-export { IDViewer, LoggedOutViewer } from "./core/viewer";
-export type { IDViewerOptions } from "./core/viewer";
+export { IDViewer, LoggedOutViewer } from "./core/viewer.js";
+export type { IDViewerOptions } from "./core/viewer.js";
 
-export { loadConfig } from "./core/config";
+export { loadConfig } from "./core/config.js";
 
-export { setLogLevels } from "./core/logger";
-export * from "./core/metrics";
+export { setLogLevels } from "./core/logger.js";
+export * from "./core/metrics.js";
 
-export * from "./core/convert";
+export * from "./core/convert.js";

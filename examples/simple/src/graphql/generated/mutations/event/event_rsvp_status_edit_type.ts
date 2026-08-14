@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Event } from "../../../../ent";
-import type { EditEventRsvpStatusInput } from "../../../../ent/event/actions/edit_event_rsvp_status_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Event } from "../../../../ent/index.js";
+import type { EditEventRsvpStatusInput } from "../../../../ent/event/actions/edit_event_rsvp_status_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -20,9 +20,9 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditEventRsvpStatusAction from "../../../../ent/event/actions/edit_event_rsvp_status_action";
-import { EventRsvpStatusInputType } from "../input_enums_type";
-import { EventType } from "../../../resolvers";
+import EditEventRsvpStatusAction from "../../../../ent/event/actions/edit_event_rsvp_status_action.js";
+import { EventRsvpStatusInputType } from "../input_enums_type.js";
+import { EventType } from "../../../resolvers/index.js";
 
 interface customEventRsvpStatusEditInput extends EditEventRsvpStatusInput {
   id: string;

@@ -1,5 +1,5 @@
 import { SQLStatementOperation } from "@snowtop/ent";
-import { DeletedAtPattern, GlobalDeletedEdge } from "./soft_delete";
+import { DeletedAtPattern, GlobalDeletedEdge } from "./soft_delete.js";
 
 test("deleted at pattern turns deletes into updates", () => {
   const pattern = new DeletedAtPattern();

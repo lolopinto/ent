@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { DefaultsExample } from "../../../../ent";
-import type { DefaultsExampleCreateInput } from "../../../../ent/defaults_example/actions/create_defaults_example_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { DefaultsExample } from "../../../../ent/index.js";
+import type { DefaultsExampleCreateInput } from "../../../../ent/defaults_example/actions/create_defaults_example_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -23,9 +23,9 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeNullableIDFromGQLID } from "@snowtop/ent/graphql";
-import CreateDefaultsExampleAction from "../../../../ent/defaults_example/actions/create_defaults_example_action";
-import { DefaultsPayloadInputType } from "../input/defaults_payload_input_type";
-import { DefaultsExampleType } from "../../../resolvers";
+import CreateDefaultsExampleAction from "../../../../ent/defaults_example/actions/create_defaults_example_action.js";
+import { DefaultsPayloadInputType } from "../input/defaults_payload_input_type.js";
+import { DefaultsExampleType } from "../../../resolvers/index.js";
 
 interface customDefaultsExampleCreateInput extends DefaultsExampleCreateInput {
   creatorId?: string;

@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { UserStatistics } from "../../../../ent";
-import type { UserStatisticsEditInput } from "../../../../ent/user_statistics/actions/edit_user_statistics_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { UserStatistics } from "../../../../ent/index.js";
+import type { UserStatisticsEditInput } from "../../../../ent/user_statistics/actions/edit_user_statistics_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,8 +21,8 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditUserStatisticsAction from "../../../../ent/user_statistics/actions/edit_user_statistics_action";
-import { UserStatisticsType } from "../../../resolvers";
+import EditUserStatisticsAction from "../../../../ent/user_statistics/actions/edit_user_statistics_action.js";
+import { UserStatisticsType } from "../../../resolvers/index.js";
 
 interface customUserStatisticsEditInput extends UserStatisticsEditInput {
   id: string;

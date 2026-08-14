@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -30,7 +30,7 @@ import {
   EventToHostsQuery,
   EventToInvitedQuery,
   EventToMaybeQuery,
-} from "../../../ent";
+} from "../../../ent/index.js";
 import {
   AddressType,
   AttachmentType,
@@ -42,7 +42,7 @@ import {
   EventToInvitedConnectionType,
   EventToMaybeConnectionType,
   UserType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const EventType = new GraphQLObjectType({
   name: "Event",

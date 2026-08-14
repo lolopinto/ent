@@ -14,10 +14,10 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Place, PlaceReview, User } from "../../..";
-import { placeReviewLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType } from "../../types";
-import schema from "../../../../schema/place_review_schema";
+import { Place, PlaceReview, User } from "../../../index.js";
+import { placeReviewLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/place_review_schema.js";
 
 export interface PlaceReviewInput {
   placeId?: ID | Builder<Place, Viewer>;

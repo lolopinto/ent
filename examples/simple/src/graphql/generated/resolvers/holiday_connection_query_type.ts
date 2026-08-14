@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -18,10 +18,10 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Holiday } from "../../../ent/holiday";
-import { HolidayArgInputType } from "../mutations/input/holiday_arg_input_type";
-import { HolidaySortColumnType } from "./enums_type";
-import { RootToHolidayConnectionType } from "../../resolvers/internal";
+import { Holiday } from "../../../ent/holiday.js";
+import { HolidayArgInputType } from "../mutations/input/holiday_arg_input_type.js";
+import { HolidaySortColumnType } from "./enums_type.js";
+import { RootToHolidayConnectionType } from "../../resolvers/internal.js";
 
 interface HolidayConnectionArgs {
   ids: any;

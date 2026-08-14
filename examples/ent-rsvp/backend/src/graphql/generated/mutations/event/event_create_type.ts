@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Event } from "src/ent/";
-import type { EventCreateInput } from "src/ent/event/actions/create_event_action";
+import type { Event } from "../../../../ent/index.js";
+import type { EventCreateInput } from "../../../../ent/event/actions/create_event_action.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -18,10 +18,13 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { GraphQLTime } from "@snowtop/ent/graphql";
-import CreateEventAction from "src/ent/event/actions/create_event_action";
-import { AddressEventActivityCreateInput } from "src/graphql/generated/mutations/event_activity/event_activity_create_type";
-import { EventType } from "src/graphql/resolvers/";
+import {
+  GraphQLTime,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
+import CreateEventAction from "../../../../ent/event/actions/create_event_action.js";
+import { AddressEventActivityCreateInput } from "../event_activity/event_activity_create_type.js";
+import { EventType } from "../../../resolvers/index.js";
 
 interface EventCreatePayload {
   event: Event;
@@ -105,7 +108,16 @@ export const EventCreateType: GraphQLFieldConfig<
     const event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
       slug: input.slug,
-      activities: input.activities,
+      activities: input.activities
+        ? input.activities.map((item: any) => ({
+            ...item,
+            addressId: item.addressId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.addressId?.toString() ?? item.addressId,
+                )
+              : undefined,
+          }))
+        : input.activities,
     }).saveX();
     return { event: event };
   },

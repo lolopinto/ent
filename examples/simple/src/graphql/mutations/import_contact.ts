@@ -7,11 +7,11 @@ import {
 import { GraphQLID } from "graphql";
 import type { FileUpload } from "@snowtop/ent/graphql/upload";
 import parse from "csv-parse";
-import { User } from "../../ent/user";
-import CreateContactAction from "../../ent/contact/actions/create_contact_action";
-import { ExampleViewer } from "../../viewer/viewer";
-import { ContactLabel } from "../../ent/generated/types";
-import { ContactLabel2 } from "./custom_enum";
+import { User } from "../../ent/user.js";
+import CreateContactAction from "../../ent/contact/actions/create_contact_action.js";
+import { ExampleViewer } from "../../viewer/viewer.js";
+import { ContactLabel } from "../../ent/generated/types.js";
+import { ContactLabel2 } from "./custom_enum.js";
 import { Transaction } from "@snowtop/ent/action";
 
 export class ImportContactResolver {

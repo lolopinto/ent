@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { NoteChunk } from "../../../../ent";
-import type { NoteChunkEditInput } from "../../../../ent/note_chunk/actions/edit_note_chunk_action";
+import type { NoteChunk } from "../../../../ent/index.js";
+import type { NoteChunkEditInput } from "../../../../ent/note_chunk/actions/edit_note_chunk_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -18,8 +18,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditNoteChunkAction from "../../../../ent/note_chunk/actions/edit_note_chunk_action";
-import { NoteChunkType } from "../../../resolvers";
+import EditNoteChunkAction from "../../../../ent/note_chunk/actions/edit_note_chunk_action.js";
+import { NoteChunkType } from "../../../resolvers/index.js";
 
 interface customNoteChunkEditInput extends NoteChunkEditInput {
   id: string;

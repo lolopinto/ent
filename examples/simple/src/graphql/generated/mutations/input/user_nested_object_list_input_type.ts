@@ -11,7 +11,10 @@ import {
   GraphQLNonNull,
   GraphQLString,
 } from "graphql";
-import { IntEnumUsedInListType, ResponseTypeType } from "../../../resolvers";
+import {
+  IntEnumUsedInListType,
+  ResponseTypeType,
+} from "../../../resolvers/index.js";
 
 const UserNestedNestedObjectListInputType = new GraphQLInputObjectType({
   name: "UserNestedNestedObjectListInput",

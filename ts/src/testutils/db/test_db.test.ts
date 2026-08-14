@@ -1,5 +1,5 @@
-import { Dialect } from "../../core/db";
-import { TempDB, text, table, uuid } from "./temp_db";
+import { Dialect } from "../../core/db.js";
+import { TempDB, text, table, uuid } from "./temp_db.js";
 
 const fkeyTables = () => {
   return [

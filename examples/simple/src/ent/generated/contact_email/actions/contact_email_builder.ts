@@ -11,19 +11,19 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { ContactInfoExtra } from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ContactInfoExtra } from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Contact, ContactEmail, User } from "../../..";
-import { contactEmailLoaderInfo } from "../../loaders";
-import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder";
-import { ContactLabel, EdgeType, NodeType } from "../../types";
-import schema from "../../../../schema/contact_email_schema";
+import { Contact, ContactEmail, User } from "../../../index.js";
+import { contactEmailLoaderInfo } from "../../loaders.js";
+import { FeedbackBuilder } from "../../mixins/feedback/actions/feedback_builder.js";
+import { ContactLabel, EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/contact_email_schema.js";
 
 export interface ContactEmailInput {
   extra?: ContactInfoExtra | null;

@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { File } from "../../../../ent";
-import type { FileEditInput } from "../../../../ent/file/actions/edit_file_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { File } from "../../../../ent/index.js";
+import type { FileEditInput } from "../../../../ent/file/actions/edit_file_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -24,8 +24,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import EditFileAction from "../../../../ent/file/actions/edit_file_action";
-import { FileType } from "../../../resolvers";
+import EditFileAction from "../../../../ent/file/actions/edit_file_action.js";
+import { FileType } from "../../../resolvers/index.js";
 
 interface customFileEditInput extends FileEditInput {
   id: string;

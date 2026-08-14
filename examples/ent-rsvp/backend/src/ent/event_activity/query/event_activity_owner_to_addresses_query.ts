@@ -1,5 +1,5 @@
 import { Viewer } from "@snowtop/ent";
-import { EventActivityBase, OwnerToAddressesQuery } from "src/ent/internal";
+import { EventActivityBase, OwnerToAddressesQuery } from "../../internal.js";
 
 export class EventActivityOwnerToAddressesQuery extends OwnerToAddressesQuery {
   constructor(viewer: Viewer, srcEnt: EventActivityBase, sortColumn?: string) {

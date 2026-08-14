@@ -10,7 +10,7 @@ import {
   pgvectorRuntimeHandler,
   serializeVector,
   withinDistance,
-} from "./pgvector";
+} from "./pgvector.js";
 
 describe("ent-pgvector", () => {
   test("PgVectorExtension uses ergonomic defaults", () => {

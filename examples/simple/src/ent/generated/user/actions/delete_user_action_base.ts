@@ -12,12 +12,12 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { UserInput } from "./user_builder";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { UserInput } from "./user_builder.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { User } from "../../..";
-import { UserBuilder } from "./user_builder";
+import { User } from "../../../index.js";
+import { UserBuilder } from "./user_builder.js";
 
 export type DeleteUserActionTriggers = (
   | Trigger<

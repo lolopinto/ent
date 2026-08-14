@@ -4,7 +4,7 @@ import * as glob from "glob";
 import * as path from "path";
 import * as fs from "fs";
 import ts from "typescript";
-import { pathToFileURL } from "url";
+import { pathToFileURL } from "node:url";
 import {
   // can use the local interfaces since it's just the API we're getting from here
   ProcessedField,
@@ -16,20 +16,25 @@ import {
   knownAllowedNames,
   isCustomType,
   CustomFieldType,
-} from "../graphql/graphql";
+} from "../graphql/graphql.js";
 import type {
   CustomFieldTypeInput,
   CustomGraphQLInput,
   GQLCapture,
-} from "../graphql/graphql";
+} from "../graphql/graphql.js";
 import * as readline from "readline";
-import { parseCustomImports, file } from "../imports";
+import { parseCustomImports, file } from "../imports/index.js";
 import { exit } from "process";
-import { Data } from "../core/base";
+import { Data } from "../core/base.js";
 import { spawn } from "child_process";
-import { GRAPHQL_PATH } from "../core/const";
-import { writeJSONToStdout } from "./stdout";
-const { parseArgs } = require("./parse_args");
+import { GRAPHQL_PATH } from "../core/const.js";
+import { writeJSONToStdout } from "./stdout.js";
+import { parseArgs } from "./parse_args.js";
+import { getDynamicTypeScriptCommand } from "./dynamic_tsx.js";
+import {
+  loadGraphQLModule,
+  resolveGraphQLPath,
+} from "./graphql_capture_loader.js";
 
 // need to use the GQLCapture from the package so that when we call GQLCapture.enable()
 // we're affecting the local paths as opposed to a different instance
@@ -193,25 +198,9 @@ async function captureDynamic(filePath: string, gqlCapture: typeof GQLCapture) {
     const env = {
       ...process.env,
     };
-    let cmd = "ts-node";
-    const args: string[] = [];
     const runtime = isBunRuntime() ? "bun" : "node";
-
-    if (runtime === "bun") {
-      cmd = "bun";
-      args.push(filePath);
-    } else {
-      if (process.env.ENABLE_SWC) {
-        cmd = "node";
-        // we seem to get tsconfig-paths by default because child process but not 100% sure...
-        args.push("-r", "@swc-node/register");
-        env.SWCRC = "true";
-      } else {
-        args.push("--transpileOnly");
-      }
-      args.push(filePath);
-    }
-    const r = spawn(cmd, args, {
+    const { command, args } = getDynamicTypeScriptCommand(filePath, runtime);
+    const r = spawn(command, args, {
       env,
     });
 
@@ -314,7 +303,7 @@ async function loadGraphQLDecoratorFiles(filePath: string) {
     .concat(customGQLResolvers, customGQLMutations)
     .filter(fileImportsGraphQLDecorators);
 
-  await requireFiles(files);
+  await importFiles(files);
 }
 
 async function captureCustom(
@@ -343,7 +332,7 @@ async function captureCustom(
       files[i] = path.join(filePath, "..", files[i]);
     }
 
-    await requireFiles(files);
+    await importFiles(files);
     return;
   }
 
@@ -410,17 +399,13 @@ function fileImportsGraphQLDecorators(file: string) {
   return false;
 }
 
-async function requireFiles(files: string[]) {
+async function importFiles(files: string[]) {
   for (const file of files) {
     if (!fs.existsSync(file)) {
       throw new Error(`file ${file} doesn't exist`);
     }
     try {
-      if (isBunRuntime()) {
-        await import(pathToFileURL(file).href);
-      } else {
-        await require(file);
-      }
+      await import(pathToFileURL(file).href);
     } catch (e) {
       throw new Error(`${(e as Error).message} loading ${file}`);
     }
@@ -450,20 +435,6 @@ async function parseImports(filePath: string) {
   ]);
 }
 
-function findGraphQLPath(filePath: string): string | undefined {
-  while (filePath !== "/") {
-    const potentialPath = path.join(filePath, "node_modules");
-    if (fs.existsSync(potentialPath)) {
-      const graphqlPath = path.join(potentialPath, MODULE_PATH);
-      if (fs.existsSync(graphqlPath)) {
-        return graphqlPath;
-      }
-    }
-    filePath = path.join(filePath, "..");
-  }
-  return undefined;
-}
-
 // test as follows:
 // there should be an easier way to do this...
 // also, there should be a way to get the list of objects here that's not manual
@@ -475,27 +446,28 @@ async function main() {
     throw new Error("path required");
   }
 
-  const gqlPath = process.env.GRAPHQL_PATH || findGraphQLPath(options.path);
+  const explicitGraphQLPath = Boolean(process.env.GRAPHQL_PATH);
+  const gqlPath = resolveGraphQLPath(options.path, MODULE_PATH);
   if (!gqlPath) {
     throw new Error("could not find graphql path");
   }
 
-  // use different variable  so that we use the correct GQLCapture as needed
-  // for local dev, get the one from the file system. otherwise, get the one
-  // from node_modules
-  let gqlCapture: typeof GQLCapture;
-  if (process.env.LOCAL_SCRIPT_PATH || isBunRuntime()) {
-    const r = require("../graphql/graphql");
-    gqlCapture = r.GQLCapture;
-    gqlCapture.enable(true);
-  } else {
-    const r = require(gqlPath);
-    if (!r.GQLCapture) {
-      throw new Error("could not find GQLCapture in module");
-    }
-    gqlCapture = r.GQLCapture;
-    gqlCapture.enable(true);
+  // tsx maintains distinct ESM-import and CommonJS-require module graphs.
+  // CommonJS projects load through an app-scoped require so decorator
+  // registration and capture share one GQLCapture instance.
+  const r = await loadGraphQLModule<typeof import("../graphql/graphql.js")>({
+    filePath: options.path,
+    graphqlPath: gqlPath,
+    explicitGraphQLPath,
+    moduleFormat: process.env.ENT_MODULE_FORMAT,
+    runtime: isBunRuntime() ? "bun" : "node",
+    localScriptPath: Boolean(process.env.LOCAL_SCRIPT_PATH),
+  });
+  if (!r.GQLCapture) {
+    throw new Error("could not find GQLCapture in module");
   }
+  const gqlCapture: typeof GQLCapture = r.GQLCapture;
+  gqlCapture.enable(true);
 
   // known custom types that are not required
   // if not in the schema, will be ignored
@@ -510,7 +482,7 @@ async function main() {
       // for go tests...
       // TODO need a flag that only does this for go tests
       // breaks when running locally sometimes...
-      secondaryImportPath: "../graphql/scalars/time",
+      secondaryImportPath: "../graphql/scalars/time.js",
       type: "GraphQLTime",
     },
     gqlCapture,
@@ -518,7 +490,7 @@ async function main() {
   addCustomType(
     {
       importPath: MODULE_PATH,
-      secondaryImportPath: "../graphql/scalars/date",
+      secondaryImportPath: "../graphql/scalars/date.js",
       type: "GraphQLDate",
     },
     gqlCapture,

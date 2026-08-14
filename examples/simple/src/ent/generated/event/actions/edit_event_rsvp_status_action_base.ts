@@ -12,12 +12,12 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { WriteOperation, setEdgeTypeInGroup } from "@snowtop/ent/action";
-import { Event } from "../../..";
-import { EventBuilder } from "./event_builder";
-import { NodeType } from "../../types";
-import schema from "../../../../schema/event_schema";
+import { Event } from "../../../index.js";
+import { EventBuilder } from "./event_builder.js";
+import { NodeType } from "../../types.js";
+import schema from "../../../../schema/event_schema.js";
 
 export enum EventRsvpStatusInput {
   Attending = "attending",

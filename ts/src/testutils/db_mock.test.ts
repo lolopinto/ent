@@ -1,14 +1,26 @@
-import { QueryRecorder } from "./db_mock";
-import { Pool } from "pg";
-import { createRowForTest, deleteRowsForTest, editRowForTest } from "./write";
-import { Data, ID } from "../core/base";
-import { loadRow, loadRows } from "../core/ent";
-import DB from "../core/db";
-import * as clause from "../core/clause";
-import { Where, EqOp } from "./parse_sql";
-import { setLogLevels } from "../core/logger";
+import type { Data, ID } from "../core/base.js";
+import type { Where } from "./parse_sql.js";
 
-jest.mock("pg");
+(jest as any).unstable_mockModule("pg", () => {
+  const actual = jest.requireActual<typeof import("pg")>("pg");
+  return {
+    ...actual,
+    default: actual,
+    Pool: jest.fn(),
+  };
+});
+
+const { QueryRecorder } = await import("./db_mock.js");
+const { Pool } = await import("pg");
+const { createRowForTest, deleteRowsForTest, editRowForTest } = await import(
+  "./write.js"
+);
+const { loadRow, loadRows } = await import("../core/ent.js");
+const { default: DB } = await import("../core/db.js");
+const clause = await import("../core/clause.js");
+const { EqOp } = await import("./parse_sql.js");
+const { setLogLevels } = await import("../core/logger.js");
+
 QueryRecorder.mockPool(Pool);
 
 beforeAll(() => {

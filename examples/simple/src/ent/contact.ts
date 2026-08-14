@@ -1,5 +1,5 @@
 import { GraphQLString } from "graphql";
-import { ContactBase, ContactEmail } from "./internal";
+import { ContactBase, ContactEmail } from "./internal.js";
 import {
   PrivacyPolicy,
   AllowIfViewerIsEntPropertyRule,
@@ -7,8 +7,8 @@ import {
   query,
 } from "@snowtop/ent";
 import { gqlConnection, gqlField } from "@snowtop/ent/graphql";
-import { ContactLabel } from "./generated/types";
-import { ContactDate, ContactItemFilter, EmailInfo } from "./contact_types";
+import { ContactLabel } from "./generated/types.js";
+import { ContactDate, ContactItemFilter, EmailInfo } from "./contact_types.js";
 import { CustomClauseQuery } from "@snowtop/ent";
 
 export class Contact extends ContactBase {

@@ -5,15 +5,15 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLList,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { EmailInfo } from "../../../ent/contact_types";
-import { ContactEmailType } from "../../resolvers/internal";
+import { EmailInfo } from "../../../ent/contact_types.js";
+import { ContactEmailType } from "../../resolvers/internal.js";
 
 export const EmailInfoType = new GraphQLObjectType({
   name: "EmailInfo",

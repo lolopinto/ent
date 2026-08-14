@@ -9,15 +9,15 @@ import {
   text,
   uuid,
   uuidList,
-} from "../testutils/db/temp_db";
-import { MockLogs } from "../testutils/mock_log";
-import { createRowForTest } from "../testutils/write";
-import { Data, ID, LoadRowsOptions } from "./base";
-import * as clause from "./clause";
-import { loadConfig } from "./config";
-import DB, { Dialect } from "./db";
-import { AssocEdge, loadEdges, loadRows, loadTwoWayEdges } from "./ent";
-import { setLogLevels } from "./logger";
+} from "../testutils/db/temp_db.js";
+import { MockLogs } from "../testutils/mock_log.js";
+import { createRowForTest } from "../testutils/write.js";
+import { Data, ID, LoadRowsOptions } from "./base.js";
+import * as clause from "./clause.js";
+import { loadConfig } from "./config.js";
+import DB, { Dialect } from "./db.js";
+import { AssocEdge, loadEdges, loadRows, loadTwoWayEdges } from "./ent.js";
+import { setLogLevels } from "./logger.js";
 
 const tableName = "contacts";
 const alias = "c";

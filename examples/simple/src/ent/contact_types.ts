@@ -1,8 +1,8 @@
 import { GraphQLString } from "graphql";
 import { gqlField, gqlObjectType } from "@snowtop/ent/graphql";
-import { Contact, ContactEmail } from "./internal";
+import { Contact, ContactEmail } from "./internal.js";
 import { gqlArgType, gqlUnionType } from "@snowtop/ent/graphql/graphql";
-import { ContactLabel } from "./generated/types";
+import { ContactLabel } from "./generated/types.js";
 
 @gqlObjectType()
 export class EmailInfo {

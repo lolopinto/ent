@@ -1,5 +1,5 @@
-import { getClassInfo } from "../tsc/ast";
-import { TransformFile, transform } from "../tsc/transform";
+import { getClassInfo } from "../tsc/ast.js";
+import { TransformFile, transform } from "../tsc/transform.js";
 import ts, { SourceFile, Node, isClassDeclaration } from "typescript";
 
 class FixActionExports implements TransformFile {

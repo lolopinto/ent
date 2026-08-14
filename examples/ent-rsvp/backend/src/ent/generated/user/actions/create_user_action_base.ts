@@ -11,8 +11,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { User } from "src/ent/";
-import { UserBuilder } from "src/ent/generated/user/actions/user_builder";
+import { User } from "../../../index.js";
+import { UserBuilder } from "./user_builder.js";
 
 export interface UserCreateInput {
   firstName: string;

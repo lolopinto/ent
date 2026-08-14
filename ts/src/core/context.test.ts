@@ -2,9 +2,9 @@ import {
   ContextCache,
   getContextCacheMaxDiscardedLoaders,
   setContextCacheMaxDiscardedLoaders,
-} from "./context";
-import { Loader, QueryOptions } from "./base";
-import * as clause from "./clause";
+} from "./context.js";
+import { Loader, QueryOptions } from "./base.js";
+import * as clause from "./clause.js";
 
 describe("ContextCache", () => {
   it("caps discarded loaders after repeated clearCache calls", () => {

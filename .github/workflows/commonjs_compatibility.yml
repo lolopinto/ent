@@ -1,0 +1,36 @@
+name: CommonJS compatibility
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "ts/**"
+      - "examples/scripts/**"
+      - "examples/todo-sqlite/**"
+      - ".github/workflows/commonjs_compatibility.yml"
+
+jobs:
+  compiled-application:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+          cache: npm
+          cache-dependency-path: |
+            ts/package-lock.json
+            examples/todo-sqlite/package-lock.json
+
+      - run: npm ci
+        working-directory: ./ts
+      - run: npm ci
+        working-directory: ./examples/todo-sqlite
+      - name: Install packed local Ent packages
+        run: npm run build:ent
+        working-directory: ./examples/todo-sqlite
+      - name: Compile and execute the CommonJS application
+        run: npm run test:cjs-runtime
+        working-directory: ./examples/todo-sqlite

@@ -1,7 +1,7 @@
 import { gqlField } from "@snowtop/ent/graphql";
 import { gqlInterfaceType } from "@snowtop/ent/graphql/graphql";
-import { ContactLabel } from "./generated/types";
-import { Contact } from "./internal";
+import { ContactLabel } from "./generated/types.js";
+import { Contact } from "./internal.js";
 
 @gqlInterfaceType({})
 export class ContactItem {

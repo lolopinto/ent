@@ -13,12 +13,12 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { Attachment } from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Attachment } from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Address, Event } from "../../..";
-import { EventBuilder } from "./event_builder";
-import schema from "../../../../schema/event_schema";
+import { Address, Event } from "../../../index.js";
+import { EventBuilder } from "./event_builder.js";
+import schema from "../../../../schema/event_schema.js";
 
 export interface EventCreateInput {
   name: string;

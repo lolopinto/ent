@@ -13,8 +13,8 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { HolidayDBData } from "./loaders";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { HolidayDBData } from "./loaders.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   convertDBDate,
@@ -26,10 +26,10 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { holidayLoader, holidayLoaderInfo } from "./loaders";
-import { DayOfWeekAlt, NodeType, convertDayOfWeekAlt } from "./types";
-import { IWithDayOfWeek, WithDayOfWeekMixin } from "../internal";
-import schema from "../../schema/holiday_schema";
+import { holidayLoader, holidayLoaderInfo } from "./loaders.js";
+import { DayOfWeekAlt, NodeType, convertDayOfWeekAlt } from "./types.js";
+import { IWithDayOfWeek, WithDayOfWeekMixin } from "../internal.js";
+import schema from "../../schema/holiday_schema.js";
 
 export class HolidayBase
   extends WithDayOfWeekMixin(class {} as new (...args: any[]) => IWithDayOfWeek)

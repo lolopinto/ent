@@ -8,24 +8,24 @@ import {
   Skip,
   Allow,
   Context,
-} from "../../core/base";
-import { loadEnt, loadEntX } from "../../core/ent";
-import * as clause from "../../core/clause";
+} from "../../core/base.js";
+import { loadEnt, loadEntX } from "../../core/ent.js";
+import * as clause from "../../core/clause.js";
 import {
   AllowIfViewerRule,
   AlwaysDenyRule,
   AllowIfViewerInboundEdgeExistsRule,
   AllowIfConditionAppliesRule,
-} from "../../core/privacy";
-import { getBuilderSchemaFromFields, SimpleAction } from "../builder";
-import { StringType } from "../../schema";
-import { EdgeType } from "./internal";
-import { NodeType } from "./const";
-import { IDViewer, IDViewerOptions } from "../../core/viewer";
-import { table, uuid, text, timestamptz } from "../db/temp_db";
-import { ObjectLoaderFactory } from "../../core/loaders";
-import { convertDate } from "../../core/convert";
-import { WriteOperation } from "../../action";
+} from "../../core/privacy.js";
+import { getBuilderSchemaFromFields, SimpleAction } from "../builder.js";
+import { StringType } from "../../schema/index.js";
+import { EdgeType } from "./internal.js";
+import { NodeType } from "./const.js";
+import { IDViewer, IDViewerOptions } from "../../core/viewer.js";
+import { table, uuid, text, timestamptz } from "../db/temp_db.js";
+import { ObjectLoaderFactory } from "../../core/loaders/index.js";
+import { convertDate } from "../../core/convert.js";
+import { WriteOperation } from "../../action/index.js";
 
 interface TokenOptions extends IDViewerOptions {
   tokens?: {};

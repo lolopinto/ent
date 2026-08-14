@@ -4,14 +4,14 @@
  */
 
 import type { EdgeQuerySource, Ent, ID, LoadEntOptions } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   AssocEdgeCountLoaderFactory,
   AssocEdgeLoaderFactory,
   AssocEdgeQueryBase,
   loadEnt,
 } from "@snowtop/ent";
-import { EdgeType } from "../types";
+import { EdgeType } from "../types.js";
 import {
   Comment,
   CommentToPostQuery,
@@ -29,7 +29,7 @@ import {
   UserToLikesQuery,
   UserToMaybeEventsQuery,
   UserToSelfContactQuery,
-} from "../../internal";
+} from "../../internal.js";
 
 export const objectToCommentsCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.ObjectToComments);

@@ -1,5 +1,5 @@
-import { EntChangeset, WriteOperation } from "../action";
-import DB, { Dialect } from "../core/db";
+import { EntChangeset, WriteOperation } from "../action/index.js";
+import DB, { Dialect } from "../core/db.js";
 import {
   assoc_edge_config_table,
   assoc_edge_table,
@@ -7,29 +7,29 @@ import {
   setupSqlite,
   Table,
   TempDB,
-} from "../testutils/db/temp_db";
-import { Viewer } from "../core/base";
-import { LoggedOutViewer } from "../core/viewer";
-import { StringType } from "../schema";
+} from "../testutils/db/temp_db.js";
+import { Viewer } from "../core/base.js";
+import { LoggedOutViewer } from "../core/viewer.js";
+import { StringType } from "../schema/index.js";
 import {
   User,
   SimpleAction,
   getBuilderSchemaFromFields,
-} from "../testutils/builder";
-import { createRowForTest } from "../testutils/write";
+} from "../testutils/builder.js";
+import { createRowForTest } from "../testutils/write.js";
 import {
   AssocEdge,
   AssocEdgeConstructor,
   loadCustomEdges,
   loadEdges,
   loadRawEdgeCountX,
-} from "../core/ent";
+} from "../core/ent.js";
 import {
   EdgeWithDeletedAt,
   testEdgeGlobalSchema,
-} from "../testutils/test_edge_global_schema";
-import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
-import { toDBColumnOrTable } from "../names/names";
+} from "../testutils/test_edge_global_schema.js";
+import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema.js";
+import { toDBColumnOrTable } from "../names/names.js";
 
 const UserSchema = getBuilderSchemaFromFields(
   {

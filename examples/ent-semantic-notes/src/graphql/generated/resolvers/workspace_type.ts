@@ -20,14 +20,14 @@ import {
   WorkspaceToNoteChunksQuery,
   WorkspaceToNotesQuery,
   WorkspaceToTagsQuery,
-} from "../../../ent";
+} from "../../../ent/index.js";
 import {
   UserType,
   WorkspaceToMembersConnectionType,
   WorkspaceToNoteChunksConnectionType,
   WorkspaceToNotesConnectionType,
   WorkspaceToTagsConnectionType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const WorkspaceType = new GraphQLObjectType({
   name: "Workspace",

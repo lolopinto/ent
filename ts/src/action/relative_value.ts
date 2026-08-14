@@ -5,7 +5,7 @@ import {
   Modulo,
   Multiply,
   Subtract,
-} from "../core/clause";
+} from "../core/clause.js";
 
 export interface RelativeFieldValue<T = BigInt | number> {
   delta: T;

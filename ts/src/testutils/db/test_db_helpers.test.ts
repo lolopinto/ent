@@ -3,9 +3,9 @@ import {
   getBuilderSchemaFromFields,
   getSchemaName,
   getTableName,
-} from "../builder";
-import { getSchemaTable } from "./temp_db";
-import { Dialect } from "../../core/db";
+} from "../builder.js";
+import { getSchemaTable } from "./temp_db.js";
+import { Dialect } from "../../core/db.js";
 
 class Account extends BaseEnt {
   accountID: string;

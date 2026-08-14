@@ -9,15 +9,15 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { AuthResolver } from "../../mutations/auth";
-import { UserAuthJWTLogin } from "../../mutations/auth_types";
+import { AuthResolver } from "../../mutations/auth.js";
+import { UserAuthJWTLogin } from "../../mutations/auth_types.js";
 
 interface UserAuthJWT2Args {
   emailAddress: string;

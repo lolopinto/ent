@@ -31,6 +31,7 @@ type Imports struct {
 type Config interface {
 	GetAbsPathToRoot() string
 	ShouldUseRelativePaths() bool
+	ShouldAddImportExtensions() bool
 	DebugMode() bool
 }
 

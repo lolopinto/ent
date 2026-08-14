@@ -5,10 +5,10 @@ import {
   expectQueryFromRoot,
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
-import schema from "../generated/schema";
-import CreateUserAction from "../../ent/user/actions/create_user_action";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+import schema from "../generated/schema.js";
+import CreateUserAction from "../../ent/user/actions/create_user_action.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
 
 afterEach(() => {
   clearAuthHandlers();

@@ -21,10 +21,10 @@ import {
   Guest,
   GuestData,
   GuestGroup,
-} from "src/ent/";
-import { guestLoaderInfo } from "src/ent/generated/loaders";
-import { EdgeType, GuestTag, NodeType } from "src/ent/generated/types";
-import schema from "src/schema/guest_schema";
+} from "../../../index.js";
+import { guestLoaderInfo } from "../../loaders.js";
+import { EdgeType, GuestTag, NodeType } from "../../types.js";
+import schema from "../../../../schema/guest_schema.js";
 
 export interface GuestInput {
   addressId?: ID | null | Builder<Address, Viewer>;

@@ -1,11 +1,11 @@
 import { DateTime } from "luxon";
 import { isPromise } from "util/types";
-import { Builder } from "../action/action";
-import { Ent, WriteOperation } from "../core/base";
-import DB, { Dialect } from "../core/db";
-import { __getGlobalSchemaField } from "../core/global_schema";
-import { log } from "../core/logger";
-import { toFieldName } from "../names/names";
+import { Builder } from "../action/action.js";
+import { Ent, WriteOperation } from "../core/base.js";
+import DB, { Dialect } from "../core/db.js";
+import { __getGlobalSchemaField } from "../core/global_schema.js";
+import { log } from "../core/logger.js";
+import { toFieldName } from "../names/names.js";
 import {
   DBType,
   Field,
@@ -14,7 +14,7 @@ import {
   ForeignKey,
   PolymorphicOptions,
   Type,
-} from "./schema";
+} from "./schema.js";
 
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

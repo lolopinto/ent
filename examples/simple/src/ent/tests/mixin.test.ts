@@ -1,14 +1,14 @@
-import { User, Contact, Event, isFeedback } from "../../ent";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
-import CreateUserAction from "../user/actions/create_user_action";
+import { User, Contact, Event, isFeedback } from "../index.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import CreateUserAction from "../user/actions/create_user_action.js";
 import CreateContactAction, {
   ContactCreateInput,
-} from "../contact/actions/create_contact_action";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
-import { ContactLabel } from "../generated/types";
+} from "../contact/actions/create_contact_action.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
+import { ContactLabel } from "../generated/types.js";
 import CreateEventAction, {
   EventCreateInput,
-} from "../event/actions/create_event_action";
+} from "../event/actions/create_event_action.js";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 

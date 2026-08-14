@@ -1,8 +1,8 @@
-import { CustomClauseQuery } from "../../core/query";
-import { Data, Ent, Viewer } from "../../core/base";
-import { cursorOptions, getCursor } from "../../core/ent";
-import { EdgeQuery } from "../../core/query/query";
-import { IDViewer } from "../../core/viewer";
+import { CustomClauseQuery } from "../../core/query/index.js";
+import { Data, Ent, Viewer } from "../../core/base.js";
+import { cursorOptions, getCursor } from "../../core/ent.js";
+import { EdgeQuery } from "../../core/query/query.js";
+import { IDViewer } from "../../core/viewer.js";
 import {
   FakeContact,
   FakeUser,
@@ -11,12 +11,12 @@ import {
   UserToContactsFkeyQueryDeletedAt,
   UserToContactsFkeyQueryDeletedAtAsc,
   UserToContactsFkeyQueryDeprecated,
-} from "../../testutils/fake_data/index";
+} from "../../testutils/fake_data/index.js";
 import {
   createAllContacts,
   inputs,
-} from "../../testutils/fake_data/test_helpers";
-import { GraphQLEdgeConnection } from "./edge_connection";
+} from "../../testutils/fake_data/test_helpers.js";
+import { GraphQLEdgeConnection } from "./edge_connection.js";
 
 class TestConnection<TEdge extends Data> {
   private user: FakeUser;

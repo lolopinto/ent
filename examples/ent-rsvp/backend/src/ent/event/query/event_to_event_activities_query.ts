@@ -1,2 +1,2 @@
-import { EventToEventActivitiesQueryBase } from "src/ent/internal";
+import { EventToEventActivitiesQueryBase } from "../../internal.js";
 export class EventToEventActivitiesQuery extends EventToEventActivitiesQueryBase {}

@@ -1,18 +1,18 @@
-import { Guest, Event, User, EventActivity, GuestGroup } from "src/ent";
+import { Guest, Event, User, EventActivity, GuestGroup } from "../ent/index.js";
 import { ID, IDViewer, LoggedOutViewer } from "@snowtop/ent";
-import { randomEmail } from "src/util/random";
-import CreateUserAction from "src/ent/user/actions/create_user_action";
-import CreateEventAction from "src/ent/event/actions/create_event_action";
+import { randomEmail } from "../util/random.js";
+import CreateUserAction from "../ent/user/actions/create_user_action.js";
+import CreateEventAction from "../ent/event/actions/create_event_action.js";
 import CreateEventActivityAction, {
   EventActivityCreateInput,
-} from "src/ent/event_activity/actions/create_event_activity_action";
-import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
+} from "../ent/event_activity/actions/create_event_activity_action.js";
+import CreateGuestGroupAction from "../ent/guest_group/actions/create_guest_group_action.js";
 import CreateGuestAction, {
   GuestCreateInput,
-} from "src/ent/guest/actions/create_guest_action";
-import EventActivityAddInviteAction from "src/ent/event_activity/actions/event_activity_add_invite_action";
+} from "../ent/guest/actions/create_guest_action.js";
+import EventActivityAddInviteAction from "../ent/event_activity/actions/event_activity_add_invite_action.js";
 import { Builder } from "@snowtop/ent/action";
-import { NodeType } from "src/ent/generated/types";
+import { NodeType } from "../ent/generated/types.js";
 
 export async function createUser() {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {

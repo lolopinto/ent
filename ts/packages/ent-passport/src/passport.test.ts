@@ -28,8 +28,8 @@ import {
   GraphQLFieldConfig,
 } from "graphql";
 import { createRowForTest } from "@snowtop/ent/testutils/write";
-import { useAndVerifyAuth, useAndVerifyAuthJWT } from "./passport";
-import { PassportStrategyHandler, PassportAuthHandler } from "./passport";
+import { useAndVerifyAuth, useAndVerifyAuthJWT } from "./passport.js";
+import { PassportStrategyHandler, PassportAuthHandler } from "./passport.js";
 import { Express } from "express";
 import supertest from "supertest";
 import jwt from "jsonwebtoken";

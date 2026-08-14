@@ -6,15 +6,15 @@ import {
   expectQueryFromRoot,
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
-import schema from "../generated/schema";
-import CreateUserAction from "../../ent/user/actions/create_user_action";
-import { Event } from "../../ent/";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
+import schema from "../generated/schema.js";
+import CreateUserAction from "../../ent/user/actions/create_user_action.js";
+import { Event } from "../../ent/index.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
 import CreateEventAction, {
   EventCreateInput,
-} from "../../ent/event/actions/create_event_action";
-import CreateAddressAction from "../../ent/address/actions/create_address_action";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+} from "../../ent/event/actions/create_event_action.js";
+import CreateAddressAction from "../../ent/address/actions/create_address_action.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
 
 afterEach(() => {
   clearAuthHandlers();

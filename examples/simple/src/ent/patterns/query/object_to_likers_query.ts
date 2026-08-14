@@ -3,7 +3,7 @@
  */
 
 import { AssocEdge } from "@snowtop/ent";
-import { ObjectToLikersQueryBase } from "../../internal";
+import { ObjectToLikersQueryBase } from "../../internal.js";
 export class ObjectToLikersEdge extends AssocEdge {}
 
 export abstract class ObjectToLikersQuery extends ObjectToLikersQueryBase {}

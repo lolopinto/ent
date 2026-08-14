@@ -4,7 +4,7 @@ import {
   StringType,
   ActionOperation,
   optionalField,
-} from "@snowtop/ent/schema/";
+} from "@snowtop/ent/schema";
 
 // implicit schema
 const Address = {

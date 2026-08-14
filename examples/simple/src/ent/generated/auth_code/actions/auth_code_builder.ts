@@ -11,17 +11,17 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { AuthCode } from "../../..";
-import { authCodeLoaderInfo } from "../../loaders";
-import { NodeType } from "../../types";
-import schema from "../../../../schema/auth_code_schema";
+import { AuthCode } from "../../../index.js";
+import { authCodeLoaderInfo } from "../../loaders.js";
+import { NodeType } from "../../types.js";
+import schema from "../../../../schema/auth_code_schema.js";
 
 export interface AuthCodeInput {
   code?: string;

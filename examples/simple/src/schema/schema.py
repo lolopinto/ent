@@ -7,7 +7,7 @@ from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
 
- 
+
 sa.Table("address_hosted_events_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -19,7 +19,7 @@ sa.Table("address_hosted_events_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="address_hosted_events_edges_id1_edge_type_id2_pkey"),
     sa.Index("address_hosted_events_edges_time_idx", "time"),
 )
-   
+
 sa.Table("addresses", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -32,7 +32,7 @@ sa.Table("addresses", metadata,
     sa.Column("country", sa.Text(), nullable=False, server_default='US'),
     sa.PrimaryKeyConstraint("id", name="addresses_id_pkey"),
 )
-   
+
 sa.Table("assoc_edge_config", metadata,
     sa.Column("edge_type", postgresql.UUID(), nullable=False),
     sa.Column("edge_name", sa.Text(), nullable=False),
@@ -45,7 +45,7 @@ sa.Table("assoc_edge_config", metadata,
     sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
     sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
 )
-   
+
 sa.Table("auth_codes", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -60,7 +60,7 @@ sa.Table("auth_codes", metadata,
     sa.UniqueConstraint("email_address", "code", name="uniqueCode"),
     sa.UniqueConstraint("phone_number", "code", name="uniquePhoneCode"),
 )
-   
+
 sa.Table("comments", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -78,7 +78,7 @@ sa.Table("comments", metadata,
     sa.Index("comments_attachment_id_idx", "attachment_id"),
     sa.PrimaryKeyConstraint("id", name="comments_id_pkey"),
 )
-   
+
 sa.Table("contact_email_emails_for_contacts_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -90,7 +90,7 @@ sa.Table("contact_email_emails_for_contacts_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="contact_email_emails_for_contacts_edges_id1_edge_type_id2_pkey"),
     sa.Index("contact_email_emails_for_contacts_edges_time_idx", "time"),
 )
-   
+
 sa.Table("contact_emails", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -104,7 +104,7 @@ sa.Table("contact_emails", metadata,
     sa.PrimaryKeyConstraint("id", name="contact_emails_id_pkey"),
     sa.ForeignKeyConstraint(["owner_id"], ["users.id"], name="contact_emails_owner_id_fkey", ondelete="CASCADE"),
 )
-   
+
 sa.Table("contact_phone_numbers", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -118,7 +118,7 @@ sa.Table("contact_phone_numbers", metadata,
     sa.PrimaryKeyConstraint("id", name="contact_phone_numbers_id_pkey"),
     sa.ForeignKeyConstraint(["owner_id"], ["users.id"], name="contact_phone_numbers_owner_id_fkey", ondelete="CASCADE"),
 )
-   
+
 sa.Table("contacts", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -137,7 +137,7 @@ sa.Table("contacts", metadata,
     sa.PrimaryKeyConstraint("id", name="contacts_id_pkey"),
     sa.ForeignKeyConstraint(["user_id"], ["users.id"], name="contacts_user_id_fkey", ondelete="CASCADE"),
 )
-   
+
 sa.Table("defaults_examples", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -149,7 +149,7 @@ sa.Table("defaults_examples", metadata,
     sa.Column("payloads", postgresql.JSONB, nullable=False),
     sa.PrimaryKeyConstraint("id", name="defaults_examples_id_pkey"),
 )
-   
+
 sa.Table("event_hosts_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -161,7 +161,7 @@ sa.Table("event_hosts_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_hosts_edges_id1_edge_type_id2_pkey"),
     sa.Index("event_hosts_edges_time_idx", "time"),
 )
-   
+
 sa.Table("event_rsvps_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -173,7 +173,7 @@ sa.Table("event_rsvps_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_rsvps_edges_id1_edge_type_id2_pkey"),
     sa.Index("event_rsvps_edges_time_idx", "time"),
 )
-   
+
 sa.Table("events", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -191,7 +191,7 @@ sa.Table("events", metadata,
     sa.PrimaryKeyConstraint("id", name="events_id_pkey"),
     sa.Index("event_time_indices", "start_time", "end_time"),
 )
-   
+
 sa.Table("files", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -201,7 +201,7 @@ sa.Table("files", metadata,
     sa.Column("creator_id", postgresql.UUID(), nullable=False),
     sa.PrimaryKeyConstraint("id", name="files_id_pkey"),
 )
-   
+
 sa.Table("global_login_auth_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -213,7 +213,7 @@ sa.Table("global_login_auth_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="global_login_auth_edges_id1_edge_type_id2_pkey"),
     sa.Index("global_login_auth_edges_time_idx", "time"),
 )
-   
+
 sa.Table("holidays", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
@@ -224,7 +224,7 @@ sa.Table("holidays", metadata,
     sa.Column("date", sa.Date(), nullable=False, server_default='2020-02-01'),
     sa.PrimaryKeyConstraint("id", name="holidays_id_pkey"),
 )
-   
+
 sa.Table("hours_of_operations", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
@@ -235,7 +235,7 @@ sa.Table("hours_of_operations", metadata,
     sa.Column("close", sa.Time(timezone=True), nullable=False),
     sa.PrimaryKeyConstraint("id", name="hours_of_operations_id_pkey"),
 )
-   
+
 sa.Table("object_comments_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -247,7 +247,7 @@ sa.Table("object_comments_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="object_comments_edges_id1_edge_type_id2_pkey"),
     sa.Index("object_comments_edges_time_idx", "time"),
 )
-   
+
 sa.Table("object_likers_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -259,7 +259,7 @@ sa.Table("object_likers_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="object_likers_edges_id1_edge_type_id2_pkey"),
     sa.Index("object_likers_edges_time_idx", "time"),
 )
-   
+
 sa.Table("user_created_events_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -271,7 +271,7 @@ sa.Table("user_created_events_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_created_events_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_created_events_edges_time_idx", "time"),
 )
-   
+
 sa.Table("user_friends_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -283,7 +283,7 @@ sa.Table("user_friends_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_friends_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_friends_edges_time_idx", "time"),
 )
-   
+
 sa.Table("user_self_contact_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -296,7 +296,7 @@ sa.Table("user_self_contact_edges", metadata,
     sa.Index("user_self_contact_edges_time_idx", "time"),
     sa.UniqueConstraint("id1", "edge_type", name="user_self_contact_edges_unique_id1_edge_type"),
 )
-   
+
 sa.Table("user_statistics", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -306,7 +306,7 @@ sa.Table("user_statistics", metadata,
     sa.PrimaryKeyConstraint("id", name="user_statistics_id_pkey"),
     sa.UniqueConstraint("user_id", name="user_statistics_unique_user_id"),
 )
-   
+
 sa.Table("users", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -341,7 +341,7 @@ sa.Table("users", metadata,
     sa.UniqueConstraint("phone_number", name="users_unique_phone_number"),
     sa.Index("user_name_idx", "name_idx", postgresql_using='gin'),
 )
-  
+
 
 metadata.info["edges"] = {
   'public': {

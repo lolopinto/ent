@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -22,12 +22,12 @@ import {
   Comment,
   CommentArticleToCommentsQuery,
   CommentToPostQuery,
-} from "../../../ent";
+} from "../../../ent/index.js";
 import {
   CommentArticleToCommentsConnectionType,
   CommentToPostConnectionType,
   UserType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const CommentType = new GraphQLObjectType({
   name: "Comment",

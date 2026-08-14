@@ -14,7 +14,7 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import DeleteAddressAction from "src/ent/address/actions/delete_address_action";
+import DeleteAddressAction from "../../../../ent/address/actions/delete_address_action.js";
 
 interface customAddressDeleteInput {
   id: string;

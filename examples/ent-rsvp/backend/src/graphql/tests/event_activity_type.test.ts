@@ -9,11 +9,11 @@ import {
   createEvent,
   createGuestPlus,
   createGuests,
-} from "src/testutils";
+} from "../../testutils/index.js";
 // this needs to be the last line becasue of load order or at least after src/testutils
-import schema from "src/graphql/generated/schema";
+import schema from "../generated/schema.js";
 import { DateTime } from "luxon";
-import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
+import CreateGuestGroupAction from "../../ent/guest_group/actions/create_guest_group_action.js";
 
 test("create activity", async () => {
   const event = await createEvent();

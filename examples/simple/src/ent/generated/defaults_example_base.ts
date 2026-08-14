@@ -13,9 +13,9 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { DefaultsExampleDBData } from "./loaders";
-import type { DefaultsPayload } from "./types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { DefaultsExampleDBData } from "./loaders.js";
+import type { DefaultsPayload } from "./types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   convertList,
@@ -27,9 +27,9 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { defaultsExampleLoader, defaultsExampleLoaderInfo } from "./loaders";
-import { NodeType, convertDefaultsPayloadList } from "./types";
-import schema from "../../schema/defaults_example_schema";
+import { defaultsExampleLoader, defaultsExampleLoaderInfo } from "./loaders.js";
+import { NodeType, convertDefaultsPayloadList } from "./types.js";
+import schema from "../../schema/defaults_example_schema.js";
 
 export class DefaultsExampleBase implements Ent<ExampleViewerAlias> {
   protected readonly data: DefaultsExampleDBData;

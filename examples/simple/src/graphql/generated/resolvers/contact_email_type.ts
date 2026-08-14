@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -25,8 +25,8 @@ import {
   ContactEmailToCommentsQuery,
   ContactEmailToEmailsForContactsQuery,
   ContactEmailToLikersQuery,
-} from "../../../ent";
-import EditContactEmailAction from "../../../ent/contact_email/actions/edit_contact_email_action";
+} from "../../../ent/index.js";
+import EditContactEmailAction from "../../../ent/contact_email/actions/edit_contact_email_action.js";
 import {
   ContactEmailToCommentsConnectionType,
   ContactEmailToEmailsForContactsConnectionType,
@@ -36,7 +36,7 @@ import {
   ContactLabelType,
   ContactType,
   UserType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 class ContactEmailCanViewerDo {
   constructor(

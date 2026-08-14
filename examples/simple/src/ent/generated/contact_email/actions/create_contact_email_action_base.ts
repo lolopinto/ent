@@ -13,13 +13,13 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ContactInfoExtra } from "../../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ContactInfoExtra } from "../../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Contact, ContactEmail, User } from "../../..";
-import { ContactEmailBuilder } from "./contact_email_builder";
-import { ContactLabel } from "../../types";
+import { Contact, ContactEmail, User } from "../../../index.js";
+import { ContactEmailBuilder } from "./contact_email_builder.js";
+import { ContactLabel } from "../../types.js";
 
 export interface ContactEmailCreateInput {
   extra?: ContactInfoExtra | null;

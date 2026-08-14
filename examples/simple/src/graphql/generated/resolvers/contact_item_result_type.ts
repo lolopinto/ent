@@ -8,7 +8,7 @@ import {
   ContactDateType,
   ContactEmailType,
   ContactPhoneNumberType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const ContactItemResultType = new GraphQLUnionType({
   name: "ContactItemResult",

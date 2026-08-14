@@ -9,11 +9,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { AddressInput } from "src/ent/generated/address/actions/address_builder";
+import type { AddressInput } from "./address_builder.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Address } from "src/ent/";
-import { AddressBuilder } from "src/ent/generated/address/actions/address_builder";
+import { Address } from "../../../index.js";
+import { AddressBuilder } from "./address_builder.js";
 
 export type DeleteAddressActionTriggers = (
   | Trigger<

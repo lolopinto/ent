@@ -1,6 +1,6 @@
-import { EditGuestGroupActionBase } from "src/ent/generated/guest_group/actions/edit_guest_group_action_base";
-import type { GuestGroupEditInput } from "src/ent/generated/guest_group/actions/edit_guest_group_action_base";
-import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
+import { EditGuestGroupActionBase } from "../../generated/guest_group/actions/edit_guest_group_action_base.js";
+import type { GuestGroupEditInput } from "../../generated/guest_group/actions/edit_guest_group_action_base.js";
+import { AllowIfEventCreatorPrivacyPolicy } from "../../event/privacy/event_creator.js";
 
 export type { GuestGroupEditInput };
 

@@ -5,9 +5,9 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import { GraphQLNonNull, GraphQLObjectType, GraphQLString } from "graphql";
-import { UserOnDemandNonNullable } from "../../../ent/generated/types";
+import { UserOnDemandNonNullable } from "../../../ent/generated/types.js";
 
 export const UserOnDemandNonNullableType = new GraphQLObjectType({
   name: "UserOnDemandNonNullable",

@@ -14,8 +14,8 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { User, UserToEventsQuery } from "src/ent/";
-import { UserToEventsConnectionType } from "src/graphql/resolvers/internal";
+import { User, UserToEventsQuery } from "../../../ent/index.js";
+import { UserToEventsConnectionType } from "../../resolvers/internal.js";
 
 export const UserType = new GraphQLObjectType({
   name: "User",

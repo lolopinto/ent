@@ -9,11 +9,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { UserInput } from "./user_builder";
+import type { UserInput } from "./user_builder.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Place, User } from "../../..";
-import { UserBuilder } from "./user_builder";
+import { Place, User } from "../../../index.js";
+import { UserBuilder } from "./user_builder.js";
 
 export type UnfavoritePlaceTriggers = (
   | Trigger<User, UserBuilder<UserInput, User>, Viewer, UserInput, User>

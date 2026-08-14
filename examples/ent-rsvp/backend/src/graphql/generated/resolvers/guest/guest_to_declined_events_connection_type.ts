@@ -3,8 +3,8 @@
 import type { Viewer } from "@snowtop/ent";
 import { GraphQLObjectType } from "graphql";
 import { GraphQLConnectionType } from "@snowtop/ent/graphql";
-import { GuestToDeclinedEventsEdge } from "src/ent/";
-import { EventActivityType } from "src/graphql/resolvers/internal";
+import { GuestToDeclinedEventsEdge } from "../../../../ent/index.js";
+import { EventActivityType } from "../../../resolvers/internal.js";
 
 var connType: GraphQLConnectionType<
   GraphQLObjectType,

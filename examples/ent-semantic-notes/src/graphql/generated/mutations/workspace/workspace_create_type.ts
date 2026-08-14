@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Workspace } from "../../../../ent";
-import type { WorkspaceCreateInput } from "../../../../ent/workspace/actions/create_workspace_action";
+import type { Workspace } from "../../../../ent/index.js";
+import type { WorkspaceCreateInput } from "../../../../ent/workspace/actions/create_workspace_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,8 +17,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import CreateWorkspaceAction from "../../../../ent/workspace/actions/create_workspace_action";
-import { WorkspaceType } from "../../../resolvers";
+import CreateWorkspaceAction from "../../../../ent/workspace/actions/create_workspace_action.js";
+import { WorkspaceType } from "../../../resolvers/index.js";
 
 interface customWorkspaceCreateInput extends WorkspaceCreateInput {
   creatorId: string;

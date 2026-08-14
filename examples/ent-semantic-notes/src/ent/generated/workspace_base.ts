@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { WorkspaceDBData } from "./loaders";
+import type { WorkspaceDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -28,16 +28,16 @@ import {
   workspaceLoader,
   workspaceLoaderInfo,
   workspaceSlugLoader,
-} from "./loaders";
-import { NodeType } from "./types";
+} from "./loaders.js";
+import { NodeType } from "./types.js";
 import {
   User,
   WorkspaceToMembersQuery,
   WorkspaceToNoteChunksQuery,
   WorkspaceToNotesQuery,
   WorkspaceToTagsQuery,
-} from "../internal";
-import schema from "../../schema/workspace_schema";
+} from "../internal.js";
+import schema from "../../schema/workspace_schema.js";
 
 export class WorkspaceBase implements Ent<Viewer> {
   protected readonly data: WorkspaceDBData;

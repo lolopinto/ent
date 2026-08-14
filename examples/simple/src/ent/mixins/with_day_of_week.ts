@@ -6,8 +6,8 @@
 import {
   IWithDayOfWeekBase,
   WithDayOfWeekBaseMixin,
-} from "../generated/mixins/with_day_of_week_base";
-import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+} from "../generated/mixins/with_day_of_week_base.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 
 export interface IWithDayOfWeek<
   TViewer extends ExampleViewerAlias = ExampleViewerAlias,

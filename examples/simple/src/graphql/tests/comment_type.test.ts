@@ -3,12 +3,12 @@ import {
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { User, Comment } from "src/ent";
-import CreateCommentAction from "src/ent/comment/actions/create_comment_action";
-import CreateUserAction from "src/ent/user/actions/create_user_action";
-import { randomEmail, randomPhoneNumber } from "src/util/random";
-import { ExampleViewer, LoggedOutExampleViewer } from "src/viewer/viewer";
-import schema from "../generated/schema";
+import { User, Comment } from "../../ent/index.js";
+import CreateCommentAction from "../../ent/comment/actions/create_comment_action.js";
+import CreateUserAction from "../../ent/user/actions/create_user_action.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import { ExampleViewer, LoggedOutExampleViewer } from "../../viewer/viewer.js";
+import schema from "../generated/schema.js";
 
 const createUser = async () => {
   return CreateUserAction.create(new LoggedOutExampleViewer(), {

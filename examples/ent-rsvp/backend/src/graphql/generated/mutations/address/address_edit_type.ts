@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Address } from "src/ent/";
-import type { AddressEditInput } from "src/ent/address/actions/edit_address_action";
+import type { Address } from "../../../../ent/index.js";
+import type { AddressEditInput } from "../../../../ent/address/actions/edit_address_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -20,8 +20,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import EditAddressAction from "src/ent/address/actions/edit_address_action";
-import { AddressType } from "src/graphql/resolvers/";
+import EditAddressAction from "../../../../ent/address/actions/edit_address_action.js";
+import { AddressType } from "../../../resolvers/index.js";
 
 interface customAddressEditInput extends AddressEditInput {
   id: string;

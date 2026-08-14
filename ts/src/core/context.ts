@@ -1,11 +1,17 @@
 import { IncomingMessage, ServerResponse } from "http";
-import { Data, Loader, LoaderWithLoadMany, QueryOptions, Viewer } from "./base";
+import {
+  Data,
+  Loader,
+  LoaderWithLoadMany,
+  QueryOptions,
+  Viewer,
+} from "./base.js";
 
-import { Context } from "./base";
-import { log } from "./logger";
-import { stableStringify } from "./cache_utils";
-import { getOnQueryCacheHit } from "./metrics";
-import { getOrderByKey, getSelectFieldsKey } from "./query_impl";
+import { Context } from "./base.js";
+import { log } from "./logger.js";
+import { stableStringify } from "./cache_utils.js";
+import { getOnQueryCacheHit } from "./metrics.js";
+import { getOrderByKey, getSelectFieldsKey } from "./query_impl.js";
 
 const DEFAULT_MAX_DISCARDED_LOADERS = 1000;
 let maxDiscardedLoaders = DEFAULT_MAX_DISCARDED_LOADERS;

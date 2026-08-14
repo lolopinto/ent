@@ -4,15 +4,17 @@
       "es2018",
       "esnext.asynciterable"
     ],
+    "rootDir": "src",
     "outDir": "dist",
     "target": "es2020",
     "strictNullChecks": true,
-    "module": "commonjs",
+    "module": "NodeNext",
     "downlevelIteration": true,
     "baseUrl": ".",
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "strict": true,
+    "isolatedModules": true,
     "skipLibCheck": true,
     "paths": {
       "ent/*": [
@@ -20,6 +22,12 @@
       ],
       "src/*": [
         "./src/*"
+      ],
+      "graphql-helix": [
+        "./node_modules/graphql-helix/dist/index.d.ts"
+      ],
+      "dotenv": [
+        "./node_modules/dotenv/types/index.d.ts"
       ],
       "*": [
         "*"

@@ -1,7 +1,10 @@
-import { CreateGuestActionBase } from "src/ent/generated/guest/actions/create_guest_action_base";
-import type { GuestCreateInput, CreateGuestActionTriggers } from "src/ent/generated/guest/actions/create_guest_action_base";
-import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
-import CreateAuthCodeAction from "src/ent/auth_code/actions/create_auth_code_action";
+import { CreateGuestActionBase } from "../../generated/guest/actions/create_guest_action_base.js";
+import type {
+  GuestCreateInput,
+  CreateGuestActionTriggers,
+} from "../../generated/guest/actions/create_guest_action_base.js";
+import { AllowIfEventCreatorPrivacyPolicy } from "../../event/privacy/event_creator.js";
+import CreateAuthCodeAction from "../../auth_code/actions/create_auth_code_action.js";
 
 export type { GuestCreateInput };
 

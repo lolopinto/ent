@@ -1,11 +1,11 @@
 import { ID } from "@snowtop/ent";
 import { expectMutation } from "@snowtop/ent-graphql-tests";
-import schema from "../generated/schema";
+import schema from "../generated/schema.js";
 import { DateTime } from "luxon";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import { Holiday } from "src/ent";
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
-import { DayOfWeek, DayOfWeekAlt } from "../../ent/generated/types";
+import { Holiday } from "../../ent/index.js";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
+import { DayOfWeek, DayOfWeekAlt } from "../../ent/generated/types.js";
 
 test("create and edit holiday", async () => {
   let id: ID;

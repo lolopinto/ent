@@ -1,5 +1,3 @@
-"use strict";
-
 function coerceValue(value) {
   if (value === "true") {
     return true;
@@ -22,7 +20,7 @@ function setOption(result, key, value) {
   }
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const result = { _: [] };
   const args = argv || process.argv.slice(2);
 
@@ -86,5 +84,3 @@ function parseArgs(argv) {
 
   return result;
 }
-
-module.exports = { parseArgs };

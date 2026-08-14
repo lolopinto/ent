@@ -2,8 +2,8 @@
  * Copyright whaa whaa
  */
 
-import { ExampleViewer } from "src/viewer/viewer";
-import { User, UserToContactsQueryBase } from "../../internal";
+import { ExampleViewer } from "../../../viewer/viewer.js";
+import { User, UserToContactsQueryBase } from "../../internal.js";
 import { ID } from "@snowtop/ent";
 
 export class UserToContactsQuery extends UserToContactsQueryBase {

@@ -25,7 +25,7 @@ import { EmailType } from "@snowtop/ent-email";
 import { PasswordType } from "@snowtop/ent-password";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
 import { StringListType } from "@snowtop/ent/schema/field";
-import Feedback from "./patterns/feedback";
+import Feedback from "./patterns/feedback.js";
 import {
   AllowIfViewerPrivacyPolicy,
   AlwaysDenyPrivacyPolicy,

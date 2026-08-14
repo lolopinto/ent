@@ -1,8 +1,8 @@
 import type { Readable } from "stream";
 import type { GraphQLScalarType } from "graphql";
 
-import GraphQLUploadImport = require("graphql-upload/GraphQLUpload.js");
-import graphqlUploadExpressImport = require("graphql-upload/graphqlUploadExpress.js");
+import GraphQLUploadImport from "graphql-upload/GraphQLUpload.js";
+import graphqlUploadExpressImport from "graphql-upload/graphqlUploadExpress.js";
 
 export interface FileUpload {
   filename: string;

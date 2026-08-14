@@ -11,17 +11,17 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Holiday } from "../../..";
-import { holidayLoaderInfo } from "../../loaders";
-import { DayOfWeek, DayOfWeekAlt, NodeType } from "../../types";
-import schema from "../../../../schema/holiday_schema";
+import { Holiday } from "../../../index.js";
+import { holidayLoaderInfo } from "../../loaders.js";
+import { DayOfWeek, DayOfWeekAlt, NodeType } from "../../types.js";
+import schema from "../../../../schema/holiday_schema.js";
 
 export interface HolidayInput {
   dayOfWeek?: DayOfWeek;

@@ -10,8 +10,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { NoteChunk } from "../../../ent";
-import { NoteType, WorkspaceType } from "../../resolvers/internal";
+import { NoteChunk } from "../../../ent/index.js";
+import { NoteType, WorkspaceType } from "../../resolvers/internal.js";
 
 export const NoteChunkType = new GraphQLObjectType({
   name: "NoteChunk",

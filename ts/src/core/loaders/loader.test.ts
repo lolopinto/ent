@@ -1,4 +1,4 @@
-import { BoundedCacheMap } from "./loader";
+import { BoundedCacheMap } from "./loader.js";
 
 describe("BoundedCacheMap", () => {
   it("evicts the oldest entry when max size is exceeded", () => {

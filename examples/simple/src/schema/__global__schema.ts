@@ -11,7 +11,7 @@ import {
   StringType,
   TimestampType,
   UUIDListType,
-} from "@snowtop/ent/schema/";
+} from "@snowtop/ent/schema";
 
 const glo: GlobalSchema = {
   edges: [

@@ -12,12 +12,12 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ContactInput } from "./contact_builder";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ContactInput } from "./contact_builder.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Contact } from "../../..";
-import { ContactBuilder } from "./contact_builder";
+import { Contact } from "../../../index.js";
+import { ContactBuilder } from "./contact_builder.js";
 
 export type DeleteContactActionTriggers = (
   | Trigger<

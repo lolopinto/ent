@@ -13,8 +13,8 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { HoursOfOperationDBData } from "./loaders";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+import type { HoursOfOperationDBData } from "./loaders.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -25,10 +25,13 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { hoursOfOperationLoader, hoursOfOperationLoaderInfo } from "./loaders";
-import { NodeType } from "./types";
-import { IWithDayOfWeek, WithDayOfWeekMixin } from "../internal";
-import schema from "../../schema/hours_of_operation_schema";
+import {
+  hoursOfOperationLoader,
+  hoursOfOperationLoaderInfo,
+} from "./loaders.js";
+import { NodeType } from "./types.js";
+import { IWithDayOfWeek, WithDayOfWeekMixin } from "../internal.js";
+import schema from "../../schema/hours_of_operation_schema.js";
 
 export class HoursOfOperationBase
   extends WithDayOfWeekMixin(class {} as new (...args: any[]) => IWithDayOfWeek)

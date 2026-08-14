@@ -9,7 +9,7 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -19,10 +19,10 @@ import {
 } from "graphql";
 import { applyPrivacyPolicy } from "@snowtop/ent";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import CreateContactAction from "../../../ent/contact/actions/create_contact_action";
-import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action";
-import { ContactInfoExtraInputType } from "../mutations/input/contact_info_extra_input_type";
-import { ContactLabelType } from "../../resolvers/internal";
+import CreateContactAction from "../../../ent/contact/actions/create_contact_action.js";
+import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action.js";
+import { ContactInfoExtraInputType } from "../mutations/input/contact_info_extra_input_type.js";
+import { ContactLabelType } from "../../resolvers/internal.js";
 
 class GlobalCanViewerDo {
   constructor(private context: RequestContext<ExampleViewerAlias>) {}

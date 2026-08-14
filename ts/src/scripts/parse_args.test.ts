@@ -1,4 +1,4 @@
-const { parseArgs } = require("./parse_args.js");
+import { parseArgs } from "./parse_args.js";
 
 describe("parseArgs", () => {
   test("parses long options, coercion, aliases, and positional args", () => {

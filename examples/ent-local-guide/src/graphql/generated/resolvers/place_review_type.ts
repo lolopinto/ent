@@ -10,8 +10,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
-import { PlaceReview } from "../../../ent";
-import { PlaceType, UserType } from "../../resolvers/internal";
+import { PlaceReview } from "../../../ent/index.js";
+import { PlaceType, UserType } from "../../resolvers/internal.js";
 
 export const PlaceReviewType = new GraphQLObjectType({
   name: "PlaceReview",

@@ -7,7 +7,7 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { User } from "../../../../ent";
+import type { User } from "../../../../ent/index.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -15,8 +15,8 @@ import {
   GraphQLObjectType,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import UnfavoritePlace from "../../../../ent/user/actions/unfavorite_place";
-import { UserType } from "../../../resolvers";
+import UnfavoritePlace from "../../../../ent/user/actions/unfavorite_place.js";
+import { UserType } from "../../../resolvers/index.js";
 
 interface customUserRemoveFavoritePlaceInput {
   id: string;

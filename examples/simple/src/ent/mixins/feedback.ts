@@ -6,8 +6,8 @@
 import {
   FeedbackBaseMixin,
   IFeedbackBase,
-} from "../generated/mixins/feedback_base";
-import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+} from "../generated/mixins/feedback_base.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 
 export interface IFeedback<
   TViewer extends ExampleViewerAlias = ExampleViewerAlias,

@@ -6,7 +6,7 @@ import {
   ContactPhoneNumber,
   ObjectToLikersEdge,
   ObjectToLikersQuery,
-} from "../../internal";
+} from "../../internal.js";
 
 export class ContactPhoneNumberToLikersEdge extends ObjectToLikersEdge {}
 

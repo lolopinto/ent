@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { User } from "../../../../ent";
-import type { UserEditInput } from "../../../../ent/user/actions/edit_user_action";
+import type { User } from "../../../../ent/index.js";
+import type { UserEditInput } from "../../../../ent/user/actions/edit_user_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,8 +17,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import EditUserAction from "../../../../ent/user/actions/edit_user_action";
-import { UserType } from "../../../resolvers";
+import EditUserAction from "../../../../ent/user/actions/edit_user_action.js";
+import { UserType } from "../../../resolvers/index.js";
 
 interface customUserEditInput extends UserEditInput {
   id: string;

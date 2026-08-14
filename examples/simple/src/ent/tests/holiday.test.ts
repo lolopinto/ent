@@ -1,7 +1,7 @@
-import { LoggedOutExampleViewer } from "src/viewer/viewer";
-import CreateHolidayAction from "../holiday/actions/create_holiday_action";
-import { DayOfWeek, DayOfWeekAlt } from "../generated/types";
-import CustomCreateHolidayAction from "../holiday/actions/custom_create_holiday_action";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
+import CreateHolidayAction from "../holiday/actions/create_holiday_action.js";
+import { DayOfWeek, DayOfWeekAlt } from "../generated/types.js";
+import CustomCreateHolidayAction from "../holiday/actions/custom_create_holiday_action.js";
 import { v1 } from "uuid";
 
 test("create", async () => {

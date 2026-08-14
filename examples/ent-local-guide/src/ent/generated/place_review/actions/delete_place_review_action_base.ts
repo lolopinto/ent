@@ -9,11 +9,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { PlaceReviewInput } from "./place_review_builder";
+import type { PlaceReviewInput } from "./place_review_builder.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { PlaceReview } from "../../..";
-import { PlaceReviewBuilder } from "./place_review_builder";
+import { PlaceReview } from "../../../index.js";
+import { PlaceReviewBuilder } from "./place_review_builder.js";
 
 export type DeletePlaceReviewActionTriggers = (
   | Trigger<

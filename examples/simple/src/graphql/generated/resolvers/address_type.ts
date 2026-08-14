@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -18,8 +18,8 @@ import {
   GraphQLNodeInterface,
   nodeIDEncoder,
 } from "@snowtop/ent/graphql";
-import { Address, AddressToHostedEventsQuery } from "../../../ent";
-import { AddressToHostedEventsConnectionType } from "../../resolvers/internal";
+import { Address, AddressToHostedEventsQuery } from "../../../ent/index.js";
+import { AddressToHostedEventsConnectionType } from "../../resolvers/internal.js";
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",

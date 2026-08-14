@@ -11,7 +11,7 @@ import type {
   Viewer,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { UserDBData } from "./loaders";
+import type { UserDBData } from "./loaders.js";
 import {
   AllowIfViewerPrivacyPolicy,
   loadCustomCount,
@@ -24,14 +24,14 @@ import {
   loadEnts,
 } from "@snowtop/ent";
 import { getFields } from "@snowtop/ent/schema";
-import { userLoader, userLoaderInfo, userSlugLoader } from "./loaders";
-import { NodeType } from "./types";
+import { userLoader, userLoaderInfo, userSlugLoader } from "./loaders.js";
+import { NodeType } from "./types.js";
 import {
   UserToCreatedPlacesQuery,
   UserToFavoritePlacesQuery,
   UserToPlaceReviewsQuery,
-} from "../internal";
-import schema from "../../schema/user_schema";
+} from "../internal.js";
+import schema from "../../schema/user_schema.js";
 
 export class UserBase implements Ent<Viewer> {
   protected readonly data: UserDBData;

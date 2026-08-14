@@ -1,10 +1,10 @@
-import { DefaultsExample, User } from "..";
-import CreateDefaultsExampleAction from "../defaults_example/actions/create_defaults_example_action";
+import { DefaultsExample, User } from "../index.js";
+import CreateDefaultsExampleAction from "../defaults_example/actions/create_defaults_example_action.js";
 import CreateUserAction, {
   UserCreateInput,
-} from "../user/actions/create_user_action";
-import { ExampleViewer, LoggedOutExampleViewer } from "../../viewer/viewer";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
+} from "../user/actions/create_user_action.js";
+import { ExampleViewer, LoggedOutExampleViewer } from "../../viewer/viewer.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
 
 const loggedOutViewer = new LoggedOutExampleViewer();
 

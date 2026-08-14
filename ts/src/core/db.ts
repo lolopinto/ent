@@ -1,20 +1,23 @@
 import * as fs from "fs";
+import { createRequire } from "node:module";
 import { load } from "js-yaml";
 import { DateTime } from "luxon";
 import pg, { Pool, PoolClient, PoolConfig } from "pg";
-import { log } from "./logger";
+import { log } from "./logger.js";
 import type {
   PostgresDriver,
   RuntimeDBExtension,
   RuntimeDevSchemaConfig,
   RuntimeMode,
-} from "./config";
-import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema";
+} from "./config.js";
+import { isDevSchemaEnabled, resolveDevSchema } from "./dev_schema.js";
 import {
   buildExtensionSearchPath,
   initializeExtensions,
   resolveExtensions,
-} from "./extensions";
+} from "./extensions.js";
+
+const require = createRequire(import.meta.url);
 
 export interface Database extends PoolConfig {
   database?: string;
@@ -489,7 +492,7 @@ export default class DB {
         });
       }
     } else {
-      let sqlite = require("better-sqlite3");
+      const sqlite: any = require("better-sqlite3");
       const dbb = sqlite(db.filePath || "");
       dbb.pragma("journal_mode = WAL");
       this.q = new Sqlite(dbb);

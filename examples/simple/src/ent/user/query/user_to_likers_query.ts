@@ -2,8 +2,8 @@
  * Copyright whaa whaa
  */
 
-import { User } from "../..";
-import { ObjectToLikersEdge, ObjectToLikersQuery } from "../../internal";
+import { User } from "../../index.js";
+import { ObjectToLikersEdge, ObjectToLikersQuery } from "../../internal.js";
 export class UserToLikersEdge extends ObjectToLikersEdge {}
 
 export class UserToLikersQuery extends ObjectToLikersQuery {

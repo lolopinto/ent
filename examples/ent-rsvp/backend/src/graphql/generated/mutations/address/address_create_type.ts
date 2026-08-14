@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { Address } from "src/ent/";
-import type { AddressCreateInput } from "src/ent/address/actions/create_address_action";
+import type { Address } from "../../../../ent/index.js";
+import type { AddressCreateInput } from "../../../../ent/address/actions/create_address_action.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -17,8 +17,8 @@ import {
   GraphQLString,
 } from "graphql";
 import { mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import CreateAddressAction from "src/ent/address/actions/create_address_action";
-import { AddressType } from "src/graphql/resolvers/";
+import CreateAddressAction from "../../../../ent/address/actions/create_address_action.js";
+import { AddressType } from "../../../resolvers/index.js";
 
 interface customAddressCreateInput extends AddressCreateInput {
   ownerId: string;

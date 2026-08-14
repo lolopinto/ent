@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -42,8 +42,8 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
-} from "../../../ent";
-import EditUserAction from "../../../ent/user/actions/edit_user_action";
+} from "../../../ent/index.js";
+import EditUserAction from "../../../ent/user/actions/edit_user_action.js";
 import {
   AuthorToCommentsConnectionType,
   CityType,
@@ -76,7 +76,7 @@ import {
   UserToLikersConnectionType,
   UserToLikesConnectionType,
   UserToMaybeEventsConnectionType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 class UserCanViewerDo {
   constructor(

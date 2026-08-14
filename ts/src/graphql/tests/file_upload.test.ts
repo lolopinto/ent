@@ -10,8 +10,8 @@ import {
   GraphQLBoolean,
   GraphQLList,
 } from "graphql";
-import { GraphQLUpload, graphqlUploadExpress } from "../upload";
-import { expectMutation } from "../../testutils/ent-graphql-tests";
+import { GraphQLUpload, graphqlUploadExpress } from "../upload.js";
+import { expectMutation } from "../../testutils/ent-graphql-tests/index.js";
 
 const fileContents = ["col1,col2", "data1,data2"].join("\n");
 const tempFiles: string[] = [];

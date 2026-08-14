@@ -1,22 +1,22 @@
-import { TempDB } from "../../testutils/db/temp_db";
+import { TempDB } from "../../testutils/db/temp_db.js";
 import {
   createTag,
   FakeTag,
   FakeUser,
   UserToTagsFkeyQuery,
   UserToTagsFkeyQueryAsc,
-} from "../../testutils/fake_data";
+} from "../../testutils/fake_data/index.js";
 import {
   createTestUser,
   setupTempDB,
-} from "../../testutils/fake_data/test_helpers";
-import { MockLogs } from "../../testutils/mock_log";
-import { Viewer } from "../base";
-import { And, AndOptional, Eq, Greater, Less, NotEq, Or } from "../clause";
-import { getDefaultLimit } from "../ent";
-import { setLogLevels } from "../logger";
-import { buildQuery } from "../query_impl";
-import { EdgeQuery } from "./query";
+} from "../../testutils/fake_data/test_helpers.js";
+import { MockLogs } from "../../testutils/mock_log.js";
+import { Viewer } from "../base.js";
+import { And, AndOptional, Eq, Greater, Less, NotEq, Or } from "../clause.js";
+import { getDefaultLimit } from "../ent.js";
+import { setLogLevels } from "../logger.js";
+import { buildQuery } from "../query_impl.js";
+import { EdgeQuery } from "./query.js";
 
 let tdb: TempDB;
 let ml = new MockLogs();

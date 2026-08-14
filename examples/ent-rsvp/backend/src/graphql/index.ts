@@ -15,8 +15,8 @@ import * as Tracing from "@sentry/tracing";
 import { config } from "dotenv";
 import { DB, loadConfig } from "@snowtop/ent";
 // this line fixes the issue by loading ent first but we need to do that consistently everywhere
-import schema from "./generated/schema";
-import { OurContext } from "src/context/context";
+import schema from "./generated/schema.js";
+import { OurContext } from "../context/context.js";
 
 // load env
 config();

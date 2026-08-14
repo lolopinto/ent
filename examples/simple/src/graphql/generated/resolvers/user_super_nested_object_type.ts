@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfigMap } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLBoolean,
   GraphQLFloat,
@@ -25,14 +25,14 @@ import {
   UserNestedNestedObject,
   UserNestedObject,
   UserSuperNestedObject,
-} from "../../../ent/generated/types";
+} from "../../../ent/generated/types.js";
 import {
   CatBreedType,
   DogBreedGroupType,
   DogBreedType,
   RabbitBreedType,
   ResponseTypeType,
-} from "../../resolvers/internal";
+} from "../../resolvers/internal.js";
 
 const UserNestedObjectType = new GraphQLObjectType({
   name: "UserNestedObject",

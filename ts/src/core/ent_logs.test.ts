@@ -2,7 +2,7 @@ import {
   createRowForTest,
   editRowForTest,
   deleteRowsForTest,
-} from "../testutils/write";
+} from "../testutils/write.js";
 import {
   loadRow,
   loadRows,
@@ -12,28 +12,28 @@ import {
   loadEnts,
   getEntKey,
   loadEntX,
-} from "./ent";
-import { clearLogLevels, setLogLevels } from "./logger";
-import * as clause from "./clause";
-import { LoggedOutViewer } from "./viewer";
-import { User } from "../testutils/builder";
-import { TestContext } from "../testutils/context/test_context";
-import { MockLogs } from "../testutils/mock_log";
-import { ObjectLoaderFactory } from "./loaders";
+} from "./ent.js";
+import { clearLogLevels, setLogLevels } from "./logger.js";
+import * as clause from "./clause.js";
+import { LoggedOutViewer } from "./viewer.js";
+import { User } from "../testutils/builder.js";
+import { TestContext } from "../testutils/context/test_context.js";
+import { MockLogs } from "../testutils/mock_log.js";
+import { ObjectLoaderFactory } from "./loaders/index.js";
 import {
   EditRowOptions,
   LoadEntOptions,
   LoadRowOptions,
   LoadRowsOptions,
-} from "./base";
+} from "./base.js";
 import {
   integer,
   table,
   text,
   setupSqlite,
   setupPostgres,
-} from "../testutils/db/temp_db";
-import { buildQuery } from "./query_impl";
+} from "../testutils/db/temp_db.js";
+import { buildQuery } from "./query_impl.js";
 
 const ml = new MockLogs();
 beforeAll(() => {

@@ -1,5 +1,5 @@
-import { EditEventActivityActionBase } from "src/ent/generated/event_activity/actions/edit_event_activity_action_base";
-import type { EventActivityEditInput } from "src/ent/generated/event_activity/actions/edit_event_activity_action_base";
+import { EditEventActivityActionBase } from "../../generated/event_activity/actions/edit_event_activity_action_base.js";
+import type { EventActivityEditInput } from "../../generated/event_activity/actions/edit_event_activity_action_base.js";
 
 export type { EventActivityEditInput };
 

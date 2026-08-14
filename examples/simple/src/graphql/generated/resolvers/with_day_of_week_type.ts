@@ -4,7 +4,7 @@
  */
 
 import { GraphQLUnionType } from "graphql";
-import { HolidayType, HoursOfOperationType } from "../../resolvers/internal";
+import { HolidayType, HoursOfOperationType } from "../../resolvers/internal.js";
 
 export const WithDayOfWeekType = new GraphQLUnionType({
   name: "WithDayOfWeek",

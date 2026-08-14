@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Holiday } from "../../../../ent";
-import type { HolidayCreateInput } from "../../../../ent/holiday/actions/create_holiday_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Holiday } from "../../../../ent/index.js";
+import type { HolidayCreateInput } from "../../../../ent/holiday/actions/create_holiday_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLInputObjectType,
   GraphQLNonNull,
@@ -21,12 +21,12 @@ import {
 } from "graphql";
 import { GraphQLJSON } from "graphql-type-json";
 import { GraphQLDate } from "@snowtop/ent/graphql";
-import CreateHolidayAction from "../../../../ent/holiday/actions/create_holiday_action";
+import CreateHolidayAction from "../../../../ent/holiday/actions/create_holiday_action.js";
 import {
   DayOfWeekAltType,
   DayOfWeekType,
   HolidayType,
-} from "../../../resolvers";
+} from "../../../resolvers/index.js";
 
 interface HolidayCreatePayload {
   holiday: Holiday;

@@ -1,7 +1,7 @@
 import { Express } from "express";
 import supertest from "supertest";
 import { encodeGQLID } from "@snowtop/ent/graphql";
-import schema from "../generated/schema";
+import schema from "../generated/schema.js";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import {
   queryRootConfig,
@@ -11,10 +11,10 @@ import {
 import { PassportAuthHandler } from "@snowtop/ent-passport";
 import CreateUserAction, {
   UserCreateInput,
-} from "../../ent/user/actions/create_user_action";
-import { randomEmail, random, randomPhoneNumber } from "../../util/random";
-import { User } from "../../ent/";
-import { LoggedOutExampleViewer } from "../../viewer/viewer";
+} from "../../ent/user/actions/create_user_action.js";
+import { randomEmail, random, randomPhoneNumber } from "../../util/random.js";
+import { User } from "../../ent/index.js";
+import { LoggedOutExampleViewer } from "../../viewer/viewer.js";
 
 afterEach(() => {
   clearAuthHandlers();
@@ -81,16 +81,14 @@ test("right credentials", async () => {
     password: pw,
   });
 
-  let st: supertest.SuperTest<supertest.Test>;
+  let st: supertest.Agent;
 
   st = await expectMutation(
     {
       // pass a function that takes a server that keeps track of cookies etc
       // and use that for this request
       test: (app: Express) => {
-        return supertest.agent(
-          app,
-        ) as unknown as supertest.SuperTest<supertest.Test>;
+        return supertest.agent(app);
       },
       init: PassportAuthHandler.testInitSessionBasedFunction("secret", {
         loadOptions: User.loaderOptions(),

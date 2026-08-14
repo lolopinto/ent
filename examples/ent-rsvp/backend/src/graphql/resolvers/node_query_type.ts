@@ -11,8 +11,8 @@ import {
   registerResolver,
   resolveID,
 } from "@snowtop/ent/graphql";
-import { NodeType } from "src/ent/generated/types";
-import { loadEntByType } from "src/ent/generated/loadAny";
+import { NodeType } from "../../ent/generated/types.js";
+import { loadEntByType } from "../../ent/generated/loadAny.js";
 
 interface NodeQueryArgs {
   id: string;

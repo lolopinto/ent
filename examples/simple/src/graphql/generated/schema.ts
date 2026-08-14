@@ -7,189 +7,189 @@ import { GraphQLSchema } from "graphql";
 import {
   AddressCreateInputType,
   AddressCreatePayloadType,
-} from "./mutations/address/address_create_type";
+} from "./mutations/address/address_create_type.js";
 import {
   CommentCreateInputType,
   CommentCreatePayloadType,
-} from "./mutations/comment/comment_create_type";
+} from "./mutations/comment/comment_create_type.js";
 import {
   CommentEditInputType,
   CommentEditPayloadType,
-} from "./mutations/comment/comment_edit_type";
+} from "./mutations/comment/comment_edit_type.js";
 import {
   ContactCreateInputType,
   ContactCreatePayloadType,
   EmailContactCreateInput,
   PhoneNumberContactCreateInput,
-} from "./mutations/contact/contact_create_type";
+} from "./mutations/contact/contact_create_type.js";
 import {
   ContactDeleteInputType,
   ContactDeletePayloadType,
-} from "./mutations/contact/contact_delete_type";
+} from "./mutations/contact/contact_delete_type.js";
 import {
   ContactEditInputType,
   ContactEditPayloadType,
   EmailContactEditInput,
-} from "./mutations/contact/contact_edit_type";
+} from "./mutations/contact/contact_edit_type.js";
 import {
   ContactEmailCreateInputType,
   ContactEmailCreatePayloadType,
-} from "./mutations/contact_email/contact_email_create_type";
+} from "./mutations/contact_email/contact_email_create_type.js";
 import {
   ContactEmailDeleteInputType,
   ContactEmailDeletePayloadType,
-} from "./mutations/contact_email/contact_email_delete_type";
+} from "./mutations/contact_email/contact_email_delete_type.js";
 import {
   ContactEmailEditInputType,
   ContactEmailEditPayloadType,
-} from "./mutations/contact_email/contact_email_edit_type";
+} from "./mutations/contact_email/contact_email_edit_type.js";
 import {
   ContactPhoneNumberCreateInputType,
   ContactPhoneNumberCreatePayloadType,
-} from "./mutations/contact_phone_number/contact_phone_number_create_type";
+} from "./mutations/contact_phone_number/contact_phone_number_create_type.js";
 import {
   ContactPhoneNumberDeleteInputType,
   ContactPhoneNumberDeletePayloadType,
-} from "./mutations/contact_phone_number/contact_phone_number_delete_type";
+} from "./mutations/contact_phone_number/contact_phone_number_delete_type.js";
 import {
   ContactPhoneNumberEditInputType,
   ContactPhoneNumberEditPayloadType,
-} from "./mutations/contact_phone_number/contact_phone_number_edit_type";
+} from "./mutations/contact_phone_number/contact_phone_number_edit_type.js";
 import {
   DefaultsExampleCreateInputType,
   DefaultsExampleCreatePayloadType,
-} from "./mutations/defaults_example/defaults_example_create_type";
+} from "./mutations/defaults_example/defaults_example_create_type.js";
 import {
   EventAddHostInputType,
   EventAddHostPayloadType,
-} from "./mutations/event/event_add_host_type";
+} from "./mutations/event/event_add_host_type.js";
 import {
   EventCreateInputType,
   EventCreatePayloadType,
-} from "./mutations/event/event_create_type";
+} from "./mutations/event/event_create_type.js";
 import {
   EventDeleteInputType,
   EventDeletePayloadType,
-} from "./mutations/event/event_delete_type";
+} from "./mutations/event/event_delete_type.js";
 import {
   EventEditInputType,
   EventEditPayloadType,
-} from "./mutations/event/event_edit_type";
+} from "./mutations/event/event_edit_type.js";
 import {
   EventRemoveHostInputType,
   EventRemoveHostPayloadType,
-} from "./mutations/event/event_remove_host_type";
+} from "./mutations/event/event_remove_host_type.js";
 import {
   ClearEventRsvpStatusInputType,
   ClearEventRsvpStatusPayloadType,
-} from "./mutations/event/event_rsvp_status_clear_type";
+} from "./mutations/event/event_rsvp_status_clear_type.js";
 import {
   EventRsvpStatusEditInputType,
   EventRsvpStatusEditPayloadType,
-} from "./mutations/event/event_rsvp_status_edit_type";
+} from "./mutations/event/event_rsvp_status_edit_type.js";
 import {
   FileCreateInputType,
   FileCreatePayloadType,
-} from "./mutations/file/file_create_type";
+} from "./mutations/file/file_create_type.js";
 import {
   FileDeleteInputType,
   FileDeletePayloadType,
-} from "./mutations/file/file_delete_type";
+} from "./mutations/file/file_delete_type.js";
 import {
   FileEditInputType,
   FileEditPayloadType,
-} from "./mutations/file/file_edit_type";
+} from "./mutations/file/file_edit_type.js";
 import {
   HolidayCreateInputType,
   HolidayCreatePayloadType,
-} from "./mutations/holiday/holiday_create_type";
+} from "./mutations/holiday/holiday_create_type.js";
 import {
   CustomEditHolidayInputType,
   CustomEditHolidayPayloadType,
-} from "./mutations/holiday/holiday_custom_edit_type";
+} from "./mutations/holiday/holiday_custom_edit_type.js";
 import {
   HoursOfOperationCreateInputType,
   HoursOfOperationCreatePayloadType,
-} from "./mutations/hours_of_operation/hours_of_operation_create_type";
-import { AttachmentInputType } from "./mutations/input/attachment_input_type";
-import { CommentArgInputType } from "./mutations/input/comment_arg_input_type";
-import { ContactArgInputType } from "./mutations/input/contact_arg_input_type";
-import { ContactEmailArgInputType } from "./mutations/input/contact_email_arg_input_type";
-import { ContactInfoExtraInputType } from "./mutations/input/contact_info_extra_input_type";
-import { ContactPhoneNumberArgInputType } from "./mutations/input/contact_phone_number_arg_input_type";
-import { DefaultsExampleArgInputType } from "./mutations/input/defaults_example_arg_input_type";
-import { DefaultsPayloadInputType } from "./mutations/input/defaults_payload_input_type";
-import { EventArgInputType } from "./mutations/input/event_arg_input_type";
-import { FileArgInputType } from "./mutations/input/file_arg_input_type";
-import { HolidayArgInputType } from "./mutations/input/holiday_arg_input_type";
-import { HoursOfOperationArgInputType } from "./mutations/input/hours_of_operation_arg_input_type";
-import { ImportantDatesInputType } from "./mutations/input/important_dates_input_type";
-import { UserArgInputType } from "./mutations/input/user_arg_input_type";
-import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type";
-import { UserOnDemandNonNullableInputType } from "./mutations/input/user_on_demand_non_nullable_input_type";
-import { UserOnDemandNonNullableListInputType } from "./mutations/input/user_on_demand_non_nullable_list_input_type";
-import { UserOnDemandWithPrivacyInputType } from "./mutations/input/user_on_demand_with_privacy_input_type";
-import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type";
-import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type";
-import { UserStatisticsArgInputType } from "./mutations/input/user_statistics_arg_input_type";
-import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type";
-import { EventRsvpStatusInputType } from "./mutations/input_enums_type";
-import { MutationType } from "./mutations/mutation_type";
-import { PhoneAvailableArgType } from "./mutations/phone_available_type";
+} from "./mutations/hours_of_operation/hours_of_operation_create_type.js";
+import { AttachmentInputType } from "./mutations/input/attachment_input_type.js";
+import { CommentArgInputType } from "./mutations/input/comment_arg_input_type.js";
+import { ContactArgInputType } from "./mutations/input/contact_arg_input_type.js";
+import { ContactEmailArgInputType } from "./mutations/input/contact_email_arg_input_type.js";
+import { ContactInfoExtraInputType } from "./mutations/input/contact_info_extra_input_type.js";
+import { ContactPhoneNumberArgInputType } from "./mutations/input/contact_phone_number_arg_input_type.js";
+import { DefaultsExampleArgInputType } from "./mutations/input/defaults_example_arg_input_type.js";
+import { DefaultsPayloadInputType } from "./mutations/input/defaults_payload_input_type.js";
+import { EventArgInputType } from "./mutations/input/event_arg_input_type.js";
+import { FileArgInputType } from "./mutations/input/file_arg_input_type.js";
+import { HolidayArgInputType } from "./mutations/input/holiday_arg_input_type.js";
+import { HoursOfOperationArgInputType } from "./mutations/input/hours_of_operation_arg_input_type.js";
+import { ImportantDatesInputType } from "./mutations/input/important_dates_input_type.js";
+import { UserArgInputType } from "./mutations/input/user_arg_input_type.js";
+import { UserNestedObjectListInputType } from "./mutations/input/user_nested_object_list_input_type.js";
+import { UserOnDemandNonNullableInputType } from "./mutations/input/user_on_demand_non_nullable_input_type.js";
+import { UserOnDemandNonNullableListInputType } from "./mutations/input/user_on_demand_non_nullable_list_input_type.js";
+import { UserOnDemandWithPrivacyInputType } from "./mutations/input/user_on_demand_with_privacy_input_type.js";
+import { UserPrefsDiffInputType } from "./mutations/input/user_prefs_diff_input_type.js";
+import { UserPrefsStructInputType } from "./mutations/input/user_prefs_struct_input_type.js";
+import { UserStatisticsArgInputType } from "./mutations/input/user_statistics_arg_input_type.js";
+import { UserSuperNestedObjectInputType } from "./mutations/input/user_super_nested_object_input_type.js";
+import { EventRsvpStatusInputType } from "./mutations/input_enums_type.js";
+import { MutationType } from "./mutations/mutation_type.js";
+import { PhoneAvailableArgType } from "./mutations/phone_available_type.js";
 import {
   ConfirmEditEmailAddressInputType,
   ConfirmEditEmailAddressPayloadType,
-} from "./mutations/user/confirm_email_address_edit_type";
+} from "./mutations/user/confirm_email_address_edit_type.js";
 import {
   ConfirmEditPhoneNumberInputType,
   ConfirmEditPhoneNumberPayloadType,
-} from "./mutations/user/confirm_phone_number_edit_type";
+} from "./mutations/user/confirm_phone_number_edit_type.js";
 import {
   EditEmailAddressInputType,
   EditEmailAddressPayloadType,
-} from "./mutations/user/email_address_edit_type";
+} from "./mutations/user/email_address_edit_type.js";
 import {
   EditPhoneNumberInputType,
   EditPhoneNumberPayloadType,
-} from "./mutations/user/phone_number_edit_type";
+} from "./mutations/user/phone_number_edit_type.js";
 import {
   UserCreateInputType,
   UserCreatePayloadType,
-} from "./mutations/user/user_create_type";
+} from "./mutations/user/user_create_type.js";
 import {
   DeleteUserInput2PayloadType,
   DeleteUserInput2Type,
-} from "./mutations/user/user_delete2_type";
+} from "./mutations/user/user_delete2_type.js";
 import {
   UserDeleteInputType,
   UserDeletePayloadType,
-} from "./mutations/user/user_delete_type";
+} from "./mutations/user/user_delete_type.js";
 import {
   UserEditInputType,
   UserEditPayloadType,
-} from "./mutations/user/user_edit_type";
-import { UserAuthJWTLoginType } from "./mutations/user_auth_jwt2_type";
+} from "./mutations/user/user_edit_type.js";
+import { UserAuthJWTLoginType } from "./mutations/user_auth_jwt2_type.js";
 import {
   UserAuthJWTInputType,
   UserAuthJWTPayloadType,
-} from "./mutations/user_auth_jwt_type";
+} from "./mutations/user_auth_jwt_type.js";
 import {
   UserAuthInputType,
   UserAuthPayloadType,
-} from "./mutations/user_auth_type";
+} from "./mutations/user_auth_type.js";
 import {
   UserStatisticsCreateInputType,
   UserStatisticsCreatePayloadType,
-} from "./mutations/user_statistics/user_statistics_create_type";
+} from "./mutations/user_statistics/user_statistics_create_type.js";
 import {
   UserStatisticsDeleteInputType,
   UserStatisticsDeletePayloadType,
-} from "./mutations/user_statistics/user_statistics_delete_type";
+} from "./mutations/user_statistics/user_statistics_delete_type.js";
 import {
   UserStatisticsEditInputType,
   UserStatisticsEditPayloadType,
-} from "./mutations/user_statistics/user_statistics_edit_type";
-import { QueryType } from "./resolvers/query_type";
+} from "./mutations/user_statistics/user_statistics_edit_type.js";
+import { QueryType } from "./resolvers/query_type.js";
 import {
   AddressToHostedEventsConnectionType,
   AddressType,
@@ -303,8 +303,8 @@ import {
   UserType,
   ViewerType,
   WithDayOfWeekType,
-} from "../resolvers";
-import { SubscriptionType } from "../resolvers/subscription_type";
+} from "../resolvers/index.js";
+import { SubscriptionType } from "../resolvers/subscription_type.js";
 
 export default new GraphQLSchema({
   query: QueryType,

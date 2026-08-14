@@ -4,10 +4,10 @@
  */
 
 import type { Data, Ent, ID, Viewer } from "@snowtop/ent";
-import type { ContactInfoExtra } from "../types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
-import { convertNullableContactInfoExtra } from "../types";
-import { Contact } from "../../internal";
+import type { ContactInfoExtra } from "../types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
+import { convertNullableContactInfoExtra } from "../types.js";
+import { Contact } from "../../internal.js";
 
 export interface IContactInfoBase<
   TViewer extends ExampleViewerAlias = ExampleViewerAlias,

@@ -1,7 +1,7 @@
-import { ActionOperation, EntSchema, EnumType } from "@snowtop/ent/schema/";
+import { ActionOperation, EntSchema, EnumType } from "@snowtop/ent/schema";
 import { PhoneNumberType } from "@snowtop/ent-phonenumber";
-import ContactInfo from "./patterns/contact_info";
-import Feedback from "./patterns/feedback";
+import ContactInfo from "./patterns/contact_info.js";
+import Feedback from "./patterns/feedback.js";
 
 const ContactPhoneNumberSchema = new EntSchema({
   patterns: [new ContactInfo(), new Feedback()],

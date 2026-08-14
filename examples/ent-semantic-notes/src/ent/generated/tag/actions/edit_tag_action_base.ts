@@ -11,8 +11,8 @@ import type {
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Tag } from "../../..";
-import { TagBuilder } from "./tag_builder";
+import { Tag } from "../../../index.js";
+import { TagBuilder } from "./tag_builder.js";
 
 export interface TagEditInput {
   name?: string;

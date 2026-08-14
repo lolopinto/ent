@@ -3,7 +3,7 @@
  */
 
 import { AssocEdge } from "@snowtop/ent";
-import { UserToLikesQueryBase } from "../../internal";
+import { UserToLikesQueryBase } from "../../internal.js";
 import { gqlField } from "@snowtop/ent/graphql";
 
 export class UserToLikesEdge extends AssocEdge {

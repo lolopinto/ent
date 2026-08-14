@@ -3,8 +3,8 @@
  */
 
 import { AllowIfEntIsVisiblePolicy, PrivacyPolicy } from "@snowtop/ent";
-import { Contact } from ".";
-import { ContactEmailBase } from "./internal";
+import { Contact } from "./index.js";
+import { ContactEmailBase } from "./internal.js";
 
 export class ContactEmail extends ContactEmailBase {
   getPrivacyPolicy(): PrivacyPolicy<this> {

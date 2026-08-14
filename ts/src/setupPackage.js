@@ -1,6 +1,6 @@
-const fs = require("fs");
-const path = require("path");
-const { parseArgs } = require("./scripts/parse_args");
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { parseArgs } from "./scripts/parse_args.js";
 
 // root is "ts/"
 const root = path.resolve();

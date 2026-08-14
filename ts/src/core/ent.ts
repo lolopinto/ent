@@ -21,34 +21,34 @@ import {
   SelectCustomDataOptions,
   SelectDataOptions,
   Viewer,
-} from "./base";
+} from "./base.js";
 import DB, {
   Dialect,
   QueryResult,
   QueryResultRow,
   Queryer,
   SyncQueryer,
-} from "./db";
+} from "./db.js";
 
-import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
-import { mapWithConcurrency } from "./async_utils";
+import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy.js";
+import { mapWithConcurrency } from "./async_utils.js";
 
 import DataLoader from "dataloader";
-import * as clause from "./clause";
-import { __getGlobalSchema } from "./global_schema";
+import * as clause from "./clause.js";
+import { __getGlobalSchema } from "./global_schema.js";
 import {
   createBoundedCacheMap,
   createLoaderCacheMap,
   InstrumentedDataLoader,
   getLoaderMaxBatchSize,
-} from "./loaders/loader";
-import { log, logEnabled, logTrace } from "./logger";
+} from "./loaders/loader.js";
+import { log, logEnabled, logTrace } from "./logger.js";
 import {
   OrderBy,
   buildQueryData,
   getOrderByPhrase,
   orderByHasExpressions,
-} from "./query_impl";
+} from "./query_impl.js";
 
 class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
   private m = new Map();
@@ -1328,7 +1328,6 @@ function encodeCursorPayload(json: string): string {
 export function decodeCursorPayload(encoded: string): string {
   return Buffer.from(encoded, "base64").toString("utf8");
 }
-
 
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {

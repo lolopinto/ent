@@ -18,13 +18,13 @@ import {
   GuestGroup,
   GuestGroupToGuestsQuery,
   GuestGroupToInvitedEventsQuery,
-} from "src/ent/";
+} from "../../../ent/index.js";
 import {
   EventType,
   GuestGroupToGuestsConnectionType,
   GuestGroupToInvitedEventsConnectionType,
   GuestTagType,
-} from "src/graphql/resolvers/internal";
+} from "../../resolvers/internal.js";
 
 export const GuestGroupType = new GraphQLObjectType({
   name: "GuestGroup",

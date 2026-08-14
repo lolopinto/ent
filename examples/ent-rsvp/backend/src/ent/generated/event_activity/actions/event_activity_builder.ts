@@ -14,10 +14,16 @@ import {
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Address, Event, EventActivity, Guest, GuestGroup } from "src/ent/";
-import { eventActivityLoaderInfo } from "src/ent/generated/loaders";
-import { EdgeType, NodeType } from "src/ent/generated/types";
-import schema from "src/schema/event_activity_schema";
+import {
+  Address,
+  Event,
+  EventActivity,
+  Guest,
+  GuestGroup,
+} from "../../../index.js";
+import { eventActivityLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/event_activity_schema.js";
 
 export interface EventActivityInput {
   addressId?: ID | null | Builder<Address, Viewer>;

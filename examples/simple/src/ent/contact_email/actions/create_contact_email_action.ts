@@ -2,12 +2,16 @@
  * Copyright whaa whaa
  */
 
-import { AllowIfConditionAppliesRule, AllowIfEntIsVisibleRule, AlwaysDenyRule } from "@snowtop/ent";
+import {
+  AllowIfConditionAppliesRule,
+  AllowIfEntIsVisibleRule,
+  AlwaysDenyRule,
+} from "@snowtop/ent";
 import type { PrivacyPolicy } from "@snowtop/ent";
 import { AllowIfBuilder } from "@snowtop/ent/action";
-import { Contact } from "../../../ent";
-import { CreateContactEmailActionBase } from "../../generated/contact_email/actions/create_contact_email_action_base";
-import type { ContactEmailCreateInput } from "../../generated/contact_email/actions/create_contact_email_action_base";
+import { Contact } from "../../index.js";
+import { CreateContactEmailActionBase } from "../../generated/contact_email/actions/create_contact_email_action_base.js";
+import type { ContactEmailCreateInput } from "../../generated/contact_email/actions/create_contact_email_action_base.js";
 export type { ContactEmailCreateInput };
 export default class CreateContactEmailAction extends CreateContactEmailActionBase {
   getPrivacyPolicy(): PrivacyPolicy {

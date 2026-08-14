@@ -21,8 +21,8 @@ import {
   JSONType,
   JSONBTypeAsList,
   IntegerEnumType,
-} from "../../schema";
-import { getDefaultValue } from "./value";
+} from "../../schema/index.js";
+import { getDefaultValue } from "./value.js";
 
 function strField(opts?: StringOptions) {
   return StringType(opts);

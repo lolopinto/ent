@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Contact } from "../../../../ent";
-import type { ContactCreateInput } from "../../../../ent/contact/actions/create_contact_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Contact } from "../../../../ent/index.js";
+import type { ContactCreateInput } from "../../../../ent/contact/actions/create_contact_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -25,11 +25,11 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import CreateContactAction from "../../../../ent/contact/actions/create_contact_action";
-import { AttachmentInputType } from "../input/attachment_input_type";
-import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type";
-import { ImportantDatesInputType } from "../input/important_dates_input_type";
-import { ContactLabelType, ContactType } from "../../../resolvers";
+import CreateContactAction from "../../../../ent/contact/actions/create_contact_action.js";
+import { AttachmentInputType } from "../input/attachment_input_type.js";
+import { ContactInfoExtraInputType } from "../input/contact_info_extra_input_type.js";
+import { ImportantDatesInputType } from "../input/important_dates_input_type.js";
+import { ContactLabelType, ContactType } from "../../../resolvers/index.js";
 
 interface customContactCreateInput extends ContactCreateInput {
   userId: string;
@@ -139,22 +139,34 @@ export const ContactCreateType: GraphQLFieldConfig<
       lastName: input.lastName,
       userId: mustDecodeIDFromGQLID(input.userId.toString()),
       importantDates: input.importantDates,
-      attachments: input.attachments?.map((item: any) => ({
-        ...item,
-        fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
-        dupeFileId: item.dupeFileId
-          ? mustDecodeNullableIDFromGQLID(
-              item.dupeFileId?.toString() ?? item.dupeFileId,
-            )
-          : undefined,
-        creatorId: item.creatorId
-          ? mustDecodeNullableIDFromGQLID(
-              item.creatorId?.toString() ?? item.creatorId,
-            )
-          : undefined,
-      })),
-      emails: input.emails,
-      phoneNumbers: input.phoneNumbers,
+      attachments: input.attachments
+        ? input.attachments.map((item: any) => ({
+            ...item,
+            fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+            dupeFileId: item.dupeFileId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.dupeFileId?.toString() ?? item.dupeFileId,
+                )
+              : undefined,
+            creatorId: item.creatorId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.creatorId?.toString() ?? item.creatorId,
+                )
+              : undefined,
+          }))
+        : input.attachments,
+      emails: input.emails
+        ? input.emails.map((item: any) => ({
+            ...item,
+            ownerId: mustDecodeIDFromGQLID(item.ownerId.toString()),
+          }))
+        : input.emails,
+      phoneNumbers: input.phoneNumbers
+        ? input.phoneNumbers.map((item: any) => ({
+            ...item,
+            ownerId: mustDecodeIDFromGQLID(item.ownerId.toString()),
+          }))
+        : input.phoneNumbers,
     }).saveX();
     return { contact: contact };
   },

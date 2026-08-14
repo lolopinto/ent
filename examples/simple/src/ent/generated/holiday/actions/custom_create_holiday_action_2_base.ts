@@ -14,10 +14,10 @@ import {
   Validator,
   WriteOperation,
 } from "@snowtop/ent/action";
-import { Holiday } from "../../..";
-import { HolidayBuilder } from "./holiday_builder";
-import { DayOfWeek, DayOfWeekAlt } from "../../types";
-import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import { Holiday } from "../../../index.js";
+import { HolidayBuilder } from "./holiday_builder.js";
+import { DayOfWeek, DayOfWeekAlt } from "../../types.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 
 export interface CustomCreateHolidayInput2 {
   dayOfWeek: DayOfWeek;

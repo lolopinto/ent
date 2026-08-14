@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Comment } from "../../../../ent";
-import type { CommentEditInput } from "../../../../ent/comment/actions/edit_comment_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Comment } from "../../../../ent/index.js";
+import type { CommentEditInput } from "../../../../ent/comment/actions/edit_comment_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -24,8 +24,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import EditCommentAction from "../../../../ent/comment/actions/edit_comment_action";
-import { CommentType } from "../../../resolvers";
+import EditCommentAction from "../../../../ent/comment/actions/edit_comment_action.js";
+import { CommentType } from "../../../resolvers/index.js";
 
 interface customCommentEditInput extends CommentEditInput {
   id: string;

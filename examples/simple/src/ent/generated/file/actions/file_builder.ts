@@ -11,17 +11,17 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { File, User } from "../../..";
-import { fileLoaderInfo } from "../../loaders";
-import { NodeType } from "../../types";
-import schema from "../../../../schema/file_schema";
+import { File, User } from "../../../index.js";
+import { fileLoaderInfo } from "../../loaders.js";
+import { NodeType } from "../../types.js";
+import schema from "../../../../schema/file_schema.js";
 
 export interface FileInput {
   name?: string;

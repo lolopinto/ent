@@ -6,8 +6,8 @@
 import {
   ContactInfoBaseMixin,
   IContactInfoBase,
-} from "../generated/mixins/contact_info_base";
-import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+} from "../generated/mixins/contact_info_base.js";
+import { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 
 export interface IContactInfo<
   TViewer extends ExampleViewerAlias = ExampleViewerAlias,

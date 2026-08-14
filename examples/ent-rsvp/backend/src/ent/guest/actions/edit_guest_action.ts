@@ -1,7 +1,7 @@
-import { EditGuestActionBase } from "src/ent/generated/guest/actions/edit_guest_action_base";
-import type { GuestEditInput } from "src/ent/generated/guest/actions/edit_guest_action_base";
-import { AllowIfEventCreatorRule } from "src/ent/event/privacy/event_creator";
-import { AllowIfGuestInSameGuestGroupRule } from "src/ent/guest/privacy/guest_rule_privacy";
+import { EditGuestActionBase } from "../../generated/guest/actions/edit_guest_action_base.js";
+import type { GuestEditInput } from "../../generated/guest/actions/edit_guest_action_base.js";
+import { AllowIfEventCreatorRule } from "../../event/privacy/event_creator.js";
+import { AllowIfGuestInSameGuestGroupRule } from "../privacy/guest_rule_privacy.js";
 import { AlwaysDenyRule } from "@snowtop/ent";
 
 export type { GuestEditInput };

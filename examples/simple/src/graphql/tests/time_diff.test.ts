@@ -3,8 +3,8 @@ import {
   expectQueryFromRoot,
   queryRootConfig,
 } from "@snowtop/ent-graphql-tests";
-import schema from "../generated/schema";
-import { ExampleViewer } from "src/viewer/viewer";
+import schema from "../generated/schema.js";
+import { ExampleViewer } from "../../viewer/viewer.js";
 import { DateTime } from "luxon";
 
 function getConfig(

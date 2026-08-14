@@ -1,17 +1,21 @@
-import { CreateContactActionBase } from "../../generated/contact/actions/create_contact_action_base";
-import type { ContactCreateInput } from "../../generated/contact/actions/create_contact_action_base";
+import { CreateContactActionBase } from "../../generated/contact/actions/create_contact_action_base.js";
+import type { ContactCreateInput } from "../../generated/contact/actions/create_contact_action_base.js";
 
-import { Contact } from "../../";
+import { Contact } from "../../index.js";
 // TODO...
 import { EntCreationObserver } from "@snowtop/ent/testutils/fake_log";
-import { AllowIfViewerEqualsRule, AllowIfViewerRule, AlwaysDenyRule } from "@snowtop/ent";
+import {
+  AllowIfViewerEqualsRule,
+  AllowIfViewerRule,
+  AlwaysDenyRule,
+} from "@snowtop/ent";
 import type { PrivacyPolicy, Data, ID } from "@snowtop/ent";
 import { AllowIfBuilder } from "@snowtop/ent/action";
 import type { Observer, Trigger } from "@snowtop/ent/action";
-import CreateContactEmailAction from "../../../ent/contact_email/actions/create_contact_email_action";
-import { ContactBuilder } from "../../generated/contact/actions/contact_builder";
-import CreateContactPhoneNumberAction from "../../../ent/contact_phone_number/actions/create_contact_phone_number_action";
-import { ExampleViewer } from "../../../viewer/viewer";
+import CreateContactEmailAction from "../../contact_email/actions/create_contact_email_action.js";
+import { ContactBuilder } from "../../generated/contact/actions/contact_builder.js";
+import CreateContactPhoneNumberAction from "../../contact_phone_number/actions/create_contact_phone_number_action.js";
+import { ExampleViewer } from "../../../viewer/viewer.js";
 export type { ContactCreateInput };
 // we're only writing this once except with --force and packageName provided
 export default class CreateContactAction extends CreateContactActionBase {

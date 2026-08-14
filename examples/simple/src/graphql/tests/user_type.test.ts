@@ -1,4 +1,3 @@
-import { advanceBy } from "jest-date-mock";
 import { Data, DB, Viewer } from "@snowtop/ent";
 import { clearAuthHandlers } from "@snowtop/ent/auth";
 import { encodeGQLID, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
@@ -7,16 +6,16 @@ import {
   expectQueryFromRoot,
   expectMutation,
 } from "@snowtop/ent-graphql-tests";
-import schema from "../generated/schema";
+import schema from "../generated/schema.js";
 import CreateUserAction, {
   UserCreateInput,
-} from "../../ent/user/actions/create_user_action";
-import { Contact, User } from "../../ent/";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
-import EditUserAction from "../../ent/user/actions/edit_user_action";
+} from "../../ent/user/actions/create_user_action.js";
+import { Contact, User } from "../../ent/index.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import EditUserAction from "../../ent/user/actions/edit_user_action.js";
 import CreateContactAction, {
   ContactCreateInput,
-} from "../../ent/contact/actions/create_contact_action";
+} from "../../ent/contact/actions/create_contact_action.js";
 import { GraphQLObjectType } from "graphql";
 import { v1 } from "uuid";
 import {
@@ -30,12 +29,12 @@ import {
   RabbitBreed,
   ContactLabel,
   ResponseType,
-} from "../../ent/generated/types";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
-import CreateCommentAction from "../../ent/comment/actions/create_comment_action";
+} from "../../ent/generated/types.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
+import CreateCommentAction from "../../ent/comment/actions/create_comment_action.js";
 import { buildInsertQuery } from "@snowtop/ent/core/ent";
 import { getSimpleInsertAction } from "@snowtop/ent/action/experimental_action";
-import { UserBuilder } from "src/ent/generated/user/actions/user_builder";
+import { UserBuilder } from "../../ent/generated/user/actions/user_builder.js";
 import { DateTime } from "luxon";
 
 afterEach(() => {
@@ -667,11 +666,12 @@ test("load assoc connection", async () => {
   let vc = new ExampleViewer(user.id);
   let action = EditUserAction.create(vc, user, {});
   const friends = [user2, user3, user4, user5];
+  let edgeTime = Date.now();
   for (const friend of friends) {
     // add time btw adding a new friend so that it's deterministic
-    advanceBy(86400);
+    edgeTime += 86400;
     action.builder.addFriendID(friend.id, {
-      time: new Date(),
+      time: new Date(edgeTime),
     });
   }
   await action.saveX();
@@ -814,9 +814,8 @@ async function createMany(
   names: Pick<ContactCreateInput, "firstName" | "lastName">[],
 ): Promise<Contact[]> {
   let results: Contact[] = [];
+  let createdAt = Date.now();
   for (const name of names) {
-    // for deterministic sorting
-    advanceBy(86400);
     // TODO eventually a multi-create API
     let contact = await CreateContactAction.create(new ExampleViewer(user.id), {
       emails: [
@@ -830,6 +829,14 @@ async function createMany(
       lastName: name.lastName,
       userId: user.id,
     }).saveX();
+    // Keep sorting deterministic without changing the process-global clock.
+    createdAt += 86400;
+    await DB.getInstance()
+      .getPool()
+      .exec("UPDATE contacts SET created_at = $2::timestamp WHERE id = $1", [
+        contact.id,
+        new Date(createdAt),
+      ]);
     results.push(contact);
   }
 
@@ -891,10 +898,11 @@ test("likes", async () => {
     create({}),
   ]);
   const action = EditUserAction.create(user1.viewer, user1, {});
+  let edgeTime = Date.now();
   for (const liker of [user2.id, user3.id, user4.id]) {
-    advanceBy(1000);
+    edgeTime += 1000;
     action.builder.addLikerID(liker, {
-      time: new Date(),
+      time: new Date(edgeTime),
     });
   }
   // for privacy

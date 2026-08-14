@@ -11,17 +11,17 @@ import type {
   ChangesetOptions,
   OrchestratorOptions,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   Orchestrator,
   WriteOperation,
   saveBuilder,
   saveBuilderX,
 } from "@snowtop/ent/action";
-import { Address, Event } from "../../..";
-import { addressLoaderInfo } from "../../loaders";
-import { EdgeType, NodeType } from "../../types";
-import schema from "../../../../schema/address";
+import { Address, Event } from "../../../index.js";
+import { addressLoaderInfo } from "../../loaders.js";
+import { EdgeType, NodeType } from "../../types.js";
+import schema from "../../../../schema/address.js";
 
 export interface AddressInput {
   streetName?: string;

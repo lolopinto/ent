@@ -9,7 +9,7 @@ import {
   GraphQLInputObjectType,
   GraphQLNonNull,
 } from "graphql";
-import { ContactInfoSourceType } from "../../../resolvers";
+import { ContactInfoSourceType } from "../../../resolvers/index.js";
 
 export const ContactInfoExtraInputType = new GraphQLInputObjectType({
   name: "ContactInfoExtraInput",

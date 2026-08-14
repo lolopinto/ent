@@ -5,7 +5,7 @@
 
 import type { GraphQLFieldConfig, GraphQLResolveInfo } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInt,
@@ -18,10 +18,10 @@ import {
   GraphQLEdgeConnection,
   mustDecodeIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import { Contact } from "../../../ent/contact";
-import { ContactArgInputType } from "../mutations/input/contact_arg_input_type";
-import { ContactSortColumnType } from "./enums_type";
-import { RootToContactConnectionType } from "../../resolvers/internal";
+import { Contact } from "../../../ent/contact.js";
+import { ContactArgInputType } from "../mutations/input/contact_arg_input_type.js";
+import { ContactSortColumnType } from "./enums_type.js";
+import { RootToContactConnectionType } from "../../resolvers/internal.js";
 
 interface ContactConnectionArgs {
   ids: any;

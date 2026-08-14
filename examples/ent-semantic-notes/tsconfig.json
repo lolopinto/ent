@@ -1,18 +1,20 @@
 {
   "compilerOptions": {
     "lib": ["es2018", "esnext.asynciterable", "ES2020.String"],
+    "rootDir": "src",
     "outDir": "./dist",
     "target": "es2020",
     "strictNullChecks": true,
-    "module": "commonjs",
+    "module": "NodeNext",
     "downlevelIteration": true,
     "baseUrl": ".",
     "paths": {
       "@snowtop/ent": ["./node_modules/@snowtop/ent"],
       "src/*": ["src/*"],
-      "@snowtop/ent-pgvector": ["../../ts/packages/ent-pgvector/src/pgvector"]
+      "@snowtop/ent-pgvector": ["./node_modules/@snowtop/ent-pgvector"],
+      "graphql-helix": ["./node_modules/graphql-helix/dist/index.d.ts"]
     },
-    "moduleResolution": "node",
+    "moduleResolution": "NodeNext",
     "esModuleInterop": true,
     "isolatedModules": true,
     "strict": true,

@@ -1,7 +1,7 @@
-import { Address, Event } from "src/ent";
+import { Address, Event } from "../index.js";
 import { IDViewer, LoggedOutViewer } from "@snowtop/ent";
-import CreateEventAction from "../event/actions/create_event_action";
-import { createUser } from "src/testutils";
+import CreateEventAction from "../event/actions/create_event_action.js";
+import { createUser } from "../../testutils/index.js";
 
 describe("create event", () => {
   test("valid", async () => {

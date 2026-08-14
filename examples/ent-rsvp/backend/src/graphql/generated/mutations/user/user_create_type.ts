@@ -7,16 +7,16 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { User } from "src/ent/";
-import type { UserCreateInput } from "src/ent/user/actions/create_user_action";
+import type { User } from "../../../../ent/index.js";
+import type { UserCreateInput } from "../../../../ent/user/actions/create_user_action.js";
 import {
   GraphQLInputObjectType,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import CreateUserAction from "src/ent/user/actions/create_user_action";
-import { UserType } from "src/graphql/resolvers/";
+import CreateUserAction from "../../../../ent/user/actions/create_user_action.js";
+import { UserType } from "../../../resolvers/index.js";
 
 interface UserCreatePayload {
   user: User;

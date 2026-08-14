@@ -1,5 +1,5 @@
-import { ID, Ent, Viewer } from "../core/base";
-import { loadEnt } from "../core/ent";
+import { ID, Ent, Viewer } from "../core/base.js";
+import { loadEnt } from "../core/ent.js";
 import { GraphQLFieldResolver } from "graphql";
 
 interface Node {

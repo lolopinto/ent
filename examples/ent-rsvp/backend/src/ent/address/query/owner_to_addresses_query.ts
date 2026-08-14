@@ -1,2 +1,2 @@
-import { OwnerToAddressesQueryBase } from "src/ent/internal";
+import { OwnerToAddressesQueryBase } from "../../internal.js";
 export class OwnerToAddressesQuery extends OwnerToAddressesQueryBase {}

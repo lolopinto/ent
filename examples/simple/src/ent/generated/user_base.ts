@@ -13,7 +13,7 @@ import type {
   PrivacyPolicy,
 } from "@snowtop/ent";
 import type { Field } from "@snowtop/ent/schema";
-import type { UserDBData } from "./loaders";
+import type { UserDBData } from "./loaders.js";
 import type {
   UserNestedObjectList,
   UserOnDemandNonNullable,
@@ -22,8 +22,8 @@ import type {
   UserPrefsDiff,
   UserPrefsStruct,
   UserSuperNestedObject,
-} from "./types";
-import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer";
+} from "./types.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../viewer/viewer.js";
 import {
   AllowIfViewerPrivacyPolicy,
   AssocEdge,
@@ -52,7 +52,7 @@ import {
   userLoader,
   userLoaderInfo,
   userPhoneNumberLoader,
-} from "./loaders";
+} from "./loaders.js";
 import {
   EdgeType,
   NodeType,
@@ -70,7 +70,7 @@ import {
   convertNullableUserSuperNestedObject,
   convertUserOnDemandNonNullable,
   convertUserOnDemandNonNullableListList,
-} from "./types";
+} from "./types.js";
 import {
   AuthorToCommentsQuery,
   Contact,
@@ -93,13 +93,13 @@ import {
   UserToLikersQuery,
   UserToLikesQuery,
   UserToMaybeEventsQuery,
-} from "../internal";
-import schema from "../../schema/user_schema";
+} from "../internal.js";
+import schema from "../../schema/user_schema.js";
 import {
   convertOnDemandNonNullable,
   convertSuperNestedObject,
   userConvertAccountStatus,
-} from "../../util/convert_user_fields";
+} from "../../util/convert_user_fields.js";
 
 export interface UserCanViewerSee {
   accountStatus: () => Promise<boolean>;

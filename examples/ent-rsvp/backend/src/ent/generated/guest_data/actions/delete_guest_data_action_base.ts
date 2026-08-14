@@ -9,11 +9,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { GuestDataInput } from "src/ent/generated/guest_data/actions/guest_data_builder";
+import type { GuestDataInput } from "./guest_data_builder.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { GuestData } from "src/ent/";
-import { GuestDataBuilder } from "src/ent/generated/guest_data/actions/guest_data_builder";
+import { GuestData } from "../../../index.js";
+import { GuestDataBuilder } from "./guest_data_builder.js";
 
 export type DeleteGuestDataActionTriggers = (
   | Trigger<

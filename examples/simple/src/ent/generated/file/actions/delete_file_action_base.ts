@@ -12,12 +12,12 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { FileInput } from "./file_builder";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { FileInput } from "./file_builder.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { File } from "../../..";
-import { FileBuilder } from "./file_builder";
+import { File } from "../../../index.js";
+import { FileBuilder } from "./file_builder.js";
 
 export type DeleteFileActionTriggers = (
   | Trigger<

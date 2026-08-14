@@ -3,7 +3,7 @@ import {
   Data,
   DataOptions,
   CreateRowOptions,
-} from "../core/base";
+} from "../core/base.js";
 import {
   createRow,
   editRow,
@@ -11,9 +11,9 @@ import {
   createRowSync,
   editRowSync,
   deleteRowsSync,
-} from "../core/ent";
-import * as clause from "../core/clause";
-import DB, { Client, Dialect, SyncClient } from "../core/db";
+} from "../core/ent.js";
+import * as clause from "../core/clause.js";
+import DB, { Client, Dialect, SyncClient } from "../core/db.js";
 
 function isSyncClient(client: Client): client is SyncClient {
   return (client as SyncClient).execSync !== undefined;

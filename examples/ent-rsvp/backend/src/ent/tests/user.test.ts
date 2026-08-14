@@ -1,7 +1,7 @@
-import { User } from "src/ent";
+import { User } from "../index.js";
 import { LoggedOutViewer } from "@snowtop/ent";
-import CreateUserAction from "../user/actions/create_user_action";
-import { randomEmail } from "src/util/random";
+import CreateUserAction from "../user/actions/create_user_action.js";
+import { randomEmail } from "../../util/random.js";
 
 test("create user", async () => {
   const user = await CreateUserAction.create(new LoggedOutViewer(), {

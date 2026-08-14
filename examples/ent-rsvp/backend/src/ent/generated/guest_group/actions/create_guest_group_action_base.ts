@@ -10,12 +10,12 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { Address, GuestData } from "src/ent/";
+import type { Address, GuestData } from "../../../index.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { Event, GuestGroup } from "src/ent/";
-import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_group_builder";
-import { GuestTag } from "src/ent/generated/types";
+import { Event, GuestGroup } from "../../../index.js";
+import { GuestGroupBuilder } from "./guest_group_builder.js";
+import { GuestTag } from "../../types.js";
 
 interface customGuestInput {
   addressId?: ID | null | Builder<Address, Viewer>;

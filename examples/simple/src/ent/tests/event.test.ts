@@ -1,13 +1,13 @@
-import { Event } from "../";
-import { randomEmail, randomPhoneNumber } from "../../util/random";
-import CreateUserAction from "../user/actions/create_user_action";
+import { Event } from "../index.js";
+import { randomEmail, randomPhoneNumber } from "../../util/random.js";
+import CreateUserAction from "../user/actions/create_user_action.js";
 import CreateEventAction, {
   EventCreateInput,
-} from "../event/actions/create_event_action";
-import EditEventAction from "../event/actions/edit_event_action";
-import DeleteEventAction from "../event/actions/delete_event_action";
-import CreateAddressAction from "../address/actions/create_address_action";
-import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
+} from "../event/actions/create_event_action.js";
+import EditEventAction from "../event/actions/edit_event_action.js";
+import DeleteEventAction from "../event/actions/delete_event_action.js";
+import CreateAddressAction from "../address/actions/create_address_action.js";
+import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer.js";
 import { ID, query } from "@snowtop/ent";
 import { readFileSync } from "fs";
 
@@ -313,9 +313,9 @@ test("delete event rando", async () => {
   let user = await createUser();
   const vc = new ExampleViewer(user.id);
 
-  await expect(
-    DeleteEventAction.create(vc, event).saveX(),
-  ).rejects.toThrow(/ does not have permission to delete Event/);
+  await expect(DeleteEventAction.create(vc, event).saveX()).rejects.toThrow(
+    / does not have permission to delete Event/,
+  );
 });
 
 describe("validators", () => {

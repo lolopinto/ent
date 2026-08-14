@@ -6,7 +6,7 @@ import {
   AssocEdgeLoaderFactory,
   AssocEdgeQueryBase,
 } from "@snowtop/ent";
-import { EdgeType } from "src/ent/generated/types";
+import { EdgeType } from "./types.js";
 import {
   EventActivity,
   EventActivityToAttendingEdge,
@@ -17,7 +17,7 @@ import {
   GuestGroupToInvitedEventsQuery,
   GuestToAttendingEventsQuery,
   GuestToDeclinedEventsQuery,
-} from "src/ent/internal";
+} from "../internal.js";
 
 export const eventActivityToAttendingCountLoaderFactory =
   new AssocEdgeCountLoaderFactory(EdgeType.EventActivityToAttending);

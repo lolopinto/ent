@@ -3,11 +3,11 @@ import {
   AllowIfConditionAppliesRule,
   AlwaysDenyRule,
 } from "@snowtop/ent/core/privacy";
-import { CreateAddressActionBase } from "src/ent/generated/address/actions/create_address_action_base";
-import type { AddressCreateInput } from "src/ent/generated/address/actions/create_address_action_base";
+import { CreateAddressActionBase } from "../../generated/address/actions/create_address_action_base.js";
+import type { AddressCreateInput } from "../../generated/address/actions/create_address_action_base.js";
 import { AllowIfBuilder, Builder } from "@snowtop/ent/action";
-import { getLoaderOptions } from "src/ent/generated/loadAny";
-import { NodeType } from "src/ent/generated/const";
+import { getLoaderOptions } from "../../generated/loadAny.js";
+import { NodeType } from "../../generated/const.js";
 
 export type { AddressCreateInput };
 

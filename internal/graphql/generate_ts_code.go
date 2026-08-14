@@ -994,6 +994,12 @@ func (obj *gqlobjectData) TSInterfaces() []*interfaceType {
 func (obj *gqlobjectData) ForeignImport(name string) bool {
 	if !obj.initMap {
 		obj.m = make(map[string]bool)
+		explicitImports := make(map[string]bool)
+		for _, imp := range obj.Imports() {
+			if imp.ImportPath != "" {
+				explicitImports[imp.Import] = true
+			}
+		}
 
 		// any node Type defined here is local
 		for _, node := range obj.GQLNodes {
@@ -1010,7 +1016,7 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 
 			for _, field := range node.Fields {
 				for _, imp := range field.AllImports() {
-					if imp.ImportPath == "" {
+					if imp.ImportPath == "" && !explicitImports[imp.Import] {
 						obj.m[imp.Import] = true
 					}
 				}
@@ -1823,7 +1829,7 @@ type typeInfo struct {
 	Exported   bool
 }
 
-const resolverPath = "src/graphql/resolvers"
+const resolverPath = "src/graphql/resolvers/"
 
 // get all types to be passed to GraphQLschema
 func getAllTypes(s *gqlSchema, cfg *codegen.Config) []typeInfo {
@@ -4447,6 +4453,7 @@ type schemaData struct {
 }
 
 func writeSchemaFile(cfg *codegen.Config, fileToWrite string, hasMutations bool) error {
+	imps := tsimport.NewImports(cfg, fileToWrite)
 	return file.Write(
 		&file.TemplatedBasedFileWriter{
 			Config: cfg,
@@ -4459,6 +4466,8 @@ func writeSchemaFile(cfg *codegen.Config, fileToWrite string, hasMutations bool)
 			AbsPathToTemplate: util.GetAbsolutePath("generate_schema.tmpl"),
 			TemplateName:      "generate_schema.tmpl",
 			PathToFile:        fileToWrite,
+			TsImports:         imps,
+			FuncMap:           imps.FuncMap(),
 		},
 		file.DisableLog(),
 		file.TempFile(),

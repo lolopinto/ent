@@ -15,11 +15,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { WorkspaceInput } from "./workspace_builder";
+import type { WorkspaceInput } from "./workspace_builder.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { User, Workspace } from "../../..";
-import { WorkspaceBuilder } from "./workspace_builder";
+import { User, Workspace } from "../../../index.js";
+import { WorkspaceBuilder } from "./workspace_builder.js";
 
 export type WorkspaceAddMemberActionTriggers = (
   | Trigger<

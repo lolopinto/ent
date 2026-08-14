@@ -12,11 +12,11 @@ import type {
   Trigger,
   Validator,
 } from "@snowtop/ent/action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
-import { AuthCode } from "../../..";
-import { AuthCodeBuilder } from "./auth_code_builder";
+import { AuthCode } from "../../../index.js";
+import { AuthCodeBuilder } from "./auth_code_builder.js";
 
 export interface AuthCodeCreateInput {
   code: string;

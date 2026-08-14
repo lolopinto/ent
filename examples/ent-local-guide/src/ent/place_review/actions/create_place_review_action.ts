@@ -1,11 +1,8 @@
 import { type Data, IDViewer } from "@snowtop/ent";
-import type {PlaceReviewCreateInput} from "../../generated/place_review/actions/create_place_review_action_base";
-import {CreatePlaceReviewActionBase} from "../../generated/place_review/actions/create_place_review_action_base";
-
+import type { PlaceReviewCreateInput } from "../../generated/place_review/actions/create_place_review_action_base.js";
+import { CreatePlaceReviewActionBase } from "../../generated/place_review/actions/create_place_review_action_base.js";
 
 export type { PlaceReviewCreateInput };
-
-
 
 export default class CreatePlaceReviewAction extends CreatePlaceReviewActionBase {
   viewerForEntLoad(data: Data) {

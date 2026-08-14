@@ -1,12 +1,12 @@
-import { CreateEventActionBase } from "../../generated/event/actions/create_event_action_base";
-import type { EventCreateInput } from "../../generated/event/actions/create_event_action_base";
+import { CreateEventActionBase } from "../../generated/event/actions/create_event_action_base.js";
+import type { EventCreateInput } from "../../generated/event/actions/create_event_action_base.js";
 import type { Trigger, Validator } from "@snowtop/ent/action";
-import { SharedValidators } from "./event_validators";
-import { EventBuilder } from "../../generated/event/actions/event_builder";
+import { SharedValidators } from "./event_validators.js";
+import { EventBuilder } from "../../generated/event/actions/event_builder.js";
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 import type { PrivacyPolicy } from "@snowtop/ent";
-import { Event } from "../../../ent";
-import { ExampleViewer } from "../../../viewer/viewer";
+import { Event } from "../../index.js";
+import { ExampleViewer } from "../../../viewer/viewer.js";
 export type { EventCreateInput };
 // we're only writing this once except with --force and packageName provided
 export default class CreateEventAction extends CreateEventActionBase {

@@ -1,5 +1,5 @@
-import { DeleteGuestActionBase } from "src/ent/generated/guest/actions/delete_guest_action_base";
-import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
+import { DeleteGuestActionBase } from "../../generated/guest/actions/delete_guest_action_base.js";
+import { AllowIfEventCreatorPrivacyPolicy } from "../../event/privacy/event_creator.js";
 
 // we're only writing this once except with --force and packageName provided
 export default class DeleteGuestAction extends DeleteGuestActionBase {

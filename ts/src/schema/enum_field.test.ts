@@ -1,14 +1,14 @@
-import { clearLogLevels, setLogLevels } from "../core/logger";
-import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema";
+import { clearLogLevels, setLogLevels } from "../core/logger.js";
+import { clearGlobalSchema, setGlobalSchema } from "../core/global_schema.js";
 import {
   EnumField,
   EnumType,
   IntegerEnumField,
   IntegerEnumListType,
   IntegerEnumType,
-} from "./field";
-import { Field } from "./schema";
-import { MockLogs } from "../testutils/mock_log";
+} from "./field.js";
+import { Field } from "./schema.js";
+import { MockLogs } from "../testutils/mock_log.js";
 
 function enumF(values: string[]): EnumField {
   return EnumType({ values });

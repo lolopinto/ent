@@ -10,9 +10,9 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext } from "@snowtop/ent";
-import type { Holiday } from "../../../../ent";
-import type { CustomEditHolidayInput } from "../../../../ent/holiday/actions/custom_edit_holiday_action";
-import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
+import type { Holiday } from "../../../../ent/index.js";
+import type { CustomEditHolidayInput } from "../../../../ent/holiday/actions/custom_edit_holiday_action.js";
+import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer.js";
 import {
   GraphQLID,
   GraphQLInputObjectType,
@@ -21,12 +21,12 @@ import {
   GraphQLString,
 } from "graphql";
 import { GraphQLDate, mustDecodeIDFromGQLID } from "@snowtop/ent/graphql";
-import CustomEditHolidayAction from "../../../../ent/holiday/actions/custom_edit_holiday_action";
+import CustomEditHolidayAction from "../../../../ent/holiday/actions/custom_edit_holiday_action.js";
 import {
   DayOfWeekAltType,
   DayOfWeekType,
   HolidayType,
-} from "../../../resolvers";
+} from "../../../resolvers/index.js";
 
 interface customCustomEditHolidayInput extends CustomEditHolidayInput {
   id: string;

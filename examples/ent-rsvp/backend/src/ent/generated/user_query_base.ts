@@ -2,7 +2,7 @@
 
 import type { ID, OrderBy, Viewer } from "@snowtop/ent";
 import { CustomEdgeQueryBase } from "@snowtop/ent";
-import { Event, User } from "src/ent/internal";
+import { Event, User } from "../internal.js";
 
 export class UserToEventsQueryBase<
   TEnt extends User = User,

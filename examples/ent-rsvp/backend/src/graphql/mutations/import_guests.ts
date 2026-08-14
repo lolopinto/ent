@@ -6,13 +6,13 @@ import {
 } from "@snowtop/ent/graphql";
 import { Action, Builder } from "@snowtop/ent/action";
 import { GraphQLID } from "graphql";
-import { Event } from "src/ent";
+import { Event } from "../../ent/index.js";
 import type { FileUpload } from "@snowtop/ent/graphql/upload";
 import parse from "csv-parse";
-import CreateGuestGroupAction from "src/ent/guest_group/actions/create_guest_group_action";
-import CreateGuestAction from "src/ent/guest/actions/create_guest_action";
+import CreateGuestGroupAction from "../../ent/guest_group/actions/create_guest_group_action.js";
+import CreateGuestAction from "../../ent/guest/actions/create_guest_action.js";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
-import { EventBuilder } from "src/ent/generated/event/actions/event_builder";
+import { EventBuilder } from "../../ent/generated/event/actions/event_builder.js";
 
 export class ImportGuestResolver {
   @gqlMutation({

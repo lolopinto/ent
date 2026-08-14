@@ -1,5 +1,5 @@
 import { AssocEdge } from "@snowtop/ent";
-import { AddressToLocatedAtQueryBase } from "src/ent/internal";
+import { AddressToLocatedAtQueryBase } from "../../internal.js";
 
 export class AddressToLocatedAtEdge extends AssocEdge {}
 

@@ -16,8 +16,8 @@ import {
   WriteOperation,
   maybeConvertRelativeInputPlusExpressions,
 } from "@snowtop/ent/action";
-import { Place, PlaceReview, User } from "../../..";
-import { PlaceReviewBuilder } from "./place_review_builder";
+import { Place, PlaceReview, User } from "../../../index.js";
+import { PlaceReviewBuilder } from "./place_review_builder.js";
 
 export interface PlaceReviewEditRelativeInput {
   placeId?: ID | Builder<Place, Viewer>;

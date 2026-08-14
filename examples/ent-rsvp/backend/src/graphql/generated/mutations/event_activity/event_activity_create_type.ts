@@ -7,8 +7,8 @@ import type {
   GraphQLResolveInfo,
 } from "graphql";
 import type { RequestContext, Viewer } from "@snowtop/ent";
-import type { EventActivity } from "src/ent/";
-import type { EventActivityCreateInput } from "src/ent/event_activity/actions/create_event_activity_action";
+import type { EventActivity } from "../../../../ent/index.js";
+import type { EventActivityCreateInput } from "../../../../ent/event_activity/actions/create_event_activity_action.js";
 import {
   GraphQLBoolean,
   GraphQLID,
@@ -22,8 +22,8 @@ import {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
 } from "@snowtop/ent/graphql";
-import CreateEventActivityAction from "src/ent/event_activity/actions/create_event_activity_action";
-import { EventActivityType } from "src/graphql/resolvers/";
+import CreateEventActivityAction from "../../../../ent/event_activity/actions/create_event_activity_action.js";
+import { EventActivityType } from "../../../resolvers/index.js";
 
 interface customEventActivityCreateInput extends EventActivityCreateInput {
   addressId?: string;
