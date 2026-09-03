@@ -12,7 +12,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - preserve trigger priority groups when individual triggers appear before and
-  after an explicitly grouped trigger list (#2019).
+  after an explicitly grouped trigger list (#2023).
 - update `uuid`, docs, test-helper, and standalone TypeScript package
   dependencies to patched versions (#2013).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
