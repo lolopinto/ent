@@ -228,6 +228,9 @@ const PaymentSchema = new EntSchema({
         changedByType: StringType({
           nullable: true,
         }),
+        horseID: UUIDType({
+          nullable: true,
+        }),
         comment: StringType({
           storageKey: "comment_text",
           nullable: true,

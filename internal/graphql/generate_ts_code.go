@@ -3489,6 +3489,52 @@ type customInterfaceInfo struct {
 	imports  []string
 }
 
+func inferStructFieldEdge(processor *codegen.Processor, ci *customtype.CustomInterface, f *field.Field) *base.FieldEdgeInfo {
+	if !processor.Config.Base64EncodeIDs() {
+		return nil
+	}
+
+	switch typ := f.GetFieldType().(type) {
+	case *enttype.IDType:
+		if typ.DisableBase64Encode {
+			return nil
+		}
+	case *enttype.NullableIDType:
+		if typ.DisableBase64Encode {
+			return nil
+		}
+	default:
+		return nil
+	}
+
+	fieldName, valid := base.TranslateIDSuffix(f.FieldName)
+	if !valid {
+		return nil
+	}
+
+	graphQLName := names.ToGraphQLName(processor.Config, fieldName)
+	for _, other := range ci.Fields {
+		if other != f && other.ExposeToGraphQL() && other.GetGraphQLName() == graphQLName {
+			return nil
+		}
+	}
+	for _, other := range ci.NonEntFields {
+		if other.ExposeToGraphQL() && other.GetGraphQLName() == graphQLName {
+			return nil
+		}
+	}
+
+	schemaName := names.ToClassType(fieldName)
+	nodeData, err := processor.Schema.GetNodeDataForNode(schemaName)
+	if err != nil || nodeData.HideFromGraphQL {
+		return nil
+	}
+
+	return &base.FieldEdgeInfo{
+		Schema: schemaName,
+	}
+}
+
 // similar to buildCustomInputNode but different...
 // buildCustomInputNode is used for action inputs
 // while this is used for StructType. can probably eventually be used together
@@ -3549,6 +3595,8 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 					fieldEdge = &base.FieldEdgeInfo{
 						Schema: fkey.Schema,
 					}
+				} else {
+					fieldEdge = inferStructFieldEdge(processor, ci, f)
 				}
 			}
 
