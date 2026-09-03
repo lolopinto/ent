@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- prevent custom GraphQL discovery from hanging when imported application code
+  leaves a database pool or another event-loop handle open (#2020).
 - update `uuid`, docs, test-helper, and standalone TypeScript package
   dependencies to patched versions (#2013).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
