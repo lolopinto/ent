@@ -103,6 +103,7 @@
 
 {{$builder := printf "%sBuilder" .Node}}
 {{$input := printf "%sInput" .Node}}
+{{$immutableFields := .FieldInfo.GetImmutableFields}}
 
 export interface {{$input}} {
   {{range $field := .FieldInfo.GetEditableFieldsInBuilder -}}
@@ -169,6 +170,9 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
   readonly nodeType = {{useImport "NodeType"}}.{{$node}};
   private input: TInput;
   private m: Map<string, any> = new Map();
+  {{ if $immutableFields -}}
+    private overriddenFields = new Set<string>();
+  {{ end -}}
 
   public constructor(
     public readonly viewer: {{$viewerType}},
@@ -195,7 +199,6 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
       {{useImport "schema"}},
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
-      __initializeDefaultInput: (d: {{$input}}) => this.applyInput(d),
       fieldInfo: {{useImport $loaderInfo}}.fieldInfo,
       ...opts,
     });
@@ -205,23 +208,15 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
     return this.input;
   }
 
-  {{ $immutableFields := .FieldInfo.GetImmutableFields -}}
-  {{$updateInputType := $input }}
-  {{ if $immutableFields }}
-    {{/* TODO this really doesn't quite matter since input allows any key because of action only fields */}}
-    {{$updateInputType = excludedFieldsType $input $immutableFields }}
-  {{ end }}
-
-  updateInput(input: {{$updateInputType}}) {
+  updateInput(input: {{$input}}) {
     {{ range $f := $immutableFields }}
       if (input.{{$f.TsBuilderFieldName}} !==undefined) {
-        throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
+        if (this.orchestrator.__getWriteOperation() !== WriteOperation.Insert) {
+          throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
+        }
+        this.overriddenFields.delete("{{$f.TsBuilderFieldName}}");
       }
     {{ end }}
-    this.applyInput(input);
-  }
-
-  private applyInput(input: {{$input}}) {
     {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
       {{$tsFieldName := $field.TsBuilderFieldName -}}
       {{ $inverseEdge := $field.GetInverseEdge -}}
@@ -239,6 +234,7 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
     {{ range $f := $immutableFields }}
       // override immutable field `{{$f.TsBuilderFieldName}}`
       {{$f.GetImmutableOverrideFieldNameInBuilder}}(val: {{$f.TsBuilderType $cfg}}) {
+      this.overriddenFields.add("{{$f.TsBuilderFieldName}}");
       this.input.{{$f.TsBuilderFieldName}} = val;
       }
     {{end }}
@@ -324,6 +320,16 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
 
   private async getEditedFields(): Promise<Map<string, any>> {
     const input = this.input;
+    {{ if $immutableFields -}}
+      // A create may have become an edit since this input was assigned.
+      if (this.orchestrator.__getWriteOperation() !== WriteOperation.Insert) {
+        {{ range $f := $immutableFields -}}
+          if (input.{{$f.TsBuilderFieldName}} !== undefined && !this.overriddenFields.has("{{$f.TsBuilderFieldName}}")) {
+            throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
+          }
+        {{ end -}}
+      }
+    {{ end -}}
 
     const result = new Map<string, any>();
 

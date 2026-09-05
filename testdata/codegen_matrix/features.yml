@@ -284,9 +284,9 @@ features:
     mode: explicit
     rationale: >
       A generated-app runtime fixture verifies immutable viewer, sync, and async
-      creation defaults without weakening ordinary updateInput guards, including
-      action hooks, formatting, ownership privacy, inverse association edges,
-      explicit input precedence, and transformed insert/edit operations.
+      defaults and assignments during creation, ordinary edit rejection and
+      explicit overrides, action hooks, formatting, ownership privacy, inverse
+      association edges, and assignments before and after write transformations.
   - id: schema.nodes
     owns: [input.Schema.Nodes, input.Node.Fields]
     mode: explicit
