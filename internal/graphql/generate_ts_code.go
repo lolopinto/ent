@@ -3489,6 +3489,37 @@ type customInterfaceInfo struct {
 	imports  []string
 }
 
+func getDeclaredStructFieldEdgeInfo(f *field.Field) *base.FieldEdgeInfo {
+	if fieldEdge := f.FieldEdgeInfo(); fieldEdge != nil {
+		return fieldEdge
+	}
+	if fkey := f.ForeignKeyInfo(); fkey != nil {
+		return &base.FieldEdgeInfo{
+			Schema: fkey.Schema,
+		}
+	}
+	return nil
+}
+
+func getStructFieldGraphQLName(processor *codegen.Processor, f *field.Field) string {
+	fieldEdge := getDeclaredStructFieldEdgeInfo(f)
+	if fieldEdge == nil {
+		return f.GetGraphQLName()
+	}
+
+	e, err := edge.GetFieldEdge(
+		processor.Config,
+		f.FieldName,
+		fieldEdge,
+		f.Nullable(),
+		f.GetFieldType(),
+	)
+	if err != nil || e == nil {
+		return f.GetGraphQLName()
+	}
+	return e.GraphQLEdgeName()
+}
+
 func inferStructFieldEdge(processor *codegen.Processor, ci *customtype.CustomInterface, f *field.Field) *base.FieldEdgeInfo {
 	if !processor.Config.Base64EncodeIDs() {
 		return nil
@@ -3514,7 +3545,7 @@ func inferStructFieldEdge(processor *codegen.Processor, ci *customtype.CustomInt
 
 	graphQLName := names.ToGraphQLName(processor.Config, fieldName)
 	for _, other := range ci.Fields {
-		if other != f && other.ExposeToGraphQL() && other.GetGraphQLName() == graphQLName {
+		if other != f && other.ExposeToGraphQL() && getStructFieldGraphQLName(processor, other) == graphQLName {
 			return nil
 		}
 	}
@@ -3586,18 +3617,9 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 		fieldName := fmt.Sprintf("obj.%s", f.TsFieldName(processor.Config))
 
 		if !ciInfo.input {
-			fieldEdge := f.FieldEdgeInfo()
-
+			fieldEdge := getDeclaredStructFieldEdgeInfo(f)
 			if fieldEdge == nil {
-				if fkey := f.ForeignKeyInfo(); fkey != nil {
-					// handle types declared with foreignKey
-					// TODO should probably throw since this doesn't actually make sense since the foreignKey won't be respected
-					fieldEdge = &base.FieldEdgeInfo{
-						Schema: fkey.Schema,
-					}
-				} else {
-					fieldEdge = inferStructFieldEdge(processor, ci, f)
-				}
+				fieldEdge = inferStructFieldEdge(processor, ci, f)
 			}
 
 			// should exist for id fields...

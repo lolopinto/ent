@@ -240,6 +240,19 @@ const PaymentSchema = new EntSchema({
         }),
       },
     }),
+    sheepEdgeCollision: StructType({
+      tsType: "PaymentSheepEdgeCollision",
+      fields: {
+        sheepID: UUIDType({
+          nullable: true,
+        }),
+        sheepIDs: UUIDListType({
+          fieldEdge: {
+            schema: "Sheep",
+          },
+        }),
+      },
+    }),
     nestedObject: StructType({
       tsType: "PaymentNestedObject",
       nullable: true,

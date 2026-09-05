@@ -1497,3 +1497,62 @@ func TestCustomStructUUIDFieldInfersNodeFromName(t *testing.T) {
 	assert.Equal(t, "GraphQLID", rawIDObj.Fields[0].FieldType())
 	assert.False(t, rawIDObj.Fields[0].HasResolveFunction)
 }
+
+func TestCustomStructUUIDFieldInferenceAvoidsExplicitEdgeNameCollision(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		map[string]string{
+			"sheep_schema.ts": testhelper.GetCodeWithSchema(`
+				import {EntSchema, StringType} from "{schema}";
+
+				const Sheep = new EntSchema({
+					fields: {
+						name: StringType(),
+					},
+				});
+				export default Sheep;
+			`),
+			"farm_schema.ts": testhelper.GetCodeWithSchema(`
+				import {EntSchema, StructType, UUIDListType, UUIDType} from "{schema}";
+
+				const Farm = new EntSchema({
+					fields: {
+						animals: StructType({
+							tsType: "FarmAnimals",
+							fields: {
+								sheepId: UUIDType({nullable: true}),
+								sheepIds: UUIDListType({
+									fieldEdge: {
+										schema: "Sheep",
+									},
+								}),
+							},
+						}),
+					},
+				});
+				export default Farm;
+			`),
+		},
+	)
+
+	processor, err := codegen.NewTestCodegenProcessor(
+		"src/schema",
+		schema,
+		&codegen.CodegenConfig{DisableGraphQLRoot: true},
+	)
+	require.NoError(t, err)
+
+	ci := schema.CustomInterfaces["FarmAnimals"]
+	require.NotNil(t, ci)
+
+	obj, err := buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
+		name: ci.GQLName,
+	})
+	require.NoError(t, err)
+	require.Len(t, obj.Fields, 2)
+	assert.Equal(t, "sheepId", obj.Fields[0].Name)
+	assert.Equal(t, "GraphQLID", obj.Fields[0].FieldType())
+	assert.False(t, obj.Fields[0].HasResolveFunction)
+	assert.Equal(t, "sheep", obj.Fields[1].Name)
+	assert.True(t, obj.Fields[1].HasResolveFunction)
+}
