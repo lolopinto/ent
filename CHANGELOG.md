@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- initialize immutable creation defaults without rejecting them as field edits,
+  preserving validation, privacy checks, and generated inverse edges (#2026).
 - avoid opening the Go codegen database pool until first use and close it when
   `tsent` commands finish (#2024).
 - preserve trigger priority groups when individual triggers appear before and
