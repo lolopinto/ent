@@ -77,6 +77,12 @@ func (db *DBConfig) Init() (*sqlx.DB, error) {
 		fmt.Println("error opening db", err)
 		return nil, err
 	}
+	initialized := false
+	defer func() {
+		if !initialized {
+			_ = db2.Close()
+		}
+	}()
 
 	err = db2.Ping()
 	if err != nil {
@@ -104,6 +110,7 @@ func (db *DBConfig) Init() (*sqlx.DB, error) {
 			}
 		}
 	}
+	initialized = true
 	return db2, nil
 }
 

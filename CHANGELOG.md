@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- avoid opening the Go codegen database pool until first use and close it when
+  `tsent` commands finish.
 - preserve trigger priority groups when individual triggers appear before and
   after an explicitly grouped trigger list (#2023).
 - update `uuid`, docs, test-helper, and standalone TypeScript package
