@@ -1,5 +1,36 @@
 import pg from "pg";
 import { DateTime } from "luxon";
+import { isDeepStrictEqual } from "util";
+
+function normalizeImmutableInput(value: any): any {
+  if (Array.isArray(value)) {
+    return value.map(normalizeImmutableInput);
+  }
+  if (
+    value !== null &&
+    typeof value === "object" &&
+    (Object.getPrototypeOf(value) === Object.prototype ||
+      Object.getPrototypeOf(value) === null)
+  ) {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, child]) => [
+        key,
+        normalizeImmutableInput(child),
+      ]),
+    );
+  }
+  return value;
+}
+
+// Internal generated-builder comparison of input with converted raw DB values.
+// GraphQL records can have null prototypes; scalar types and Date/Buffer values
+// must retain their normal equality semantics.
+export function __isEqualFieldValue(input: any, existing: any): boolean {
+  return isDeepStrictEqual(
+    normalizeImmutableInput(input),
+    normalizeImmutableInput(existing),
+  );
+}
 
 const TEXT_ARRAY_OID = 1009;
 const parseTextArray = pg.types.getTypeParser(TEXT_ARRAY_OID as any);

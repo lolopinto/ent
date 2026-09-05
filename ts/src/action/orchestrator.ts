@@ -272,6 +272,11 @@ export class Orchestrator<
     return this.options;
   }
 
+  // Internal: starts with the builder operation and reflects resolved transforms.
+  __getWriteOperation(): WriteOperation {
+    return this.actualOperation;
+  }
+
   private addEdge(
     edge: edgeInputData<TViewer>,
     op: WriteOperation,
@@ -689,7 +694,8 @@ export class Orchestrator<
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt!;
     }
-    const { schemaFields, editedData } = await this.memoizedGetFields();
+    const { schemaFields, editedData } =
+      await this.getFieldsWithPendingImmutableValues();
     return this.getEntForPrivacyPolicyImpl(
       schemaFields,
       editedData,
@@ -706,7 +712,7 @@ export class Orchestrator<
    * i.e. includes lists which have been converted to JSON strings, etc
    */
   async getEditedData() {
-    const { editedData } = await this.memoizedGetFields();
+    const { editedData } = await this.getFieldsWithPendingImmutableValues();
     return editedData;
   }
 
@@ -721,6 +727,30 @@ export class Orchestrator<
       );
     }
     return this.validatedFields;
+  }
+
+  private async getFieldsWithPendingImmutableValues(): Promise<fieldsInfo> {
+    const fields = await this.memoizedGetFields();
+    if (this.actualOperation !== WriteOperation.Insert) {
+      return fields;
+    }
+    const editedData = { ...fields.editedData };
+    const userDefinedKeys = new Set(fields.userDefinedKeys);
+    // Creation-time setters can run after defaults were resolved. Privacy must
+    // check the pending immutable value, rather than a cached creation default.
+    const input = this.options.builder.getInput();
+    for (const [fieldName, field] of fields.schemaFields) {
+      if (!field.immutable) {
+        continue;
+      }
+      const value = input[this.getInputKey(fieldName)];
+      const dbKey = this.getStorageKey(fieldName);
+      if (value !== undefined && value !== editedData[dbKey]) {
+        editedData[dbKey] = value;
+        userDefinedKeys.add(dbKey);
+      }
+    }
+    return { ...fields, editedData, userDefinedKeys };
   }
 
   // Note: this is memoized. call memoizedGetFields instead
@@ -781,9 +811,9 @@ export class Orchestrator<
     }
 
     const { schemaFields, editedData, userDefinedKeys, editPrivacyFields } =
-      await this.memoizedGetFields();
-    const action = this.options.action;
+      await this.getFieldsWithPendingImmutableValues();
     const builder = this.options.builder;
+    const action = this.options.action;
 
     // this runs in following phases:
     // * set default fields and pass to builder so the value can be checked by triggers/observers/validators
@@ -1025,10 +1055,6 @@ export class Orchestrator<
           // this.defaultFieldsByFieldName[k] = val;
         }
       }
-      if (transformed.changeset) {
-        const changeset = await transformed.changeset();
-        this.changesets.push(changeset);
-      }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
         // @ts-ignore
@@ -1036,6 +1062,18 @@ export class Orchestrator<
         // modify existing ent in builder. it's readonly in generated ents but doesn't apply here
         builder.existingEnt = transformed.existingEnt;
       }
+      if (transformed.changeset) {
+        const changeset = await transformed.changeset();
+        this.changesets.push(changeset);
+      }
+    }
+    if (
+      (action?.transformWrite || transformed) &&
+      Array.from(schemaFields.values()).some((field) => field.immutable)
+    ) {
+      // Recheck inputs against the effective operation before defaults/privacy.
+      // This also preserves assignments made inside transformWrite itself.
+      editedFields = await this.options.editedFields();
     }
     // transforming before doing default fields so that we don't create a new id
     // and anything that depends on the type of operations knows what it is
@@ -1111,7 +1149,7 @@ export class Orchestrator<
         ...defaultData,
       };
       if (updateInput && this.options.updateInput) {
-        // this basically fixes #605. just needs to be exposed correctly
+        // Defaults must reach the builder before privacy, triggers, and validators.
         this.options.updateInput(this.defaultFieldsByTSName as TInput);
       }
     }

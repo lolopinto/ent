@@ -30,6 +30,12 @@ The matrix catalog lives in `features.yml`.
   It runs once with the default Node/pg launcher settings and once with
   Bun/Bun SQL settings, so generated Bun-specific resolver exports and
   Postgres value conversion helpers stay covered by the same broad fixture.
+- `immutable_defaults` also runs fixture-local Jest tests against actual generated
+  builders and local Ent source, using a temporary SQLite database. It verifies
+  immutable creation assignments/defaults, explicit edit overrides, action hooks,
+  ownership privacy, inverse edges, and transformed writes. Fixtures opt into
+  this step with `runtime_tests` and supply their own `jest.config.js`; the
+  harness exposes the local source path in `ENT_CODEGEN_MATRIX_ENT_SRC`.
 - `db_schema_smoke` runs the same checks and also includes
   `tsent codegen --step db` against SQLite-compatible schema features. Its
   idempotence snapshot includes DB-generated schema and migration files. It

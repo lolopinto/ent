@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- allow immutable fields to be assigned during creation, including creation
+  defaults, while requiring explicit overrides for edits (#2026).
 - avoid opening the Go codegen database pool until first use and close it when
   `tsent` commands finish (#2024).
 - preserve trigger priority groups when individual triggers appear before and
