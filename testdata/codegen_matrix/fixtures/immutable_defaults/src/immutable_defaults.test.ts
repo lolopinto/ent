@@ -376,6 +376,96 @@ test.each([
   await expectEdges(viewer, unchanged);
 });
 
+test("create-to-edit retains unchanged immutable inputs from the selected record", async () => {
+  const viewer = await createViewer();
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+  }).saveX();
+  class InsertAsEdit extends CreateDocumentActionBase {
+    transformWrite() {
+      return {
+        op: SQLStatementOperation.Update,
+        existingEnt: existing,
+        data: { ownerId: existing.ownerId, title: "Transformed edit" },
+      };
+    }
+  }
+  const action = new InsertAsEdit(viewer, {
+    title: "Requested edit",
+    ownerId: existing.ownerId,
+    syncValue: existing.syncValue,
+  });
+  const updated = await action.saveX();
+  expect(updated.id).toBe(existing.id);
+  expect(updated.title).toBe("Transformed edit");
+  expect(updated.ownerId).toBe(existing.ownerId);
+  expect(updated.syncValue).toBe(existing.syncValue);
+  await expectEdges(viewer, updated);
+  expect(() =>
+    action.builder.updateInput({ ownerId: existing.ownerId }),
+  ).toThrow(/overrideOwnerId/);
+
+  const other = await createViewer();
+  const rejected = new InsertAsEdit(viewer, {
+    title: "Attempted owner change",
+    ownerId: other.viewerID,
+  });
+  await expect(rejected.saveX()).rejects.toThrow(/overrideOwnerId/);
+  const unchanged = await Document.loadX(viewer, existing.id);
+  expect(unchanged.title).toBe("Transformed edit");
+  expect(unchanged.ownerId).toBe(existing.ownerId);
+  expect(
+    await loadEdges({
+      id1: other.viewerID,
+      edgeType: EdgeType.UserToDocuments,
+    }),
+  ).toHaveLength(0);
+});
+
+test.each([
+  ["enabled", true, false],
+  [
+    "recordedAt",
+    new Date("2026-01-01T12:00:00Z"),
+    new Date("2026-02-01T12:00:00Z"),
+  ],
+  [
+    "metadata",
+    { version: 1, source: "default" },
+    { source: "changed", version: 1 },
+  ],
+  [
+    "metadata",
+    Object.assign(Object.create(null), { version: 1, source: "default" }),
+    Object.assign(Object.create(null), { source: "changed", version: 1 }),
+  ],
+])("create-to-edit compares converted immutable %s values", async (field, same, different) => {
+  const viewer = await createViewer();
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+  }).saveX();
+  class InsertAsEdit extends CreateDocumentActionBase {
+    transformWrite() {
+      return { op: SQLStatementOperation.Update, existingEnt: existing };
+    }
+  }
+  const updated = await new InsertAsEdit(viewer, {
+    title: "Unchanged immutable value",
+    [field as string]: same,
+  }).saveX();
+  expect(updated.id).toBe(existing.id);
+  expect(updated[field as string]).toEqual(same);
+  await expect(
+    new InsertAsEdit(viewer, {
+      title: "Changed immutable value",
+      [field as string]: different,
+    }).saveX(),
+  ).rejects.toThrow(/cannot be passed to updateInput/);
+  const unchanged = await Document.loadX(viewer, existing.id);
+  expect(unchanged.title).toBe("Unchanged immutable value");
+  expect(unchanged[field as string]).toEqual(same);
+});
+
 test("create-to-edit retains explicit overrides", async () => {
   const viewer = await createViewer();
   const existing = await new CreateDocumentActionBase(viewer, {

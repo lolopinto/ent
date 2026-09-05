@@ -1207,7 +1207,7 @@ func writeBuilderFile(nodeData *schema.NodeData, processor *codegen.Processor) e
 		},
 		PathToFile: filePath,
 		TsImports:  imps,
-		FuncMap:    getBuilderFuncs(imps),
+		FuncMap:    getBuilderFuncs(processor.Schema, imps),
 	})
 }
 
@@ -1236,12 +1236,12 @@ func writeMixinBuilderFile(processor *codegen.Processor, pattern *schema.Pattern
 		},
 		PathToFile: filePath,
 		TsImports:  imps,
-		FuncMap:    getBuilderFuncs(imps),
+		FuncMap:    getBuilderFuncs(processor.Schema, imps),
 	})
 }
 
-func getBuilderFuncs(imps *tsimport.Imports) template.FuncMap {
-	m := imps.FuncMap()
+func getBuilderFuncs(s *schema.Schema, imps *tsimport.Imports) template.FuncMap {
+	m := getBaseFuncs(s, imps)
 	m["edgeInfos"] = action.GetEdgesFromEdges
 	m["isListField"] = func(f *field.Field) bool {
 		return enttype.IsListType(f.GetFieldType())

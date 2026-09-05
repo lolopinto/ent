@@ -104,6 +104,14 @@
 {{$builder := printf "%sBuilder" .Node}}
 {{$input := printf "%sInput" .Node}}
 {{$immutableFields := .FieldInfo.GetImmutableFields}}
+{{ if $immutableFields -}}
+  {{ reserveImport $pkg.PackagePath "__isEqualFieldValue" -}}
+  {{ range $field := $immutableFields -}}
+    {{ range $field.GetImportsForTypes $cfg $schema $schema -}}
+      {{ reserveImportPath . false -}}
+    {{ end -}}
+  {{ end -}}
+{{ end -}}
 
 export interface {{$input}} {
   {{range $field := .FieldInfo.GetEditableFieldsInBuilder -}}
@@ -322,9 +330,17 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
     const input = this.input;
     {{ if $immutableFields -}}
       // A create may have become an edit since this input was assigned.
+      // Compare converted raw values so privacy filters and DB representations
+      // do not make unchanged creation inputs look like immutable edits.
       if (this.orchestrator.__getWriteOperation() !== WriteOperation.Insert) {
         {{ range $f := $immutableFields -}}
-          if (input.{{$f.TsBuilderFieldName}} !== undefined && !this.overriddenFields.has("{{$f.TsBuilderFieldName}}")) {
+          {{$rawValue := printf "this.existingEnt.___getRawDBData().%s" $f.GetDbColName -}}
+          if (input.{{$f.TsBuilderFieldName}} !== undefined &&
+              !this.overriddenFields.has("{{$f.TsBuilderFieldName}}") &&
+              !(this.operation === WriteOperation.Insert &&
+                this.orchestrator.__getWriteOperation() === WriteOperation.Edit &&
+                this.existingEnt &&
+                {{useImport "__isEqualFieldValue"}}(input.{{$f.TsBuilderFieldName}}, {{callAndConvertFunc $f $cfg $rawValue}}))) {
             throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
           }
         {{ end -}}

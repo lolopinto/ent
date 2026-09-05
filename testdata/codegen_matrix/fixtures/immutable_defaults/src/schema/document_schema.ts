@@ -1,7 +1,10 @@
 import {
   ActionOperation,
+  BooleanType,
   EntSchema,
+  JSONBType,
   StringType,
+  TimestampType,
   UUIDType,
 } from "@snowtop/ent/schema";
 import { AllowIfViewerIsEntPropertyRule, AlwaysDenyRule } from "@snowtop/ent";
@@ -34,6 +37,18 @@ export default new EntSchema({
       .trim()
       .toLowerCase()
       .minLen(1),
+    enabled: BooleanType({
+      immutable: true,
+      defaultValueOnCreate: () => true,
+    }),
+    recordedAt: TimestampType({
+      immutable: true,
+      defaultValueOnCreate: () => new Date("2026-01-01T12:00:00Z"),
+    }),
+    metadata: JSONBType({
+      immutable: true,
+      defaultValueOnCreate: () => ({ source: "default", version: 1 }),
+    }),
   },
   defaultActionPrivacy: {
     rules: [
