@@ -13,6 +13,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - preserve trigger priority groups when individual triggers appear before and
   after an explicitly grouped trigger list (#2023).
+- prevent custom GraphQL discovery from hanging when imported application code
+  leaves a database pool or another event-loop handle open (#2022).
 - update `uuid`, docs, test-helper, and standalone TypeScript package
   dependencies to patched versions (#2013).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
