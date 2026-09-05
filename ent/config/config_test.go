@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,6 +15,12 @@ type testData struct {
 	sqlAlchemyURI string
 	only          bool
 	skip          bool
+}
+
+func clearConfig() {
+	cfgMutex.Lock()
+	defer cfgMutex.Unlock()
+	cfg = nil
 }
 
 func TestConfig(t *testing.T) {
@@ -73,7 +80,7 @@ func TestConfig(t *testing.T) {
 			continue
 		}
 		t.Run(name, func(t *testing.T) {
-			cfg = nil
+			clearConfig()
 			os.Setenv("DB_CONNECTION_STRING", test.connStringEnv)
 
 			assert.Equal(t, GetConnectionStr(), test.expConnStr)
@@ -92,5 +99,37 @@ func TestConfig(t *testing.T) {
 
 			os.Unsetenv("DB_CONNECTION_STRING")
 		})
+	}
+}
+
+func TestConcurrentGet(t *testing.T) {
+	clearConfig()
+	t.Cleanup(clearConfig)
+	t.Setenv("DB_CONNECTION_STRING", "sqlite:///:memory:")
+
+	const goroutines = 32
+	start := make(chan struct{})
+	configs := make(chan *Config, goroutines)
+	var wg sync.WaitGroup
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			configs <- Get()
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(configs)
+
+	var first *Config
+	for current := range configs {
+		if first == nil {
+			first = current
+			continue
+		}
+		assert.Same(t, first, current)
 	}
 }

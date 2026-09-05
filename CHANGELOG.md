@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- avoid opening the Go codegen database pool until first use and close it when
+  `tsent` commands finish (#2024).
 - preserve trigger priority groups when individual triggers appear before and
   after an explicitly grouped trigger list (#2023).
 - prevent custom GraphQL discovery from hanging when imported application code
