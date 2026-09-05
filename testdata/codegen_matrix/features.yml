@@ -1,6 +1,20 @@
 version: 1
 
 fixtures:
+  - id: immutable_defaults
+    path: fixtures/immutable_defaults
+    description: >
+      Generated builder creation defaults, immutable guards, ownership privacy,
+      action hooks, inverse edges, and transformed insert/edit runtime behavior.
+    surfaces:
+      - parse_ts_schema
+      - ts_codegen
+      - graphql_codegen
+      - generated_tsc
+      - idempotence
+      - runtime_tests
+    covers:
+      - builder.immutable_create_defaults
   - id: feature_stress
     path: fixtures/feature_stress
     description: >
@@ -266,6 +280,13 @@ fixtures:
       - action.mutations
 
 features:
+  - id: builder.immutable_create_defaults
+    mode: explicit
+    rationale: >
+      A generated-app runtime fixture verifies immutable viewer, sync, and async
+      creation defaults without weakening ordinary updateInput guards, including
+      action hooks, formatting, ownership privacy, inverse association edges,
+      explicit input precedence, and transformed insert/edit operations.
   - id: schema.nodes
     owns: [input.Schema.Nodes, input.Node.Fields]
     mode: explicit

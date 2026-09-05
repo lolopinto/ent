@@ -76,6 +76,10 @@ export interface OrchestratorOptions<
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
   updateInput?: (data: TInput) => void;
+  // Internal generated-builder hook for defaults on actual inserts. Allows
+  // immutable creation defaults without relaxing the public updateInput guard.
+  // Older/custom builders continue to use updateInput when this is absent.
+  __initializeDefaultInput?: (data: TInput) => void;
 
   // mapping of column to expressions to use
   // if set and a column exists, we use the expression here instead of the given expression in the sql query
@@ -1110,9 +1114,18 @@ export class Orchestrator<
         ...data,
         ...defaultData,
       };
-      if (updateInput && this.options.updateInput) {
-        // this basically fixes #605. just needs to be exposed correctly
-        this.options.updateInput(this.defaultFieldsByTSName as TInput);
+      if (updateInput) {
+        // Defaults must reach the builder before privacy, triggers, and validators.
+        if (
+          this.actualOperation === WriteOperation.Insert &&
+          this.options.__initializeDefaultInput
+        ) {
+          this.options.__initializeDefaultInput(
+            this.defaultFieldsByTSName as TInput,
+          );
+        } else {
+          this.options.updateInput?.(this.defaultFieldsByTSName as TInput);
+        }
       }
     }
 

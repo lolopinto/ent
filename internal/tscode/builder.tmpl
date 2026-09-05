@@ -195,6 +195,7 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
       {{useImport "schema"}},
       editedFields: () => this.getEditedFields.apply(this),
       updateInput,
+      __initializeDefaultInput: (d: {{$input}}) => this.applyInput(d),
       fieldInfo: {{useImport $loaderInfo}}.fieldInfo,
       ...opts,
     });
@@ -217,6 +218,10 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
         throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
       }
     {{ end }}
+    this.applyInput(input);
+  }
+
+  private applyInput(input: {{$input}}) {
     {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
       {{$tsFieldName := $field.TsBuilderFieldName -}}
       {{ $inverseEdge := $field.GetInverseEdge -}}
