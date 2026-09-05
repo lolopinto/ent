@@ -17,6 +17,7 @@ from auto_schema.clause_text import normalize_clause_text
 from auto_schema.schema_item import FullTextIndex
 
 from . import ops
+from . import config
 
 
 def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
@@ -142,6 +143,8 @@ def compare_extensions(autogen_context, upgrade_ops, schemas):
 
 @comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
 def compare_edges(autogen_context, upgrade_ops, schemas):
+    if config.external_tables.matches("assoc_edge_config", reflected=True):
+        return
     db_edges = {}
 
     for sch in schemas:
@@ -321,8 +324,8 @@ def compare_data(autogen_context, upgrade_ops, schemas):
     data = autogen_context.metadata.info.setdefault("data", {})
 
     inspector = autogen_context.inspector
-    db_metadata = sa.MetaData()
-    db_metadata.reflect(inspector.bind)
+    table_names = {name for name in inspector.get_table_names()
+                   if autogen_context.run_name_filters(name, "table", {"schema_name": None})}
 
     for sch in schemas:
         sch = _get_schema_key(sch)
@@ -332,6 +335,11 @@ def compare_data(autogen_context, upgrade_ops, schemas):
 
         schema_data = data.get(sch, {})
         for table_name in schema_data:
+            if config.external_tables.matches(table_name) or (
+                table_name not in autogen_context.metadata.tables
+                and config.external_tables.matches(table_name, reflected=True)
+            ):
+                continue
             table_data = schema_data[table_name]
 
             pkeys = table_data.get('pkeys', None)
@@ -347,7 +355,7 @@ def compare_data(autogen_context, upgrade_ops, schemas):
             data_rows = {_create_tuple_key(row, pkeys): row for row in rows}
 
             # new table. need to add
-            if not table_name in db_metadata.tables:
+            if table_name not in table_names:
                 upgrade_ops.ops.append(ops.AddRowsOp(
                     table_name, pkeys, rows))
             else:
@@ -410,13 +418,19 @@ def compare_schema(autogen_context, upgrade_ops, schemas):
     inspector = autogen_context.inspector
 
     db_metadata = sa.MetaData()
-    db_metadata.reflect(inspector.bind)
+    db_metadata.reflect(
+        inspector.bind,
+        only=lambda name, metadata: autogen_context.run_name_filters(
+            name, "table", {"schema_name": None}
+        ),
+        resolve_fks=False,
+    )
 
     # TODO schema not being used
     # https://github.com/lolopinto/ent/issues/123
     for sch in schemas:
         conn_tables = {
-            table.name: table for table in db_metadata.sorted_tables}
+            table.name: table for table in db_metadata.tables.values()}
         metadata_tables = {
             table.name: table for table in autogen_context.metadata.sorted_tables}
 
@@ -431,6 +445,8 @@ def compare_schema(autogen_context, upgrade_ops, schemas):
         for name in metadata_tables:
             if not name in conn_tables:
                 _check_new_table(metadata_tables[name], upgrade_ops, sch)
+
+    config.external_tables.guard_dependencies(autogen_context, upgrade_ops, config.schema_name)
 
 
 def _check_removed_table(metadata_table, upgrade_ops, sch):

@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -739,6 +740,9 @@ func parseConfig(absPathToRoot string) (*ConfigurableConfig, error) {
 			return nil, err
 		}
 		if c.Codegen != nil {
+			if err := ValidateIgnoreTables(c.Codegen.IgnoreTables); err != nil {
+				return nil, err
+			}
 			c.Codegen.init()
 		}
 		return &c, nil
@@ -796,6 +800,7 @@ func cloneConfig(cfg *ConfigurableConfig) *ConfigurableConfig {
 }
 
 type CodegenConfig struct {
+	IgnoreTables                   []string                         `yaml:"ignoreTables"`
 	DefaultEntPolicy               *PrivacyConfig                   `yaml:"defaultEntPolicy"`
 	DefaultActionPolicy            *PrivacyConfig                   `yaml:"defaultActionPolicy"`
 	Prettier                       *PrettierConfig                  `yaml:"prettier"`
@@ -843,6 +848,7 @@ func cloneDevSchema(cfg *DevSchemaConfig) *DevSchemaConfig {
 
 func (cfg *CodegenConfig) Clone() *CodegenConfig {
 	return &CodegenConfig{
+		IgnoreTables:                   append([]string(nil), cfg.IgnoreTables...),
 		DefaultEntPolicy:               clonePrivacyConfig(cfg.DefaultEntPolicy),
 		DefaultActionPolicy:            clonePrivacyConfig(cfg.DefaultActionPolicy),
 		Prettier:                       clonePrettierConfig(cfg.Prettier),
@@ -866,6 +872,25 @@ func (cfg *CodegenConfig) Clone() *CodegenConfig {
 		TransformLoadMethod:            cfg.TransformLoadMethod,
 		DisableDefaultExportForActions: cfg.DisableDefaultExportForActions,
 	}
+}
+
+// IgnoreTables identifies externally owned tables, not Ent schema nodes.
+func (cfg *Config) IgnoreTables() []string {
+	if codegen := cfg.getCodegenConfig(); codegen != nil {
+		return append([]string(nil), codegen.IgnoreTables...)
+	}
+	return nil
+}
+
+var ignoreTablePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_$]*(\.(\*|[A-Za-z_][A-Za-z0-9_$]*))?$`)
+
+func ValidateIgnoreTables(patterns []string) error {
+	for _, pattern := range patterns {
+		if !ignoreTablePattern.MatchString(pattern) {
+			return fmt.Errorf("invalid codegen.ignoreTables entry %q: expected table, schema.table, or schema.* (no prefix globs or quoted identifiers)", pattern)
+		}
+	}
+	return nil
 }
 
 func (c *CodegenConfig) init() {

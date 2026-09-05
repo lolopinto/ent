@@ -40,6 +40,7 @@ from . import ops_impl
 from . import csv
 from .schema_item import CustomSQLAlchemyType
 from .util.os import delete_py_files
+from .external_tables import ExternalTables
 
 
 def _normalize_generated_file_text(contents: str) -> str:
@@ -69,6 +70,7 @@ class Runner(object):
         self.engine = engine
         self.connection = connection
         self.args: Mapping[str, Any] = args or {}
+        external_tables = ExternalTables(self.args.get("ignore_table", []))
 
         config.metadata = self.metadata
         config.engine = self.engine
@@ -85,6 +87,9 @@ class Runner(object):
             )
         config.schema_name = self.schema_name
         config.include_public = self.include_public
+        external_tables.configure(connection, self.schema_name)
+        external_tables.validate_metadata(metadata)
+        config.external_tables = external_tables
 
         sql = self.args.get('sql', None)
         if sql is not None and sql.lower() != 'true':
@@ -236,6 +241,7 @@ class Runner(object):
     @contextmanager
     def dev_schema_compare_search_path(cls, connection):
         if not config.schema_name:
+            config.external_tables.configure(connection)
             yield
             return
 
@@ -253,6 +259,7 @@ class Runner(object):
         )
         connection.execute(sa.text(f"SET search_path TO {compare_search_path}"))
         try:
+            config.external_tables.configure(connection, config.schema_name)
             yield
         finally:
             connection.execute(sa.text(f"SET search_path TO {runtime_search_path}"))
@@ -326,6 +333,7 @@ class Runner(object):
     def fix_edges(cls, metadata, args):
         if not isinstance(args, Mapping):
             args = vars(args)
+        external_tables = ExternalTables(args.get("ignore_table", []))
         connection = args.get("connection")
         if connection is None:
             engine = sa.create_engine(args["engine"])
@@ -339,6 +347,11 @@ class Runner(object):
                 include_public,
                 extension_schemas=cls.get_extension_search_path_schemas(metadata),
             )
+
+        external_tables.configure(connection, schema)
+        external_tables.validate_metadata(metadata)
+        if external_tables.matches("assoc_edge_config"):
+            raise ValueError("cannot fix_edges: assoc_edge_config is an ignored table")
 
         mc = MigrationContext.configure(
             connection=connection,
@@ -448,6 +461,15 @@ class Runner(object):
 
     @classmethod
     def include_object(cls, object, name, type, reflected, compare_to):
+        table = object if type == "table" else getattr(object, "table", None)
+        if table is not None:
+            if config.external_tables.matches(table.name, table.schema, reflected):
+                return False
+            if config.schema_name and reflected:
+                if config.external_tables.schema_for(table.name, table.schema, True) != config.schema_name:
+                    return False
+        if type == "foreign_key_constraint" and config.external_tables.foreign_key_is_external(object, reflected):
+            return False
         if config.schema_name and reflected:
             schema = getattr(object, "schema", None)
             if schema is None:
@@ -465,14 +487,19 @@ class Runner(object):
 
     @classmethod
     def include_name(cls, name, type, parent_names):
-        if not config.schema_name:
-            return True
-        if type == "schema":
+        if type == "schema" and config.schema_name:
             return name is None or name == config.schema_name
         schema = None
         if parent_names:
             schema = parent_names.get("schema_name") or parent_names.get("schema")
-        if schema is not None and schema != config.schema_name:
+        table = name if type == "table" else (parent_names or {}).get("table_name")
+        if table is not None:
+            if table in Runner.exclude_tables().split(','):
+                return False
+            if config.external_tables.matches(table, schema, reflected=True):
+                return False
+            schema = config.external_tables.schema_for(table, schema, reflected=True)
+        if config.schema_name and schema is not None and schema != config.schema_name:
             return False
         return True
 
@@ -710,8 +737,11 @@ class Runner(object):
         
         location = self.cmd.alembic_cfg.get_main_option('version_locations')
         
-        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
+        with self._empty_database_migrations(database) as result:
+            self._squash_all(result, message, revision, location)
 
+    def _squash_all(self, result, message, revision, location):
+        (migrations, connection, dialect, mc) = result
         (custom_sql_upgrade_ops, custom_sql_downgrade_ops) = self._get_custom_sql(connection, dialect, as_ops=True)
         migrations.upgrade_ops.ops.extend(custom_sql_upgrade_ops)
 
@@ -907,11 +937,15 @@ class Runner(object):
                 ),
             )
 
+        config.external_tables.configure(connection, self.schema_name)
         inspector = sa.inspect(connection)
         table_names = inspector.get_table_names(schema=self.schema_name or None)
         excluded_tables = set(Runner.exclude_tables().split(','))
         table_names = [name for name in table_names if name not in excluded_tables]
+        table_names = [name for name in table_names if not config.external_tables.matches(name, self.schema_name, reflected=True)]
         if len(table_names) != 0:
+            connection.close()
+            engine.dispose()
             raise Exception(
                 "to compare from base tables, cannot have any tables in database. "
                 f"have {len(table_names)}"
@@ -922,14 +956,33 @@ class Runner(object):
             dialect_name=dialect,
             opts=Runner.get_opts(),
         )
-        with Runner.dev_schema_compare_search_path(connection):
-            migrations = produce_migrations(mc, self.metadata)
+        try:
+            with Runner.dev_schema_compare_search_path(connection):
+                migrations = produce_migrations(mc, self.metadata)
+        except Exception:
+            connection.close()
+            engine.dispose()
+            raise
         return (migrations, connection, dialect, mc)
                     
+    @contextmanager
+    def _empty_database_migrations(self, database):
+        result = self.migrations_against_empty(database=database)
+        connection = result[1]
+        try:
+            yield result
+        finally:
+            connection.close()
+            connection.engine.dispose()
+
     # doesn't invoke env.py. completely different flow
     # progressive_sql and upgrade range do go through offline path
     def all_sql(self, file=None, database=''):
-        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
+        with self._empty_database_migrations(database) as result:
+            self._all_sql(result, file)
+
+    def _all_sql(self, result, file):
+        (migrations, connection, dialect, mc) = result
     
         buffer = io.StringIO()
 

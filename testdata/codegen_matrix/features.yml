@@ -186,6 +186,7 @@ fixtures:
       - idempotence
     dialect: sqlite
     covers:
+      - codegen.ignore_tables
       - schema.nodes
       - node.table_name
       - node.actions
@@ -235,6 +236,7 @@ fixtures:
         runtime: bun
         postgresDriver: bun
     covers:
+      - codegen.ignore_tables
       - schema.nodes
       - node.table_name
       - node.actions
@@ -265,6 +267,11 @@ fixtures:
       - action.mutations
 
 features:
+  - id: codegen.ignore_tables
+    owns: [codegen.ignoreTables]
+    mode: explicit
+    dialect_coverage: [sqlite, postgres]
+    rationale: Configured external tables retain rows and indexes through real DB codegen and deterministic schema.sql generation; detailed FK and dev-schema coverage is in python/auto_schema/tests/external_tables_test.py.
   - id: schema.nodes
     owns: [input.Schema.Nodes, input.Node.Fields]
     mode: explicit
