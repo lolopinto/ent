@@ -3489,6 +3489,83 @@ type customInterfaceInfo struct {
 	imports  []string
 }
 
+func getDeclaredStructFieldEdgeInfo(f *field.Field) *base.FieldEdgeInfo {
+	if fieldEdge := f.FieldEdgeInfo(); fieldEdge != nil {
+		return fieldEdge
+	}
+	if fkey := f.ForeignKeyInfo(); fkey != nil {
+		return &base.FieldEdgeInfo{
+			Schema: fkey.Schema,
+		}
+	}
+	return nil
+}
+
+func getStructFieldGraphQLName(processor *codegen.Processor, f *field.Field) string {
+	fieldEdge := getDeclaredStructFieldEdgeInfo(f)
+	if fieldEdge == nil {
+		return f.GetGraphQLName()
+	}
+
+	e, err := edge.GetFieldEdge(
+		processor.Config,
+		f.FieldName,
+		fieldEdge,
+		f.Nullable(),
+		f.GetFieldType(),
+	)
+	if err != nil || e == nil {
+		return f.GetGraphQLName()
+	}
+	return e.GraphQLEdgeName()
+}
+
+func inferStructFieldEdge(processor *codegen.Processor, ci *customtype.CustomInterface, f *field.Field) *base.FieldEdgeInfo {
+	if !processor.Config.Base64EncodeIDs() {
+		return nil
+	}
+
+	switch typ := f.GetFieldType().(type) {
+	case *enttype.IDType:
+		if typ.DisableBase64Encode {
+			return nil
+		}
+	case *enttype.NullableIDType:
+		if typ.DisableBase64Encode {
+			return nil
+		}
+	default:
+		return nil
+	}
+
+	fieldName, valid := base.TranslateIDSuffix(f.FieldName)
+	if !valid {
+		return nil
+	}
+
+	graphQLName := names.ToGraphQLName(processor.Config, fieldName)
+	for _, other := range ci.Fields {
+		if other != f && other.ExposeToGraphQL() && getStructFieldGraphQLName(processor, other) == graphQLName {
+			return nil
+		}
+	}
+	for _, other := range ci.NonEntFields {
+		if other.ExposeToGraphQL() && other.GetGraphQLName() == graphQLName {
+			return nil
+		}
+	}
+
+	schemaName := names.ToClassType(fieldName)
+	nodeData, err := processor.Schema.GetNodeDataForNode(schemaName)
+	if err != nil || nodeData.HideFromGraphQL {
+		return nil
+	}
+
+	return &base.FieldEdgeInfo{
+		Schema: schemaName,
+	}
+}
+
 // similar to buildCustomInputNode but different...
 // buildCustomInputNode is used for action inputs
 // while this is used for StructType. can probably eventually be used together
@@ -3540,16 +3617,9 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 		fieldName := fmt.Sprintf("obj.%s", f.TsFieldName(processor.Config))
 
 		if !ciInfo.input {
-			fieldEdge := f.FieldEdgeInfo()
-
+			fieldEdge := getDeclaredStructFieldEdgeInfo(f)
 			if fieldEdge == nil {
-				if fkey := f.ForeignKeyInfo(); fkey != nil {
-					// handle types declared with foreignKey
-					// TODO should probably throw since this doesn't actually make sense since the foreignKey won't be respected
-					fieldEdge = &base.FieldEdgeInfo{
-						Schema: fkey.Schema,
-					}
-				}
+				fieldEdge = inferStructFieldEdge(processor, ci, f)
 			}
 
 			// should exist for id fields...

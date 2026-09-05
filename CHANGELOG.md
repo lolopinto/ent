@@ -15,6 +15,9 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
   dependencies to patched versions (#2013).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
   after repeated codegen runs (#2016).
+- when GraphQL ID encoding is enabled, infer GraphQL Node fields for struct
+  UUID fields whose `...Id` name matches an existing Ent schema, without
+  requiring redundant edge metadata (#2021).
 
 ## [0.2.13]
 
