@@ -148,6 +148,7 @@ fixtures:
       - custom_graphql.custom_mutation_return
       - custom_graphql.json_with_decorators
       - custom_graphql.custom_type_metadata
+      - struct.uuid_node_inference
       - pattern.struct_privacy_import
       - polymorphic.struct_field_codegen
       - field_edge.uuid_list_inverse
@@ -913,6 +914,10 @@ features:
       - ts/src/action/transformed_orchestrator.test.ts
       - examples/simple/src/ent/tests/transform_write_struct_input.test.ts
     rationale: Runtime transformWrite/input-shape behavior is covered outside compile-only codegen matrix.
+  - id: struct.uuid_node_inference
+    owns: []
+    mode: explicit
+    rationale: An ID-suffixed UUID struct field matching an Ent must render and compile as a GraphQL Node field without redundant edge metadata.
   - id: pattern.struct_privacy_import
     owns: []
     mode: explicit

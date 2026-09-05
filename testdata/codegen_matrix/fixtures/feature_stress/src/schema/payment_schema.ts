@@ -228,12 +228,28 @@ const PaymentSchema = new EntSchema({
         changedByType: StringType({
           nullable: true,
         }),
+        horseID: UUIDType({
+          nullable: true,
+        }),
         comment: StringType({
           storageKey: "comment_text",
           nullable: true,
         }),
         relatedIDs: UUIDListType({
           nullable: true,
+        }),
+      },
+    }),
+    sheepEdgeCollision: StructType({
+      tsType: "PaymentSheepEdgeCollision",
+      fields: {
+        sheepID: UUIDType({
+          nullable: true,
+        }),
+        sheepIDs: UUIDListType({
+          fieldEdge: {
+            schema: "Sheep",
+          },
         }),
       },
     }),

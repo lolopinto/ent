@@ -1358,3 +1358,201 @@ func TestCustomStructType(t *testing.T) {
 	// TODO
 	require.True(t, strings.Contains(typ.FilePath, "src/graphql/generated/resolvers/"))
 }
+
+func TestCustomStructUUIDFieldInfersNodeFromName(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		map[string]string{
+			"horse_schema.ts": testhelper.GetCodeWithSchema(`
+				import {EntSchema, StringType} from "{schema}";
+
+				const Horse = new EntSchema({
+					fields: {
+						name: StringType(),
+					},
+				});
+				export default Horse;
+			`),
+			"hidden_horse_schema.ts": testhelper.GetCodeWithSchema(`
+				import {EntSchema, StringType} from "{schema}";
+
+				const HiddenHorse = new EntSchema({
+					fields: {
+						name: StringType(),
+					},
+					hideFromGraphQL: true,
+				});
+				export default HiddenHorse;
+			`),
+			"competition_event_schema.ts": testhelper.GetCodeWithSchema(`
+				import {EntSchema, StringType, StructType, StructTypeAsList, UUIDType} from "{schema}";
+
+				const CompetitionEvent = new EntSchema({
+					fields: {
+						horses: StructTypeAsList({
+							tsType: "CompetitionEventHorseEntry",
+							fields: {
+								horseId: UUIDType({nullable: true}),
+								horseName: StringType({nullable: true}),
+							},
+						}),
+						rawHorseReference: StructType({
+							tsType: "RawHorseReference",
+							fields: {
+								horseId: UUIDType({disableBase64Encode: true}),
+							},
+						}),
+						horseLabel: StructType({
+							tsType: "HorseLabel",
+							fields: {
+								horseId: UUIDType({nullable: true}),
+								horse: StringType(),
+								hiddenHorseId: UUIDType({nullable: true}),
+							},
+						}),
+					},
+				});
+				export default CompetitionEvent;
+			`),
+		},
+	)
+
+	processor, err := codegen.NewTestCodegenProcessor(
+		"src/schema",
+		schema,
+		&codegen.CodegenConfig{DisableGraphQLRoot: true},
+	)
+	require.NoError(t, err)
+
+	ci := schema.CustomInterfaces["CompetitionEventHorseEntry"]
+	require.NotNil(t, ci)
+
+	obj, err := buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
+		name: ci.GQLName,
+	})
+	require.NoError(t, err)
+	require.Len(t, obj.Fields, 2)
+
+	horseField := obj.Fields[0]
+	assert.Equal(t, "horse", horseField.Name)
+	assert.Equal(t, "HorseType", horseField.FieldType())
+	assert.True(t, horseField.HasResolveFunction)
+	assert.Equal(t, []string{
+		"if (obj.horseId === null || obj.horseId === undefined)	{ return null;}",
+		"return Horse.load(context.getViewer(), obj.horseId);",
+	}, horseField.FunctionContents)
+	require.Len(t, horseField.ExtraImports, 1)
+	assert.Equal(t, "Horse", horseField.ExtraImports[0].Import)
+
+	horseNameField := obj.Fields[1]
+	assert.Equal(t, "horseName", horseNameField.Name)
+	assert.False(t, horseNameField.HasResolveFunction)
+
+	rawCI := schema.CustomInterfaces["RawHorseReference"]
+	require.NotNil(t, rawCI)
+
+	rawObj, err := buildCustomInterfaceNode(processor, rawCI, &customInterfaceInfo{
+		name: rawCI.GQLName,
+	})
+	require.NoError(t, err)
+	require.Len(t, rawObj.Fields, 1)
+
+	rawHorseIDField := rawObj.Fields[0]
+	assert.Equal(t, "horseId", rawHorseIDField.Name)
+	assert.Equal(t, "new GraphQLNonNull(GraphQLID)", rawHorseIDField.FieldType())
+	assert.False(t, rawHorseIDField.HasResolveFunction)
+
+	labelCI := schema.CustomInterfaces["HorseLabel"]
+	require.NotNil(t, labelCI)
+
+	labelObj, err := buildCustomInterfaceNode(processor, labelCI, &customInterfaceInfo{
+		name: labelCI.GQLName,
+	})
+	require.NoError(t, err)
+	require.Len(t, labelObj.Fields, 3)
+	assert.Equal(t, "horseId", labelObj.Fields[0].Name)
+	assert.Equal(t, "GraphQLID", labelObj.Fields[0].FieldType())
+	assert.False(t, labelObj.Fields[0].HasResolveFunction)
+	assert.Equal(t, "horse", labelObj.Fields[1].Name)
+	assert.Equal(t, "hiddenHorseId", labelObj.Fields[2].Name)
+	assert.Equal(t, "GraphQLID", labelObj.Fields[2].FieldType())
+	assert.False(t, labelObj.Fields[2].HasResolveFunction)
+
+	rawIDProcessor, err := codegen.NewTestCodegenProcessor(
+		"src/schema",
+		schema,
+		&codegen.CodegenConfig{
+			DisableGraphQLRoot:    true,
+			DisableBase64Encoding: true,
+		},
+	)
+	require.NoError(t, err)
+
+	rawIDObj, err := buildCustomInterfaceNode(rawIDProcessor, ci, &customInterfaceInfo{
+		name: ci.GQLName,
+	})
+	require.NoError(t, err)
+	require.Len(t, rawIDObj.Fields, 2)
+	assert.Equal(t, "horseId", rawIDObj.Fields[0].Name)
+	assert.Equal(t, "GraphQLID", rawIDObj.Fields[0].FieldType())
+	assert.False(t, rawIDObj.Fields[0].HasResolveFunction)
+}
+
+func TestCustomStructUUIDFieldInferenceAvoidsExplicitEdgeNameCollision(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(
+		t,
+		map[string]string{
+			"sheep_schema.ts": testhelper.GetCodeWithSchema(`
+				import {EntSchema, StringType} from "{schema}";
+
+				const Sheep = new EntSchema({
+					fields: {
+						name: StringType(),
+					},
+				});
+				export default Sheep;
+			`),
+			"farm_schema.ts": testhelper.GetCodeWithSchema(`
+				import {EntSchema, StructType, UUIDListType, UUIDType} from "{schema}";
+
+				const Farm = new EntSchema({
+					fields: {
+						animals: StructType({
+							tsType: "FarmAnimals",
+							fields: {
+								sheepId: UUIDType({nullable: true}),
+								sheepIds: UUIDListType({
+									fieldEdge: {
+										schema: "Sheep",
+									},
+								}),
+							},
+						}),
+					},
+				});
+				export default Farm;
+			`),
+		},
+	)
+
+	processor, err := codegen.NewTestCodegenProcessor(
+		"src/schema",
+		schema,
+		&codegen.CodegenConfig{DisableGraphQLRoot: true},
+	)
+	require.NoError(t, err)
+
+	ci := schema.CustomInterfaces["FarmAnimals"]
+	require.NotNil(t, ci)
+
+	obj, err := buildCustomInterfaceNode(processor, ci, &customInterfaceInfo{
+		name: ci.GQLName,
+	})
+	require.NoError(t, err)
+	require.Len(t, obj.Fields, 2)
+	assert.Equal(t, "sheepId", obj.Fields[0].Name)
+	assert.Equal(t, "GraphQLID", obj.Fields[0].FieldType())
+	assert.False(t, obj.Fields[0].HasResolveFunction)
+	assert.Equal(t, "sheep", obj.Fields[1].Name)
+	assert.True(t, obj.Fields[1].HasResolveFunction)
+}
