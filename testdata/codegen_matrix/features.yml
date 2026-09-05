@@ -907,6 +907,13 @@ features:
     mode: explicit
     rationale: Imported custom GraphQL enum types must not be serialized as scalars, and unused optional scalar helpers must not churn custom_schema.json.
 
+  - id: custom_compiler.dynamic_import_aliases
+    owns: []
+    mode: existing_test
+    test_refs:
+      - ts/src/scripts/custom_compiler.test.ts
+    rationale: The custom compiler must rewrite deferred path aliases in emitted JavaScript; focused CLI tests execute the compiled output in Node, including CommonJS privacy/model loading and ESNext output with explicit JS extensions and import options.
+
   - id: transform_write.struct_input_runtime
     owns: []
     mode: existing_test
