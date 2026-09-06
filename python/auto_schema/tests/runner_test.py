@@ -1409,6 +1409,63 @@ class TestPostgresRunner(BaseTestRunner):
         assert r2.compute_changes() == []
         _assert_no_predicate_views(r2)
 
+    @pytest.mark.parametrize("child_name", ["a_children", "z_children"])
+    @pytest.mark.parametrize("constraint_name", ["children_contact_fk", None])
+    def test_new_table_foreign_key_waits_for_full_unique_index(self, new_test_runner, child_name, constraint_name):
+        before = _partial_index_metadata("owner_id > 0", unique=True)
+        r = new_test_runner(before)
+        r.run()
+        r.get_connection().execute(before.tables["contacts"].insert(), {"id": 1, "owner_id": 1})
+        r.get_connection().commit()
+        original_predicate = _reflected_predicate(r)
+
+        after = _partial_index_metadata(None, unique=True)
+        child = sa.Table(
+            child_name, after,
+            sa.Column("id", sa.Integer(), primary_key=True),
+            sa.Column("owner_id", sa.Integer(), nullable=False),
+            sa.UniqueConstraint("owner_id", name="children_owner_unique"),
+            sa.ForeignKeyConstraint(
+                ["owner_id"], ["contacts.owner_id"], name=constraint_name,
+                ondelete="CASCADE", deferrable=True, initially="DEFERRED",
+            ),
+            comment="Child table metadata survives foreign key deferral",
+        )
+        r2 = new_test_runner(after, r)
+        r2.run()
+
+        def assert_child():
+            inspector = sa.inspect(r2.engine)
+            assert inspector.get_table_comment(child_name)["text"] == child.comment
+            assert [constraint["name"] for constraint in inspector.get_unique_constraints(child_name)] == ["children_owner_unique"]
+            foreign_keys = inspector.get_foreign_keys(child_name)
+            assert len(foreign_keys) == 1
+            if constraint_name is not None:
+                assert foreign_keys[0]["name"] == constraint_name
+            assert foreign_keys[0]["referred_columns"] == ["owner_id"]
+            assert foreign_keys[0]["options"] == {"ondelete": "CASCADE", "deferrable": True, "initially": "DEFERRED"}
+            assert _reflected_partial_index(r2)["unique"]
+            assert _reflected_predicate(r2) is None
+
+        assert_child()
+        r2.get_connection().execute(child.insert(), {"id": 1, "owner_id": 1})
+        r2.get_connection().commit()
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert not sa.inspect(r2.engine).has_table(child_name)
+        assert _reflected_predicate(r2) == original_predicate
+        assert r2.get_connection().execute(sa.select(after.tables["contacts"].c.owner_id)).all() == [(1,)]
+        r2.get_connection().commit()
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_child()
+        assert r2.get_connection().execute(sa.select(child)).all() == []
+        r2.get_connection().commit()
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
     def test_invalid_operator_without_pending_column_type_still_fails(self, new_test_runner):
         r = new_test_runner(_partial_index_metadata("score > 1"))
         r.run()
@@ -1497,6 +1554,68 @@ class TestPostgresRunner(BaseTestRunner):
             with pytest.raises(sa.exc.DataError, match="invalid input value for enum"):
                 compare._compare_indexes(context, result, None, "contacts", reflected, after.tables["contacts"])
         _assert_no_predicate_views(r)
+
+    @pytest.mark.parametrize("index_change", ["predicate", "columns", "full_text"])
+    @pytest.mark.parametrize("command", ["downgrade", "squash"])
+    def test_irreversible_enum_downgrade_preserves_concurrent_index(self, new_test_runner, index_change, command):
+        full_text = index_change == "full_text"
+
+        def metadata(values, predicate, change_columns=False):
+            result = _enum_partial_index_metadata(values, predicate, full_text)
+            table = result.tables["contacts"]
+            if change_columns:
+                table.indexes.clear()
+                sa.Index("contacts_active_idx", table.c.owner_id, table.c.score, postgresql_where=sa.text(predicate))
+            index = next(iter(table.indexes))
+            if full_text:
+                index.info["postgresql_concurrently"] = True
+            else:
+                index.kwargs["postgresql_concurrently"] = True
+                index.unique = True
+            return result
+
+        r = new_test_runner(metadata(["active"], "status = 'active'"))
+        r.run()
+        predicate = "status = 'active'" if index_change == "columns" else "status IN ('active', 'archived')"
+        r2 = new_test_runner(metadata(["active", "archived"], predicate, index_change == "columns"), r)
+        r2.run()
+        connection = r2.get_connection()
+        connection.execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, score, status) VALUES (1, 10, 1, 'active')"
+        ))
+
+        def index_state():
+            return connection.execute(sa.text(
+                "SELECT indexrelid::oid, pg_get_indexdef(indexrelid), indisvalid, indisunique "
+                "FROM pg_index WHERE indexrelid = to_regclass('contacts_active_idx')"
+            )).all()
+
+        original_index = index_state()
+        assert len(original_index) == 1 and original_index[0].indisvalid
+        revision = connection.execute(sa.text("SELECT version_num FROM alembic_version")).scalar_one()
+        connection.commit()
+        with pytest.raises(ValueError, match="operation is not reversible"):
+            if command == "downgrade":
+                r2.downgrade("-1", delete_files=False)
+            else:
+                r2.squash_n(2)
+
+        # Concurrent DDL commits independently: a later exception cannot restore
+        # a dropped index. Reject before touching its identity or uniqueness.
+        assert index_state() == original_index
+        assert connection.execute(sa.text("SELECT version_num FROM alembic_version")).scalar_one() == revision
+        assert connection.execute(sa.text("SELECT id, owner_id, score, status FROM contacts")).all() == [(1, 10, 1, "active")]
+        assert sa.inspect(r2.engine).get_enums()[0]["labels"] == ["active", "archived"]
+        if not full_text:
+            with pytest.raises(sa.exc.IntegrityError):
+                with connection.begin_nested():
+                    connection.execute(sa.text(
+                        "INSERT INTO contacts (id, owner_id, score, status) VALUES (2, 10, 1, 'active')"
+                    ))
+        connection.commit()
+        testingutils.assert_num_files(r2, 2)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
 
     def test_pending_enum_values_leave_unchanged_predicate_alone(self, new_test_runner):
         r = new_test_runner(_enum_partial_index_metadata(["active"], "status = 'active'"))

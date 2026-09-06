@@ -457,6 +457,29 @@ def _order_foreign_keys_for_index_changes(autogen_context, upgrade_ops, schemas)
     # the same dependencies there instead of relying on table-name ordering.
     foreign_key_drops, foreign_key_creates, remaining = [], [], []
     for table_ops in upgrade_ops.ops:
+        if isinstance(table_ops, alembicops.CreateTableOp):
+            # New tables also depend on indexes changed later in this migration.
+            # Keep the table operation and all other constraints/options intact;
+            # explicit late FK creation gives downgrade an early FK drop too.
+            creates = []
+            for item in table_ops.columns:
+                if not isinstance(item, sa.ForeignKeyConstraint):
+                    continue
+                operation = alembicops.CreateForeignKeyOp.from_constraint(item)
+                if operation.constraint_name is None:
+                    # An inline FK normally drops with its table. Once deferred,
+                    # its inverse DROP CONSTRAINT needs a stable explicit name.
+                    signature = (
+                        operation.source_table, operation.referent_table,
+                        operation.local_cols, operation.remote_cols, sorted(operation.kw.items()),
+                    )
+                    operation.constraint_name = f"ent_fk_{uuid.uuid5(uuid.NAMESPACE_OID, repr(signature)).hex}"
+                creates.append(operation)
+            if creates:
+                table_ops.columns = [item for item in table_ops.columns if not isinstance(item, sa.ForeignKeyConstraint)]
+                foreign_key_creates.append(alembicops.ModifyTableOps(table_ops.table_name, creates, schema=table_ops.schema))
+            remaining.append(table_ops)
+            continue
         if not isinstance(table_ops, alembicops.ModifyTableOps):
             remaining.append(table_ops)
             continue
