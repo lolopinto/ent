@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 import sqlalchemy as sa
 from alembic.operations import ops
-from .ops import RemoveRowsOp, ModifyRowsOp
+from .ops import RemoveRowsOp, ModifyRowsOp, RemoveEdgesOp, ModifyEdgeOp
 
 
 _PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*(?:\.(?:\*|[A-Za-z_][A-Za-z0-9_$]*))?")
@@ -24,6 +24,7 @@ class _ForeignKey:
     onupdate: str
     supporting_index: str | None = None
     supporting_constraint: str | None = None
+    name: str | None = None
 
 
 class ExternalTables:
@@ -117,7 +118,7 @@ class ExternalTables:
                        ARRAY(SELECT a.attname FROM unnest(fk.confkey) WITH ORDINALITY AS k(num, ord)
                              JOIN pg_attribute a ON a.attrelid = fk.confrelid AND a.attnum = k.num
                              ORDER BY k.ord),
-                       fk.confdeltype, fk.confupdtype, key_index.relname, key_constraint.conname
+                       fk.confdeltype, fk.confupdtype, key_index.relname, key_constraint.conname, fk.conname
                 FROM pg_constraint fk
                 JOIN pg_class source ON source.oid = fk.conrelid
                 JOIN pg_namespace source_ns ON source_ns.oid = source.relnamespace
@@ -130,10 +131,10 @@ class ExternalTables:
                 WHERE fk.contype = 'f'
                   AND (source_ns.nspname = ANY(:schemas) OR target_ns.nspname = ANY(:schemas))
             """), {'schemas': sorted(schemas)})
-            for source_schema, source, target_schema, target, columns, target_columns, delete, update, index, constraint in rows:
+            for source_schema, source, target_schema, target, columns, target_columns, delete, update, index, constraint, name in rows:
                 yield _ForeignKey((source_schema, source), (target_schema, target),
                                   tuple(columns), tuple(target_columns),
-                                  _PG_ACTIONS[delete], _PG_ACTIONS[update], index, constraint)
+                                  _PG_ACTIONS[delete], _PG_ACTIONS[update], index, constraint, name)
             return
 
         inspector = autogen_context.inspector
@@ -146,7 +147,49 @@ class ExternalTables:
                     yield _ForeignKey((schema, table), (target_schema, target),
                                       tuple(fk['constrained_columns']), tuple(fk['referred_columns']),
                                       options.get('ondelete', 'NO ACTION').upper(),
-                                      options.get('onupdate', 'NO ACTION').upper())
+                                      options.get('onupdate', 'NO ACTION').upper(), name=fk['name'])
+
+    def _foreign_key_from_constraint(self, constraint):
+        schema, target, _ = constraint.elements[0]._column_tokens
+        return _ForeignKey(
+            (self.schema_for(constraint.table.name, constraint.table.schema), constraint.table.name),
+            (self.schema_for(target, schema), target),
+            tuple(fk.parent.name for fk in constraint.elements),
+            tuple(fk._column_tokens[2] for fk in constraint.elements),
+            (constraint.ondelete or 'NO ACTION').upper(),
+            (constraint.onupdate or 'NO ACTION').upper(), name=constraint.name,
+        )
+
+    def _advance_dependencies(self, incoming, op):
+        """Track the FK graph at each point in the emitted migration."""
+        if isinstance(op, ops.CreateForeignKeyOp):
+            fk = self._foreign_key_from_constraint(op.to_constraint())
+            incoming[fk.target].append(fk)
+        elif isinstance(op, ops.CreateTableOp):
+            for constraint in op.to_table().foreign_key_constraints:
+                fk = self._foreign_key_from_constraint(constraint)
+                incoming[fk.target].append(fk)
+        elif isinstance(op, ops.DropConstraintOp) and op.constraint_type == 'foreignkey':
+            source = (self.schema_for(op.table_name, op.schema, reflected=True), op.table_name)
+            # Named constraints are scoped to their source table. For unnamed
+            # SQLite FKs, use the reflected constraint's complete endpoints.
+            removed = self._foreign_key_from_constraint(op.to_constraint()) if op.constraint_name is None else None
+            for target, dependencies in incoming.items():
+                incoming[target] = [fk for fk in dependencies if not (
+                    fk.source == source and (
+                        fk.name == op.constraint_name if removed is None else
+                        fk.target == removed.target and fk.columns == removed.columns
+                        and fk.target_columns == removed.target_columns
+                    )
+                )]
+        elif isinstance(op, (ops.DropTableOp, ops.DropColumnOp)):
+            table = (self.schema_for(op.table_name, op.schema, reflected=True), op.table_name)
+            column = getattr(op, 'column_name', None)
+            for target, dependencies in incoming.items():
+                incoming[target] = [fk for fk in dependencies if not (
+                    (fk.source == table and (column is None or column in fk.columns)) or
+                    (fk.target == table and (column is None or column in fk.target_columns))
+                )]
 
     def _seed_change_crosses_boundary(self, incoming, table, columns=None):
         # None represents deletion; a column set represents an update. Tracking
@@ -181,22 +224,24 @@ class ExternalTables:
         if not self.patterns or not upgrade_ops.ops:
             return
 
-        dangerous = []
-
-        def collect(container):
+        def flatten(container):
             for op in container.ops:
                 if isinstance(op, ops.OpContainer):
-                    collect(op)
-                elif isinstance(op, (ops.DropTableOp, ops.DropColumnOp, ops.DropIndexOp,
-                                     ops.DropConstraintOp, RemoveRowsOp, ModifyRowsOp)) or (
-                    isinstance(op, ops.AlterColumnOp) and (
-                        op.modify_type is not None or op.modify_name is not None
-                    )
-                ):
-                    dangerous.append(op)
+                    yield from flatten(op)
+                else:
+                    yield op
 
-        collect(upgrade_ops)
-        if not dangerous:
+        def is_dangerous(op):
+            return isinstance(op, (ops.DropTableOp, ops.DropColumnOp, ops.DropIndexOp,
+                                   ops.DropConstraintOp, RemoveRowsOp, ModifyRowsOp,
+                                   RemoveEdgesOp, ModifyEdgeOp)) or (
+                isinstance(op, ops.AlterColumnOp) and (
+                    op.modify_type is not None or op.modify_name is not None
+                )
+            )
+
+        planned = list(flatten(upgrade_ops))
+        if not any(is_dangerous(op) for op in planned):
             return
 
         inspector = autogen_context.inspector
@@ -213,7 +258,27 @@ class ExternalTables:
                 endpoints.update((*fk.target, c) for c in fk.target_columns)
                 referenced_keys[fk.target].append(fk)
 
-        for op in dangerous:
+        for op in planned:
+            if isinstance(op, (RemoveEdgesOp, ModifyEdgeOp)):
+                # Edge renderers/implementations address this unqualified table;
+                # op.schema is the logical 'public' key even in dev/SQLite mode.
+                table = (self.schema_for('assoc_edge_config', reflected=True), 'assoc_edge_config')
+                changed = None
+                if isinstance(op, ModifyEdgeOp):
+                    # Rendering omits timestamps; the implementation always
+                    # writes updated_at and leaves created_at alone.
+                    old = op.old_edge or {}
+                    changed = frozenset({'updated_at'} | {
+                        c for c in op.new_edge if c not in ('created_at', 'updated_at')
+                        and (str(op.new_edge[c]) != str(old.get(c))
+                             if c in ('edge_type', 'inverse_edge_type') else op.new_edge[c] != old.get(c))
+                    })
+                if self._seed_change_crosses_boundary(incoming, table, changed):
+                    self._raise_dependency_error(*table)
+                continue
+            if not is_dangerous(op):
+                self._advance_dependencies(incoming, op)
+                continue
             schema = self.schema_for(op.table_name, op.schema, reflected=True)
             column = getattr(op, "column_name", None)
             blocked = (schema, op.table_name, column) in endpoints
@@ -240,6 +305,10 @@ class ExternalTables:
                     blocked = any(set(fk.target_columns) == set(
                         key.get('column_names') or key.get('constrained_columns') or []
                     ) for fk in dependencies for key in keys)
+            elif isinstance(op, ops.DropTableOp) and autogen_context.connection.dialect.name == 'sqlite':
+                # SQLite runs an implicit DELETE before dropping a table, so
+                # its current cascades can modify rows in surviving tables.
+                blocked = blocked or self._seed_change_crosses_boundary(incoming, (schema, op.table_name))
             elif isinstance(op, RemoveRowsOp):
                 blocked = self._seed_change_crosses_boundary(incoming, (schema, op.table_name))
             elif isinstance(op, ModifyRowsOp):
@@ -247,8 +316,13 @@ class ExternalTables:
                            for c in set(row) | set(old) if row.get(c) != old.get(c)}
                 blocked = self._seed_change_crosses_boundary(incoming, (schema, op.table_name), frozenset(changed))
             if blocked:
-                raise ValueError(
-                    f"cannot change {schema}.{op.table_name}"
-                    f"{'.' + column if column else ''}: foreign key crosses an "
-                    "ignoreTables ownership boundary; coordinate an external migration first"
-                )
+                self._raise_dependency_error(schema, op.table_name, column)
+            self._advance_dependencies(incoming, op)
+
+    @staticmethod
+    def _raise_dependency_error(schema, table, column=None):
+        raise ValueError(
+            f"cannot change {schema}.{table}"
+            f"{'.' + column if column else ''}: foreign key crosses an "
+            "ignoreTables ownership boundary; coordinate an external migration first"
+        )

@@ -272,7 +272,7 @@ features:
     owns: [codegen.ignoreTables]
     mode: explicit
     dialect_coverage: [sqlite, postgres]
-    rationale: Configured external tables retain rows and indexes through real DB codegen and deterministic schema.sql generation; detailed FK and dev-schema coverage is in python/auto_schema/tests/external_tables_test.py.
+    rationale: Configured external tables retain rows and indexes through real DB codegen and deterministic schema.sql generation; detailed FK, pending migration, edge mutation, and dev-schema coverage is in python/auto_schema/tests/external_tables_test.py and external_mutations_test.py.
   - id: schema.nodes
     owns: [input.Schema.Nodes, input.Node.Fields]
     mode: explicit

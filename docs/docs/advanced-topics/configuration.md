@@ -75,10 +75,11 @@ database definition. Ent-declared foreign keys targeting ignored tables are also
 rejected. External migrations own foreign keys crossing this ownership boundary,
 including existing foreign keys on managed tables that reference ignored tables.
 Autogeneration preserves those foreign keys. Destructive changes to their tables
-or endpoint columns, removal of the supporting unique key, and seed-row changes
+or endpoint columns, removal of the supporting unique key, and seed-row or edge changes
 that could cascade through managed tables into external rows fail before
-generating a migration; unrelated managed changes continue normally. Coordinate
-the external migration before changing an endpoint.
+generating a migration. Dependency checks account for foreign keys added,
+replaced, or removed earlier in that migration; unrelated managed changes continue
+normally. Coordinate the external migration before changing an endpoint.
 
 The option governs new autogeneration. It does not rewrite previously committed
 revisions or interpret handwritten SQL. Explicit upgrade/downgrade, numeric
