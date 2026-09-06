@@ -37,7 +37,9 @@ function getCacheKeyForExpression(expression: QueryExpression): string {
   return expression.instanceKey();
 }
 
-export function getSelectFieldsKey(fields: QueryableDataOptions["fields"]): string {
+export function getSelectFieldsKey(
+  fields: QueryableDataOptions["fields"],
+): string {
   return fields
     .map((field) => {
       if (typeof field === "string") {
@@ -224,18 +226,23 @@ export function getJoinInfo(
   };
 }
 
-export function buildQueryData(options: QueryableDataOptions): BuiltQueryData {
+// startIdx is the first placeholder number when embedding this query in another.
+// The returned values contain only this query's parameters.
+export function buildQueryData(
+  options: QueryableDataOptions,
+  startIdx = 1,
+): BuiltQueryData {
   const fieldsAlias = options.fieldsAlias ?? options.alias;
   const fieldInfo = getFieldsInfo(
     options.fields,
     fieldsAlias,
     options.disableFieldsAlias,
-    1,
+    startIdx,
   );
 
   const values = [...fieldInfo.values];
   const logValues = [...fieldInfo.logValues];
-  let clauseIdx = 1 + fieldInfo.valuesUsed;
+  let clauseIdx = startIdx + fieldInfo.valuesUsed;
 
   const parts: string[] = [];
   const tableName = options.alias
@@ -287,6 +294,9 @@ export function buildQueryData(options: QueryableDataOptions): BuiltQueryData {
   };
 }
 
-export function buildQuery(options: QueryableDataOptions): string {
-  return buildQueryData(options).query;
+export function buildQuery(
+  options: QueryableDataOptions,
+  startIdx = 1,
+): string {
+  return buildQueryData(options, startIdx).query;
 }

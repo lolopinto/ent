@@ -1065,6 +1065,51 @@ describe("postgres", () => {
   });
 
   describe("jsonb", () => {
+    test.each([
+      clause.JSONBKeyInList,
+      clause.JSONKeyInList,
+    ])("%p preserves offsets around multiple subqueries", (keyInList) => {
+      const owner = "9ed3cf20-cd13-4506-bf85-f3ba779f456a";
+      const tag = "O'Brien's friends";
+      const otherTag = "'); DROP TABLE contacts; -- $1";
+      const cls = clause.And(
+        clause.Eq("owner_id", owner),
+        keyInList("tags", "value", clause.sensitiveValue(tag), "c"),
+        clause.Or(
+          clause.Eq("favorite", true),
+          keyInList("tags", "value", otherTag, "c"),
+        ),
+        clause.Eq("archived", false),
+      );
+      const arrayFunction =
+        keyInList === clause.JSONBKeyInList
+          ? "jsonb_array_elements"
+          : "json_array_elements";
+      for (const idx of [1, 7]) {
+        expect(cls.clause(idx, "c")).toBe(
+          `c.owner_id = $${idx} AND EXISTS (SELECT 1 FROM ${arrayFunction}(c.tags) AS json_element WHERE json_element ? $${idx + 1} AND json_element->>'value' = $${idx + 2}) AND (c.favorite = $${idx + 3} OR EXISTS (SELECT 1 FROM ${arrayFunction}(c.tags) AS json_element WHERE json_element ? $${idx + 4} AND json_element->>'value' = $${idx + 5})) AND c.archived = $${idx + 6}`,
+        );
+      }
+      expect(cls.values()).toEqual([
+        owner,
+        "value",
+        tag,
+        true,
+        "value",
+        otherTag,
+        false,
+      ]);
+      expect(cls.logValues()).toEqual([
+        owner,
+        "value",
+        "*".repeat(tag.length),
+        true,
+        "value",
+        otherTag,
+        false,
+      ]);
+    });
+
     test("eq", () => {
       const cls = clause.JSONPathValuePredicate<JSONData>(
         "jsonb",
