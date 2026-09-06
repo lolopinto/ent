@@ -173,6 +173,26 @@ class Compiler {
     return undefined;
   }
 
+  private resolveRuntimeModule(targetPath: string, containingFile: string) {
+    // Ask TS to apply moduleSuffixes to runtime files, independently of companion
+    // declarations. Directory lookups still use package main rather than assuming
+    // that a declaration's neighboring JavaScript is the package entry point.
+    const resolved = ts.resolveModuleName(
+      targetPath,
+      containingFile,
+      { ...this.options, paths: undefined },
+      {
+        fileExists: (file) =>
+          !/\.(ts|tsx|mts|cts)$/.test(file) && ts.sys.fileExists(file),
+        readFile: ts.sys.readFile,
+        getCurrentDirectory: () => this.cwd,
+      },
+    ).resolvedModule?.resolvedFileName;
+    return resolved && /\.(js|jsx|mjs|cjs|json)$/.test(resolved)
+      ? path.resolve(this.cwd, resolved)
+      : undefined;
+  }
+
   private createCompilerHost(): ts.CompilerHost {
     return {
       getSourceFile: this.getSourceFile,
@@ -237,6 +257,8 @@ class Compiler {
     let cwd = this.cwd;
     let paths = this.options.paths;
     const resolveMapping = this.resolvePathMapping.bind(this);
+    const resolveRuntime = this.resolveRuntimeModule.bind(this);
+    const moduleSuffixes = this.options.moduleSuffixes;
     const declarationFilePattern = /\.d\.(ts|mts|cts)$/;
     const commonJS = this.options.module === ts.ModuleKind.CommonJS;
     const emitConfig: ts.ParsedCommandLine = {
@@ -306,7 +328,28 @@ class Compiler {
       function usesPackageInstallation(
         packageName: string,
         mappedRoot: string,
+        specifier: string,
       ) {
+        if (commonJS) {
+          // Node can skip an existing package directory that lacks the requested
+          // entry. Compare actual resolution from both lookup locations, including
+          // exports, subpaths, and symlinks whose destination is outside the package.
+          try {
+            const mappedSearchRoot = path.resolve(
+              mappedRoot,
+              ...packageName.split("/").map(() => ".."),
+            );
+            const mappedRequire = createRequire(
+              path.join(mappedSearchRoot, "__ent_resolve__.js"),
+            );
+            return (
+              getOutputRequire().resolve(specifier) ===
+              mappedRequire.resolve(specifier)
+            );
+          } catch {
+            return false;
+          }
+        }
         const outputDirectory = path.dirname(getOutputPath());
         const scopeFile = ts.findConfigFile(
           outputDirectory,
@@ -315,15 +358,14 @@ class Compiler {
         );
         const scope =
           scopeFile && JSON.parse(ts.sys.readFile(scopeFile) ?? "{}");
-        // Package self-references precede node_modules lookup. Otherwise, inspect
-        // Node's package search directories without selecting require/import exports.
+        // Native ESM package self-references precede node_modules lookup. Inspect
+        // its package search directories without applying CommonJS export conditions.
         const installedRoot =
           scopeFile && scope.name === packageName && scope.exports != null
             ? path.dirname(scopeFile)
             : getOutputRequire()
                 .resolve.paths(packageName)
                 ?.filter((directory) => {
-                  if (commonJS) return true;
                   // Native ESM does not search NODE_PATH or global module directories.
                   const relative = path.relative(
                     path.dirname(directory),
@@ -374,7 +416,7 @@ class Compiler {
             targetPath.slice(0, -packagePath.length),
             packageName,
           );
-          if (usesPackageInstallation(packageName, mappedRoot)) {
+          if (usesPackageInstallation(packageName, mappedRoot, text)) {
             return undefined;
           }
         }
@@ -390,6 +432,9 @@ class Compiler {
           runtimePath = path.resolve(cwd, resolvedPath);
         }
         if (resolvedPath && declarationFilePattern.test(resolvedPath)) {
+          if (moduleSuffixes?.length) {
+            runtimePath = resolveRuntime(targetPath, fullPath) ?? runtimePath;
+          }
           // Extensionless paths can resolve to dep.d.ts or dep/index.d.ts.
           // A JavaScript module may also have companion declarations, so
           // retain rewriting when the mapped target has a runtime module.

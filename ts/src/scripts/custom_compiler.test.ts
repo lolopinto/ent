@@ -480,6 +480,63 @@ test.each([
   expect(run(root, entry)).toBe("mapped,mapped,mapped");
 });
 
+test.each([
+  { subpath: "", unrelatedEntry: false },
+  { subpath: "/value", unrelatedEntry: true },
+])("skips a nearer CommonJS package without the requested entry: dep$subpath", ({
+  subpath,
+  unrelatedEntry,
+}) => {
+  const specifier = `dep${subpath}`;
+  const root = fixture(
+    {
+      "src/main.ts": `
+      import { value } from "${specifier}";
+      import { exported } from "./exports";
+      import("${specifier}").then(mod => console.log([value, exported, mod.value].join(",")));
+    `,
+      "src/exports.ts": `export { value as exported } from "${specifier}";`,
+      "node_modules/dep/package.json": JSON.stringify({
+        main: "legacy.js",
+        exports: { ".": "./modern.js", "./value": "./modern.js" },
+      }),
+      "node_modules/dep/legacy.js": 'exports.value = "legacy";',
+      "node_modules/dep/value.js": 'exports.value = "legacy";',
+      "node_modules/dep/modern.js": 'exports.value = "modern";',
+      ...(unrelatedEntry
+        ? { "dist/node_modules/dep/index.js": 'exports.value = "unrelated";' }
+        : {}),
+    },
+    { rootDir: ".", paths: { [specifier]: [`./node_modules/${specifier}`] } },
+  );
+  fs.mkdirSync(path.join(root, "dist/node_modules/dep"), { recursive: true });
+  expect(run(root, "dist/src/main.js")).toBe("modern,modern,modern");
+});
+
+test("preserves CommonJS package exports through a symlink outside its root", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+      import { value } from "dep";
+      import("dep").then(mod => console.log([value, mod.value].join(",")));
+    `,
+      "node_modules/dep/package.json": JSON.stringify({
+        main: "legacy.js",
+        exports: "./linked/modern.js",
+      }),
+      "node_modules/dep/legacy.js": 'exports.value = "legacy";',
+      "linked-build/modern.js": 'exports.value = "modern";',
+    },
+    { paths: { dep: ["./node_modules/dep"] } },
+  );
+  fs.symlinkSync(
+    path.join(root, "linked-build"),
+    path.join(root, "node_modules/dep/linked"),
+    "dir",
+  );
+  expect(run(root)).toBe("modern,modern");
+});
+
 test("preserves native ESM import conditions for the mapped package installation", () => {
   const root = fixture(
     {
@@ -898,16 +955,68 @@ test.each([
   expect(run(root)).toBe("mapped");
 });
 
-test("uses moduleSuffixes for JavaScript outside the emitted sources", () => {
+test.each([
+  { declarations: false, plainFile: true },
+  { declarations: true, plainFile: true },
+  { declarations: true, plainFile: false },
+])("uses moduleSuffixes for external JavaScript (declarations: $declarations, plain file: $plainFile)", ({
+  declarations,
+  plainFile,
+}) => {
   const root = fixture(
     {
-      "src/main.ts": `import("vendor/value").then(mod => console.log(mod.value));`,
+      "src/main.ts": `
+        import { value } from "vendor/value";
+        import { exported } from "./exports";
+        import("vendor/value").then(mod => console.log([value, exported, mod.value].join(",")));
+      `,
+      "src/exports.ts": 'export { value as exported } from "vendor/value";',
       "vendor/value.native.js": 'exports.value = "native-js";',
-      "vendor/value.js": 'exports.value = "wrong-default";',
+      ...(plainFile
+        ? { "vendor/value.js": 'exports.value = "wrong-default";' }
+        : {}),
+      ...(declarations
+        ? { "vendor/value.native.d.ts": "export declare const value: string;" }
+        : {}),
     },
     { paths: { "vendor/*": ["./vendor/*"] }, moduleSuffixes: [".native", ""] },
   );
-  expect(run(root)).toBe("native-js");
+  expect(run(root)).toBe("native-js,native-js,native-js");
+});
+
+test("moduleSuffixes preserve explicit declaration-only mappings", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `import("vendor/value").then(mod => console.log(mod.value));`,
+      "vendor/value.native.d.ts": "export declare const value: string;",
+      "vendor/value.native.js": 'exports.value = "wrong-local";',
+      "node_modules/vendor/value.js": 'exports.value = "package";',
+    },
+    {
+      paths: { "vendor/*": ["./vendor/*.native.d.ts"] },
+      moduleSuffixes: [".native", ""],
+    },
+  );
+  expect(run(root)).toBe("package");
+});
+
+test("moduleSuffixes use package main when companion types live elsewhere", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `import("vendor/dep").then(mod => console.log(mod.value));`,
+      "vendor/dep/package.json": JSON.stringify({
+        types: "types/index.d.ts",
+        main: "lib/entry.js",
+      }),
+      "vendor/dep/types/index.d.ts": "export declare const value: string;",
+      "vendor/dep/types/index.native.js":
+        'exports.value = "wrong-types-companion";',
+      "vendor/dep/types/index.js": 'exports.value = "wrong-types-companion";',
+      "vendor/dep/lib/entry.js": 'exports.value = "runtime-main";',
+    },
+    { paths: { "vendor/*": ["./vendor/*"] }, moduleSuffixes: [".native", ""] },
+  );
+  expect(run(root)).toBe("runtime-main");
 });
 
 test("retains nonzero exit and error reporting when emit is skipped", () => {
