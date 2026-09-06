@@ -164,7 +164,11 @@ export class StructField extends BaseField implements Field {
   }
 
   private async validImpl(obj: any) {
-    // GraphQL literal input records have a null prototype.
+    // GraphQL.js valueFromAST turns inline objects such as prefs: {enabled: true}
+    // into null-prototype records, which fail instanceof Object. Objects supplied
+    // in the JSON variables payload use ordinary prototypes instead. A struct
+    // can still be inline when other values use variables; object-valued variable
+    // defaults also go through valueFromAST when the variable is omitted.
     if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
       return false;
     }

@@ -94,6 +94,9 @@ test("create with prefs", async () => {
 });
 
 test("create with literal structs and nested struct lists", async () => {
+  // Keep the struct values inline: expectMutation supplies JSON variables, which
+  // do not exercise GraphQL's null-prototype literal inputs. Using $phone shows
+  // that variables elsewhere in the request do not prevent the struct failure.
   const result = await graphql({
     schema,
     source: `mutation($phone: String!) {
