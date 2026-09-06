@@ -1,3 +1,5 @@
+import { deserialize, serialize } from "v8";
+import { isDeepStrictEqual } from "util";
 import {
   ID,
   Data,
@@ -237,7 +239,7 @@ class EntCannotDeleteEntError extends Error implements PrivacyError {
 
 interface fieldsInfo {
   editedData: Data;
-  editedFields: Map<string, any>;
+  inputSnapshot: Map<string, unknown>;
   schemaFields: Map<string, Field>;
   userDefinedKeys: Set<string>;
   editPrivacyFields: Map<string, PrivacyPolicy>;
@@ -742,7 +744,7 @@ export class Orchestrator<
       return this.existingEnt!;
     }
     const { schemaFields, editedData } =
-      await this.getFieldsWithPendingImmutableValues();
+      await this.getFieldsWithPendingImmutableValues(true);
     return this.getEntForPrivacyPolicyImpl(
       schemaFields,
       editedData,
@@ -776,7 +778,9 @@ export class Orchestrator<
     return this.validatedFields;
   }
 
-  private async getFieldsWithPendingImmutableValues(): Promise<fieldsInfo> {
+  private async getFieldsWithPendingImmutableValues(
+    forPrivacy = false,
+  ): Promise<fieldsInfo> {
     const fields = await this.memoizedGetFields();
     if (this.actualOperation !== WriteOperation.Insert) {
       return fields;
@@ -786,18 +790,84 @@ export class Orchestrator<
     // Creation-time setters can run after defaults were resolved. Privacy must
     // check the pending immutable value, rather than a cached creation default.
     const input = this.options.builder.getInput();
+    const snapshot = forPrivacy
+      ? this.snapshotImmutableInput(fields.schemaFields)
+      : undefined;
     for (const [fieldName, field] of fields.schemaFields) {
       if (!field.immutable) {
         continue;
       }
-      const value = input[this.getInputKey(fieldName)];
+      const inputKey = this.getInputKey(fieldName);
+      const value = input[inputKey];
       const dbKey = this.getStorageKey(fieldName);
-      if (value !== undefined && value !== editedData[dbKey]) {
+      const changed =
+        snapshot?.has(inputKey) && fields.inputSnapshot.has(inputKey)
+          ? !isDeepStrictEqual(
+              fields.inputSnapshot.get(inputKey),
+              snapshot.get(inputKey),
+            )
+          : value !== editedData[dbKey];
+      if (value !== undefined && changed) {
         editedData[dbKey] = value;
         userDefinedKeys.add(dbKey);
       }
     }
     return { ...fields, editedData, userDefinedKeys };
+  }
+
+  private snapshotImmutableInput(
+    schemaFields: Map<string, Field>,
+  ): Map<string, unknown> {
+    const input = this.options.builder.getInput();
+    const snapshot = new Map<string, unknown>();
+    for (const [fieldName, field] of schemaFields) {
+      if (!field.immutable) {
+        continue;
+      }
+      const key = this.getInputKey(fieldName);
+      const value = input[key];
+      // Builders denote an ID; their mutable implementation is not field data.
+      const comparable =
+        value && this.isBuilder(value) ? value.placeholderID : value;
+      try {
+        snapshot.set(key, this.copyInputData(comparable));
+      } catch {
+        // Opaque custom inputs retain the existing reference comparison.
+      }
+    }
+    return snapshot;
+  }
+
+  private copyInputData(value: any, seen = new Map<any, any>()): any {
+    if (value === null || typeof value !== "object") {
+      // Keep callback identity without invoking user-supplied toJSON methods.
+      return value;
+    }
+    if (seen.has(value)) {
+      return seen.get(value);
+    }
+    const prototype = Object.getPrototypeOf(value);
+    if (
+      !Array.isArray(value) &&
+      prototype !== Object.prototype &&
+      prototype !== null
+    ) {
+      return deserialize(serialize(value));
+    }
+    const copy = Array.isArray(value)
+      ? new Array(value.length)
+      : Object.create(prototype);
+    seen.set(value, copy);
+    for (const key of Reflect.ownKeys(value)) {
+      if (Array.isArray(value) && key === "length") {
+        continue;
+      }
+      Object.defineProperty(copy, key, {
+        value: this.copyInputData(value[key], seen),
+        enumerable: true,
+      });
+    }
+    return copy;
   }
 
   // Note: this is memoized. call memoizedGetFields instead
@@ -838,7 +908,7 @@ export class Orchestrator<
 
     return {
       editedData,
-      editedFields,
+      inputSnapshot: this.snapshotImmutableInput(schemaFields),
       schemaFields,
       userDefinedKeys,
       editPrivacyFields,
@@ -858,7 +928,7 @@ export class Orchestrator<
     }
 
     const { schemaFields, editedData, userDefinedKeys, editPrivacyFields } =
-      await this.getFieldsWithPendingImmutableValues();
+      await this.getFieldsWithPendingImmutableValues(true);
     const action = this.options.action;
     const builder = this.options.builder;
 
@@ -932,6 +1002,14 @@ export class Orchestrator<
     // so running this first to build things up
     if (action?.getTriggers) {
       await this.triggers(action!, builder, action.getTriggers());
+      if (this.actualOperation === WriteOperation.Insert) {
+        const cached = await this.memoizedGetFields();
+        // Recheck the approved privacy inputs until the caller changes them.
+        // Trigger-written values form the comparison baseline, not caller input.
+        cached.editedData = editedData;
+        cached.userDefinedKeys = userDefinedKeys;
+        cached.inputSnapshot = this.snapshotImmutableInput(schemaFields);
+      }
     }
 
     let validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[] =
