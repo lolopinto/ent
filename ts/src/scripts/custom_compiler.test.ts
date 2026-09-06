@@ -440,6 +440,45 @@ test.each([
 });
 
 test.each([
+  { packageName: "dep", esm: false },
+  { packageName: "dep", esm: true },
+  { packageName: "@scope/dep", esm: false },
+  { packageName: "@scope/dep", esm: true },
+])("preserves package exports with a trailing slash on $packageName (ESM: $esm)", ({
+  packageName,
+  esm,
+}) => {
+  const packageRoot = `node_modules/${packageName}`;
+  const root = fixture(
+    {
+      "src/main.ts": `
+      import { value } from "${packageName}";
+      import { exported } from "./exports.js";
+      import("${packageName}").then(mod => console.log([value, exported, mod.value].join(",")));
+    `,
+      "src/exports.ts": `export { value as exported } from "${packageName}";`,
+      [`${packageRoot}/package.json`]: JSON.stringify({
+        type: esm ? "module" : "commonjs",
+        main: "legacy.js",
+        exports: {
+          import: "./modern.js",
+          require: esm ? "./legacy.js" : "./modern.js",
+        },
+      }),
+      [`${packageRoot}/legacy.js`]: esm
+        ? 'export const value = "legacy";'
+        : 'exports.value = "legacy";',
+      [`${packageRoot}/modern.js`]: esm
+        ? 'export const value = "modern";'
+        : 'exports.value = "modern";',
+    },
+    { rootDir: ".", paths: { [packageName]: [`./${packageRoot}/`] } },
+    esm,
+  );
+  expect(run(root, "dist/src/main.js")).toBe("modern,modern,modern");
+});
+
+test.each([
   { esm: false, outDir: undefined, entry: "src/main.js" },
   { esm: false, outDir: "dist", entry: "dist/main.js" },
   { esm: true, outDir: "dist", entry: "dist/main.js" },
@@ -645,6 +684,22 @@ test.each([
     packageName: "dep",
     runtime: "value/impl.js",
     esm: false,
+  },
+  {
+    specifier: "dep/value",
+    pattern: "dep/value",
+    target: "./node_modules/dep/value/",
+    packageName: "dep",
+    runtime: "value/index.js",
+    esm: false,
+  },
+  {
+    specifier: "dep/value",
+    pattern: "dep/value",
+    target: "./node_modules/dep/value/",
+    packageName: "dep",
+    runtime: "value/index.js",
+    esm: true,
   },
 ])("applies explicit package subpath remapping from $specifier to $target", ({
   specifier,

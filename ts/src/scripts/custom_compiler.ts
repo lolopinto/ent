@@ -403,17 +403,22 @@ class Compiler {
         // Check the mapped runtime path because TS may find declarations in a
         // separate @types package instead of alongside the JavaScript.
         const packagePath = text.split("/").join(path.sep);
+        const packageName = text
+          .split("/")
+          .slice(0, text.startsWith("@") ? 2 : 1)
+          .join("/");
+        // A package root is already a directory; its trailing slash does not
+        // bypass exports. Keep slashes meaningful on explicit subpath remaps,
+        // where dep/value/ can select a directory instead of dep/value.js.
+        const identityTarget =
+          text === packageName ? path.resolve(targetPath) : targetPath;
         if (
-          targetPath.endsWith(
+          identityTarget.endsWith(
             `${path.sep}node_modules${path.sep}${packagePath}`,
           )
         ) {
-          const packageName = text
-            .split("/")
-            .slice(0, text.startsWith("@") ? 2 : 1)
-            .join("/");
           const mappedRoot = path.join(
-            targetPath.slice(0, -packagePath.length),
+            identityTarget.slice(0, -packagePath.length),
             packageName,
           );
           if (usesPackageInstallation(packageName, mappedRoot, text)) {
