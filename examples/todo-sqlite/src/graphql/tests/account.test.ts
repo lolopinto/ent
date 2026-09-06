@@ -1,4 +1,5 @@
-import { IDViewer } from "@snowtop/ent";
+import { IDViewer, LoggedOutViewer } from "@snowtop/ent";
+import { graphql } from "graphql";
 import {
   expectMutation,
   expectQueryFromRoot,
@@ -90,6 +91,47 @@ test("create with prefs", async () => {
       ],
     ],
   );
+});
+
+test("create with literal structs and nested struct lists", async () => {
+  const result = await graphql({
+    schema,
+    source: `mutation($phone: String!) {
+      createAccount(input: {
+        name: "Literal structs"
+        phone_number: $phone
+        account_prefs: {finished_nux: true, enable_notifs: false, preferred_language: "en_US"}
+        account_prefs_list: [{finished_nux: false, enable_notifs: true, preferred_language: "fr_FR"}]
+        country_infos: [{countries: [{
+          name: "France", code: "FR", capital: {name: "Paris", population: "2100000"}
+        }]}]
+      }) { account { id } }
+    }`,
+    variableValues: { phone: randomPhoneNumber() },
+    contextValue: { getViewer: () => new LoggedOutViewer() },
+  });
+  expect(result.errors).toBeUndefined();
+  const id = (result.data as any).createAccount.account.id;
+  const account = await Account.loadX(new IDViewer(id), id);
+  expect(account.accountPrefs).toStrictEqual({
+    finishedNux: true,
+    enableNotifs: false,
+    preferredLanguage: "en_US",
+  });
+  expect(account.accountPrefsList).toStrictEqual([
+    { finishedNux: false, enableNotifs: true, preferredLanguage: "fr_FR" },
+  ]);
+  expect(account.countryInfos).toStrictEqual([
+    {
+      countries: [
+        {
+          name: "France",
+          code: "FR",
+          capital: { name: "Paris", population: "2100000" },
+        },
+      ],
+    },
+  ]);
 });
 
 test("viewer_can_see", async () => {

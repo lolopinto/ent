@@ -69,7 +69,7 @@ export class StructField extends BaseField implements Field {
   }
 
   formatImpl(obj: any, nested?: boolean) {
-    if (!(obj instanceof Object)) {
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
       throw new Error("valid was not called");
     }
     let ret: Object = {};
@@ -164,7 +164,8 @@ export class StructField extends BaseField implements Field {
   }
 
   private async validImpl(obj: any) {
-    if (!(obj instanceof Object)) {
+    // GraphQL literal input records have a null prototype.
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
       return false;
     }
 
@@ -303,10 +304,6 @@ export class StructField extends BaseField implements Field {
       );
       return valid.every((b) => b);
     }
-    if (!(obj instanceof Object)) {
-      return false;
-    }
-
     return this.validImpl(obj);
   }
 }
