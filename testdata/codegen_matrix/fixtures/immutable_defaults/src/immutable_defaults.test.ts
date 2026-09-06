@@ -17,7 +17,7 @@ import {
   setupSqlite,
 } from "@snowtop/ent/testutils/db/temp_db";
 import { Document, User } from "./ent";
-import { EdgeType } from "./ent/generated/types";
+import { EdgeType, NodeType } from "./ent/generated/types";
 import { CreateUserActionBase } from "./ent/generated/user/actions/create_user_action_base";
 import { CreateDocumentActionBase } from "./ent/generated/document/actions/create_document_action_base";
 import { EditDocumentActionBase } from "./ent/generated/document/actions/edit_document_action_base";
@@ -116,6 +116,7 @@ test("creation defaults reach hooks and persist with inverse edges", async () =>
 test("creation assignments win over defaults; edits require explicit overrides", async () => {
   const viewer = await createViewer();
   const previousOwner = await createViewer();
+  const associated = await createViewer();
   const syncDefault = jest.spyOn(
     DocumentSchema.fields.syncValue,
     "defaultValueOnCreate",
@@ -130,8 +131,21 @@ test("creation assignments win over defaults; edits require explicit overrides",
     syncValue: " CONSTRUCTOR ",
   });
   create.builder.updateInput({ asyncValue: " SETTER " });
+  create.builder.orchestrator.addInboundEdge(
+    associated.viewerID,
+    EdgeType.UserToDocuments,
+    NodeType.User,
+    { data: "explicit association" },
+  );
   await create.builder.orchestrator.getEditedData();
   create.builder.updateInput({ ownerId: viewer.viewerID });
+  await create.validX();
+  create.builder.orchestrator.addInboundEdge(
+    viewer.viewerID,
+    EdgeType.UserToDocuments,
+    NodeType.User,
+    { data: "explicit owner association" },
+  );
   const document = await create.saveX();
   expect(document).toMatchObject({
     ownerId: viewer.viewerID,
@@ -144,7 +158,29 @@ test("creation assignments win over defaults; edits require explicit overrides",
       edgeType: EdgeType.UserToDocuments,
     }),
   ).toHaveLength(0);
+  expect(
+    await loadEdges({
+      id1: associated.viewerID,
+      edgeType: EdgeType.UserToDocuments,
+    }),
+  ).toEqual([
+    expect.objectContaining({
+      id2: document.id,
+      data: "explicit association",
+    }),
+  ]);
   await expectEdges(viewer, document);
+  expect(
+    await loadEdges({
+      id1: viewer.viewerID,
+      edgeType: EdgeType.UserToDocuments,
+    }),
+  ).toEqual([
+    expect.objectContaining({
+      id2: document.id,
+      data: "explicit owner association",
+    }),
+  ]);
   expect(syncDefault).not.toHaveBeenCalled();
   expect(asyncDefault).not.toHaveBeenCalled();
 
@@ -235,11 +271,13 @@ test("create-to-edit preserves creation input and applies existing edit guards",
 
 test("edit-to-insert uses creation defaults and allows creation setters", async () => {
   const viewer = await createViewer();
+  const previousOwner = await createViewer();
   const existing = await new CreateDocumentActionBase(viewer, {
     title: "Original",
   }).saveX();
   class EditAsCreate extends EditDocumentActionBase {
     transformWrite() {
+      this.builder.overrideOwnerId(viewer.viewerID);
       return { op: SQLStatementOperation.Insert };
     }
     getTriggers() {
@@ -256,9 +294,15 @@ test("edit-to-insert uses creation defaults and allows creation setters", async 
   const action = new EditAsCreate(viewer, existing, {
     title: "Transformed insert",
   });
+  action.builder.overrideOwnerId(previousOwner.viewerID);
   // Only initialization is covered here; existing edit-to-insert persistence
   // retains existingEnt in EditNodeOperation and is outside this fix.
   await action.validX();
+  expect(
+    action.builder.orchestrator
+      .getInputEdges(EdgeType.UserToDocuments, WriteOperation.Insert)
+      .map((edge) => edge.id),
+  ).toEqual([viewer.viewerID]);
   expect(action.builder.orchestrator.getValidatedFields()).toMatchObject({
     owner_id: viewer.viewerID,
     sync_value: "trigger insert",

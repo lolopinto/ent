@@ -251,6 +251,7 @@ export class Orchestrator<
 > {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap<TViewer> = new Map();
+  private fieldEdgeSources = new WeakMap<edgeInputData<TViewer>, string>();
   private conditionalEdges: EdgeMap<TViewer> = new Map();
   private validatedFields: Data | null = null;
   private logValues: Data | null;
@@ -343,6 +344,36 @@ export class Orchestrator<
       WriteOperation.Insert,
       options?.conditional,
     );
+  }
+
+  // Internal: refresh a generated field's edges without replacing caller edges.
+  __setFieldEdges<T2 extends Ent>(
+    fieldName: string,
+    ids: (ID | Builder<T2, any>)[],
+    edgeType: string,
+    nodeType: string,
+  ) {
+    const isInsert = this.actualOperation === WriteOperation.Insert;
+    const queued = this.edges.get(edgeType)?.get(WriteOperation.Insert);
+    for (const [id, edge] of queued ?? []) {
+      if (isInsert && this.fieldEdgeSources.get(edge) === fieldName) {
+        queued!.delete(id);
+      }
+    }
+    for (const id of ids) {
+      const edge = new edgeInputData<TViewer>({
+        id,
+        edgeType,
+        nodeType,
+        direction: edgeDirection.inboundEdge,
+      });
+      const key = edge.isBuilder(edge.id) ? edge.id.placeholderID : edge.id;
+      if (isInsert && queued?.has(key)) {
+        continue;
+      }
+      this.fieldEdgeSources.set(edge, fieldName);
+      this.addEdge(edge, WriteOperation.Insert);
+    }
   }
 
   addOutboundEdge<T2 extends Ent>(

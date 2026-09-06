@@ -18,16 +18,16 @@
   {{/* we magically expect a local variable input to be defined when this is used */ -}}
   if (input.{{$tsFieldName}} !== undefined || this.operation === WriteOperation.Delete) {
     {{ if $field.Immutable -}}
-      // Rebuild immutable creation edges from the current input on each pass.
-      if (this.orchestrator.__getWriteOperation() === WriteOperation.Insert) {
-        this.orchestrator.clearInputEdges(
-          {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-          WriteOperation.Insert,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "{{$field.FieldName}}",
+        {{if $isList}}input.{{$tsFieldName}} ?? []{{else}}input.{{$tsFieldName}} ? [input.{{$tsFieldName}}] : []{{end}},
+        {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+        {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
+      );
     {{ end -}}
     {{ if $isList -}}
       const input{{$tsFieldName}} = input.{{$tsFieldName}};
+      {{ if not $field.Immutable -}}
       if (input{{$tsFieldName}}) {
         input{{$tsFieldName}}.forEach((id) =>
           this.orchestrator.addInboundEdge(
@@ -37,6 +37,7 @@
           ),
         );
       }
+      {{ end -}}
       {{ if $field.HasAsyncAccessor $cfg -}}
         // can't have this be dependent on privacy so need to fetch the raw data...
         if (this.existingEnt) {
@@ -67,6 +68,7 @@
         }
       {{ end -}}
     {{ else -}}
+      {{ if not $field.Immutable -}}
       if (input.{{$tsFieldName}}) {
         this.orchestrator.addInboundEdge(
           input.{{$tsFieldName}},
@@ -74,6 +76,7 @@
           {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
         );
       }
+      {{ end -}}
       {{ if $field.HasAsyncAccessor $cfg -}}
         // can't have this be dependent on privacy so need to fetch the raw data...
         if (this.existingEnt) {
