@@ -182,7 +182,17 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
     {{ end -}}
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
+    {{ if .FieldInfo.GetImmutableFields -}}
+    const updateInput = (input: {{$input}}, operation?: WriteOperation) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+    };
+    {{ else -}}
     const updateInput = (d: {{$input}}) => this.updateInput.apply(this, [d]);
+    {{ end -}}
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
       viewer,
@@ -217,6 +227,13 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
         throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
       }
     {{ end }}
+    {{ if $immutableFields -}}
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: {{$input}}) {
+    {{ end -}}
     {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
       {{$tsFieldName := $field.TsBuilderFieldName -}}
       {{ $inverseEdge := $field.GetInverseEdge -}}

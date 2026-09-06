@@ -87,7 +87,7 @@ export interface OrchestratorOptions<
   schema: SchemaInputType;
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
-  updateInput?: (data: TInput) => void;
+  updateInput?: (data: TInput, operation?: WriteOperation) => void;
 
   // mapping of column to expressions to use
   // if set and a column exists, we use the expression here instead of the given expression in the sql query
@@ -1124,7 +1124,10 @@ export class Orchestrator<
       };
       if (updateInput && this.options.updateInput) {
         // this basically fixes #605. just needs to be exposed correctly
-        this.options.updateInput(this.defaultFieldsByTSName as TInput);
+        this.options.updateInput(
+          this.defaultFieldsByTSName as TInput,
+          this.actualOperation,
+        );
       }
     }
 
