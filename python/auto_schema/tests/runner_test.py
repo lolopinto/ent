@@ -1344,6 +1344,71 @@ class TestPostgresRunner(BaseTestRunner):
         assert r2.compute_changes() == []
         _assert_no_predicate_views(r2)
 
+    @pytest.mark.parametrize("child_name", ["a_children", "z_children"])
+    @pytest.mark.parametrize("foreign_key_change", ["remove", "replace", "add"])
+    def test_partial_index_change_orders_cross_table_foreign_keys(self, new_test_runner, child_name, foreign_key_change):
+        def add_foreign_key(metadata, target_column):
+            constraint = sa.ForeignKeyConstraint(
+                ["owner_id"], [f"contacts.{target_column}"], name="children_contact_fk",
+            )
+            metadata.tables[child_name].append_constraint(constraint)
+            return constraint
+
+        def metadata(predicate, foreign_key=None):
+            result = _partial_index_metadata(predicate, unique=True)
+            sa.Table(
+                child_name, result,
+                sa.Column("id", sa.Integer(), primary_key=True),
+                sa.Column("owner_id", sa.Integer(), nullable=False),
+            )
+            if foreign_key is not None:
+                add_foreign_key(result, foreign_key)
+            return result
+
+        adding = foreign_key_change == "add"
+        before = metadata("owner_id > 0" if adding else None)
+        r = new_test_runner(before)
+        r.run()
+        if not adding:
+            # Install the FK only after its referenced unique index exists.
+            r.get_connection().execute(sa.schema.AddConstraint(add_foreign_key(before, "owner_id")))
+        r.get_connection().execute(before.tables["contacts"].insert(), {"id": 1, "owner_id": 1})
+        r.get_connection().execute(before.tables[child_name].insert(), {"id": 1, "owner_id": 1})
+        r.get_connection().commit()
+        assert r.compute_changes() == []
+        original_predicate = _reflected_predicate(r)
+
+        target = {"remove": None, "replace": "id", "add": "owner_id"}[foreign_key_change]
+        after = metadata(None if adding else "owner_id > 0", target)
+        r2 = new_test_runner(after, r)
+        r2.run()
+        updated_predicate = _reflected_predicate(r2)
+        assert updated_predicate != original_predicate
+
+        def assert_state(r, predicate, foreign_key):
+            assert _reflected_predicate(r) == predicate
+            assert _reflected_partial_index(r)["unique"]
+            foreign_keys = sa.inspect(r.engine).get_foreign_keys(child_name)
+            assert [fk["name"] for fk in foreign_keys] == (["children_contact_fk"] if foreign_key else [])
+            if foreign_key:
+                assert foreign_keys[0]["referred_table"] == "contacts"
+                assert foreign_keys[0]["referred_columns"] == [foreign_key]
+            assert r.get_connection().execute(sa.select(after.tables[child_name])).all() == [(1, 1)]
+            assert r.get_connection().execute(sa.select(after.tables["contacts"].c.owner_id)).all() == [(1,)]
+            r.get_connection().commit()
+
+        assert_state(r2, updated_predicate, target)
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert_state(r2, original_predicate, None if adding else "owner_id")
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_state(r2, updated_predicate, target)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
     def test_invalid_operator_without_pending_column_type_still_fails(self, new_test_runner):
         r = new_test_runner(_partial_index_metadata("score > 1"))
         r.run()

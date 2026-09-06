@@ -440,6 +440,51 @@ def compare_schema(autogen_context, upgrade_ops, schemas):
                 _check_new_table(metadata_tables[name], upgrade_ops, sch)
 
 
+@comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
+def _order_foreign_keys_for_index_changes(autogen_context, upgrade_ops, schemas):
+    if _dialect_name(autogen_context) != "postgresql":
+        return
+    if not any(
+        isinstance(operation, (alembicops.DropIndexOp, ops.DropFullTextIndexOp))
+        for table_ops in upgrade_ops.ops if isinstance(table_ops, alembicops.ModifyTableOps)
+        for operation in table_ops.ops
+    ):
+        return
+
+    # An index can support a foreign key on any table. Complete table comparison
+    # before moving FK drops ahead of index replacements and FK creates after
+    # them. Alembic then reverses this complete sequence for downgrade, preserving
+    # the same dependencies there instead of relying on table-name ordering.
+    foreign_key_drops, foreign_key_creates, remaining = [], [], []
+    for table_ops in upgrade_ops.ops:
+        if not isinstance(table_ops, alembicops.ModifyTableOps):
+            remaining.append(table_ops)
+            continue
+        drops, creates, other = [], [], []
+        for operation in table_ops.ops:
+            if isinstance(operation, alembicops.DropConstraintOp) and operation.constraint_type == "foreignkey":
+                drops.append(operation)
+            elif isinstance(operation, alembicops.CreateForeignKeyOp):
+                creates.append(operation)
+            else:
+                other.append(operation)
+        if drops:
+            foreign_key_drops.append(alembicops.ModifyTableOps(table_ops.table_name, drops, schema=table_ops.schema))
+        if creates:
+            foreign_key_creates.append(alembicops.ModifyTableOps(table_ops.table_name, creates, schema=table_ops.schema))
+        if other:
+            table_ops.ops[:] = other
+            remaining.append(table_ops)
+
+    # Keep extension/enum setup ahead of table DDL, as planned by their schema
+    # comparators. Preserve every table/schema attribute on the moved operations.
+    position = next((
+        i for i, operation in enumerate(remaining)
+        if isinstance(operation, (alembicops.ModifyTableOps, alembicops.CreateTableOp, alembicops.DropTableOp))
+    ), len(remaining))
+    upgrade_ops.ops[:] = remaining[:position] + foreign_key_drops + remaining[position:] + foreign_key_creates
+
+
 def _check_removed_table(metadata_table, upgrade_ops, sch):
     for column in metadata_table.columns:
         _check_removed_column(column, upgrade_ops, sch)
