@@ -1,20 +1,12 @@
-import { Dialect } from "@snowtop/ent/core/db";
+import { randomUUID } from "crypto";
 import { DB, IDViewer, withTransaction } from "@snowtop/ent";
-import { getBuilderSchemaFromFields } from "@snowtop/ent/testutils/builder";
-import {
-  getSchemaTable,
-  setupPostgres,
-} from "@snowtop/ent/testutils/db/temp_db";
 import { User } from "src/ent";
-import UserSchema from "src/schema/user_schema";
 import { CreateUserActionBase } from "../../generated/user/actions/create_user_action_base";
 import DeleteUserAction from "./delete_user_action";
 import EditUserAction from "./edit_user_action";
 import FavoritePlace from "./favorite_place";
 
-const id = "e408025d-bffd-4c09-8219-727d2f4a1b83";
-const missing = "80aed407-1c09-4453-9457-ff0a029c61f8";
-const viewer = new IDViewer(id);
+const dbTest = process.env.POSTGRES_TEST_DB ? test : test.skip;
 const failure = new Error("generated helper setup failed");
 class BrokenDelete extends DeleteUserAction {
   constructor(...args: ConstructorParameters<typeof DeleteUserAction>) {
@@ -38,22 +30,33 @@ class GuardedCreate extends CreateUserActionBase {
 }
 
 describe("generated save helpers in a scoped transaction", () => {
-  setupPostgres(() => [
-    getSchemaTable(
-      getBuilderSchemaFromFields(UserSchema.fields, User),
-      Dialect.Postgres,
-    ),
-  ]);
+  let id: string;
+  let missing: string;
+  let viewer: IDViewer;
+  let createdSlug: string;
+
   beforeEach(async () => {
+    id = randomUUID();
+    missing = randomUUID();
+    viewer = new IDViewer(id);
+    createdSlug = `transaction-created-${id}`;
     await DB.getInstance()
       .getPool()
       .query(
-        "INSERT INTO users (id, created_at, updated_at, name, slug) VALUES ($1, now(), now(), 'Before', 'scoped-user')",
-        [id],
+        "INSERT INTO users (id, created_at, updated_at, name, slug) VALUES ($1, now(), now(), 'Before', $2)",
+        [id, `transaction-${id}`],
+      );
+  });
+  afterEach(async () => {
+    await DB.getInstance()
+      .getPool()
+      .query(
+        "DELETE FROM users WHERE id = $1 OR slug = $2",
+        [id, createdSlug],
       );
   });
   const name = async () => (await User.loadX(viewer, id)).name;
-  test.each([
+  dbTest.each([
     ["delete load", () => DeleteUserAction.saveXFromID(viewer, missing)],
     [
       "edit load",
@@ -87,14 +90,14 @@ describe("generated save helpers in a scoped transaction", () => {
       expect(await name()).toBe("Before");
     },
   );
-  test("successful generated edit commits and returns the saved Ent", async () => {
+  dbTest("successful generated edit commits and returns the saved Ent", async () => {
     const result = await withTransaction(() =>
       EditUserAction.saveXFromID(viewer, id, { name: "After" }),
     );
     expect(result.name).toBe("After");
     expect(await name()).toBe("After");
   });
-  test("outside-scope helper failure does not undo earlier committed work", async () => {
+  dbTest("outside-scope helper failure does not undo earlier committed work", async () => {
     await DB.getInstance()
       .getPool()
       .query("UPDATE users SET name = 'Committed' WHERE id = $1", [id]);
@@ -103,11 +106,11 @@ describe("generated save helpers in a scoped transaction", () => {
     ).rejects.toThrow();
     expect(await name()).toBe("Committed");
   });
-  test("generated guarded create exposes its ID during and after result loading", async () => {
+  dbTest("generated guarded create exposes its ID during and after result loading", async () => {
     await withTransaction(async () => {
       const action = new GuardedCreate(viewer, {
         name: "Created",
-        slug: "created-in-scope",
+        slug: createdSlug,
       });
       const result = await action.saveX();
       expect(await action.builder.getEntID()).toBe(result.id);
