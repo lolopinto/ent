@@ -10,7 +10,7 @@ import {
   Skip,
 } from "../core/base";
 
-function isBuilder(node: ID | Builder<Ent, any>): node is Builder<Ent, any> {
+export function isBuilder(node: ID | Builder<Ent, any>): node is Builder<Ent, any> {
   return (node as Builder<Ent>).placeholderID !== undefined;
 }
 

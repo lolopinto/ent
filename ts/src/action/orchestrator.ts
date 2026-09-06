@@ -45,6 +45,7 @@ import {
 } from "./operations";
 import { WriteOperation, Builder, Action } from "../action";
 import { applyPrivacyPolicy, applyPrivacyPolicyX } from "../core/privacy";
+import { isBuilder } from "./privacy";
 import { ListBasedExecutor, ComplexExecutor } from "./executor";
 import { memoizeNoArgs } from "../core/memoize";
 import { log } from "../core/logger";
@@ -257,7 +258,7 @@ export class Orchestrator<
     {
       edgeType: string;
       nodeType: string;
-      ids: readonly (ID | Builder<any, any>)[] | undefined;
+      ids: readonly (ID | Builder<Ent, any>)[] | undefined;
       existingIDs: readonly ID[];
     }
   >();
@@ -360,11 +361,9 @@ export class Orchestrator<
     nodeType: string,
     stored: { existingIDs?: readonly ID[] },
   ) {
-    const isBuilder = (id: ID | Builder<any, any>): id is Builder<any, any> =>
-      (id as Builder<any, any>).placeholderID !== undefined;
     // Existing builders and literal IDs can name the same stored endpoint.
     // Keep placeholder queue keys so new builders still resolve as dependencies.
-    const endpointID = (id: ID | Builder<any, any>): ID =>
+    const endpointID = (id: ID | Builder<Ent, any>): ID =>
       isBuilder(id) ? (id.existingEnt?.id ?? id.placeholderID) : id;
     this.fieldEdgeInputs.set(fieldName, {
       edgeType,
@@ -375,13 +374,13 @@ export class Orchestrator<
         this.fieldEdgeInputs.get(fieldName)?.existingIDs ??
         [],
     });
-    type Contribution = { id: ID | Builder<any, any>; sources: Set<string> };
+    type Contribution = { id: ID | Builder<Ent, any>; sources: Set<string> };
     const inserts = new Map<ID, Contribution>();
     const removals = new Map<ID, Contribution>();
     const retained = new Set<ID>();
     const contribute = (
       map: Map<ID, Contribution>,
-      id: ID | Builder<any, any>,
+      id: ID | Builder<Ent, any>,
       source: string,
     ) => {
       const key = isBuilder(id) ? id.placeholderID : id;
