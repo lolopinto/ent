@@ -548,6 +548,14 @@ func runCodegenFixture(t *testing.T, repo, appRoot string, fixture fixture) {
 	if err != nil {
 		t.Fatalf("generated TypeScript did not compile:\n%s\n%v", string(out), err)
 	}
+	if fixtureHasSurface(fixture, "runtime_tests") {
+		cmd := exec.Command(filepath.Join(repo, "ts", "node_modules", ".bin", "jest"), "--runInBand")
+		cmd.Dir = appRoot
+		cmd.Env = append(os.Environ(), "ENT_CODEGEN_MATRIX_ENT_SRC="+filepath.Join(repo, "ts", "src"))
+		out, err := cmd.CombinedOutput()
+		require.NoError(t, err, "generated builder runtime tests failed:\n%s", string(out))
+		t.Logf("generated builder runtime tests:\n%s", string(out))
+	}
 }
 
 func runFixtureGeneratedAssertions(t *testing.T, appRoot string) {

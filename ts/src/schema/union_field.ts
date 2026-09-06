@@ -45,7 +45,7 @@ export class UnionField extends BaseField implements FieldOptions {
   }
 
   format(obj: any) {
-    if (!(obj instanceof Object)) {
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
       throw new Error("valid was not called");
     }
     const k = obj[KEY];
@@ -69,7 +69,8 @@ export class UnionField extends BaseField implements FieldOptions {
   }
 
   async valid(obj: any): Promise<boolean> {
-    if (!(obj instanceof Object)) {
+    // Accept the same record shapes as the member struct fields.
+    if (typeof obj !== "object" || obj === null || Array.isArray(obj)) {
       return false;
     }
     let promises: Promise<validResult>[] = [];

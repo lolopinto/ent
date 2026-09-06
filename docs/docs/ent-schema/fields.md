@@ -154,7 +154,14 @@ adds this column as a primary key on the table. There can be only one primary ke
 
 ### disableUserEditable
 
-indicates that this can't be edited by the user. must have a `defaultValueOnCreate` field if set. If set, we don't generate a field in the action or GraphQL mutation.
+Excludes the field from generated action and GraphQL mutation inputs. Internal
+code, including triggers, can still set the field through the builder. To set a
+mutable field, use `builder.updateInput`. To set an immutable field explicitly,
+use the generated override method when creating or editing an Ent.
+
+Required fields need a value from internal code, `defaultValueOnCreate`, or a
+database `serverDefault`. Nullable fields can remain unset. If you omit a value,
+any configured default applies. To clear a nullable field, set it to `null`.
 
 ### defaultValueOnCreate
 

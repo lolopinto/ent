@@ -1,0 +1,4 @@
+codegen:
+  relativeImports: true
+  fieldPrivacyEvaluated: on_demand
+  generatedHeader: "Codegen internal fields regression"

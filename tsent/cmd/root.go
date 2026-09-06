@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/lolopinto/ent/ent/data"
 	"github.com/lolopinto/ent/internal/util"
 	"github.com/spf13/cobra"
 )
@@ -128,10 +129,24 @@ func init() {
 	pruneSchemasCmd.Flags().BoolVar(&pruneSchemasInfo.force, "force", false, "delete schemas instead of dry-run")
 }
 
+func runAndCloseDB(execute func() error, closeDB func() error) (commandErr, closeErr error) {
+	defer func() {
+		closeErr = closeDB()
+	}()
+	commandErr = execute()
+	return
+}
+
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Printf("%s \n  %s\n", util.WrapRed("Error"), err.Error())
+	commandErr, closeErr := runAndCloseDB(rootCmd.Execute, data.CloseDB)
+	if commandErr != nil {
+		fmt.Printf("%s \n  %s\n", util.WrapRed("Error"), commandErr.Error())
 		fmt.Println(rootCmd.UsageString())
+	}
+	if closeErr != nil {
+		fmt.Printf("%s \n  failed to close database: %s\n", util.WrapRed("Error"), closeErr.Error())
+	}
+	if commandErr != nil || closeErr != nil {
 		os.Exit(1)
 	}
 }

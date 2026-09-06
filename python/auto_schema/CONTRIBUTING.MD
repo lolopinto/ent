@@ -1,5 +1,13 @@
 # CONTRIBUTING
 
+Put core regression tests in this package's `tests/` directory, extending the
+suite for the affected implementation (for example, `runner_test.py`,
+`renderers_test.py`, or `ops_sql_test.py`). Migration comparison and replay
+tests may use real databases and shared fixtures; they must run through pytest
+without depending on the codegen matrix. Matrix fixtures add representative
+schema-to-DB integration checks, not the core migration test suite. See
+[the repository test ownership rules](../../AGENTS.md#test-ownership-and-placement).
+
 make changes to code and then run as following:
 
 * `pipenv shell` to get into virtual environment.

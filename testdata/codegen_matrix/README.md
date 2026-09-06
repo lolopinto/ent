@@ -4,6 +4,30 @@ The codegen matrix is the broad smoke suite for Ent schema features. It exists
 to catch generated TypeScript, GraphQL, import-order, DB schema, and
 idempotence regressions before they reach downstream apps.
 
+## Test Ownership
+
+Core functionality is tested in the package that implements it, following
+[AGENTS.md](../../AGENTS.md#test-ownership-and-placement). Put runtime regression
+and edge-case assertions in colocated `ts/src/**/*.test.ts`, generator logic
+tests in the owning Go package, and migration behavior tests in
+`python/auto_schema/tests/`. These tests must run with their package's normal
+test command, independently of this matrix.
+
+Fixture tests supplement those suites by checking actual generated output and
+integration boundaries. For example, inverse-edge ownership and default-reset
+semantics belong in the action package tests; a fixture can additionally prove
+that generated builders pass the right fields and ownership information to the
+runtime. Predicate comparison and migration replay belong in the Python tests;
+a DB fixture can additionally prove that schema input reaches generated DB
+output correctly.
+
+Keep fixture runtime tests small and representative. Do not accumulate the
+core behavior suite here because a fixture already provides convenient setup.
+Shared fixture data and helpers are fine in package tests; fixture-only
+assertions are insufficient coverage for a core behavior change.
+
+## Running The Matrix
+
 Run it with:
 
 ```sh
@@ -30,6 +54,16 @@ The matrix catalog lives in `features.yml`.
   It runs once with the default Node/pg launcher settings and once with
   Bun/Bun SQL settings, so generated Bun-specific resolver exports and
   Postgres value conversion helpers stay covered by the same broad fixture.
+- `immutable_defaults` also runs fixture-local Jest tests against actual generated
+  builders and local Ent source, using a temporary SQLite database. It verifies
+  immutable creation defaults, constructor precedence, explicit overrides, action
+  hooks, immutable guards across transformed operations, and inverse-edge wiring.
+  Core default and privacy coverage lives in
+  `ts/src/action/{orchestrator,transformed_orchestrator}.test.ts`
+  and runs with `cd ts && npm test`; that command does not run the codegen matrix.
+  Fixtures opt into this step with `runtime_tests` and supply their own
+  `jest.config.js`; the harness exposes the local source path in
+  `ENT_CODEGEN_MATRIX_ENT_SRC`.
 - `db_schema_smoke` runs the same checks and also includes
   `tsent codegen --step db` against SQLite-compatible schema features. Its
   idempotence snapshot includes DB-generated schema and migration files. It
@@ -58,6 +92,27 @@ snippets, and then runs `tsc --noEmit` against the generated app.
 It locates the repository from the Go test source path, so it does not require
 `git rev-parse` at runtime.
 
+`ts/src/action/orchestrator_field_edges.test.ts` tests how the runtime keeps field
+values and inverse edges consistent. It covers edges shared by multiple fields,
+explicit edge operations, builder dependencies, defaults, trigger updates, and
+transformed writes. The tests use SQLite and the Ent runtime without running Go
+or codegen. Run them as part of `npm test` in `ts/`, or run only this file from
+the repository root:
+
+```sh
+cd ts && npm test -- src/action/orchestrator_field_edges.test.ts --runInBand
+```
+
+`TestDisableUserEditableBuilderPersistence` generates a SQLite app to verify
+which fields generated builders persist, which fields public TypeScript and
+GraphQL inputs expose, and how builders load stored IDs for private and list
+fields. It also checks default callbacks and separate registrations for fields
+that share an inverse edge. Run it from the repository root:
+
+```sh
+go test ./internal/codegenmatrix -run TestDisableUserEditableBuilderPersistence -count=1
+```
+
 ## Bar For Adding Coverage
 
 Add matrix coverage when a change affects generated files, schema parsing,
@@ -67,6 +122,9 @@ failure.
 
 The bar is:
 
+- Add the core regression in its owning package first. Add matrix assertions
+  for the distinct generation or integration contract, rather than moving the
+  package's core cases into a fixture.
 - Prefer one representative fixture interaction over a cartesian-product grid.
   A nullable boolean is usually not interesting; an id field with a foreign key,
   field edge, custom name, transform, or privacy policy often is.

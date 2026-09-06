@@ -1,7 +1,38 @@
 # Internal agent guidance
 
-This file documents behavior expectations for dev branch schema support.
+This file documents repository-wide development and testing expectations.
 It is intended for contributors and automation working on this repo.
+
+## Test ownership and placement
+
+- Core functionality must have regression coverage in the package that owns the
+  implementation. Add or extend the nearby test suite first:
+  - TypeScript: colocated `ts/src/**/*.test.ts` (for example,
+    `ts/src/action/orchestrator.test.ts` and `transformed_orchestrator.test.ts`).
+  - Go: `*_test.go` in the implementing package, including generator/template
+    logic in its owning package.
+  - Python: the owning package's test directory, such as
+    `python/auto_schema/tests/` for migration comparison, rendering, and replay.
+- Runtime semantics such as defaults, validation, privacy, persistence,
+  transactions, inverse-edge ownership, and transformed operations must not be
+  tested only in codegen fixtures or example applications. Their regression
+  tests must run through the owning package's normal test command.
+- Keep fixture tests for generated output, generated consumer compatibility,
+  and integration across codegen/runtime/DB boundaries. Add a small
+  representative fixture test when that boundary matters; keep the core
+  behavior and edge-case coverage in the owning package. A generator-only
+  regression need not invent an unrelated runtime test.
+- Fixtures and shared test helpers may supply schemas, entities, or data to
+  package tests. This rule concerns ownership of test assertions, not a ban on
+  test fixtures. Package tests may use real databases where behavior requires
+  them; they should not require the full codegen matrix or an example app.
+- When fixing a core bug first reproduced in a fixture, add the regression to
+  the owning package and retain fixture coverage only for the distinct
+  integration contract. Do not keep expanding a fixture into the core suite
+  merely because it already has convenient setup.
+- During review, check test placement as well as passing results. Identify the
+  owning package regression and any additional fixture coverage in the handoff
+  or PR description. A passing matrix does not replace core package coverage.
 
 ## Local testing
 
@@ -15,6 +46,7 @@ When changing code in `ts/`, validate in this order:
 
 Package-level commands:
 
+- `cd ts && npm run lint`
 - `cd ts && npm test -- --runInBand`
 - `cd ts && npm test -- src/action/orchestrator.test.ts --runInBand`
 - `cd ts && npm test -- src/action/transformed_orchestrator.test.ts --runInBand`
@@ -22,6 +54,8 @@ Package-level commands:
 
 Codegen feature matrix:
 
+- The matrix supplements the package tests described above; it is not the home
+  for core runtime or migration regression suites.
 - `go test ./internal/codegenmatrix -count=1`
 - See `testdata/codegen_matrix/README.md` before adding schema/codegen options
   or generated-code regression coverage. New codegen inputs must be classified

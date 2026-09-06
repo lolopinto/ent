@@ -1,6 +1,20 @@
 version: 1
 
 fixtures:
+  - id: immutable_defaults
+    path: fixtures/immutable_defaults
+    description: >
+      Generated builder creation defaults, immutable guards, ownership privacy,
+      action hooks, inverse edges, and transformed insert/edit runtime behavior.
+    surfaces:
+      - parse_ts_schema
+      - ts_codegen
+      - graphql_codegen
+      - generated_tsc
+      - idempotence
+      - runtime_tests
+    covers:
+      - builder.immutable_create_defaults
   - id: feature_stress
     path: fixtures/feature_stress
     description: >
@@ -148,6 +162,7 @@ fixtures:
       - custom_graphql.custom_mutation_return
       - custom_graphql.json_with_decorators
       - custom_graphql.custom_type_metadata
+      - struct.uuid_node_inference
       - pattern.struct_privacy_import
       - polymorphic.struct_field_codegen
       - field_edge.uuid_list_inverse
@@ -265,6 +280,17 @@ fixtures:
       - action.mutations
 
 features:
+  - id: builder.immutable_create_defaults
+    mode: explicit
+    rationale: >
+      A generated-app runtime fixture verifies immutable viewer, sync, and async
+      creation defaults, constructor precedence, explicit overrides, generated
+      accessors/hooks, immutable guards across transformed operations, and
+      inverse-edge wiring. Core default and privacy cases run in the package
+      action suites via npm test.
+    test_refs:
+      - ts/src/action/orchestrator.test.ts
+      - ts/src/action/transformed_orchestrator.test.ts
   - id: schema.nodes
     owns: [input.Schema.Nodes, input.Node.Fields]
     mode: explicit
@@ -583,7 +609,13 @@ features:
   - id: field.disable_user_editable
     owns: [input.Field.DisableUserEditable]
     mode: representative
-    rationale: Removes generated setters/action inputs.
+    rationale: Excludes the field from public action inputs while allowing internal builder code to persist it.
+  - id: field.internal_builder_persistence
+    mode: existing_test
+    rationale: Tests of generated code verify which internal fields builders persist and how builders register inverse edges. Package tests cover edges shared by multiple fields, defaults, triggers, and explicit edge operations.
+    test_refs:
+      - ts/src/action/orchestrator_field_edges.test.ts
+      - internal/codegenmatrix/internal_fields_test.go:TestDisableUserEditableBuilderPersistence
   - id: field.disable_user_graphql_editable
     owns: [input.Field.DisableUserGraphQLEditable]
     mode: representative
@@ -906,6 +938,14 @@ features:
     mode: explicit
     rationale: Imported custom GraphQL enum types must not be serialized as scalars, and unused optional scalar helpers must not churn custom_schema.json.
 
+  - id: struct.graphql_literal_input_runtime
+    owns: []
+    mode: existing_test
+    test_refs:
+      - ts/src/schema/struct_input.test.ts
+      - ts/src/action/orchestrator.test.ts
+      - examples/todo-sqlite/src/graphql/tests/account.test.ts
+    rationale: Null-prototype GraphQL literal records require runtime validation and formatting; generated mutations and nested structs/lists are exercised outside the compile-only matrix.
   - id: transform_write.struct_input_runtime
     owns: []
     mode: existing_test
@@ -913,6 +953,10 @@ features:
       - ts/src/action/transformed_orchestrator.test.ts
       - examples/simple/src/ent/tests/transform_write_struct_input.test.ts
     rationale: Runtime transformWrite/input-shape behavior is covered outside compile-only codegen matrix.
+  - id: struct.uuid_node_inference
+    owns: []
+    mode: explicit
+    rationale: An ID-suffixed UUID struct field matching an Ent must render and compile as a GraphQL Node field without redundant edge metadata.
   - id: pattern.struct_privacy_import
     owns: []
     mode: explicit
