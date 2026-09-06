@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { IDViewer, convertNullableList } from "@snowtop/ent";
 import type { ID } from "@snowtop/ent";
 import { WriteOperation } from "@snowtop/ent/action";
+import { SQLStatementOperation } from "@snowtop/ent/schema";
 import type { Client } from "@snowtop/ent/core/db";
 import { Assignment } from "./ent";
 import { EdgeType } from "./ent/generated/types";
-import type { AssignmentBuilder } from "./ent/generated/assignment/actions/assignment_builder";
 import CreateAssignmentAction from "./ent/assignment/actions/create_assignment_action";
 import EditAssignmentAction from "./ent/assignment/actions/edit_assignment_action";
 import DeleteAssignmentAction from "./ent/assignment/actions/delete_assignment_action";
@@ -14,7 +14,6 @@ export async function verifyInternalRelationships(
   client: Client,
   ownerA: ID,
   ownerB: ID,
-  ownerC: ID,
 ) {
   await client.query(`CREATE TABLE assignments (
     id TEXT PRIMARY KEY, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
@@ -91,30 +90,11 @@ export async function verifyInternalRelationships(
         `${field.key}: stored field`,
       );
     };
-    const assertQueued = (
-      builder: AssignmentBuilder,
-      inserts: ID[],
-      deletes: ID[],
-    ) => {
-      for (const [operation, expected] of [
-        [WriteOperation.Insert, inserts],
-        [WriteOperation.Delete, deletes],
-      ] as const) {
-        assert.deepEqual(
-          builder.orchestrator
-            .getInputEdges(field.edge, operation)
-            .map((edge) => edge.id)
-            .sort(),
-          [...expected].sort(),
-          `${field.key}: queued ${operation}`,
-        );
-      }
-    };
-
+    // These cases exercise emitted field selection and stored-ID normalization.
+    // Runtime reconciliation combinations live in orchestrator_field_edges.test.ts.
     const create = CreateAssignmentAction.create(viewer, { name: field.key });
     if (!field.defaults)
       create.builder.updateInput({ [field.key]: value(ownerA) });
-    // Force the first collection/default pass, then replace A in a real trigger.
     await create.builder.orchestrator.getEditedData();
     create.builder.storeData("relationshipOverride", {
       [field.key]: value(ownerB),
@@ -124,88 +104,45 @@ export async function verifyInternalRelationships(
       assert.deepEqual(
         create.builder.getStoredData("defaultOwnersBeforeTrigger"),
         [ownerA],
-        "default inverse edges are visible inside triggers",
       );
     }
     await assertStored(created.id, [ownerB]);
-    assertQueued(create.builder, [ownerB], []);
 
-    if (!field.defaults) {
-      const omitted = EditAssignmentAction.create(
-        viewer,
-        await reload(created.id),
-        { name: "unrelated edit" },
-      );
-      await omitted.saveX();
-      await assertStored(created.id, [ownerB]);
-      assertQueued(omitted.builder, [], []);
-    }
-
-    // A speculative edit back to A is replaced by B, the original stored owner.
-    const same = EditAssignmentAction.create(
+    const edit = EditAssignmentAction.create(
       viewer,
       await reload(created.id),
       {},
     );
-    same.builder.updateInput({ [field.key]: value(ownerA) });
-    await same.builder.orchestrator.getEditedData();
-    same.builder.storeData("relationshipOverride", {
-      [field.key]: value(ownerB),
-    });
-    await same.saveX();
-    await assertStored(created.id, [ownerB]);
-    assertQueued(same.builder, [ownerB], []);
-
-    const replace = EditAssignmentAction.create(
-      viewer,
-      await reload(created.id),
-      {},
-    );
-    replace.builder.updateInput({ [field.key]: value(ownerA) });
-    await replace.saveX();
+    edit.builder.updateInput({ [field.key]: value(ownerA) });
+    await edit.saveX();
     await assertStored(created.id, [ownerA]);
-    assertQueued(replace.builder, [ownerA], [ownerB]);
 
     const clear = EditAssignmentAction.create(
       viewer,
       await reload(created.id),
       {},
     );
-    clear.builder.updateInput({ [field.key]: value(ownerB) });
-    await clear.builder.orchestrator.getEditedData();
-    clear.builder.storeData("relationshipOverride", { [field.key]: null });
+    clear.builder.updateInput({ [field.key]: null });
     await clear.saveX();
     await assertStored(created.id, null);
-    assertQueued(clear.builder, [], [ownerA]);
-
     if (field.list) {
       const members = EditAssignmentAction.create(
         viewer,
         await reload(created.id),
         {},
       );
-      members.builder.updateInput({ [field.key]: [ownerC] });
-      await members.builder.orchestrator.getEditedData();
-      members.builder.storeData("relationshipOverride", {
-        [field.key]: [ownerA, ownerB],
-      });
+      members.builder.updateInput({ memberIds: [ownerA, ownerB] });
       await members.saveX();
       await assertStored(created.id, [ownerA, ownerB]);
-      assertQueued(members.builder, [ownerA, ownerB], []);
-
       const empty = EditAssignmentAction.create(
         viewer,
         await reload(created.id),
         {},
       );
-      empty.builder.updateInput({ [field.key]: [ownerA, ownerB] });
-      await empty.builder.orchestrator.getEditedData();
-      empty.builder.storeData("relationshipOverride", { [field.key]: [] });
+      empty.builder.updateInput({ memberIds: [] });
       await empty.saveX();
       await assertStored(created.id, []);
-      assertQueued(empty.builder, [], [ownerA, ownerB]);
     }
-
     const restore = EditAssignmentAction.create(
       viewer,
       await reload(created.id),
@@ -213,64 +150,104 @@ export async function verifyInternalRelationships(
     );
     restore.builder.updateInput({ [field.key]: value(ownerA) });
     await restore.saveX();
-    const remove = DeleteAssignmentAction.create(
+    await DeleteAssignmentAction.create(
       viewer,
       await reload(created.id),
-    );
-    // Even a DELETE trigger assigning another owner must not create a dangling edge.
-    remove.builder.storeData("relationshipOverride", {
-      [field.key]: value(ownerB),
-    });
-    await remove.saveX();
+    ).saveX();
     assert.equal(await Assignment.load(viewer, created.id), null);
-    const rows = await client.queryAll(
+    const remaining = await client.queryAll(
       "SELECT * FROM internal_relationship_edges WHERE id2 = ?",
       [created.id],
     );
-    assert.equal(
-      rows.rows.length,
-      0,
-      `${field.key}: delete leaves no reverse edges`,
-    );
-    assertQueued(remove.builder, [], [ownerA]);
+    assert.equal(remaining.rows.length, 0);
     console.log(
-      `PASS: ${field.key} inverse rows follow final create/edit/clear/delete values`,
-    );
-
-    const seed = CreateAssignmentAction.create(viewer, {
-      name: "enriched",
-    });
-    if (!field.defaults)
-      seed.builder.updateInput({ [field.key]: value(ownerA) });
-    const seeded = await seed.saveX();
-    const enriched = EditAssignmentAction.create(
-      viewer,
-      await reload(seeded.id),
-      {},
-    );
-    if (!field.defaults)
-      enriched.builder.updateInput({ [field.key]: value(ownerA) });
-    enriched.builder.storeData("enrichRelationship", {
-      edgeType: field.edge,
-      manualOwner: ownerB,
-      removedOwner: ownerC,
-    });
-    const withData = await enriched.saveX();
-    assertQueued(enriched.builder, [ownerA, ownerB], [ownerC]);
-    const enrichedRows = await client.queryAll(
-      "SELECT id1, data FROM internal_relationship_edges WHERE id2 = ? AND edge_type = ? ORDER BY id1",
-      [withData.id, field.edge],
-    );
-    assert.deepEqual(
-      enrichedRows.rows,
-      [
-        { id1: ownerA, data: "enriched" },
-        { id1: ownerB, data: "manual" },
-      ].sort((a, b) => String(a.id1).localeCompare(String(b.id1))),
-      `${field.key}: retain trigger enrichment and unrelated manual edges`,
-    );
-    console.log(
-      `PASS: ${field.key} preserves trigger edge data and unrelated manual operations`,
+      `PASS: generated ${field.key} persists values and supplies stored inverse IDs`,
     );
   }
+
+  // Distinct generated field names must register separate contributions.
+  const shared = EdgeType.ContactToSharedAssignments;
+  await client.query(
+    `INSERT INTO assoc_edge_config
+    (edge_type, edge_name, symmetric_edge, inverse_edge_type, edge_table, created_at, updated_at)
+    VALUES (?, 'sharedAssignments', 0, NULL, 'internal_relationship_edges', ?, ?) RETURNING edge_type`,
+    [shared, new Date(), new Date()],
+  );
+  const sharedCreate = CreateAssignmentAction.create(viewer, {
+    name: "shared fields",
+  });
+  sharedCreate.builder.updateInput({
+    sharedOwnerId: ownerA,
+    sharedSecondId: ownerB,
+  });
+  const sharedEnt = await sharedCreate.saveX();
+  const createdSharedRows = await client.queryAll(
+    "SELECT id1 FROM internal_relationship_edges WHERE id2 = ? AND edge_type = ? ORDER BY id1",
+    [sharedEnt.id, shared],
+  );
+  assert.deepEqual(
+    createdSharedRows.rows.map((row) => row.id1),
+    [ownerA, ownerB].sort(),
+  );
+  const sharedEdit = EditAssignmentAction.create(
+    viewer,
+    await reload(sharedEnt.id),
+    {},
+  );
+  sharedEdit.builder.updateInput({ sharedOwnerId: null });
+  await sharedEdit.saveX();
+  const sharedRows = await client.queryAll(
+    "SELECT id1 FROM internal_relationship_edges WHERE id2 = ? AND edge_type = ?",
+    [sharedEnt.id, shared],
+  );
+  assert.deepEqual(
+    sharedRows.rows.map((row) => row.id1),
+    [ownerB],
+  );
+
+  // The generated private accessor hides this value, so transformed writes need
+  // emitted raw-data loading before defaults and triggers observe inverse IDs.
+  const seed = CreateAssignmentAction.create(viewer, {
+    name: "private stored owner",
+  });
+  seed.builder.updateInput({ defaultOwnerId: ownerB });
+  const existing = await reload((await seed.saveX()).id);
+  class CreateAsEdit extends CreateAssignmentAction {
+    transformWrite() {
+      return { op: SQLStatementOperation.Update, existingEnt: existing };
+    }
+    getTriggers() {
+      return [
+        {
+          changeset: (builder: this["builder"]) => {
+            assert.deepEqual(
+              builder.orchestrator
+                .getInputEdges(
+                  EdgeType.ContactToDefaultAssignments,
+                  WriteOperation.Delete,
+                )
+                .map((edge) => edge.id),
+              [ownerB],
+            );
+          },
+        },
+      ];
+    }
+  }
+  await new CreateAsEdit(viewer, { name: "transformed private owner" }).saveX();
+  assert.equal(
+    (await Assignment.loadRawDataX(existing.id)).default_owner_id,
+    ownerA,
+  );
+  const transformedRows = await client.queryAll(
+    "SELECT id1 FROM internal_relationship_edges WHERE id2 = ? AND edge_type = ?",
+    [existing.id, EdgeType.ContactToDefaultAssignments],
+  );
+  assert.deepEqual(
+    transformedRows.rows.map((row) => row.id1),
+    [ownerA],
+  );
+  console.log(
+    "PASS: generated shared field registration and transformed private stored IDs",
+  );
 }

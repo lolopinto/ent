@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { verifyOwnership } from "./ownership_review_test";
 import { graphql, GraphQLInputObjectType } from "graphql";
 import { LoggedOutViewer } from "@snowtop/ent";
 import type { ID } from "@snowtop/ent";
@@ -209,13 +208,7 @@ async function main() {
     console.log(
       "PASS: internal INSERT/EDIT assignments persist; dbOnly and untouched server defaults remain DB-owned",
     );
-    await verifyInternalRelationships(
-      client,
-      seededID,
-      created.id,
-      internalEnt.id,
-    );
-    await verifyOwnership(client, seededID, created.id, internalEnt.id);
+    await verifyInternalRelationships(client, seededID, created.id);
   } finally {
     client.release();
     await db.endPool();

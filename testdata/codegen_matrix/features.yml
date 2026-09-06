@@ -612,8 +612,9 @@ features:
     rationale: Removes public action inputs while retaining internal builder persistence.
   - id: field.internal_builder_persistence
     mode: existing_test
-    rationale: Generated internal writes persist and reconcile inverse membership across defaults, triggers, shared fields and explicit operations.
+    rationale: Generated tests verify internal field selection and inverse metadata; package tests cover runtime ownership, defaults, triggers and explicit operations.
     test_refs:
+      - ts/src/action/orchestrator_field_edges.test.ts
       - internal/codegenmatrix/internal_fields_test.go:TestDisableUserEditableBuilderPersistence
   - id: field.disable_user_graphql_editable
     owns: [input.Field.DisableUserGraphQLEditable]

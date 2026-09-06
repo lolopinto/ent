@@ -68,10 +68,17 @@ snippets, and then runs `tsc --noEmit` against the generated app.
 It locates the repository from the Go test source path, so it does not require
 `git rev-parse` at runtime.
 
-`TestDisableUserEditableBuilderPersistence` also generates a small SQLite app to
-verify internal field persistence, public input protection, and inverse rows across
-shared fields, defaults, trigger overrides, private values, lists, and explicit edge
-operations. Run it with `go test ./internal/codegenmatrix -run TestDisableUserEditableBuilderPersistence -count=1`.
+Core field-edge reconciliation is tested by `ts/src/action/orchestrator_field_edges.test.ts`.
+Run it with `cd ts && npm test -- src/action/orchestrator_field_edges.test.ts --runInBand`,
+or as part of the ordinary `npm test` suite. It uses SQLite and the real runtime
+without invoking Go or codegen, covering shared ownership, manual edge operations,
+Builder dependencies, defaults, trigger changes, and transformed writes.
+
+`TestDisableUserEditableBuilderPersistence` generates a small SQLite app for the
+remaining generator contracts: internal field selection and persistence, public
+TypeScript/GraphQL inputs, private/list stored-ID normalization, default callback
+wiring, and distinct shared-field registrations. Run it with
+`go test ./internal/codegenmatrix -run TestDisableUserEditableBuilderPersistence -count=1`.
 
 ## Bar For Adding Coverage
 
