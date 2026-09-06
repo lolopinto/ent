@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
@@ -77,6 +78,12 @@ func (db *DBConfig) Init() (*sqlx.DB, error) {
 		fmt.Println("error opening db", err)
 		return nil, err
 	}
+	initialized := false
+	defer func() {
+		if !initialized {
+			_ = db2.Close()
+		}
+	}()
 
 	err = db2.Ping()
 	if err != nil {
@@ -104,6 +111,7 @@ func (db *DBConfig) Init() (*sqlx.DB, error) {
 			}
 		}
 	}
+	initialized = true
 	return db2, nil
 }
 
@@ -183,10 +191,22 @@ func init() {
 	}
 }
 
-var cfg *Config
+var (
+	cfg      *Config
+	cfgMutex sync.RWMutex
+)
 
 // Get returns the singleton config for the application
 func Get() *Config {
+	cfgMutex.RLock()
+	current := cfg
+	cfgMutex.RUnlock()
+	if current != nil {
+		return current
+	}
+
+	cfgMutex.Lock()
+	defer cfgMutex.Unlock()
 	if cfg == nil {
 		cfg = &Config{
 			DB: loadDBConfig(),
@@ -226,6 +246,8 @@ func GetConnectionStr() string {
 }
 
 func ResetConfig(rdbi *DBConfig) {
+	cfgMutex.Lock()
+	defer cfgMutex.Unlock()
 	cfg = &Config{
 		DB: rdbi,
 	}
