@@ -5,6 +5,18 @@ import { Builder, WriteOperation } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
+import {
+  assertTransactionRead,
+  assertExecutorTransaction,
+  getTransactionReadState,
+  failTransaction,
+  getTransactionState,
+  getExecutorBuilders,
+  setExecutorBuilders,
+  completeGuardedPreparation,
+  assertIndependentActionSave,
+  runActionExecution,
+} from "../core/transaction_context";
 import { TopologicalGraph } from "./topological_sort";
 import {
   ConditionalNodeOperation,
@@ -14,6 +26,7 @@ import {
 
 // private to ent
 export class ListBasedExecutor<T extends Ent> implements Executor {
+  private transactionRead = getTransactionReadState();
   private idx: number = 0;
   public builder?: Builder<Ent> | undefined;
   constructor(
@@ -24,6 +37,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
     private complexOptions?: ComplexExecutorOptions,
   ) {
     this.builder = options?.builder;
+    setExecutorBuilders(this, this.builder ? [this.builder] : []);
   }
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
@@ -48,6 +62,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
 
   // returns true and null|undefined when done
   next(): IteratorResult<DataOperation<T>> {
+    assertTransactionRead(this.transactionRead);
     let createdEnt = getCreatedEnt(this.viewer, this.lastOp);
     if (createdEnt) {
       this.createdEnt = createdEnt;
@@ -91,7 +106,9 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   }
 
   async execute(): Promise<void> {
-    await executeOperations(this, this.viewer.context);
+    await runActionExecution(() =>
+      executeOperations(this, this.viewer.context),
+    );
   }
 
   async preFetch?(queryer: Queryer, context: Context): Promise<void> {
@@ -148,6 +165,8 @@ interface ComplexExecutorOptions {
 }
 
 export class ComplexExecutor<T extends Ent> implements Executor {
+  private transaction = getTransactionState();
+  private transactionRead = getTransactionReadState();
   private idx: number = 0;
   private mapper: Map<ID, Ent> = new Map();
   private lastOp: DataOperation<Ent> | undefined;
@@ -165,93 +184,104 @@ export class ComplexExecutor<T extends Ent> implements Executor {
     options?: OrchestratorOptions<T, Data, Viewer>,
     private complexOptions?: ComplexExecutorOptions,
   ) {
-    this.builder = options?.builder;
+    try {
+      this.builder = options?.builder;
 
-    const graph = new TopologicalGraph();
+      const graph = new TopologicalGraph();
 
-    const changesetMap: Map<string, Changeset> = new Map();
+      const changesetMap: Map<string, Changeset> = new Map();
 
-    const impl = (c: Changeset) => {
-      changesetMap.set(c.placeholderID.toString(), c);
+      const impl = (c: Changeset) => {
+        changesetMap.set(c.placeholderID.toString(), c);
 
-      graph.addNode(c.placeholderID.toString());
-      if (c.dependencies) {
-        for (let [_, builder] of c.dependencies) {
-          // dependency should go first...
-          graph.addEdge(
-            builder.placeholderID.toString(),
-            c.placeholderID.toString(),
+        graph.addNode(c.placeholderID.toString());
+        if (c.dependencies) {
+          for (let [_, builder] of c.dependencies) {
+            // dependency should go first...
+            graph.addEdge(
+              builder.placeholderID.toString(),
+              c.placeholderID.toString(),
+            );
+          }
+        }
+
+        if (c.changesets) {
+          c.changesets.forEach((c2) => {
+            impl(c2);
+          });
+        }
+      };
+      let localChangesets = new Map<ID, Changeset>();
+      changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
+
+      // create a new changeset representing the source changeset with the simple executor
+      impl({
+        viewer: this.viewer,
+        placeholderID: this.placeholderID,
+        changesets: changesets,
+        dependencies: dependencies,
+        executor: () => {
+          return new ListBasedExecutor(
+            this.viewer,
+            this.placeholderID,
+            operations,
+            options,
+          );
+        },
+      });
+
+      // use a set to handle repeated ops because of how the executor logic currently works
+      // TODO: can this logic be rewritten to not have a set yet avoid duplicates?
+      let nodeOps: Set<DataOperation<Ent>> = new Set();
+      let remainOps: Set<DataOperation<Ent>> = new Set();
+
+      const sorted = graph.topologicalSort();
+      sorted.forEach((node) => {
+        let c = changesetMap.get(node);
+
+        if (!c) {
+          // phew. expect it to be handled somewhere else
+          // we can just skip it and expect the resolver to handle this correctly
+          // this means it's not a changeset that was created by this ent and can/will be handled elsewhere
+          if (dependencies.has(node)) {
+            return;
+          }
+          throw new Error(
+            `trying to do a write with incomplete mutation data ${node}. current node: ${placeholderID}`,
           );
         }
-      }
 
-      if (c.changesets) {
-        c.changesets.forEach((c2) => {
-          impl(c2);
-        });
-      }
-    };
-    let localChangesets = new Map<ID, Changeset>();
-    changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
-
-    // create a new changeset representing the source changeset with the simple executor
-    impl({
-      viewer: this.viewer,
-      placeholderID: this.placeholderID,
-      changesets: changesets,
-      dependencies: dependencies,
-      executor: () => {
-        return new ListBasedExecutor(
-          this.viewer,
-          this.placeholderID,
-          operations,
-          options,
-        );
-      },
-    });
-
-    // use a set to handle repeated ops because of how the executor logic currently works
-    // TODO: can this logic be rewritten to not have a set yet avoid duplicates?
-    let nodeOps: Set<DataOperation<Ent>> = new Set();
-    let remainOps: Set<DataOperation<Ent>> = new Set();
-
-    const sorted = graph.topologicalSort();
-    sorted.forEach((node) => {
-      let c = changesetMap.get(node);
-
-      if (!c) {
-        // phew. expect it to be handled somewhere else
-        // we can just skip it and expect the resolver to handle this correctly
-        // this means it's not a changeset that was created by this ent and can/will be handled elsewhere
-        if (dependencies.has(node)) {
-          return;
+        // get ordered list of ops
+        let executor = c.executor();
+        for (let op of executor) {
+          if (op.createdEnt) {
+            nodeOps.add(op);
+          } else {
+            remainOps.add(op);
+          }
         }
-        throw new Error(
-          `trying to do a write with incomplete mutation data ${node}. current node: ${placeholderID}`,
-        );
-      }
 
-      // get ordered list of ops
-      let executor = c.executor();
-      for (let op of executor) {
-        if (op.createdEnt) {
-          nodeOps.add(op);
-        } else {
-          remainOps.add(op);
+        // only add executors that are part of the changeset to what should be tracked here
+        // or self.
+        if (
+          localChangesets.has(c.placeholderID) ||
+          c.placeholderID === placeholderID
+        ) {
+          this.executors.push(executor);
         }
-      }
-
-      // only add executors that are part of the changeset to what should be tracked here
-      // or self.
-      if (
-        localChangesets.has(c.placeholderID) ||
-        c.placeholderID === placeholderID
-      ) {
-        this.executors.push(executor);
-      }
-    });
-    // get all the operations and put node operations first
-    this.allOperations = [...nodeOps, ...remainOps];
+      });
+      // get all the operations and put node operations first
+      this.allOperations = [...nodeOps, ...remainOps];
+      setExecutorBuilders(
+        this,
+        this.executors.flatMap((executor) => [
+          ...getExecutorBuilders(executor),
+        ]),
+      );
+    } catch (error) {
+      if (this.transaction) failTransaction(this.transaction, error);
+      throw error;
+    }
   }
 
   [Symbol.iterator]() {
@@ -277,6 +307,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   }
 
   next(): IteratorResult<DataOperation<Ent>> {
+    assertTransactionRead(this.transactionRead);
     this.handleCreatedEnt();
     maybeFlagOpOperationAsChanged(this.lastOp, this.changedOps);
 
@@ -330,7 +361,9 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   }
 
   async execute(): Promise<void> {
-    await executeOperations(this, this.viewer.context);
+    await runActionExecution(() =>
+      executeOperations(this, this.viewer.context),
+    );
   }
 
   async preFetch?(queryer: Queryer, context: Context): Promise<void> {
@@ -365,6 +398,52 @@ export async function executeOperations(
   context?: Context,
   trackOps?: true,
 ) {
+  const transaction = getTransactionState();
+  if (transaction) {
+    const operations: DataOperation<Ent>[] = [];
+    const writeTargets = new Map<string, object>();
+    try {
+      assertExecutorTransaction(executor);
+      assertIndependentActionSave();
+      if (executor.preFetch) {
+        await executor.preFetch(transaction.queryer, context);
+      }
+      for (const operation of executor) {
+        if (operation.shortCircuit?.(executor)) continue;
+        if (trackOps) operations.push(operation);
+        operation.resolve?.(executor);
+        const target =
+          transaction.guardedRoot && operation.transactionWriteTarget?.();
+        if (target) {
+          const key = JSON.stringify(target);
+          const previous = writeTargets.get(key);
+          if (previous && previous !== operation.builder) {
+            throw new Error(
+              "guarded changesets cannot mutate the same Ent through multiple builders; consolidate dependent writes into one action",
+            );
+          }
+          writeTargets.set(key, operation.builder);
+        }
+        await operation.performWrite(transaction.queryer, context);
+      }
+      // Result loads are still provisional and can roll back the owning scope.
+      await executor.postFetch?.(transaction.queryer, context);
+      completeGuardedPreparation(transaction, executor);
+      transaction.receipts.push(() => {
+        (
+          executor as Executor & { transactionCommitted?(): void }
+        ).transactionCommitted?.();
+      });
+      if (executor.executeObservers) {
+        transaction.observers.push(() => executor.executeObservers!());
+      }
+      return operations;
+    } catch (error) {
+      failTransaction(transaction, error);
+      throw error;
+    }
+  }
+  assertExecutorTransaction(executor);
   const client = await DB.getInstance().getNewClient();
 
   const operations: DataOperation<Ent>[] = [];

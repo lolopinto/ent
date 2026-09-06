@@ -1,4 +1,4 @@
-{{ reserveImport .Package.ActionPackagePath "WriteOperation" "setEdgeTypeInGroup" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions"}}
+{{ reserveImport .Package.ActionPackagePath "WriteOperation" "setEdgeTypeInGroup" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions" "runActionExecution"}}
 {{ reserveTypeImport .Package.ActionPackagePath "Action" "Builder" "Changeset" "Trigger" "Observer" "Validator" "ChangesetOptions"}}
 {{ reserveTypeImport .Package.PackagePath "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause" "CreateRowOptions"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
@@ -421,6 +421,7 @@ export class {{$actionName}} implements {{useTypeImport "Action"}}<{{$node}}, {{
         input: {{$inputName}},
       {{ end -}}
       ): Promise<{{$returnType}}> {
+      return {{useImport "runActionExecution"}}(async () => {
       {{ if $action.CanFail -}}
         const {{$instance}} = await {{$node}}.load(viewer, id);
         if ({{$instance}} === null) {
@@ -459,6 +460,7 @@ export class {{$actionName}} implements {{useTypeImport "Action"}}<{{$node}}, {{
           return new this(viewer, {{$instance}}).saveX();
         {{end -}}
       {{end -}}
+      });
     } 
   {{end -}}
 }

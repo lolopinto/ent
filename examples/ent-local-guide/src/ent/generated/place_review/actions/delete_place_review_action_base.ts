@@ -11,7 +11,7 @@ import type {
 } from "@snowtop/ent/action";
 import type { PlaceReviewInput } from "./place_review_builder";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
-import { WriteOperation } from "@snowtop/ent/action";
+import { WriteOperation, runActionExecution } from "@snowtop/ent/action";
 import { PlaceReview } from "../../..";
 import { PlaceReviewBuilder } from "./place_review_builder";
 
@@ -138,7 +138,9 @@ export class DeletePlaceReviewActionBase
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    const placeReview = await PlaceReview.loadX(viewer, id);
-    return new this(viewer, placeReview).saveX();
+    return runActionExecution(async () => {
+      const placeReview = await PlaceReview.loadX(viewer, id);
+      return new this(viewer, placeReview).saveX();
+    });
   }
 }

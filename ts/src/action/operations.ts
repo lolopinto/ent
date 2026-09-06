@@ -66,6 +66,8 @@ export interface DataOperation<
   shortCircuit?(executor: Executor): boolean;
   updatedOperation?(): UpdatedOperation<TEnt, TViewer> | null;
   resolve?(executor: Executor): void; //throws?
+  // Known row mutations, checked after conditional skips and placeholder resolution.
+  transactionWriteTarget?(): readonly [string, ID] | undefined;
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
@@ -81,6 +83,10 @@ export class DeleteNodeOperation<
     public readonly builder: Builder<TEnt, TViewer>,
     private options: DataOptions,
   ) {}
+
+  transactionWriteTarget(): readonly [string, ID] {
+    return [this.options.tableName, this.id];
+  }
 
   async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let options = {
@@ -221,6 +227,13 @@ export class EditNodeOperation<
       return true;
     }
     return false;
+  }
+
+  transactionWriteTarget(): readonly [string, ID] | undefined {
+    if (this.existingEnt && this.hasData(this.options.fields)) {
+      return [this.options.tableName, this.existingEnt.id];
+    }
+    return undefined;
   }
 
   private buildOnConflictQuery(options: EditNodeOptions<TEnt, TViewer>) {
@@ -967,6 +980,10 @@ export class ConditionalOperation<
   shortCircuit(executor: Executor): boolean {
     this.shortCircuited = executor.builderOpChanged(this.conditionalBuilder);
     return this.shortCircuited;
+  }
+
+  transactionWriteTarget(): readonly [string, ID] | undefined {
+    return this.op.transactionWriteTarget?.();
   }
 
   async preFetch(

@@ -48,6 +48,8 @@ export { registerExtensionRuntime } from "./core/extensions";
 import DB from "./core/db";
 export * from "./core/loaders";
 export { DB };
+export { withTransaction, getTransactionScope } from "./core/transaction";
+export type { TransactionOptions, TransactionScope } from "./core/transaction";
 
 // TODO figure out if this should be its own import path e.g. @snowtop/ent/privacy
 export {

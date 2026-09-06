@@ -1,3 +1,4 @@
+import { getContextCache } from "../context";
 import {
   ConfigurableLoaderFactory,
   Data,
@@ -77,7 +78,8 @@ function getRawCountLoader<
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
 >(viewer: TViewer, opts: CustomEdgeQueryOptions<TSource, TDest, TViewer>) {
-  if (!viewer.context?.cache) {
+  const cache = getContextCache(viewer.context);
+  if (!cache) {
     return new RawCountLoader({
       tableName: opts.loadEntOptions.tableName,
       groupCol: opts.groupCol,
@@ -85,7 +87,7 @@ function getRawCountLoader<
     });
   }
   const name = `custom_query_count_loader:${opts.name}`;
-  return viewer.context.cache.getLoader(
+  return cache.getLoader(
     name,
     () =>
       new RawCountLoader({
@@ -236,21 +238,25 @@ export abstract class CustomEdgeQueryBase<
   }
 
   async queryRawCount(): Promise<number> {
-    const idVisible = await this.idVisible();
-    if (!idVisible) {
-      return 0;
-    }
+    return this.readInTransaction(async () => {
+      const idVisible = await this.idVisible();
+      if (!idVisible) {
+        return 0;
+      }
 
-    return this.getCountLoader().load(this.id);
+      return this.getCountLoader().load(this.id);
+    });
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
-    let count = 0;
-    const idVisible = await this.idVisible();
-    if (idVisible) {
-      count = await this.queryRawCount();
-    }
-    return new Map<ID, number>([[this.id, count]]);
+    return this.readInTransaction(async () => {
+      let count = 0;
+      const idVisible = await this.idVisible();
+      if (idVisible) {
+        count = await this.queryRawCount();
+      }
+      return new Map<ID, number>([[this.id, count]]);
+    });
   }
 
   protected async loadRawIDs(

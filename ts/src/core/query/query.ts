@@ -1,3 +1,9 @@
+import {
+  assertEntTransaction,
+  assertTransactionRead,
+  getTransactionReadState,
+  runTransactionRead,
+} from "../transaction_context";
 import { isPromise } from "util/types";
 import {
   Data,
@@ -13,7 +19,7 @@ import {
 import * as clause from "../clause";
 import { decodeCursorPayload, getCursor, getDefaultLimit } from "../ent";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
-import { memoizeNoArgs } from "../memoize";
+import { memoizeInTransaction as memoizeNoArgs } from "../memoize";
 import { OrderBy, orderByHasExpressions, reverseOrderBy } from "../query_impl";
 
 export interface EdgeQuery<
@@ -379,6 +385,12 @@ export abstract class BaseEdgeQuery<
   TEdge extends Data,
 > implements EdgeQuery<TSource, TDest, TEdge>
 {
+  private transactionRead = getTransactionReadState();
+
+  protected readInTransaction<T>(read: () => Promise<T>): Promise<T> {
+    return runTransactionRead(this.transactionRead, read);
+  }
+
   private filters: EdgeQueryFilter<TEdge>[] = [];
   private queryDispatched: boolean;
   protected edges: Map<ID, TEdge[]> = new Map();
@@ -395,10 +407,7 @@ export abstract class BaseEdgeQuery<
   private limitAdded = false;
   private cursorKeys: string[] = [];
 
-  constructor(
-    public viewer: Viewer,
-    options: EdgeQueryOptions,
-  ) {
+  constructor(public viewer: Viewer, options: EdgeQueryOptions) {
     // we also sort cursor col in same direction. (direction doesn't matter)
     const orderBy = [...options.orderby];
     if (
@@ -414,7 +423,7 @@ export abstract class BaseEdgeQuery<
         o.alias ??
         (options.fieldOptions?.disableFieldsAlias
           ? undefined
-          : (options.fieldOptions?.fieldsAlias ?? options.fieldOptions?.alias));
+          : options.fieldOptions?.fieldsAlias ?? options.fieldOptions?.alias);
     });
     this.edgeQueryOptions = { ...options, orderby: orderBy };
     this.cursorCol = options.cursorCol;
@@ -498,7 +507,9 @@ export abstract class BaseEdgeQuery<
 
   // this is basically just raw rows
   readonly queryEdges = async (): Promise<TEdge[]> => {
-    return this.querySingleEdge("queryEdges");
+    return this.readInTransaction(async () => {
+      return this.querySingleEdge("queryEdges");
+    });
   };
 
   abstract queryRawCount(): Promise<number>;
@@ -506,40 +517,50 @@ export abstract class BaseEdgeQuery<
   abstract queryAllRawCount(): Promise<Map<ID, number>>;
 
   readonly queryAllEdges = async (): Promise<Map<ID, TEdge[]>> => {
-    return this.memoizedloadEdges();
+    return this.readInTransaction(async () => {
+      return this.memoizedloadEdges();
+    });
   };
 
   abstract dataToID(edge: TEdge): ID;
 
   readonly queryIDs = async (): Promise<ID[]> => {
-    const edges = await this.querySingleEdge("queryIDs");
-    return edges.map((edge) => this.dataToID(edge));
+    return this.readInTransaction(async () => {
+      const edges = await this.querySingleEdge("queryIDs");
+      return edges.map((edge) => this.dataToID(edge));
+    });
   };
 
   readonly queryAllIDs = async (): Promise<Map<ID, ID[]>> => {
-    const edges = await this.memoizedloadEdges();
-    let results: Map<ID, ID[]> = new Map();
-    for (const [id, edge_data] of edges) {
-      results.set(
-        id,
-        edge_data.map((edge) => this.dataToID(edge)),
-      );
-    }
-    return results;
+    return this.readInTransaction(async () => {
+      const edges = await this.memoizedloadEdges();
+      let results: Map<ID, ID[]> = new Map();
+      for (const [id, edge_data] of edges) {
+        results.set(
+          id,
+          edge_data.map((edge) => this.dataToID(edge)),
+        );
+      }
+      return results;
+    });
   };
 
   readonly queryCount = async (): Promise<number> => {
-    const edges = await this.querySingleEdge("queryCount");
-    return edges.length;
+    return this.readInTransaction(async () => {
+      const edges = await this.querySingleEdge("queryCount");
+      return edges.length;
+    });
   };
 
   readonly queryAllCount = async (): Promise<Map<ID, number>> => {
-    let results: Map<ID, number> = new Map();
-    const edges = await this.memoizedloadEdges();
-    edges.forEach((list, id) => {
-      results.set(id, list.length);
+    return this.readInTransaction(async () => {
+      let results: Map<ID, number> = new Map();
+      const edges = await this.memoizedloadEdges();
+      edges.forEach((list, id) => {
+        results.set(id, list.length);
+      });
+      return results;
     });
-    return results;
   };
 
   protected abstract loadEntsFromEdges(
@@ -548,29 +569,34 @@ export abstract class BaseEdgeQuery<
   ): Promise<TDest[]>;
 
   readonly queryEnts = async (): Promise<TDest[]> => {
-    const edges = await this.querySingleEdge("queryEnts");
-    return this.loadEntsFromEdges("id", edges);
+    return this.readInTransaction(async () => {
+      const edges = await this.querySingleEdge("queryEnts");
+      return this.loadEntsFromEdges("id", edges);
+    });
   };
 
   readonly queryAllEnts = async (): Promise<Map<ID, TDest[]>> => {
-    // applies filters and then gets things after
-    const edges = await this.memoizedloadEdges();
-    let promises: Promise<void>[] = [];
-    const results: Map<ID, TDest[]> = new Map();
+    return this.readInTransaction(async () => {
+      // applies filters and then gets things after
+      const edges = await this.memoizedloadEdges();
+      let promises: Promise<void>[] = [];
+      const results: Map<ID, TDest[]> = new Map();
 
-    const loadEntsForID = async (id: ID, edges: TEdge[]) => {
-      const ents = await this.loadEntsFromEdges(id, edges);
-      results.set(id, ents);
-    };
-    for (const [id, edgesList] of edges) {
-      promises.push(loadEntsForID(id, edgesList));
-    }
+      const loadEntsForID = async (id: ID, edges: TEdge[]) => {
+        const ents = await this.loadEntsFromEdges(id, edges);
+        results.set(id, ents);
+      };
+      for (const [id, edgesList] of edges) {
+        promises.push(loadEntsForID(id, edgesList));
+      }
 
-    await Promise.all(promises);
-    return results;
+      await Promise.all(promises);
+      return results;
+    });
   };
 
   paginationInfo(): Map<ID, PaginationInfo> {
+    assertTransactionRead(this.transactionRead);
     this.assertQueryDispatched("paginationInfo");
     return this.pagination;
   }
@@ -602,6 +628,7 @@ export abstract class BaseEdgeQuery<
 
   private addID(id: ID | TSource) {
     if (typeof id === "object") {
+      assertEntTransaction(id);
       this.idMap.set(id.id, id);
       this.idsToFetch.push(id.id);
     } else {
@@ -744,6 +771,7 @@ async function applyPrivacyPolicyForEdgeQ<
       if (!ent) {
         ent = await edgeQ.sourceEnt(id);
       }
+      if (ent) assertEntTransaction(ent);
       const r = await applyPrivacyPolicy(
         viewer,
         edgeQ.getPrivacyPolicy(),

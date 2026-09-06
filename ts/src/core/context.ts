@@ -6,6 +6,22 @@ import { log } from "./logger";
 import { stableStringify } from "./cache_utils";
 import { getOnQueryCacheHit } from "./metrics";
 import { getOrderByKey, getSelectFieldsKey } from "./query_impl";
+import { getTransactionState } from "./transaction_context";
+
+/** Internal cache boundary shared by all Ent reads and loader factories. */
+export function getContextCache(context?: Context): Context["cache"] {
+  const state = getTransactionState();
+  const cache = context?.cache;
+  if (!state || !cache) {
+    return cache;
+  }
+  let scoped = state.caches.get(cache);
+  if (!scoped) {
+    scoped = new ContextCache();
+    state.caches.set(cache, scoped);
+  }
+  return scoped;
+}
 
 const DEFAULT_MAX_DISCARDED_LOADERS = 1000;
 let maxDiscardedLoaders = DEFAULT_MAX_DISCARDED_LOADERS;

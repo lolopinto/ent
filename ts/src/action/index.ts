@@ -28,4 +28,6 @@ export type {
   RelativeNumberValue,
 } from "./relative_value";
 export { Transaction } from "./transaction";
+// Internal generated save entrypoint: includes loads and construction in failure handling.
+export { runActionExecution } from "../core/transaction_context";
 export type { AssocEdgeOptions } from "./operations";

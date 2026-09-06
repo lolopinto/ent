@@ -32,6 +32,17 @@ import DB, {
 
 import { applyPrivacyPolicy, applyPrivacyPolicyImpl } from "./privacy";
 import { mapWithConcurrency } from "./async_utils";
+import { getContextCache } from "./context";
+import {
+  assertTransactionRead,
+  getTransactionReadState,
+  recordRowTransaction,
+  copyEntTransaction,
+  getTransactionState,
+  recordEntTransaction,
+  recordActionResultTransaction,
+  trackValidationRead,
+} from "./transaction_context";
 
 import DataLoader from "dataloader";
 import * as clause from "./clause";
@@ -258,14 +269,15 @@ export function getEntLoader<TViewer extends Viewer, TEnt extends Ent<TViewer>>(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
 ): EntLoader<TViewer, TEnt> {
-  if (!viewer.context?.cache) {
+  const cache = getContextCache(viewer.context);
+  if (!cache) {
     return new EntLoader(viewer, options);
   }
   const name = `ent-loader:${viewer.instanceKey()}:${
     options.loaderFactory.name
   }`;
 
-  return viewer.context.cache.getLoaderWithLoadMany(
+  return cache.getLoaderWithLoadMany(
     name,
     () => new EntLoader(viewer, options),
   ) as EntLoader<TViewer, TEnt>;
@@ -842,9 +854,10 @@ async function doFieldPrivacy<
   await Promise.all(promises);
   if (somethingChanged) {
     // have to create new instance
-    const ent = new options.ent(viewer, clone);
-    ent.__setRawDBData(origData);
-    return ent;
+    const redacted = new options.ent(viewer, clone);
+    copyEntTransaction(ent, redacted);
+    redacted.__setRawDBData(origData);
+    return redacted;
   }
   ent.__setRawDBData(origData);
   return ent;
@@ -875,7 +888,8 @@ export async function loadRowX(options: LoadRowOptions): Promise<Data> {
 
 // primitive data fetching. called by loaders
 export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
-  let cache = options.context?.cache;
+  const read = getTransactionReadState();
+  let cache = getContextCache(options.context);
   if (cache) {
     let row = cache.getCachedRow(options);
     if (row !== null) {
@@ -888,6 +902,8 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
   const pool = DB.getInstance().getPool();
 
   const res = await pool.query(queryData.query, queryData.values);
+  assertTransactionRead(read);
+  for (const row of res.rows) recordRowTransaction(row, read);
   if (res.rowCount != 1) {
     if (res.rowCount > 1) {
       log("error", "got more than one row for query " + queryData.query);
@@ -915,11 +931,14 @@ export async function performRawQuery(
   values: any[],
   logValues?: any[],
 ): Promise<Data[]> {
+  const read = getTransactionReadState();
   const pool = DB.getInstance().getPool();
 
   logQuery(query, logValues || []);
   try {
     const res = await pool.queryAll(query, values);
+    assertTransactionRead(read);
+    for (const row of res.rows) recordRowTransaction(row, read);
     return res.rows;
   } catch (e) {
     if (_logQueryWithError) {
@@ -934,7 +953,8 @@ export async function performRawQuery(
 
 // TODO this should throw, we can't be hiding errors here
 export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
-  let cache = options.context?.cache;
+  const read = getTransactionReadState();
+  let cache = getContextCache(options.context);
   if (cache) {
     let rows = cache.getCachedRows(options);
     if (rows !== null) {
@@ -948,6 +968,7 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
     queryData.values,
     queryData.logValues,
   );
+  assertTransactionRead(read);
   if (cache) {
     // put the rows in the cache...
     cache.primeCache(options, r);
@@ -1028,7 +1049,7 @@ async function mutateRow(
 ) {
   logQuery(query, logValues);
 
-  let cache = options.context?.cache;
+  let cache = getContextCache(options.context);
   let res: QueryResult<QueryResultRow>;
   try {
     if (isSyncQueryer(queryer)) {
@@ -1058,7 +1079,7 @@ function mutateRowSync(
 ) {
   logQuery(query, logValues);
 
-  let cache = options.context?.cache;
+  let cache = getContextCache(options.context);
   try {
     const res = queryer.execSync(query, values);
     if (cache) {
@@ -1329,7 +1350,6 @@ export function decodeCursorPayload(encoded: string): string {
   return Buffer.from(encoded, "base64").toString("utf8");
 }
 
-
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {
   const { row, cursorKeys, rowKeys } = opts;
@@ -1382,13 +1402,31 @@ export const assocEdgeLoader = createAssocEdgeConfigLoader({
   keyType: "uuid",
 });
 
+function getAssocEdgeConfigLoader() {
+  const state = getTransactionState();
+  if (!state) return assocEdgeLoader;
+  let loader = state.resources.get(assocEdgeLoader) as
+    | typeof assocEdgeLoader
+    | undefined;
+  if (!loader) {
+    loader = createAssocEdgeConfigLoader({
+      tableName: "assoc_edge_config",
+      fields: assocEdgeFields,
+      key: "edge_type",
+      keyType: "uuid",
+    });
+    state.resources.set(assocEdgeLoader, loader);
+  }
+  return loader;
+}
+
 // we don't expect assoc_edge_config information to change
 // so not using ContextCache but just caching it as needed once per server
 
 export async function loadEdgeData(
   edgeType: string,
 ): Promise<AssocEdgeData | null> {
-  const row = await assocEdgeLoader.load(edgeType);
+  const row = await getAssocEdgeConfigLoader().load(edgeType);
   if (!row) {
     return null;
   }
@@ -1402,7 +1440,7 @@ export async function loadEdgeDatas(
     return new Map();
   }
 
-  const rows = await assocEdgeLoader.loadMany(edgeTypes);
+  const rows = await getAssocEdgeConfigLoader().loadMany(edgeTypes);
   const m = new Map<string, AssocEdgeData>();
   rows.forEach((row) => {
     if (!row) {
@@ -1695,6 +1733,20 @@ export async function applyPrivacyPolicyForRow<
   return rowIsError(r) ? null : r;
 }
 
+/** @internal Materialize a write result with its originating builder's provenance. */
+export async function applyPrivacyPolicyForActionResult<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(
+  viewer: TViewer,
+  options: LoadEntOptions<TEnt, TViewer>,
+  row: Data,
+  builder: object,
+): Promise<TEnt | null> {
+  const r = await applyPrivacyPolicyForRowImpl(viewer, options, row, builder);
+  return rowIsError(r) ? null : r;
+}
+
 async function applyPrivacyPolicyForRowImpl<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
@@ -1702,9 +1754,14 @@ async function applyPrivacyPolicyForRowImpl<
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
   row: Data,
+  resultBuilder?: object,
 ): Promise<TEnt | Error> {
   const ent = new options.ent(viewer, row);
-  return applyPrivacyPolicyForEnt(viewer, ent, row, options);
+  if (resultBuilder) recordActionResultTransaction(ent, resultBuilder);
+  else recordEntTransaction(ent, row);
+  return trackValidationRead(
+    applyPrivacyPolicyForEnt(viewer, ent, row, options),
+  );
 }
 
 async function applyPrivacyPolicyForRowX<
@@ -1716,7 +1773,10 @@ async function applyPrivacyPolicyForRowX<
   row: Data,
 ): Promise<TEnt> {
   const ent = new options.ent(viewer, row);
-  return applyPrivacyPolicyForEntX(viewer, ent, row, options);
+  recordEntTransaction(ent, row);
+  return trackValidationRead(
+    applyPrivacyPolicyForEntX(viewer, ent, row, options),
+  );
 }
 
 // deprecated. doesn't use entcache

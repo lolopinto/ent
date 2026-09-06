@@ -11,7 +11,7 @@ import type {
 } from "@snowtop/ent/action";
 import type { UserInput } from "./user_builder";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
-import { WriteOperation } from "@snowtop/ent/action";
+import { WriteOperation, runActionExecution } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
 
@@ -119,7 +119,9 @@ export class DeleteUserActionBase
     viewer: Viewer,
     id: ID,
   ): Promise<void> {
-    const user = await User.loadX(viewer, id);
-    return new this(viewer, user).saveX();
+    return runActionExecution(async () => {
+      const user = await User.loadX(viewer, id);
+      return new this(viewer, user).saveX();
+    });
   }
 }

@@ -1,3 +1,7 @@
+import {
+  getTransactionReadState,
+  runTransactionRead,
+} from "../transaction_context";
 import DataLoader from "dataloader";
 import {
   Context,
@@ -21,7 +25,7 @@ import {
   performRawQuery,
 } from "../ent";
 import { stableStringify } from "../cache_utils";
-import { memoizeNoArgs } from "../memoize";
+import { memoizeInTransaction as memoizeNoArgs } from "../memoize";
 import { getOrderByKey, OrderBy } from "../query_impl";
 import {
   createLoaderCacheMap,
@@ -136,6 +140,7 @@ export interface AssocLoader<T extends AssocEdge> extends Loader<ID, T[]> {
 }
 
 export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
+  private transactionRead = getTransactionReadState();
   private loaderFn: () => Promise<DataLoader<ID, T[]>>;
   private loader: DataLoader<ID, T[]> | undefined;
   constructor(
@@ -163,29 +168,35 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
   }
 
   async load(id: ID): Promise<T[]> {
-    const loader = await this.loaderFn();
-    return loader.load(id);
+    return runTransactionRead(this.transactionRead, async () => {
+      const loader = await this.loaderFn();
+      return loader.load(id);
+    });
   }
 
   async loadTwoWay(id: ID): Promise<T[]> {
-    return loadTwoWayEdges({
-      ctr: this.edgeCtr,
-      id1: id,
-      edgeType: this.edgeType,
-      context: this.context,
-      queryOptions: this.options,
+    return runTransactionRead(this.transactionRead, async () => {
+      return loadTwoWayEdges({
+        ctr: this.edgeCtr,
+        id1: id,
+        edgeType: this.edgeType,
+        context: this.context,
+        queryOptions: this.options,
+      });
     });
   }
 
   // maybe eventually optimize this
   async loadEdgeForID2(id: ID, id2: ID) {
-    return loadEdgeForID2({
-      id1: id,
-      edgeType: this.edgeType,
-      id2,
-      context: this.context,
-      ctr: this.edgeCtr,
-      queryOptions: this.options,
+    return runTransactionRead(this.transactionRead, async () => {
+      return loadEdgeForID2({
+        id1: id,
+        edgeType: this.edgeType,
+        id2,
+        context: this.context,
+        ctr: this.edgeCtr,
+        queryOptions: this.options,
+      });
     });
   }
 
@@ -197,6 +208,7 @@ export class AssocEdgeLoader<T extends AssocEdge> implements Loader<ID, T[]> {
 export class AssocDirectEdgeLoader<T extends AssocEdge>
   implements Loader<ID, T[]>
 {
+  private transactionRead = getTransactionReadState();
   private loader: DataLoader<ID, T[]> | undefined;
   private loaderFn: (() => Promise<DataLoader<ID, T[]>>) | undefined;
   constructor(
@@ -246,37 +258,43 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
   }
 
   async load(id: ID) {
-    if (this.loaderFn) {
-      const loader = await this.loaderFn();
-      return loader.load(id);
-    }
-    return loadCustomEdges({
-      id1: id,
-      edgeType: this.edgeType,
-      context: this.context,
-      queryOptions: this.options,
-      ctr: this.edgeCtr,
+    return runTransactionRead(this.transactionRead, async () => {
+      if (this.loaderFn) {
+        const loader = await this.loaderFn();
+        return loader.load(id);
+      }
+      return loadCustomEdges({
+        id1: id,
+        edgeType: this.edgeType,
+        context: this.context,
+        queryOptions: this.options,
+        ctr: this.edgeCtr,
+      });
     });
   }
 
   async loadTwoWay(id: ID): Promise<T[]> {
-    return loadTwoWayEdges({
-      ctr: this.edgeCtr,
-      id1: id,
-      edgeType: this.edgeType,
-      context: this.context,
-      queryOptions: this.options,
+    return runTransactionRead(this.transactionRead, async () => {
+      return loadTwoWayEdges({
+        ctr: this.edgeCtr,
+        id1: id,
+        edgeType: this.edgeType,
+        context: this.context,
+        queryOptions: this.options,
+      });
     });
   }
 
   async loadEdgeForID2(id: ID, id2: ID) {
-    return loadEdgeForID2({
-      id1: id,
-      edgeType: this.edgeType,
-      id2,
-      context: this.context,
-      queryOptions: this.options,
-      ctr: this.edgeCtr,
+    return runTransactionRead(this.transactionRead, async () => {
+      return loadEdgeForID2({
+        id1: id,
+        edgeType: this.edgeType,
+        id2,
+        context: this.context,
+        queryOptions: this.options,
+        ctr: this.edgeCtr,
+      });
     });
   }
 

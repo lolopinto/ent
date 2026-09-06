@@ -1,3 +1,7 @@
+import {
+  getTransactionReadState,
+  runTransactionRead,
+} from "../transaction_context";
 import DataLoader from "dataloader";
 import {
   LoadRowOptions,
@@ -63,8 +67,8 @@ export function createCountDataLoader<K extends any>(
   const loaderName = options.groupCol
     ? `rawCountLoader:${options.tableName}:${options.groupCol}`
     : options.clause
-      ? `rawCountLoader:${options.tableName}:${options.clause.instanceKey()}`
-      : `rawCountLoader:${options.tableName}`;
+    ? `rawCountLoader:${options.tableName}:${options.clause.instanceKey()}`
+    : `rawCountLoader:${options.tableName}`;
   const loaderOptions: DataLoader.Options<K, number> = {
     maxBatchSize: getLoaderMaxBatchSize(),
     cacheMap: createLoaderCacheMap(options),
@@ -126,6 +130,7 @@ export function createCountDataLoader<K extends any>(
 // for now this only works for single column counts
 // e.g. foreign key count
 export class RawCountLoader<K extends any> implements Loader<K, number> {
+  private transactionRead = getTransactionReadState();
   private loader: DataLoader<K, number> | undefined;
   // tableName, columns
   constructor(
@@ -138,12 +143,14 @@ export class RawCountLoader<K extends any> implements Loader<K, number> {
   }
 
   async load(id: K): Promise<number> {
-    if (this.loader) {
-      return this.loader.load(id);
-    }
+    return runTransactionRead(this.transactionRead, async () => {
+      if (this.loader) {
+        return this.loader.load(id);
+      }
 
-    const rows = await simpleCase(this.options, id, this.context);
-    return rows[0];
+      const rows = await simpleCase(this.options, id, this.context);
+      return rows[0];
+    });
   }
 
   clearAll() {
