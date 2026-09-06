@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- support `codegen.ignoreTables` to preserve externally managed tables and their
+  foreign-key dependencies during migration codegen and schema SQL generation
+  (#2030).
+
 ### Fixed
 
 - avoid opening the Go codegen database pool until first use and close it when
