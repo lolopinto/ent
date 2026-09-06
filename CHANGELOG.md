@@ -9,6 +9,11 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- add PostgreSQL `withTransaction` scopes covering reads, action validation, and
+  writes, with isolation guards, retries, and post-commit observers (#2035).
+
 ### Fixed
 
 - update `uuid`, docs, test-helper, and standalone TypeScript package
