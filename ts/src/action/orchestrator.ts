@@ -56,6 +56,18 @@ import { RawQueryOperation } from "./operations";
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
+function invalidFieldError(fieldName: string, value: any): Error {
+  let description: string;
+  try {
+    description = `${value}`;
+  } catch {
+    // Null-prototype records (and lists containing them) cannot be coerced
+    // to strings. Diagnostic formatting must not hide a validation failure.
+    description = "[unprintable value]";
+  }
+  return new Error(`invalid field ${fieldName} with value ${description}`);
+}
+
 export interface OrchestratorOptions<
   TEnt extends Ent<TViewer>,
   TInput extends Data,
@@ -1158,7 +1170,7 @@ export class Orchestrator<
           valid = await valid;
         }
         if (!valid) {
-          return new Error(`invalid field ${fieldName} with value ${value}`);
+          return invalidFieldError(fieldName, value);
         }
       }
       // keep track of dependencies to resolve
@@ -1172,7 +1184,7 @@ export class Orchestrator<
           valid = await valid;
         }
         if (!valid) {
-          return new Error(`invalid field ${fieldName} with value ${value}`);
+          return invalidFieldError(fieldName, value);
         }
       }
 

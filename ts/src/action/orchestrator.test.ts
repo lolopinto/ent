@@ -584,6 +584,38 @@ function getInsertUserBuilder(
 }
 
 function commonTests() {
+  test.each([
+    false,
+    true,
+  ])("invalid null-prototype struct (list=%s) preserves validation error", async (list) => {
+    const value = Object.assign(Object.create(null), { label: "x" });
+    const structOptions = {
+      tsType: "Detail",
+      fields: { label: StringType({ minLen: 2 }) },
+    };
+    const schema = getBuilderSchemaFromFields(
+      {
+        detail: list
+          ? StructTypeAsList(structOptions)
+          : StructType(structOptions),
+      },
+      User,
+    );
+    const builder = new SimpleBuilder(
+      new LoggedOutViewer(),
+      schema,
+      new Map([["detail", list ? [value] : value]]),
+      WriteOperation.Insert,
+      null,
+    );
+    const errors = await builder.orchestrator.validWithErrors();
+    expect(errors).toHaveLength(1);
+    expect(errors[0].message).toMatch(/^invalid field detail with value /);
+    expect(errors[0].message).not.toContain(
+      "Cannot convert object to primitive value",
+    );
+  });
+
   beforeAll(async () => {
     // does assoc_edge_config loader need to be cleared?
     for (const edge of edges) {

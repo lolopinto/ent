@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- accept GraphQL literal input records in struct and union fields, including
+  nested lists, and preserve validation errors for unprintable values (#2029).
 - avoid opening the Go codegen database pool until first use and close it when
   `tsent` commands finish (#2024).
 - preserve trigger priority groups when individual triggers appear before and
