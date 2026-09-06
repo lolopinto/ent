@@ -92,6 +92,27 @@ snippets, and then runs `tsc --noEmit` against the generated app.
 It locates the repository from the Go test source path, so it does not require
 `git rev-parse` at runtime.
 
+`ts/src/action/orchestrator_field_edges.test.ts` tests how the runtime keeps field
+values and inverse edges consistent. It covers edges shared by multiple fields,
+explicit edge operations, builder dependencies, defaults, trigger updates, and
+transformed writes. The tests use SQLite and the Ent runtime without running Go
+or codegen. Run them as part of `npm test` in `ts/`, or run only this file from
+the repository root:
+
+```sh
+cd ts && npm test -- src/action/orchestrator_field_edges.test.ts --runInBand
+```
+
+`TestDisableUserEditableBuilderPersistence` generates a SQLite app to verify
+which fields generated builders persist, which fields public TypeScript and
+GraphQL inputs expose, and how builders load stored IDs for private and list
+fields. It also checks default callbacks and separate registrations for fields
+that share an inverse edge. Run it from the repository root:
+
+```sh
+go test ./internal/codegenmatrix -run TestDisableUserEditableBuilderPersistence -count=1
+```
+
 ## Bar For Adding Coverage
 
 Add matrix coverage when a change affects generated files, schema parsing,

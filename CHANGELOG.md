@@ -11,6 +11,9 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- persist fields marked `disableUserEditable` when set by internal builder code
+  or defaults. Update inverse edges while preserving relationships shared by
+  multiple fields and explicit edge operations (#2032).
 - preserve parameter offsets in nested queries so composing `JSONBKeyInList`
   with other filters binds each value to the correct placeholder (#2031).
 - accept GraphQL literal input records in struct and union fields, including

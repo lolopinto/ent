@@ -609,7 +609,13 @@ features:
   - id: field.disable_user_editable
     owns: [input.Field.DisableUserEditable]
     mode: representative
-    rationale: Removes generated setters/action inputs.
+    rationale: Excludes the field from public action inputs while allowing internal builder code to persist it.
+  - id: field.internal_builder_persistence
+    mode: existing_test
+    rationale: Tests of generated code verify which internal fields builders persist and how builders register inverse edges. Package tests cover edges shared by multiple fields, defaults, triggers, and explicit edge operations.
+    test_refs:
+      - ts/src/action/orchestrator_field_edges.test.ts
+      - internal/codegenmatrix/internal_fields_test.go:TestDisableUserEditableBuilderPersistence
   - id: field.disable_user_graphql_editable
     owns: [input.Field.DisableUserGraphQLEditable]
     mode: representative
