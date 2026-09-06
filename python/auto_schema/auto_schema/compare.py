@@ -560,6 +560,7 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
         if key not in metadata_enums:
             raise ValueError("postgres doesn't support enum removals")
 
+    enum_ops = []
     l = len(metadata_type.enums)
     for index, value in enumerate(metadata_type.enums):
         if value not in conn_enums:
@@ -571,14 +572,23 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
             # ALTER TYPE enum_type ADD VALUE 'new_value' AFTER 'old_value';
             # only add before if previously existed
             if index != l - 1 and metadata_type.enums[index+1] in conn_enums:
-                upgrade_ops.ops.append(
+                enum_ops.append(
                     ops.AlterEnumOp(conn_type.name, value, schema=sch,
                                     before=metadata_type.enums[index + 1])
                 )
             else:
-                upgrade_ops.ops.append(
+                enum_ops.append(
                     ops.AlterEnumOp(conn_type.name, value, schema=sch)
                 )
+
+    # New labels must be committed by AlterEnumOp's autocommit block before
+    # table changes (including index predicates) can reference them. Preserve
+    # label insertion order and any preceding extension/type setup operations.
+    position = next((
+        i for i, op in enumerate(upgrade_ops.ops)
+        if isinstance(op, (alembicops.CreateTableOp, alembicops.ModifyTableOps))
+    ), len(upgrade_ops.ops))
+    upgrade_ops.ops[position:position] = enum_ops
 
 
 @ comparators.dispatch_for("table", priority=DispatchPriority.LAST)
@@ -1208,8 +1218,36 @@ def _index_predicates_differ(autogen_context, meta_index, conn_index, raw_index,
         if getattr(error.orig, 'pgcode', None) == '42703':
             return True
         raise
+    except sa.exc.DataError as error:
+        # Enum labels are migrated after comparison and cannot be made visible
+        # inside this savepoint. Defer a predicate that needs the declared new
+        # labels to index recreation; unrelated invalid inputs still fail here.
+        if (
+            getattr(error.orig, 'pgcode', None) == '22P02'
+            and getattr(error.orig.diag, 'source_function', None) == 'enum_in'
+            and _index_has_pending_enum_values(meta_index, conn_table)
+        ):
+            return True
+        raise
     finally:
         savepoint.rollback()
+
+
+def _index_has_pending_enum_values(meta_index, conn_table):
+    for column in meta_index.table.columns:
+        conn_column = conn_table.c.get(column.name)
+        if conn_column is None:
+            continue
+        meta_type, conn_type = column.type, conn_column.type
+        if (
+            isinstance(meta_type, postgresql.ENUM)
+            and isinstance(conn_type, postgresql.ENUM)
+            and meta_type.name == conn_type.name
+            and meta_type.schema == conn_type.schema
+            and set(meta_type.enums) - set(conn_type.enums)
+        ):
+            return True
+    return False
 
 
 def _get_create_index_kwargs(

@@ -2,8 +2,10 @@ from auto_schema.diff import Diff
 from auto_schema.change_type import ChangeType
 import pytest
 import os
+import shutil
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
 from alembic.autogenerate.api import AutogenContext
 from alembic.migration import MigrationContext
@@ -39,6 +41,22 @@ def _partial_index_metadata(predicate, *, columns=("owner_id",), **kwargs):
     if predicate is not None:
         kwargs.update(postgresql_where=sa.text(predicate), sqlite_where=sa.text(predicate))
     sa.Index("contacts_active_idx", *(table.c[col] for col in columns), **kwargs)
+    return metadata
+
+
+def _enum_partial_index_metadata(values, predicate, full_text=False):
+    metadata = _partial_index_metadata(predicate)
+    table = metadata.tables["contacts"]
+    table.c.status.type = postgresql.ENUM(*values, name="contact_status", create_type=False)
+    if full_text:
+        table.append_column(sa.Column("label", sa.Text()))
+        table.indexes.clear()
+        table.append_constraint(schema_item.FullTextIndex("contacts_active_idx", info={
+            "columns": ["label"],
+            "postgresql_using": "gin",
+            "postgresql_using_internals": "to_tsvector('english', label)",
+            "postgresql_where": predicate,
+        }))
     return metadata
 
 
@@ -1014,6 +1032,73 @@ class BaseTestRunner(object):
 
 
 class TestPostgresRunner(BaseTestRunner):
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    def test_partial_index_predicate_with_pending_enum_values(self, new_test_runner, full_text):
+        before = _enum_partial_index_metadata(
+            ["active", "deleted"], "status = 'active'", full_text,
+        )
+        r = new_test_runner(before)
+        r.run()
+        after = _enum_partial_index_metadata(
+            ["active", "archived", "deleted", "purged"],
+            "status IN ('active', 'archived', 'purged')", full_text,
+        )
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        assert [type(op) for op in changes] == [
+            ops.AlterEnumOp, ops.AlterEnumOp, alembicops.ModifyTableOps,
+        ]
+        assert [(op.value, op.before) for op in changes[:2]] == [
+            ("archived", "deleted"), ("purged", None),
+        ]
+        assert [type(op) for op in changes[2].ops] == (
+            [ops.DropFullTextIndexOp, ops.CreateFullTextIndexOp] if full_text else
+            [alembicops.DropIndexOp, alembicops.CreateIndexOp]
+        )
+        r2.revision()
+        # Generating a migration must not apply pending enum values to the DB.
+        assert sa.inspect(r2.engine).get_enums()[0]["labels"] == ["active", "deleted"]
+        _assert_no_predicate_views(r2)
+        r2.upgrade()
+        assert sa.inspect(r2.engine).get_enums()[0]["labels"] == [
+            "active", "archived", "deleted", "purged",
+        ]
+        for _ in range(2):
+            assert r2.compute_changes() == []
+            r2.run()
+            testingutils.assert_num_files(r2, 2)
+        _assert_no_predicate_views(r2)
+
+        # Enum additions are intentionally irreversible; replay both generated
+        # migrations from an empty DB instead of attempting to remove values.
+        replay = new_test_runner(after, new_database=True)
+        shutil.copytree(
+            os.path.join(r2.get_schema_path(), "versions"),
+            os.path.join(replay.get_schema_path(), "versions"), dirs_exist_ok=True,
+        )
+        replay.upgrade()
+        assert replay.compute_changes() == []
+
+    def test_pending_enum_values_leave_unchanged_predicate_alone(self, new_test_runner):
+        r = new_test_runner(_enum_partial_index_metadata(["active"], "status = 'active'"))
+        r.run()
+        r2 = new_test_runner(
+            _enum_partial_index_metadata(["active", "archived"], "status = 'active'"), r,
+        )
+        assert [type(op) for op in r2.compute_changes()] == [ops.AlterEnumOp]
+        r2.run()
+        assert r2.compute_changes() == []
+
+    def test_invalid_enum_predicate_without_pending_type_change_still_fails(self, new_test_runner):
+        r = new_test_runner(_enum_partial_index_metadata(["active"], "status = 'active'"))
+        r.run()
+        r2 = new_test_runner(
+            _enum_partial_index_metadata(["active"], "status = 'typo'"), r,
+        )
+        with pytest.raises(sa.exc.DataError, match="invalid input value for enum"):
+            r2.compute_changes()
+        _assert_no_predicate_views(r2)
 
     def test_partial_index_predicate_preserves_percent_literals(self, new_test_runner):
         metadata = _partial_index_metadata("status = '100%'")
