@@ -3,6 +3,7 @@
 import ts from "typescript";
 import * as path from "path";
 import * as glob from "glob";
+import { createRequire } from "module";
 import { readCompilerOptions } from "../tsc/compilerOptions";
 
 // TODO this should probably be its own package but for now it's here
@@ -240,6 +241,52 @@ class Compiler {
           )[0],
         ));
       }
+      let outputRequire: NodeJS.Require | undefined;
+      function getOutputRequire() {
+        return (outputRequire ??= createRequire(getOutputPath()));
+      }
+
+      function usesPackageInstallation(
+        packageName: string,
+        mappedRoot: string,
+      ) {
+        const outputDirectory = path.dirname(getOutputPath());
+        const scopeFile = ts.findConfigFile(
+          outputDirectory,
+          ts.sys.fileExists,
+          "package.json",
+        );
+        const scope =
+          scopeFile && JSON.parse(ts.sys.readFile(scopeFile) ?? "{}");
+        // Package self-references precede node_modules lookup. Otherwise, inspect
+        // Node's package search directories without selecting require/import exports.
+        const installedRoot =
+          scopeFile && scope.name === packageName && scope.exports != null
+            ? path.dirname(scopeFile)
+            : getOutputRequire()
+                .resolve.paths(packageName)
+                ?.filter((directory) => {
+                  if (commonJS) return true;
+                  // Native ESM does not search NODE_PATH or global module directories.
+                  const relative = path.relative(
+                    path.dirname(directory),
+                    outputDirectory,
+                  );
+                  return (
+                    path.basename(directory) === "node_modules" &&
+                    relative !== ".." &&
+                    !relative.startsWith(".." + path.sep) &&
+                    !path.isAbsolute(relative)
+                  );
+                })
+                .map((directory) => path.join(directory, packageName))
+                .find((directory) => ts.sys.directoryExists(directory));
+        return (
+          installedRoot !== undefined &&
+          (ts.sys.realpath?.(installedRoot) ?? installedRoot) ===
+            (ts.sys.realpath?.(mappedRoot) ?? mappedRoot)
+        );
+      }
 
       function checkPath(
         paths: ts.MapLike<string[]> | undefined,
@@ -269,16 +316,27 @@ class Compiler {
             return undefined;
           }
           // Installed dependencies stay outside outDir. Preserve Node's package
-          // lookup only when the mapping keeps the entire specifier unchanged;
+          // lookup only when the mapping keeps the specifier and installation unchanged;
           // dep/value -> dep/lib/value is an explicit remap that must still apply.
           // Check the mapped runtime path because TS may find declarations in a
           // separate @types package instead of alongside the JavaScript.
+          const packagePath = text.split("/").join(path.sep);
           if (
             targetPath.endsWith(
-              `${path.sep}node_modules${path.sep}${text.split("/").join(path.sep)}`,
+              `${path.sep}node_modules${path.sep}${packagePath}`,
             )
           ) {
-            return undefined;
+            const packageName = text
+              .split("/")
+              .slice(0, text.startsWith("@") ? 2 : 1)
+              .join("/");
+            const mappedRoot = path.join(
+              targetPath.slice(0, -packagePath.length),
+              packageName,
+            );
+            if (usesPackageInstallation(packageName, mappedRoot)) {
+              return undefined;
+            }
           }
           const resolvedPath = resolveModule(text, fullPath)?.resolvedFileName;
           let runtimePath: string | undefined;
@@ -314,10 +372,7 @@ class Compiler {
               // require.resolve uses CommonJS export conditions; an ESM import
               // of the same package may intentionally select another entry.
               try {
-                if (
-                  require.resolve(text, { paths: [outputDirectory] }) ===
-                  runtimePath
-                ) {
+                if (getOutputRequire().resolve(text) === runtimePath) {
                   return undefined;
                 }
               } catch {
@@ -360,6 +415,19 @@ class Compiler {
           // tsc removes this by default so we need to also do it
           if (relPath.endsWith(".ts")) {
             relPath = relPath.slice(0, -3);
+          } else if (
+            /\.(tsx|mts|cts)$/.test(relPath) &&
+            sourcePath &&
+            emittedFiles.has(sourcePath)
+          ) {
+            const emittedPath = ts.getOutputFileNames(
+              emitConfig,
+              sourcePath,
+              !ts.sys.useCaseSensitiveFileNames,
+            )[0];
+            relPath =
+              relPath.slice(0, -path.extname(relPath).length) +
+              path.extname(emittedPath);
           }
           return relPath;
         }

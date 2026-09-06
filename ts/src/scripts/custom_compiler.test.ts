@@ -143,6 +143,53 @@ test("compiled CommonJS defers privacy/model aliases until the policy runs", () 
   expect(run(root)).toBe('["Ada",["model"]]');
 });
 
+test.each([
+  {
+    jsx: "react",
+    esm: false,
+    target: "./src/*.tsx",
+    specifier: "views/component",
+  },
+  {
+    jsx: "react",
+    esm: true,
+    target: "./src/*.tsx",
+    specifier: "views/component",
+  },
+  {
+    jsx: "react",
+    esm: false,
+    target: "./src/*",
+    specifier: "views/component.tsx",
+  },
+  {
+    jsx: "preserve",
+    esm: false,
+    target: "./src/*.tsx",
+    specifier: "views/component",
+  },
+])("uses the emitted TSX extension for $specifier (jsx: $jsx, ESM: $esm)", ({
+  jsx,
+  esm,
+  target,
+  specifier,
+}) => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+        import { value } from "${specifier}";
+        import { exported } from "./exports.js";
+        import("${specifier}").then(mod => console.log([value, exported, mod.value].join(",")));
+      `,
+      "src/exports.ts": `export { value as exported } from "${specifier}";`,
+      "src/component.tsx": `export const value = "tsx";`,
+    },
+    { jsx, paths: { "views/*": [target] } },
+    esm,
+  );
+  expect(run(root)).toBe("tsx,tsx,tsx");
+});
+
 test("compiled CommonJS rewrites literal aliases and preserves other module expressions", () => {
   const root = fixture({
     "src/main.ts": `
@@ -361,6 +408,70 @@ test.each([
     esm,
   );
   expect(run(root, "dist/src/main.js")).toBe("ok");
+});
+
+test.each([
+  { esm: false, outDir: undefined, entry: "src/main.js" },
+  { esm: false, outDir: "dist", entry: "dist/main.js" },
+  { esm: true, outDir: "dist", entry: "dist/main.js" },
+])("loads the mapped nested package installation (ESM: $esm, outDir: $outDir)", ({
+  esm,
+  outDir,
+  entry,
+}) => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+        import { value } from "dep/value";
+        import { exported } from "./exports.js";
+        import("dep/value").then(mod => console.log([value, exported, mod.value].join(",")));
+      `,
+      "src/exports.ts": `export { value as exported } from "dep/value";`,
+      "node_modules/dep/package.json": JSON.stringify({
+        type: esm ? "module" : "commonjs",
+        exports: { "./value": "./value.js" },
+      }),
+      "node_modules/dep/value.js": esm
+        ? `export const value = "top-level";`
+        : `exports.value = "top-level";`,
+      "node_modules/vendor/node_modules/dep/package.json": JSON.stringify({
+        type: esm ? "module" : "commonjs",
+      }),
+      "node_modules/vendor/node_modules/dep/value.js": esm
+        ? `export const value = "mapped";`
+        : `exports.value = "mapped";`,
+      "node_modules/vendor/node_modules/dep/value.d.ts": `export declare const value: string;`,
+    },
+    {
+      outDir,
+      paths: { "dep/*": ["./node_modules/vendor/node_modules/dep/*"] },
+    },
+    esm,
+  );
+  expect(run(root, entry)).toBe("mapped,mapped,mapped");
+});
+
+test("preserves native ESM import conditions for the mapped package installation", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+        import { value } from "dep/value";
+        import { exported } from "./exports.js";
+        import("dep/value").then(mod => console.log([value, exported, mod.value].join(",")));
+      `,
+      "src/exports.ts": `export { value as exported } from "dep/value";`,
+      "node_modules/dep/package.json": JSON.stringify({
+        type: "module",
+        exports: { "./value": { import: "./import.js" } },
+      }),
+      "node_modules/dep/import.js": `export const value = "import";`,
+      "node_modules/dep/value.js": `export const value = "physical";`,
+      "node_modules/dep/value.d.ts": `export declare const value: string;`,
+    },
+    { paths: { "dep/*": ["./node_modules/dep/*"] } },
+    true,
+  );
+  expect(run(root)).toBe("import,import,import");
 });
 
 test.each([
