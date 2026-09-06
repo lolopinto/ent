@@ -281,6 +281,17 @@ export function hasActionResultTransaction(builder: object): boolean {
   return resultTransactions.has(builder);
 }
 
+export function recordDerivedEntTransaction(ent: object, row: object) {
+  // Copy only the row's recorded transaction and generation. Unknown data must
+  // not inherit the current scope.
+  const provenance = rowTransactions.get(row);
+  if (provenance) {
+    entTransactions.set(ent, provenance);
+  } else {
+    entTransactions.delete(ent);
+  }
+}
+
 export function recordEntTransaction(ent: object, row?: object) {
   if (row && rowTransactions.has(row)) {
     const provenance = rowTransactions.get(row);

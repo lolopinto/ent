@@ -1,0 +1,311 @@
+import { Allow, Data } from "./base";
+import { Dialect } from "./db";
+import { Eq } from "./clause";
+import { loadDerivedEnt, loadDerivedEntX, loadEntX, loadRows } from "./ent";
+import { ObjectLoaderFactory } from "./loaders";
+import { withTransaction } from "./transaction";
+import {
+  assertEntTransaction,
+  getTransactionState,
+} from "./transaction_context";
+import { WriteOperation } from "../action/action";
+import { IntegerType } from "../schema";
+import {
+  BaseEnt,
+  SimpleAction,
+  getBuilderSchemaFromFields,
+  getDbFields,
+} from "../testutils/builder";
+import { setupPostgres, getSchemaTable } from "../testutils/db/temp_db";
+import { TestContext } from "../testutils/context/test_context";
+
+class DerivedAccount extends BaseEnt {
+  nodeType = "DerivedAccount";
+}
+const schema = getBuilderSchemaFromFields(
+  { balance: IntegerType() },
+  DerivedAccount,
+);
+const loader = {
+  tableName: "derived_accounts",
+  fields: getDbFields(schema),
+  key: "id",
+};
+const options = {
+  ...loader,
+  ent: DerivedAccount,
+  loaderFactory: new ObjectLoaderFactory(loader),
+};
+const context = new TestContext();
+const viewer = context.getViewer();
+const load = (id: any) => loadEntX(viewer, id, options);
+const create = () =>
+  new SimpleAction(
+    viewer,
+    schema,
+    new Map([["balance", 100]]),
+    WriteOperation.Insert,
+    null,
+  ).saveX();
+class GuardedEdit extends SimpleAction<DerivedAccount> {
+  requiresTransaction() {
+    return true;
+  }
+}
+const edit = (ent: DerivedAccount, balance: number) =>
+  new GuardedEdit(
+    viewer,
+    schema,
+    new Map([["balance", balance]]),
+    WriteOperation.Edit,
+    ent,
+  );
+let privacy: ((ent: DerivedAccount) => void | Promise<void>) | undefined;
+class PrivacyAccount extends DerivedAccount {
+  getPrivacyPolicy() {
+    return {
+      rules: [
+        {
+          async apply(_viewer: any, ent: DerivedAccount) {
+            await privacy?.(ent);
+            return Allow();
+          },
+        },
+      ],
+    };
+  }
+}
+function deferred() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
+const independent = (action: GuardedEdit, key: string) =>
+  Object.assign(action, { getTransactionResources: () => [key] });
+
+setupPostgres(() => [getSchemaTable(schema, Dialect.Postgres)]);
+beforeEach(() => {
+  context.cache.reset();
+  privacy = undefined;
+});
+
+describe.each([
+  "loadDerivedEnt",
+  "loadDerivedEntX",
+] as const)("%s transaction provenance", (method) => {
+  const derive = (row: Data, ctor = DerivedAccount) =>
+    method === "loadDerivedEnt"
+      ? loadDerivedEnt(viewer, row, ctor)
+      : loadDerivedEntX(viewer, row, ctor);
+
+  test.each([
+    "query",
+    "queryAll",
+    "exec",
+  ] as const)("%s rows retain their provenance before privacy and support guarded saves", async (queryMethod) => {
+    const account = await create();
+    let checks = 0;
+    await withTransaction(async (tx) => {
+      const row = (
+        await tx[queryMethod]("SELECT * FROM derived_accounts WHERE id = $1", [
+          account.id,
+        ])
+      ).rows[0];
+      privacy = (ent) => {
+        assertEntTransaction(ent);
+        checks++;
+      };
+      const derived = await derive(row, PrivacyAccount);
+      await edit(derived!, 80).saveX();
+    });
+    expect(checks).toBe(1);
+    expect((await load(account.id)).data.balance).toBe(80);
+  });
+
+  test.each([
+    "stale generation",
+    "previous scope",
+    "outside row",
+    "unknown outside row",
+    "unknown current row",
+  ])("%s cannot become a fresh mutation input", async (origin) => {
+    const account = await create();
+    let row: Data;
+    if (origin === "previous scope") {
+      row = await withTransaction(async (tx) => {
+        return (
+          await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
+            account.id,
+          ])
+        ).rows[0];
+      });
+    } else if (origin === "outside row") {
+      row = (
+        await loadRows({ ...loader, clause: Eq("id", account.id), context })
+      )[0];
+    } else if (origin === "unknown outside row") {
+      row = { ...account.data };
+    }
+    let caught: unknown;
+    let outer: unknown;
+    try {
+      await withTransaction(async (tx) => {
+        if (origin === "stale generation" || origin === "unknown current row") {
+          row = (
+            await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
+              account.id,
+            ])
+          ).rows[0];
+          if (origin === "unknown current row") {
+            row = { ...row };
+          } else {
+            await edit(await load(account.id), 90).saveX();
+          }
+        }
+        const derived = await derive(row!);
+        expect(derived!.data.balance).toBe(100);
+        try {
+          await edit(derived!, 80).saveX();
+        } catch (error) {
+          caught = error;
+        }
+      });
+    } catch (error) {
+      outer = error;
+    }
+    expect(caught).toBeInstanceOf(Error);
+    expect(outer).toBe(caught);
+    expect((await load(account.id)).data.balance).toBe(100);
+  });
+
+  test("unknown data still supports derived reads outside a transaction", async () => {
+    const account = await create();
+    const derived = await derive({ ...account.data });
+    expect(derived!.id).toBe(account.id);
+    expect(derived!.data.balance).toBe(100);
+  });
+
+  test("pending derived privacy cannot cross a guarded save", async () => {
+    const account = await create();
+    const started = deferred();
+    const release = deferred();
+    await expect(
+      withTransaction(async (tx) => {
+        const row = (
+          await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
+            account.id,
+          ])
+        ).rows[0];
+        privacy = async () => {
+          started.resolve();
+          await release.promise;
+        };
+        const outcome = derive(row, PrivacyAccount).then(
+          (value) => ({ value }),
+          (error) => ({ error }),
+        );
+        await started.promise;
+        try {
+          await edit(await load(account.id), 80).saveX();
+        } finally {
+          release.resolve();
+        }
+        const result = await outcome;
+        expect(result).toHaveProperty("error");
+      }),
+    ).rejects.toThrow("cannot cross transaction generations");
+    expect((await load(account.id)).data.balance).toBe(100);
+  });
+
+  test.each([
+    "valid",
+    "validX",
+    "validWithErrors",
+  ] as const)("%s waits for derived privacy used to prepare a child", async (validationMethod) => {
+    const accounts = await Promise.all([create(), create(), create()]);
+    const started = deferred();
+    const release = deferred();
+    const failure = new Error("correctable validation failure");
+    let invalid = true;
+    let settled = false;
+    let settledBeforeRelease = false;
+    let prepared = 0;
+    const transaction = withTransaction(async (tx) => {
+      const parent = independent(
+        edit(await load(accounts[0].id), 90),
+        "parent",
+      );
+      const bad = independent(edit(await load(accounts[1].id), 80), "bad");
+      bad.getValidators = () => [
+        { validate: async () => (invalid ? failure : undefined) },
+      ];
+      const row = (
+        await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
+          accounts[2].id,
+        ])
+      ).rows[0];
+      privacy = async () => {
+        started.resolve();
+        await release.promise;
+      };
+      let setupOutcome!: Promise<any>;
+      parent.getTriggers = () => [
+        {
+          changeset: () => {
+            const setup = (async () => {
+              const derived = await derive(row, PrivacyAccount);
+              const changeset = await independent(
+                edit(derived!, 70),
+                "slow",
+              ).changeset();
+              prepared++;
+              return changeset;
+            })();
+            setupOutcome = setup.then(
+              (value) => ({ value }),
+              (error) => ({ error }),
+            );
+            return Promise.all([bad.changeset(), setup]);
+          },
+        },
+      ];
+      const validation = parent[validationMethod]().then(
+        () => {
+          settled = true;
+          return undefined;
+        },
+        (error) => {
+          settled = true;
+          return error;
+        },
+      );
+      expect(await validation).toBe(failure);
+      expect(await setupOutcome).toHaveProperty("value");
+      expect(settledBeforeRelease).toBe(false);
+      expect(getTransactionState()!.failed).toBe(false);
+      invalid = false;
+      await parent.saveX();
+    });
+    const outcome = transaction.then(
+      (value) => ({ value }),
+      (error) => ({ error }),
+    );
+    try {
+      await started.promise;
+      await new Promise<void>((resolve) => setImmediate(resolve));
+      settledBeforeRelease = settled;
+      release.resolve();
+      expect(await outcome).not.toHaveProperty("error");
+      expect(prepared).toBe(2);
+      const balances = await Promise.all(
+        accounts.map(async (account) => (await load(account.id)).data.balance),
+      );
+      expect(balances).toEqual([90, 80, 70]);
+    } finally {
+      release.resolve();
+      await outcome;
+    }
+  });
+});

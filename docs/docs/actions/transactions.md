@@ -116,6 +116,8 @@ Cached queries and loaders belong to the guarded-action generation in which you 
 
 Converting previously read rows to Ents preserves their original transaction and generation, including rows returned by `tx.query`, `tx.queryAll`, and `tx.exec`. Supplied Ents and `sourceEnt()` results used by edge-query privacy must belong to the current generation.
 
+`loadDerivedEnt()` and `loadDerivedEntX()` also preserve the input row's transaction and generation before running privacy checks. If the data has no recorded transaction provenance, the resulting Ent remains unscoped and can't be used in a guarded save. Load a tracked row inside the callback instead of copying or reusing untracked data.
+
 Standard Ent, object, count, query, and edge-metadata caches are isolated for each attempt. Transaction rows never populate request caches outside the scope. Commit invalidates participating request caches; rollback leaves them unchanged. SQL calls conservatively invalidate the attempt's caches, so raw writes and reads after acquiring locks see fresh data.
 
 #### Results

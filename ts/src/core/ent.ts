@@ -40,7 +40,9 @@ import {
   copyEntTransaction,
   getTransactionState,
   recordEntTransaction,
+  recordDerivedEntTransaction,
   recordActionResultTransaction,
+  runTransactionRead,
   trackValidationRead,
 } from "./transaction_context";
 
@@ -744,14 +746,14 @@ export async function loadDerivedEnt<
   data: Data,
   loader: new (viewer: TViewer, data: Data) => TEnt,
 ): Promise<TEnt | null> {
-  const ent = new loader(viewer, data);
-  const r = await applyPrivacyPolicyForEnt(viewer, ent, data, {
-    ent: loader,
+  return runTransactionRead(getTransactionReadState(), async () => {
+    const ent = new loader(viewer, data);
+    recordDerivedEntTransaction(ent, data);
+    const r = await applyPrivacyPolicyForEnt(viewer, ent, data, {
+      ent: loader,
+    });
+    return rowIsError(r) ? null : (r as TEnt | null);
   });
-  if (rowIsError(r)) {
-    return null;
-  }
-  return r as TEnt | null;
 }
 
 // won't have caching yet either
@@ -763,8 +765,11 @@ export async function loadDerivedEntX<
   data: Data,
   loader: new (viewer: TViewer, data: Data) => TEnt,
 ): Promise<TEnt> {
-  const ent = new loader(viewer, data);
-  return applyPrivacyPolicyForEntX(viewer, ent, data, { ent: loader });
+  return runTransactionRead(getTransactionReadState(), async () => {
+    const ent = new loader(viewer, data);
+    recordDerivedEntTransaction(ent, data);
+    return applyPrivacyPolicyForEntX(viewer, ent, data, { ent: loader });
+  });
 }
 
 interface FieldPrivacyOptions<
