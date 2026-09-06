@@ -15,6 +15,11 @@ export default new EntSchema({
       defaultToViewerOnCreate: true,
       fieldEdge: { schema: "User", inverseEdge: "documents" },
     }),
+    otherOwnerId: UUIDType({
+      immutable: true,
+      nullable: true,
+      fieldEdge: { schema: "User", inverseEdge: "documents" },
+    }),
     internalOwnerId: UUIDType({
       disableUserEditable: true,
       defaultToViewerOnCreate: true,

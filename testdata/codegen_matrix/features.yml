@@ -285,8 +285,8 @@ features:
     rationale: >
       A generated-app runtime fixture verifies immutable viewer, sync, and async
       defaults and assignments during creation, ordinary edit rejection and
-      explicit overrides, action hooks, formatting, ownership privacy, inverse
-      association edges, and assignments before and after write transformations.
+      explicit overrides, action hooks, formatting, ownership privacy, shared
+      inverse associations, and assignments from action and schema transformations.
   - id: schema.nodes
     owns: [input.Schema.Nodes, input.Node.Fields]
     mode: explicit

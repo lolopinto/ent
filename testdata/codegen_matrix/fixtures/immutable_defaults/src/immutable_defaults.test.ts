@@ -373,3 +373,60 @@ test("privacy refresh preserves default provenance without rerunning default cal
     field.editPrivacyPolicy = originalPolicy;
   }
 });
+
+test("creation assignments in a null-returning schema transform beat defaults", async () => {
+  const viewer = await createViewer();
+  const originalPatterns = DocumentSchema.patterns;
+  DocumentSchema.patterns = [
+    ...originalPatterns,
+    {
+      name: "assign_immutable",
+      fields: {},
+      transformWrite: ({ builder }) => {
+        (builder as unknown as CreateDocumentActionBase["builder"]).updateInput(
+          {
+            syncValue: " SCHEMA ASSIGNMENT ",
+          },
+        );
+        return null;
+      },
+    },
+  ];
+  try {
+    const document = await new CreateDocumentActionBase(viewer, {
+      title: "Schema transform",
+    }).saveX();
+    expect(document.syncValue).toBe("schema assignment");
+  } finally {
+    DocumentSchema.patterns = originalPatterns;
+  }
+});
+
+test("shared inverse edges remain while any immutable field still needs them", async () => {
+  const viewer = await createViewer();
+  const previous = await createViewer();
+  const action = new CreateDocumentActionBase(viewer, {
+    title: "Shared inverse",
+    ownerId: previous.viewerID,
+    otherOwnerId: viewer.viewerID,
+  });
+  await action.builder.orchestrator.getEditedData();
+  action.builder.updateInput({ ownerId: viewer.viewerID, otherOwnerId: null });
+  const document = await action.saveX();
+  expect(document).toMatchObject({
+    ownerId: viewer.viewerID,
+    otherOwnerId: null,
+  });
+  expect(
+    await loadEdges({
+      id1: viewer.viewerID,
+      edgeType: EdgeType.UserToDocuments,
+    }),
+  ).toEqual([expect.objectContaining({ id2: document.id })]);
+  expect(
+    await loadEdges({
+      id1: previous.viewerID,
+      edgeType: EdgeType.UserToDocuments,
+    }),
+  ).toHaveLength(0);
+});

@@ -251,7 +251,7 @@ export class Orchestrator<
 > {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap<TViewer> = new Map();
-  private fieldEdgeSources = new WeakMap<edgeInputData<TViewer>, string>();
+  private fieldEdgeSources = new WeakMap<edgeInputData<TViewer>, Set<string>>();
   private conditionalEdges: EdgeMap<TViewer> = new Map();
   private validatedFields: Data | null = null;
   private logValues: Data | null;
@@ -356,7 +356,8 @@ export class Orchestrator<
     const isInsert = this.actualOperation === WriteOperation.Insert;
     const queued = this.edges.get(edgeType)?.get(WriteOperation.Insert);
     for (const [id, edge] of queued ?? []) {
-      if (isInsert && this.fieldEdgeSources.get(edge) === fieldName) {
+      const sources = this.fieldEdgeSources.get(edge);
+      if (isInsert && sources?.delete(fieldName) && sources.size === 0) {
         queued!.delete(id);
       }
     }
@@ -368,10 +369,13 @@ export class Orchestrator<
         direction: edgeDirection.inboundEdge,
       });
       const key = edge.isBuilder(edge.id) ? edge.id.placeholderID : edge.id;
-      if (isInsert && queued?.has(key)) {
+      const existing = queued?.get(key);
+      const sources = existing && this.fieldEdgeSources.get(existing);
+      if (isInsert && existing) {
+        sources?.add(fieldName);
         continue;
       }
-      this.fieldEdgeSources.set(edge, fieldName);
+      this.fieldEdgeSources.set(edge, new Set([...(sources ?? []), fieldName]));
       this.addEdge(edge, WriteOperation.Insert);
     }
   }
@@ -1112,10 +1116,10 @@ export class Orchestrator<
     }
     if (
       this.actualOperation === WriteOperation.Insert &&
-      (action?.transformWrite || transformed) &&
+      (action?.transformWrite || !this.disableTransformations) &&
       Array.from(schemaFields.values()).some((field) => field.immutable)
     ) {
-      // Preserve creation assignments made inside transformWrite before defaults.
+      // Preserve assignments from action or schema transforms, including null results.
       editedFields = await this.options.editedFields();
     }
     // transforming before doing default fields so that we don't create a new id
