@@ -1113,15 +1113,18 @@ class TestPostgresRunner(BaseTestRunner):
         replay.upgrade()
         assert replay.compute_changes() == []
 
-    def test_partial_index_predicate_with_pending_extension_schema_move(self, new_test_runner):
-        before = _partial_index_metadata("status = 'active'")
+    @pytest.mark.parametrize("full_text", [False, True])
+    def test_partial_index_predicate_with_pending_extension_schema_move(self, new_test_runner, full_text):
+        before = _partial_index_metadata("similarity(status, 'active') > 0.1", full_text=full_text)
         before.info.update(_db_extension_metadata(name="pg_trgm", install_schema="public").info)
         r = new_test_runner(before)
         r.run()
         original_predicate = _reflected_predicate(r)
         r.get_connection().execute(sa.schema.CreateSchema("trigram_ext"))
         r.get_connection().commit()
-        after = _partial_index_metadata("trigram_ext.similarity(status, 'active') > 0.5")
+        after = _partial_index_metadata(
+            "trigram_ext.similarity(status, 'active') > 0.5", full_text=full_text,
+        )
         after.info.update(_db_extension_metadata(name="pg_trgm", install_schema="trigram_ext").info)
         r2 = new_test_runner(after, r)
         assert [type(op) for op in r2.compute_changes()] == [
@@ -1139,6 +1142,10 @@ class TestPostgresRunner(BaseTestRunner):
         _assert_no_predicate_views(r2)
         r2.downgrade("-1", delete_files=False)
         assert _reflected_predicate(r2) == original_predicate
+        assert r2.get_connection().execute(sa.text(
+            "SELECT extnamespace::regnamespace::text FROM pg_extension WHERE extname = 'pg_trgm'"
+        )).scalar_one() == "public"
+        r2.get_connection().commit()
         restored = new_test_runner(before, r2)
         assert restored.compute_changes() == []
         r2 = new_test_runner(after, restored)

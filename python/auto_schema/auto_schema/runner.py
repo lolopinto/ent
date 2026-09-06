@@ -108,8 +108,22 @@ class Runner(object):
                 "compare_server_default": Runner.compare_server_default,
                 "transaction_per_migration": True,
                 "render_item": Runner.render_item,
+                "process_revision_directives": Runner.process_revision_directives,
             }
         return opts
+
+    @staticmethod
+    def process_revision_directives(context, revision, directives):
+        for script in directives:
+            for downgrade in script.downgrade_ops_list:
+                schema_moves = [op for op in downgrade.ops if isinstance(op, ops.SetExtensionSchemaOp)]
+                if not schema_moves:
+                    continue
+                # Reversing upgrade order puts these moves after index recreation.
+                # Restore extension namespaces before old predicates/types are
+                # parsed. Moves preserve object identities, so existing indexes
+                # remain valid until their subsequent drop operations.
+                downgrade.ops[:] = schema_moves + [op for op in downgrade.ops if op not in schema_moves]
 
     @staticmethod
     def _parse_bool(val):
@@ -755,6 +769,7 @@ class Runner(object):
             version_path=None,
             depends_on=None,
         )
+        Runner.process_revision_directives(mc, None, [migration_script])
         # set up autogenerate code so it renders the migrations
         opts=Runner.get_opts()
         opts['sqlalchemy_module_prefix'] = 'sa.'

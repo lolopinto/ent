@@ -14,8 +14,9 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - update `uuid`, docs, test-helper, and standalone TypeScript package
   dependencies to patched versions (#2013).
 - generate reversible migrations when an existing index's partial predicate changes,
-  handle pending extension, enum, and column-type changes before recreating dependent indexes,
-  and preserve literal percent signs in generated index migrations (#2028).
+  handle pending extension, enum, and column-type changes, restore extension schemas
+  before dependent indexes on downgrade, and preserve literal percent signs in
+  generated index migrations (#2028).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
   after repeated codegen runs (#2016).
 
