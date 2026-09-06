@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- accept GraphQL literal input records in struct and union fields, including
+  nested lists, and preserve validation errors for unprintable values (#2029).
 - update `uuid`, docs, test-helper, and standalone TypeScript package
   dependencies to patched versions (#2013).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
