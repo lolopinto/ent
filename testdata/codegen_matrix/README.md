@@ -64,6 +64,11 @@ snippets, and then runs `tsc --noEmit` against the generated app.
 It locates the repository from the Go test source path, so it does not require
 `git rev-parse` at runtime.
 
+`TestDisableUserEditableBuilderPersistence` also generates a small SQLite app to
+verify internal field persistence, public input protection, and inverse rows across
+shared fields, defaults, trigger overrides, private values, lists, and explicit edge
+operations. Run it with `go test ./internal/codegenmatrix -run TestDisableUserEditableBuilderPersistence -count=1`.
+
 ## Bar For Adding Coverage
 
 Add matrix coverage when a change affects generated files, schema parsing,

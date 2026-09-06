@@ -252,6 +252,14 @@ export class Orchestrator<
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap<TViewer> = new Map();
   private fieldEdgeSources = new WeakMap<edgeInputData<TViewer>, Set<string>>();
+  private fieldEdgeInputs = new Map<
+    string,
+    {
+      edgeType: string;
+      ids: readonly (ID | Builder<any, any>)[] | undefined;
+      existingIDs: readonly ID[];
+    }
+  >();
   private conditionalEdges: EdgeMap<TViewer> = new Map();
   private validatedFields: Data | null = null;
   private logValues: Data | null;
@@ -346,37 +354,117 @@ export class Orchestrator<
     );
   }
 
-  // Internal: refresh a generated field's edges without replacing caller edges.
+  // Internal: refresh generated field contributions without replacing caller edges.
+  // The optional metadata enables edit/delete reconciliation; an empty object
+  // reuses stored IDs captured before synchronous default updates.
   __setFieldEdges<T2 extends Ent>(
     fieldName: string,
-    ids: (ID | Builder<T2, any>)[],
+    ids: readonly (ID | Builder<T2, any>)[] | undefined,
     edgeType: string,
     nodeType: string,
+    stored?: { existingIDs?: readonly ID[] },
   ) {
-    const isInsert = this.actualOperation === WriteOperation.Insert;
-    const queued = this.edges.get(edgeType)?.get(WriteOperation.Insert);
-    for (const [id, edge] of queued ?? []) {
-      const sources = this.fieldEdgeSources.get(edge);
-      if (isInsert && sources?.delete(fieldName) && sources.size === 0) {
-        queued!.delete(id);
+    const isBuilder = (id: ID | Builder<any, any>): id is Builder<any, any> =>
+      (id as Builder<any, any>).placeholderID !== undefined;
+    // Older generated callers reconcile creation inserts only. Keep their
+    // non-insert behavior until regeneration supplies stored field values.
+    if (!stored && this.actualOperation !== WriteOperation.Insert) {
+      for (const id of ids ?? []) {
+        const edge = new edgeInputData<TViewer>({
+          id,
+          edgeType,
+          nodeType,
+          direction: edgeDirection.inboundEdge,
+        });
+        const key = isBuilder(id) ? id.placeholderID : id;
+        const prior = this.edges
+          .get(edgeType)
+          ?.get(WriteOperation.Insert)
+          ?.get(key);
+        this.fieldEdgeSources.set(
+          edge,
+          new Set([
+            ...((prior && this.fieldEdgeSources.get(prior)) || []),
+            fieldName,
+          ]),
+        );
+        this.addEdge(edge, WriteOperation.Insert);
+      }
+      return;
+    }
+    this.fieldEdgeInputs.set(fieldName, {
+      edgeType,
+      ids,
+      existingIDs:
+        stored?.existingIDs ??
+        this.fieldEdgeInputs.get(fieldName)?.existingIDs ??
+        [],
+    });
+    type Contribution = { id: ID | Builder<any, any>; sources: Set<string> };
+    const inserts = new Map<ID, Contribution>();
+    const removals = new Map<ID, Contribution>();
+    const retained = new Set<ID>();
+    const contribute = (
+      map: Map<ID, Contribution>,
+      id: ID | Builder<any, any>,
+      source: string,
+    ) => {
+      const key = isBuilder(id) ? id.placeholderID : id;
+      let entry = map.get(key);
+      if (!entry) map.set(key, (entry = { id, sources: new Set() }));
+      entry.sources.add(source);
+    };
+    for (const [source, field] of this.fieldEdgeInputs) {
+      if (field.edgeType !== edgeType) continue;
+      const existing =
+        this.actualOperation === WriteOperation.Insert ? [] : field.existingIDs;
+      const current =
+        this.actualOperation === WriteOperation.Delete ? [] : field.ids;
+      for (const id of current ?? existing) {
+        retained.add(
+          isBuilder(id) ? (id.existingEnt?.id ?? id.placeholderID) : id,
+        );
+      }
+      if (current !== undefined) {
+        for (const id of current) contribute(inserts, id, source);
+        for (const id of existing) contribute(removals, id, source);
       }
     }
-    for (const id of ids) {
-      const edge = new edgeInputData<TViewer>({
-        id,
-        edgeType,
-        nodeType,
-        direction: edgeDirection.inboundEdge,
-      });
-      const key = edge.isBuilder(edge.id) ? edge.id.placeholderID : edge.id;
-      const existing = queued?.get(key);
-      const sources = existing && this.fieldEdgeSources.get(existing);
-      if (isInsert && existing) {
-        sources?.add(fieldName);
-        continue;
+    const manual = (op: WriteOperation, id: ID) => {
+      const edge = this.edges.get(edgeType)?.get(op)?.get(id);
+      return edge !== undefined && !this.fieldEdgeSources.has(edge);
+    };
+    for (const id of removals.keys()) {
+      if (retained.has(id) || manual(WriteOperation.Insert, id))
+        removals.delete(id);
+    }
+    for (const id of inserts.keys()) {
+      // Legacy templates queue generated deletions through removeInboundEdge,
+      // so their untagged entries cannot be treated as explicit caller intent.
+      if (stored && manual(WriteOperation.Delete, id)) inserts.delete(id);
+    }
+    for (const [op, desired] of [
+      [WriteOperation.Insert, inserts],
+      [WriteOperation.Delete, removals],
+    ] as const) {
+      const queued = this.edges.get(edgeType)?.get(op);
+      for (const [id, edge] of queued ?? []) {
+        if (!this.fieldEdgeSources.has(edge)) continue;
+        const contribution = desired.get(id);
+        if (contribution) this.fieldEdgeSources.set(edge, contribution.sources);
+        else queued!.delete(id);
       }
-      this.fieldEdgeSources.set(edge, new Set([...(sources ?? []), fieldName]));
-      this.addEdge(edge, WriteOperation.Insert);
+      for (const [key, contribution] of desired) {
+        if (this.edges.get(edgeType)?.get(op)?.has(key)) continue;
+        const edge = new edgeInputData<TViewer>({
+          id: contribution.id,
+          edgeType,
+          nodeType,
+          direction: edgeDirection.inboundEdge,
+        });
+        this.fieldEdgeSources.set(edge, contribution.sources);
+        this.addEdge(edge, op);
+      }
     }
   }
 
@@ -1050,6 +1138,8 @@ export class Orchestrator<
     // if disable transformations set, don't do schema transform and just do the right thing
     // else apply schema tranformation if it exists
     let transformed: TransformedUpdateOperation<TEnt, TViewer> | null = null;
+    const initialOperation = this.actualOperation;
+    const initialEnt = this.existingEnt;
 
     const sqlOp = this.getSQLStatementOperation();
     // why is transform write technically different from upsert?
@@ -1115,11 +1205,15 @@ export class Orchestrator<
       }
     }
     if (
-      this.actualOperation === WriteOperation.Insert &&
-      (action?.transformWrite || !this.disableTransformations) &&
-      Array.from(schemaFields.values()).some((field) => field.immutable)
+      (this.fieldEdgeInputs.size > 0 &&
+        (initialOperation !== this.actualOperation ||
+          initialEnt !== this.existingEnt)) ||
+      (this.actualOperation === WriteOperation.Insert &&
+        (action?.transformWrite || !this.disableTransformations) &&
+        Array.from(schemaFields.values()).some((field) => field.immutable))
     ) {
       // Preserve assignments from action or schema transforms, including null results.
+      // Refresh inverse membership against the resolved operation and existing row.
       editedFields = await this.options.editedFields();
     }
     // transforming before doing default fields so that we don't create a new id

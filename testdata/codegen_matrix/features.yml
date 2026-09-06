@@ -605,7 +605,12 @@ features:
   - id: field.disable_user_editable
     owns: [input.Field.DisableUserEditable]
     mode: representative
-    rationale: Removes generated setters/action inputs.
+    rationale: Removes public action inputs while retaining internal builder persistence.
+  - id: field.internal_builder_persistence
+    mode: existing_test
+    rationale: Generated internal writes persist and reconcile inverse membership across defaults, triggers, shared fields and explicit operations.
+    test_refs:
+      - internal/codegenmatrix/internal_fields_test.go:TestDisableUserEditableBuilderPersistence
   - id: field.disable_user_graphql_editable
     owns: [input.Field.DisableUserGraphQLEditable]
     mode: representative

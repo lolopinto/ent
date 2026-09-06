@@ -46,6 +46,35 @@ function getInsertUserAction(
   return new SimpleAction(viewer, UserSchema, map, WriteOperation.Insert, null);
 }
 
+test("legacy field-edge callers keep inserts alongside untagged removals", () => {
+  const legacy = getInsertUserAction(new Map()).builder.orchestrator;
+  legacy.__setFieldEdges("owner", ["previous"], "edge", "User");
+  // Older generated builders enqueue these without field ownership before
+  // an EDIT is transformed into an INSERT.
+  legacy.removeInboundEdge("current", "edge");
+  legacy.__setFieldEdges("owner", ["current"], "edge", "User");
+  expect(
+    legacy.getInputEdges("edge", WriteOperation.Insert).map((edge) => edge.id),
+  ).toEqual(["current"]);
+
+  const regenerated = getInsertUserAction(new Map()).builder.orchestrator;
+  regenerated.__setFieldEdges("owner", ["previous"], "edge", "User", {
+    existingIDs: [],
+  });
+  // Regenerated builders tag their own removals, so an untagged entry here
+  // is an explicit removal and must not be undone by a field update.
+  regenerated.removeInboundEdge("current", "edge");
+  regenerated.__setFieldEdges("owner", ["current"], "edge", "User", {
+    existingIDs: [],
+  });
+  expect(regenerated.getInputEdges("edge", WriteOperation.Insert)).toEqual([]);
+  expect(
+    regenerated
+      .getInputEdges("edge", WriteOperation.Delete)
+      .map((edge) => edge.id),
+  ).toEqual(["current"]);
+});
+
 const edges = ["edge", "inverseEdge", "symmetricEdge"];
 
 const getInitialTables = (dialect: Dialect) => {

@@ -218,14 +218,23 @@ func (fieldInfo *FieldInfo) GetImmutableFields() []*Field {
 	return fields
 }
 
-// should be only used in builder
-func (fieldInfo *FieldInfo) NotEditableInverseEdgeFieldsWithDefaults() []*Field {
+// Internal writes and defaults need the same inverse maintenance as public inputs.
+func (fieldInfo *FieldInfo) GetInverseEdgeFieldsInBuilder() []*Field {
 	var fields []*Field
 	for _, f := range fieldInfo.fields {
-		if f.EditableField(BuilderEditableContext) || f.inverseEdge == nil {
-			continue
+		if !f.dbOnly && f.inverseEdge != nil {
+			fields = append(fields, f)
 		}
-		if f.hasDefaultValueOnCreate || f.hasDefaultValueOnEdit || f.defaultToViewerOnCreate {
+	}
+	return fields
+}
+
+// Keep default-derived inverse inputs available to triggers when defaults are set.
+func (fieldInfo *FieldInfo) NotEditableInverseEdgeFieldsWithDefaults() []*Field {
+	var fields []*Field
+	for _, f := range fieldInfo.GetInverseEdgeFieldsInBuilder() {
+		if !f.EditableField(BuilderEditableContext) &&
+			(f.hasDefaultValueOnCreate || f.hasDefaultValueOnEdit || f.defaultToViewerOnCreate) {
 			fields = append(fields, f)
 		}
 	}

@@ -1,4 +1,6 @@
 contains:
+  - path: src/ent/generated/payment/actions/payment_builder.ts
+    text: 'addField("createdAtOverride", input.createdAtOverride)'
   - path: src/graphql/generated/resolvers/decorated_runtime_ready_query_type.ts
     text: "return r.runtimeReady();"
   - path: src/graphql/generated/resolvers/payment_audit_entry_type.ts
