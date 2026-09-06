@@ -4,6 +4,30 @@ The codegen matrix is the broad smoke suite for Ent schema features. It exists
 to catch generated TypeScript, GraphQL, import-order, DB schema, and
 idempotence regressions before they reach downstream apps.
 
+## Test Ownership
+
+Core functionality is tested in the package that implements it, following
+[AGENTS.md](../../AGENTS.md#test-ownership-and-placement). Put runtime regression
+and edge-case assertions in colocated `ts/src/**/*.test.ts`, generator logic
+tests in the owning Go package, and migration behavior tests in
+`python/auto_schema/tests/`. These tests must run with their package's normal
+test command, independently of this matrix.
+
+Fixture tests supplement those suites by checking actual generated output and
+integration boundaries. For example, inverse-edge ownership and default-reset
+semantics belong in the action package tests; a fixture can additionally prove
+that generated builders pass the right fields and ownership information to the
+runtime. Predicate comparison and migration replay belong in the Python tests;
+a DB fixture can additionally prove that schema input reaches generated DB
+output correctly.
+
+Keep fixture runtime tests small and representative. Do not accumulate the
+core behavior suite here because a fixture already provides convenient setup.
+Shared fixture data and helpers are fine in package tests; fixture-only
+assertions are insufficient coverage for a core behavior change.
+
+## Running The Matrix
+
 Run it with:
 
 ```sh
@@ -77,6 +101,9 @@ failure.
 
 The bar is:
 
+- Add the core regression in its owning package first. Add matrix assertions
+  for the distinct generation or integration contract, rather than moving the
+  package's core cases into a fixture.
 - Prefer one representative fixture interaction over a cartesian-product grid.
   A nullable boolean is usually not interesting; an id field with a foreign key,
   field edge, custom name, transform, or privacy policy often is.
