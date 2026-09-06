@@ -145,7 +145,17 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
     {{ end -}}
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
+    {{ if .FieldInfo.GetImmutableFields -}}
+    const updateInput = (input: {{$input}}, operation?: WriteOperation) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+    };
+    {{ else -}}
     const updateInput = (d: {{$input}}) => this.updateInput.apply(this, [d]);
+    {{ end -}}
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
       viewer,
@@ -168,12 +178,25 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
   }
 
   {{ $immutableFields := .FieldInfo.GetImmutableFields -}}
-  updateInput(input: {{$input}}) {
+  {{$updateInputType := $input }}
+  {{ if $immutableFields }}
+    {{/* TODO this really doesn't quite matter since input allows any key because of action only fields */}}
+    {{$updateInputType = excludedFieldsType $input $immutableFields }}
+  {{ end }}
+
+  updateInput(input: {{$updateInputType}}) {
     {{ range $f := $immutableFields }}
-      if (input.{{$f.TsBuilderFieldName}} !== undefined && this.orchestrator.__getWriteOperation() !== WriteOperation.Insert) {
+      if (input.{{$f.TsBuilderFieldName}} !==undefined) {
         throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
       }
     {{ end }}
+    {{ if $immutableFields -}}
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: {{$input}}) {
+    {{ end -}}
     {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
       {{ template "inverseEdge" (dict "Field" $field "Config" $cfg "Node" $node "Package" $pkg "UpdateInput" true) }}
     {{end -}}

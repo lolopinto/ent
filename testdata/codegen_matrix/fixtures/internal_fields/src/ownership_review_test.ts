@@ -103,10 +103,6 @@ export async function verifyOwnership(client: Client, a: ID, b: ID, c: ID) {
           return [
             {
               changeset: (builder: this["builder"]) => {
-                assert.equal(
-                  builder.orchestrator.__getWriteOperation(),
-                  WriteOperation.Edit,
-                );
                 assert.deepEqual(
                   builder.orchestrator.getInputEdges(
                     derived,

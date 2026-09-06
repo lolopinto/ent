@@ -284,9 +284,13 @@ features:
     mode: explicit
     rationale: >
       A generated-app runtime fixture verifies immutable viewer, sync, and async
-      defaults and assignments during creation, ordinary edit rejection and
-      explicit overrides, action hooks, formatting, ownership privacy, shared
-      inverse associations, and assignments from action and schema transformations.
+      creation defaults, constructor precedence, explicit overrides, generated
+      accessors/hooks, immutable guards across transformed operations, and
+      inverse-edge wiring. Core default and privacy cases run in the package
+      action suites via npm test.
+    test_refs:
+      - ts/src/action/orchestrator.test.ts
+      - ts/src/action/transformed_orchestrator.test.ts
   - id: schema.nodes
     owns: [input.Schema.Nodes, input.Node.Fields]
     mode: explicit

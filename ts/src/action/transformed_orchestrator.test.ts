@@ -378,6 +378,56 @@ function getInsertCountryAction(
 }
 
 function commonTests() {
+  test.each([
+    SQLStatementOperation.Insert,
+    SQLStatementOperation.Update,
+  ])("default synchronization receives the transformed operation %s", async (op) => {
+    const existing = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      undefined,
+    ).saveX();
+    const schema = new EntBuilderSchema(User, {
+      fields: {
+        FirstName: StringType({
+          immutable: true,
+          defaultValueOnCreate: () => "created",
+          defaultValueOnEdit: () => "edited",
+        }),
+        LastName: StringType({ defaultValueOnCreate: () => "Snow" }),
+      },
+    });
+    const action = Object.assign(
+      new SimpleAction(
+        new LoggedOutViewer(),
+        schema,
+        new Map(),
+        op === SQLStatementOperation.Insert
+          ? WriteOperation.Edit
+          : WriteOperation.Insert,
+        existing,
+      ),
+      {
+        transformWrite: () => ({ op, existingEnt: existing }),
+      },
+    );
+    const options = action.builder.orchestrator.__getOptions();
+    // Existing one-argument callbacks still work when the runtime adds context.
+    const updateInput = jest.fn(options.updateInput!);
+    options.updateInput = updateInput;
+    await action.validX();
+    expect(updateInput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FirstName: op === SQLStatementOperation.Insert ? "created" : "edited",
+      }),
+      op === SQLStatementOperation.Insert
+        ? WriteOperation.Insert
+        : WriteOperation.Edit,
+    );
+  });
+
   test("delete -> update", async () => {
     const loader = getNewLoader();
     const action = getInsertUserAction(

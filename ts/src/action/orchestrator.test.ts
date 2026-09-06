@@ -2669,6 +2669,44 @@ function commonTests() {
     });
   });
 
+  test.each([
+    false,
+    true,
+  ])("immutable defaults preserve trusted triggers (prevalidate=%s)", async (prevalidate) => {
+    const defaultValue = jest.fn(() => "default");
+    const schema = getBuilderSchemaFromFields(
+      {
+        FirstName: StringType({
+          immutable: true,
+          defaultValueOnCreate: defaultValue,
+          editPrivacyPolicy: AlwaysDenyPrivacyPolicy,
+        }),
+        LastName: StringType(),
+      },
+      User,
+    );
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      schema,
+      new Map([["LastName", "Snow"]]),
+      WriteOperation.Insert,
+      null,
+    );
+    action.getTriggers = () => [
+      {
+        changeset(builder) {
+          expect(builder.getInput().FirstName).toBeDefined();
+          builder.updateInput({ FirstName: "trusted trigger" });
+        },
+      },
+    ];
+    if (prevalidate) {
+      await action.validX();
+    }
+    expect((await action.saveX()).firstName).toBe("trusted trigger");
+    expect(defaultValue).toHaveBeenCalledTimes(1);
+  });
+
   test("defaultValueOnCreate", async () => {
     const builder = new SimpleBuilder(
       new LoggedOutViewer(),

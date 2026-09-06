@@ -87,7 +87,7 @@ export interface OrchestratorOptions<
   schema: SchemaInputType;
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
-  updateInput?: (data: TInput) => void;
+  updateInput?: (data: TInput, operation?: WriteOperation) => void;
 
   // mapping of column to expressions to use
   // if set and a column exists, we use the expression here instead of the given expression in the sql query
@@ -293,11 +293,6 @@ export class Orchestrator<
     return this.options;
   }
 
-  // Internal: starts with the builder operation and reflects resolved transforms.
-  __getWriteOperation(): WriteOperation {
-    return this.actualOperation;
-  }
-
   private addEdge(
     edge: edgeInputData<TViewer>,
     op: WriteOperation,
@@ -355,48 +350,15 @@ export class Orchestrator<
   }
 
   // Internal: refresh generated field contributions without replacing caller edges.
-  // The optional metadata enables edit/delete reconciliation; an empty object
+  // Stored metadata enables edit/delete reconciliation; an empty object
   // reuses stored IDs captured before synchronous default updates.
   __setFieldEdges<T2 extends Ent>(
     fieldName: string,
     ids: readonly (ID | Builder<T2, any>)[] | undefined,
     edgeType: string,
     nodeType: string,
-    stored?: { existingIDs?: readonly ID[] },
+    stored: { existingIDs?: readonly ID[] },
   ) {
-    // Legacy callers have no stored metadata. Preserve their additive edit
-    // updates and queued-object contributors across edit-to-insert transforms.
-    if (!stored) {
-      const isInsert = this.actualOperation === WriteOperation.Insert;
-      const queued = this.edges.get(edgeType)?.get(WriteOperation.Insert);
-      for (const [id, edge] of queued ?? []) {
-        const sources = this.fieldEdgeSources.get(edge);
-        if (isInsert && sources?.delete(fieldName) && sources.size === 0) {
-          queued!.delete(id);
-        }
-      }
-      for (const id of ids ?? []) {
-        const edge = new edgeInputData<TViewer>({
-          id,
-          edgeType,
-          nodeType,
-          direction: edgeDirection.inboundEdge,
-        });
-        const key = edge.isBuilder(edge.id) ? edge.id.placeholderID : edge.id;
-        const existing = queued?.get(key);
-        const sources = existing && this.fieldEdgeSources.get(existing);
-        if (isInsert && existing) {
-          sources?.add(fieldName);
-          continue;
-        }
-        this.fieldEdgeSources.set(
-          edge,
-          new Set([...(sources ?? []), fieldName]),
-        );
-        this.addEdge(edge, WriteOperation.Insert);
-      }
-      return;
-    }
     const isBuilder = (id: ID | Builder<any, any>): id is Builder<any, any> =>
       (id as Builder<any, any>).placeholderID !== undefined;
     this.fieldEdgeInputs.set(fieldName, {
@@ -446,9 +408,7 @@ export class Orchestrator<
         removals.delete(id);
     }
     for (const id of inserts.keys()) {
-      // Legacy templates queue generated deletions through removeInboundEdge,
-      // so their untagged entries cannot be treated as explicit caller intent.
-      if (stored && manual(WriteOperation.Delete, id)) inserts.delete(id);
+      if (manual(WriteOperation.Delete, id)) inserts.delete(id);
     }
     for (const [op, desired] of [
       [WriteOperation.Insert, inserts],
@@ -836,8 +796,7 @@ export class Orchestrator<
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt!;
     }
-    const { schemaFields, editedData } =
-      await this.getFieldsWithPendingImmutableValues();
+    const { schemaFields, editedData } = await this.memoizedGetFields();
     return this.getEntForPrivacyPolicyImpl(
       schemaFields,
       editedData,
@@ -854,7 +813,7 @@ export class Orchestrator<
    * i.e. includes lists which have been converted to JSON strings, etc
    */
   async getEditedData() {
-    const { editedData } = await this.getFieldsWithPendingImmutableValues();
+    const { editedData } = await this.memoizedGetFields();
     return editedData;
   }
 
@@ -869,30 +828,6 @@ export class Orchestrator<
       );
     }
     return this.validatedFields;
-  }
-
-  private async getFieldsWithPendingImmutableValues(): Promise<fieldsInfo> {
-    const fields = await this.memoizedGetFields();
-    if (this.actualOperation !== WriteOperation.Insert) {
-      return fields;
-    }
-    const editedData = { ...fields.editedData };
-    const userDefinedKeys = new Set(fields.userDefinedKeys);
-    // Creation-time setters can run after defaults were resolved. Privacy must
-    // check the pending immutable value, rather than a cached creation default.
-    const input = this.options.builder.getInput();
-    for (const [fieldName, field] of fields.schemaFields) {
-      if (!field.immutable) {
-        continue;
-      }
-      const value = input[this.getInputKey(fieldName)];
-      const dbKey = this.getStorageKey(fieldName);
-      if (value !== undefined && value !== editedData[dbKey]) {
-        editedData[dbKey] = value;
-        userDefinedKeys.add(dbKey);
-      }
-    }
-    return { ...fields, editedData, userDefinedKeys };
   }
 
   // Note: this is memoized. call memoizedGetFields instead
@@ -953,7 +888,7 @@ export class Orchestrator<
     }
 
     const { schemaFields, editedData, userDefinedKeys, editPrivacyFields } =
-      await this.getFieldsWithPendingImmutableValues();
+      await this.memoizedGetFields();
     const action = this.options.action;
     const builder = this.options.builder;
 
@@ -1199,6 +1134,10 @@ export class Orchestrator<
           // this.defaultFieldsByFieldName[k] = val;
         }
       }
+      if (transformed.changeset) {
+        const changeset = await transformed.changeset();
+        this.changesets.push(changeset);
+      }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
         // @ts-ignore
@@ -1206,21 +1145,13 @@ export class Orchestrator<
         // modify existing ent in builder. it's readonly in generated ents but doesn't apply here
         builder.existingEnt = transformed.existingEnt;
       }
-      if (transformed.changeset) {
-        const changeset = await transformed.changeset();
-        this.changesets.push(changeset);
-      }
     }
     if (
-      (this.fieldEdgeInputs.size > 0 &&
-        (initialOperation !== this.actualOperation ||
-          initialEnt !== this.existingEnt)) ||
-      (this.actualOperation === WriteOperation.Insert &&
-        (action?.transformWrite || !this.disableTransformations) &&
-        Array.from(schemaFields.values()).some((field) => field.immutable))
+      this.fieldEdgeInputs.size > 0 &&
+      (initialOperation !== this.actualOperation ||
+        initialEnt !== this.existingEnt)
     ) {
-      // Preserve assignments from action or schema transforms, including null results.
-      // Refresh inverse membership against the resolved operation and existing row.
+      // Refresh inverse membership before defaults and triggers use the resolved row.
       editedFields = await this.options.editedFields();
     }
     // transforming before doing default fields so that we don't create a new id
@@ -1297,8 +1228,11 @@ export class Orchestrator<
         ...defaultData,
       };
       if (updateInput && this.options.updateInput) {
-        // Defaults must reach the builder before privacy, triggers, and validators.
-        this.options.updateInput(this.defaultFieldsByTSName as TInput);
+        // this basically fixes #605. just needs to be exposed correctly
+        this.options.updateInput(
+          this.defaultFieldsByTSName as TInput,
+          this.actualOperation,
+        );
       }
     }
 
