@@ -11,8 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- allow immutable fields to be assigned during creation, including creation
-  defaults, while preserving existing edit restrictions (#2026).
+- preserve parameter offsets in nested queries so composing `JSONBKeyInList`
+  with other filters binds each value to the correct placeholder (#2031).
 - accept GraphQL literal input records in struct and union fields, including
   nested lists, and preserve validation errors for unprintable values (#2029).
 - avoid opening the Go codegen database pool until first use and close it when
@@ -28,6 +28,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - when GraphQL ID encoding is enabled, infer GraphQL Node fields for struct
   UUID fields whose `...Id` name matches an existing Ent schema, without
   requiring redundant edge metadata (#2021).
+- allow immutable fields to be assigned during creation, including creation
+  defaults, while preserving existing edit restrictions (#2026).
 
 ## [0.2.13]
 

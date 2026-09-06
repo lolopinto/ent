@@ -18,6 +18,7 @@ import { loadConfig } from "./config";
 import DB, { Dialect } from "./db";
 import { AssocEdge, loadEdges, loadRows, loadTwoWayEdges } from "./ent";
 import { setLogLevels } from "./logger";
+import { buildQueryData } from "./query_impl";
 
 const tableName = "contacts";
 const alias = "c";
@@ -581,6 +582,61 @@ test("jsonb key in list ", async () => {
     alias,
   );
   expect(uuid4Rows.length).toEqual(6);
+});
+
+test.each([
+  "O'Brien's friends",
+  "'); DROP TABLE contacts; -- $1",
+])("JSONBKeyInList binds composed tag queries: %s", async (tag) => {
+  const id = v1();
+  for (const contactID of [id, v1()]) {
+    await createRowForTest({
+      tableName,
+      fields: {
+        id: contactID,
+        first_name: "Jon",
+        last_name: "Snow",
+        emails: [],
+        phones: [],
+        foo: JSON.stringify([{ value: tag }, { value: "second tag" }]),
+      },
+    });
+  }
+  const options = {
+    tableName,
+    fields: ["id"],
+    alias,
+    clause: clause.And(
+      clause.Eq("id", id),
+      clause.JSONBKeyInList("foo", "value", tag, alias),
+      clause.JSONBKeyInList("foo", "value", "second tag", alias),
+      clause.Eq("last_name", "Snow"),
+    ),
+  };
+  expect(await loadRows(options)).toEqual([{ id }]);
+  const embedded = buildQueryData(options, 4);
+  const result = await tdb
+    .getPostgresClient()
+    .query(
+      `WITH prefix AS (SELECT $1::text, $2::boolean, $3::integer) ${embedded.query}`,
+      ["earlier value", true, 42, ...embedded.values],
+    );
+  expect(result.rows).toEqual([{ id }]);
+  expect(
+    await loadRows({
+      ...options,
+      clause: clause.And(options.clause, clause.Eq("first_name", "Ned")),
+    }),
+  ).toEqual([]);
+  expect(
+    await loadRows({
+      ...options,
+      clause: clause.And(
+        clause.Eq("id", id),
+        clause.JSONBKeyInList("foo", "value", `${tag} missing`, alias),
+      ),
+    }),
+  ).toEqual([]);
 });
 
 test("in clause", async () => {
