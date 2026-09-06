@@ -812,8 +812,8 @@ export class Orchestrator<
 
     const { schemaFields, editedData, userDefinedKeys, editPrivacyFields } =
       await this.getFieldsWithPendingImmutableValues();
-    const builder = this.options.builder;
     const action = this.options.action;
+    const builder = this.options.builder;
 
     // this runs in following phases:
     // * set default fields and pass to builder so the value can be checked by triggers/observers/validators
@@ -1068,11 +1068,11 @@ export class Orchestrator<
       }
     }
     if (
+      this.actualOperation === WriteOperation.Insert &&
       (action?.transformWrite || transformed) &&
       Array.from(schemaFields.values()).some((field) => field.immutable)
     ) {
-      // Recheck inputs against the effective operation before defaults/privacy.
-      // This also preserves assignments made inside transformWrite itself.
+      // Preserve creation assignments made inside transformWrite before defaults.
       editedFields = await this.options.editedFields();
     }
     // transforming before doing default fields so that we don't create a new id
