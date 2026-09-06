@@ -4,11 +4,13 @@ import type { ID } from "@snowtop/ent";
 import type { Client } from "@snowtop/ent/core/db";
 import { WriteOperation } from "@snowtop/ent/action";
 import { SQLStatementOperation } from "@snowtop/ent/schema";
-import { Assignment } from "./ent";
+import { Assignment, Contact } from "./ent";
 import { EdgeType, NodeType } from "./ent/generated/types";
 import CreateAssignmentAction from "./ent/assignment/actions/create_assignment_action";
 import EditAssignmentAction from "./ent/assignment/actions/edit_assignment_action";
 import DeleteAssignmentAction from "./ent/assignment/actions/delete_assignment_action";
+import CreateContactAction from "./ent/contact/actions/create_contact_action";
+import EditContactAction from "./ent/contact/actions/edit_contact_action";
 
 export async function verifyOwnership(client: Client, a: ID, b: ID, c: ID) {
   const viewer = new IDViewer(a);
@@ -254,5 +256,252 @@ export async function verifyOwnership(client: Client, a: ID, b: ID, c: ID) {
     assert.equal((await Assignment.loadRawDataX(ent.id)).derived_owner_id, a);
     assert.deepEqual(await rows(ent.id, derived), []);
   });
+  await check(
+    "manual deletion wins over existing builder endpoint",
+    async () => {
+      const seed = CreateAssignmentAction.create(viewer, {
+        name: "builder endpoint",
+      });
+      seed.builder.updateInput({ derivedOwnerId: a });
+      const ent = await seed.saveX();
+      const owner = EditContactAction.create(
+        viewer,
+        await Contact.loadX(viewer, a),
+        {
+          name: "still same owner",
+        },
+      );
+      class AssignmentWithOwnerEdit extends EditAssignmentAction {
+        getTriggers() {
+          return [{ changeset: () => owner.changeset() }];
+        }
+      }
+      const edit = new AssignmentWithOwnerEdit(viewer, ent, {});
+      edit.builder.updateInput({ derivedOwnerId: owner.builder });
+      edit.builder.orchestrator.removeInboundEdge(a, derived);
+      await edit.saveX();
+      assert.equal((await Assignment.loadRawDataX(ent.id)).derived_owner_id, a);
+      assert.deepEqual(await rows(ent.id, derived), []);
+    },
+  );
+
+  await check(
+    "manual existing-builder insertion survives field replacement",
+    async () => {
+      const seed = CreateAssignmentAction.create(viewer, {
+        name: "manual builder",
+      });
+      seed.builder.updateInput({ derivedOwnerId: a });
+      const ent = await seed.saveX();
+      const owner = EditContactAction.create(
+        viewer,
+        await Contact.loadX(viewer, a),
+        {
+          name: "manual owner",
+        },
+      );
+      class AssignmentWithOwnerEdit extends EditAssignmentAction {
+        getTriggers() {
+          return [{ changeset: () => owner.changeset() }];
+        }
+      }
+      const edit = new AssignmentWithOwnerEdit(viewer, ent, {});
+      edit.builder.updateInput({ derivedOwnerId: b });
+      edit.builder.orchestrator.addInboundEdge(
+        owner.builder,
+        derived,
+        NodeType.Contact,
+        {
+          data: "manual-existing-builder",
+        },
+      );
+      await edit.saveX();
+      assert.equal((await Assignment.loadRawDataX(ent.id)).derived_owner_id, b);
+      assert.deepEqual(
+        await rows(ent.id, derived),
+        [
+          { id1: a, data: "manual-existing-builder" },
+          { id1: b, data: null },
+        ].sort((x, y) => String(x.id1).localeCompare(String(y.id1))),
+      );
+    },
+  );
+
+  for (const manualBuilder of [false, true]) {
+    await check(
+      `manual insert options survive scalar/builder aliases (${manualBuilder})`,
+      async () => {
+        const owner = EditContactAction.create(
+          viewer,
+          await Contact.loadX(viewer, a),
+          {
+            name: "aliased owner",
+          },
+        );
+        class AssignmentWithOwnerEdit extends CreateAssignmentAction {
+          getTriggers() {
+            return [{ changeset: () => owner.changeset() }];
+          }
+        }
+        const action = new AssignmentWithOwnerEdit(viewer, {
+          name: "aliased endpoint",
+        });
+        action.builder.updateInput({
+          derivedOwnerId: manualBuilder ? a : owner.builder,
+        });
+        action.builder.orchestrator.addInboundEdge(
+          manualBuilder ? owner.builder : a,
+          derived,
+          NodeType.Contact,
+          {
+            data: "manual-alias",
+          },
+        );
+        const ent = await action.saveX();
+        assert.equal(
+          (await Assignment.loadRawDataX(ent.id)).derived_owner_id,
+          a,
+        );
+        assert.deepEqual(await rows(ent.id, derived), [
+          { id1: a, data: "manual-alias" },
+        ]);
+      },
+    );
+  }
+
+  await check(
+    "new builders retain distinct dependencies and shared ownership",
+    async () => {
+      const first = CreateContactAction.create(viewer, {
+        name: "first new owner",
+      });
+      const second = CreateContactAction.create(viewer, {
+        name: "second new owner",
+      });
+      class AssignmentWithNewOwners extends CreateAssignmentAction {
+        getTriggers() {
+          return [
+            { changeset: () => first.changeset() },
+            { changeset: () => second.changeset() },
+          ];
+        }
+      }
+      const action = new AssignmentWithNewOwners(viewer, {
+        name: "new owners",
+      });
+      action.builder.updateInput({
+        sharedOwnerId: first.builder,
+        sharedSecondId: first.builder,
+      });
+      action.builder.orchestrator.addInboundEdge(
+        first.builder,
+        shared,
+        NodeType.Contact,
+        { data: "manual-new-builder" },
+      );
+      action.builder.updateInput({ sharedOwnerId: second.builder });
+      const ent = await action.saveX();
+      const firstID = (await first.builder.editedEntX()).id;
+      const secondID = (await second.builder.editedEntX()).id;
+      const raw = await Assignment.loadRawDataX(ent.id);
+      assert.equal(raw.shared_owner_id, secondID);
+      assert.equal(raw.shared_second_id, firstID);
+      assert.deepEqual(
+        await rows(ent.id, shared),
+        [
+          { id1: firstID, data: "manual-new-builder" },
+          { id1: secondID, data: null },
+        ].sort((x, y) => String(x.id1).localeCompare(String(y.id1))),
+      );
+    },
+  );
+  for (const operation of ["create", "edit"] as const) {
+    for (const reset of ["delete", "undefined", "null", "override"] as const) {
+      await check(
+        `${operation} default fallback after trigger ${reset}`,
+        async () => {
+          const resetInput = (
+            builder:
+              | CreateAssignmentAction["builder"]
+              | EditAssignmentAction["builder"],
+          ) => {
+            if (reset === "delete") builder.deleteInputKey("defaultOwnerId");
+            else
+              builder.updateInput({
+                defaultOwnerId:
+                  reset === "undefined"
+                    ? undefined
+                    : reset === "null"
+                      ? null
+                      : c,
+              });
+          };
+          class CreateWithReset extends CreateAssignmentAction {
+            getTriggers() {
+              return [{ changeset: resetInput }];
+            }
+          }
+          class EditWithReset extends EditAssignmentAction {
+            getTriggers() {
+              return [{ changeset: resetInput }];
+            }
+          }
+          let ent: Assignment;
+          if (operation === "create") {
+            ent = await new CreateWithReset(viewer, {
+              name: `default reset ${reset}`,
+            }).saveX();
+          } else {
+            const seed = await CreateAssignmentAction.create(new IDViewer(b), {
+              name: "old default owner",
+            }).saveX();
+            ent = await new EditWithReset(viewer, seed, {
+              name: `edited default reset ${reset}`,
+            }).saveX();
+          }
+          const expected =
+            reset === "null" ? null : reset === "override" ? c : a;
+          assert.equal(
+            (await Assignment.loadRawDataX(ent.id)).default_owner_id,
+            expected,
+          );
+          assert.deepEqual(
+            await rows(ent.id, EdgeType.ContactToDefaultAssignments),
+            expected === null ? [] : [{ id1: expected, data: null }],
+          );
+        },
+      );
+    }
+  }
+
+  await check(
+    "cleared edit defaults do not change an otherwise empty edit",
+    async () => {
+      const seed = await CreateAssignmentAction.create(new IDViewer(b), {
+        name: "unchanged default",
+      }).saveX();
+      class EmptyEdit extends EditAssignmentAction {
+        getTriggers() {
+          return [
+            {
+              changeset: (builder: this["builder"]) => {
+                builder.deleteInputKey("defaultOwnerId");
+                builder.deleteInputKey("updatedAt");
+              },
+            },
+          ];
+        }
+      }
+      await new EmptyEdit(viewer, seed, {}).saveX();
+      assert.equal(
+        (await Assignment.loadRawDataX(seed.id)).default_owner_id,
+        b,
+      );
+      assert.deepEqual(
+        await rows(seed.id, EdgeType.ContactToDefaultAssignments),
+        [{ id1: b, data: null }],
+      );
+    },
+  );
   assert.deepEqual(failures, [], "ownership regressions");
 }

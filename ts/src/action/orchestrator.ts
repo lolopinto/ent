@@ -256,6 +256,7 @@ export class Orchestrator<
     string,
     {
       edgeType: string;
+      nodeType: string;
       ids: readonly (ID | Builder<any, any>)[] | undefined;
       existingIDs: readonly ID[];
     }
@@ -361,8 +362,13 @@ export class Orchestrator<
   ) {
     const isBuilder = (id: ID | Builder<any, any>): id is Builder<any, any> =>
       (id as Builder<any, any>).placeholderID !== undefined;
+    // Existing builders and literal IDs can name the same stored endpoint.
+    // Keep placeholder queue keys so new builders still resolve as dependencies.
+    const endpointID = (id: ID | Builder<any, any>): ID =>
+      isBuilder(id) ? (id.existingEnt?.id ?? id.placeholderID) : id;
     this.fieldEdgeInputs.set(fieldName, {
       edgeType,
+      nodeType,
       ids,
       existingIDs:
         stored.existingIDs ??
@@ -390,25 +396,29 @@ export class Orchestrator<
       const current =
         this.actualOperation === WriteOperation.Delete ? [] : field.ids;
       for (const id of current ?? existing) {
-        retained.add(
-          isBuilder(id) ? (id.existingEnt?.id ?? id.placeholderID) : id,
-        );
+        retained.add(endpointID(id));
       }
       if (current !== undefined) {
         for (const id of current) contribute(inserts, id, source);
         for (const id of existing) contribute(removals, id, source);
       }
     }
-    const manual = (op: WriteOperation, id: ID) => {
-      const edge = this.edges.get(edgeType)?.get(op)?.get(id);
-      return edge !== undefined && !this.fieldEdgeSources.has(edge);
+    const manualEndpoints = (op: WriteOperation) => {
+      const endpoints = new Set<ID>();
+      for (const edge of this.edges.get(edgeType)?.get(op)?.values() ?? []) {
+        if (!this.fieldEdgeSources.has(edge))
+          endpoints.add(endpointID(edge.id));
+      }
+      return endpoints;
     };
+    const manualInserts = manualEndpoints(WriteOperation.Insert);
+    const manualRemovals = manualEndpoints(WriteOperation.Delete);
     for (const id of removals.keys()) {
-      if (retained.has(id) || manual(WriteOperation.Insert, id))
-        removals.delete(id);
+      if (retained.has(id) || manualInserts.has(id)) removals.delete(id);
     }
-    for (const id of inserts.keys()) {
-      if (manual(WriteOperation.Delete, id)) inserts.delete(id);
+    for (const [key, contribution] of inserts) {
+      const id = endpointID(contribution.id);
+      if (manualInserts.has(id) || manualRemovals.has(id)) inserts.delete(key);
     }
     for (const [op, desired] of [
       [WriteOperation.Insert, inserts],
@@ -1393,6 +1403,27 @@ export class Orchestrator<
           }
         }
       }
+    }
+
+    // Triggers may clear an input while SQL still falls back to its computed
+    // default. Reconcile only defaults selected for persistence above, including
+    // edit defaults only when the edit has data to save.
+    for (const [fieldName, field] of this.fieldEdgeInputs) {
+      if (
+        field.ids !== undefined ||
+        data[this.getStorageKey(fieldName)] === undefined
+      ) {
+        continue;
+      }
+      const value = this.defaultFieldsByFieldName[fieldName];
+      if (value === undefined) continue;
+      this.__setFieldEdges(
+        fieldName,
+        value === null ? [] : Array.isArray(value) ? value : [value],
+        field.edgeType,
+        field.nodeType,
+        {},
+      );
     }
 
     this.validatedFields = data;
