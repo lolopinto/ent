@@ -15,6 +15,7 @@ When changing code in `ts/`, validate in this order:
 
 Package-level commands:
 
+- `cd ts && npm run lint`
 - `cd ts && npm test -- --runInBand`
 - `cd ts && npm test -- src/action/orchestrator.test.ts --runInBand`
 - `cd ts && npm test -- src/action/transformed_orchestrator.test.ts --runInBand`

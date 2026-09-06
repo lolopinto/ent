@@ -11,7 +11,13 @@
     "lineWidth": 80
   },
   "linter": {
-    "enabled": false
+    "enabled": true,
+    "rules": {
+      "recommended": false,
+      "style": {
+        "useBlockStatements": "error"
+      }
+    }
   },
   "assist": {
     "enabled": false

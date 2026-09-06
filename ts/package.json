@@ -76,6 +76,8 @@
     "compile": "tsc",
     "test": "jest",
     "clean": "rm -rf dist",
+    "lint": "biome lint src",
+    "lint:fix": "biome lint --write --unsafe --only=style/useBlockStatements src",
     "format": "biome format --write biome.json package.json tsconfig.json jest.config.js src",
     "format:check": "biome check --diagnostic-level=error biome.json package.json tsconfig.json jest.config.js src",
     "prepare-code": "npm run clean && npm run compile && node src/setupPackage.js",
