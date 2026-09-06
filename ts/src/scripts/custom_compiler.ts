@@ -27,8 +27,13 @@ class Compiler {
         if (key === "*") {
           continue;
         }
-        // always make sure it starts at the beginning...
-        this.regexMap.set(key, new RegExp("^" + key, "i"));
+        // Match the whole, case-sensitive TS path pattern, including the slash
+        // in aliases such as src/*; packages like src-extra must stay intact.
+        const pattern = key
+          .split("*")
+          .map((part) => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+          .join("(.*)");
+        this.regexMap.set(key, new RegExp("^" + pattern + "$"));
       }
     }
     // TODO should be taking baseUrl and using that instead of using cwd and assuming baseUrl == "."
@@ -77,7 +82,8 @@ class Compiler {
       }
       let value = paths[key];
 
-      if (r.test(moduleName)) {
+      const match = moduleName.match(r);
+      if (match) {
         // substitute...
         // can this be more than one?
         // not for now...
@@ -87,9 +93,8 @@ class Compiler {
           console.error("incorrectly formatted regex");
           continue;
         }
-        str = str.substr(0, lastIdx);
-        let resolvedFileName =
-          path.join(this.cwd, moduleName.replace(r, str)) + ".ts";
+        str = str.replace("*", () => match[1]);
+        let resolvedFileName = path.join(this.cwd, str) + ".ts";
         //          console.log(resolvedFileName);
         return {
           resolvedFileName,
@@ -173,6 +178,8 @@ class Compiler {
     let cwd = this.cwd;
     let paths = this.options.paths;
     let regexMap = this.regexMap;
+    const resolveModule = this.standardModules.bind(this);
+    const declarationFilePattern = /\.d\.(ts|mts|cts)$/;
     return function (node: ts.SourceFile) {
       // don't do anything with declaration files
       // nothing to do here
@@ -201,8 +208,6 @@ class Compiler {
         paths: ts.MapLike<string[]> | undefined,
         text: string,
       ): string | undefined {
-        // remove quotes
-        text = text.slice(1, -1);
         let relPath: string | undefined;
 
         for (const key in paths) {
@@ -213,21 +218,36 @@ class Compiler {
           let value = paths[key];
           let str = value[0];
 
-          if (!r.test(text)) {
+          const match = text.match(r);
+          if (!match) {
             continue;
           }
-          let idx = text.indexOf("/");
-          let strIdx = str.indexOf("*");
-          if (idx === -1 || strIdx === -1) {
-            continue;
+          const targetPath = path.resolve(
+            cwd,
+            str.replace("*", () => match[1] ?? ""),
+          );
+          // Declaration mappings supply types, not runtime modules. Preserve
+          // the original specifier so Node can still load the actual package.
+          if (declarationFilePattern.test(targetPath)) {
+            return undefined;
+          }
+          const resolvedPath = resolveModule(text, fullPath)?.resolvedFileName;
+          if (resolvedPath && declarationFilePattern.test(resolvedPath)) {
+            // Extensionless paths can resolve to dep.d.ts or dep/index.d.ts.
+            // A JavaScript module may also have companion declarations, so
+            // retain rewriting when the mapped target has a runtime module.
+            try {
+              if (declarationFilePattern.test(require.resolve(targetPath))) {
+                return undefined;
+              }
+            } catch {
+              return undefined;
+            }
           }
           relPath = path.relative(
             // just because of how imports work. it's relative from directory not current path
             path.dirname(fullPath),
-            path.join(
-              text.substring(0, idx).replace(r, str.substring(0, strIdx)),
-              text.substring(idx),
-            ),
+            targetPath,
           );
           // if file ends with "..", we've reached a case where we're trying to
           // import something like foo/contact(.ts) from within foo/contact/bar/baz/page.ts
@@ -235,15 +255,11 @@ class Compiler {
           if (relPath.endsWith("..")) {
             // there's an actual local file here not root of directory, try that instead
             // (if root of directory and there's ambiguity, we should use "contact/")
-            if (ts.sys.fileExists(text + ".ts")) {
-              let text2 = text + ".ts";
+            if (ts.sys.fileExists(targetPath + ".ts")) {
               relPath = path.relative(
                 // just because of how imports work. it's relative from directory not current path
                 path.dirname(fullPath),
-                path.join(
-                  text2.substring(0, idx).replace(r, str.substring(0, strIdx)),
-                  text2.substring(idx),
-                ),
+                targetPath + ".ts",
               );
             }
           }
@@ -252,19 +268,18 @@ class Compiler {
           }
 
           // tsc removes this by default so we need to also do it
-          let tsIdx = relPath.indexOf(".ts");
-          if (tsIdx !== -1) {
-            relPath = relPath.substring(0, tsIdx);
+          if (relPath.endsWith(".ts")) {
+            relPath = relPath.slice(0, -3);
           }
           return relPath;
         }
       }
 
-      function visitor(node: ts.Node) {
+      function visitor(node: ts.Node): ts.VisitResult<ts.Node> {
         if (node.kind === ts.SyntaxKind.ImportDeclaration) {
           let importNode = node as ts.ImportDeclaration;
 
-          let text = importNode.moduleSpecifier.getText();
+          let text = (importNode.moduleSpecifier as ts.StringLiteral).text;
           let relPath = checkPath(paths, text);
           if (relPath) {
             // update the node...
@@ -280,7 +295,9 @@ class Compiler {
         if (node.kind === ts.SyntaxKind.ExportDeclaration) {
           let exportNode = node as ts.ExportDeclaration;
 
-          let text = exportNode.moduleSpecifier?.getText();
+          let text = (
+            exportNode.moduleSpecifier as ts.StringLiteral | undefined
+          )?.text;
 
           if (text) {
             let relPath = checkPath(paths, text);
@@ -295,6 +312,29 @@ class Compiler {
                 exportNode.assertClause,
               );
             }
+          }
+        }
+        // Dynamic imports are CallExpressions and may be nested in methods,
+        // callbacks, or another import's options. Visit children before updating
+        // the specifier so those expressions retain their normal behavior.
+        node = ts.visitEachChild(node, visitor, context);
+        if (
+          ts.isCallExpression(node) &&
+          node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+          node.arguments.length > 0 &&
+          ts.isStringLiteralLike(node.arguments[0])
+        ) {
+          const relPath = checkPath(paths, node.arguments[0].text);
+          if (relPath) {
+            return ts.factory.updateCallExpression(
+              node,
+              node.expression,
+              node.typeArguments,
+              [
+                ts.factory.createStringLiteral(relPath),
+                ...node.arguments.slice(1),
+              ],
+            );
           }
         }
         return node;
