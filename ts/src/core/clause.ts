@@ -136,7 +136,7 @@ class queryClause<T extends Data, K = keyof T> implements Clause<T, K> {
   ) {}
 
   clause(idx: number, alias?: string): string {
-    const q = buildQuery(this.dependentQueryOptions);
+    const q = buildQuery(this.dependentQueryOptions, idx);
 
     return `${this.prefix} (${q})`;
   }

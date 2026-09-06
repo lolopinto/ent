@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- preserve parameter offsets in nested queries so composing `JSONBKeyInList`
+  with other filters binds each value to the correct placeholder (#2031).
 - accept GraphQL literal input records in struct and union fields, including
   nested lists, and preserve validation errors for unprintable values (#2029).
 - avoid opening the Go codegen database pool until first use and close it when
