@@ -1035,6 +1035,44 @@ class BaseTestRunner(object):
 class TestPostgresRunner(BaseTestRunner):
 
     @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("predicate,reflected", [
+        ("NULL", "NULL::boolean"),
+        ("'false'", "false"),
+    ])
+    def test_partial_index_predicate_uses_where_context(self, new_test_runner, full_text, predicate, reflected):
+        r = new_test_runner(_partial_index_metadata(predicate, full_text=full_text))
+        r.run()
+        assert _reflected_predicate(r) == reflected
+        for _ in range(2):
+            assert r.compute_changes() == []
+            _assert_no_predicate_views(r)
+            r.run()
+            testingutils.assert_num_files(r, 1)
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("predicate", ["TRUE", "((TRUE::boolean))", "'yes'"])
+    def test_partial_index_where_true_matches_absent_predicate(self, new_test_runner, full_text, predicate):
+        r = new_test_runner(_partial_index_metadata(predicate, full_text=full_text))
+        r.run()
+        assert _reflected_predicate(r) is None
+        for _ in range(2):
+            assert r.compute_changes() == []
+            _assert_no_predicate_views(r)
+            r.run()
+            testingutils.assert_num_files(r, 1)
+        r2 = new_test_runner(_partial_index_metadata(None, full_text=full_text), r)
+        assert r2.compute_changes() == []
+
+    @pytest.mark.parametrize("before,after", [
+        ("TRUE", "NULL"),
+        ("'false'", "TRUE"),
+    ])
+    def test_partial_index_constant_predicate_change(self, new_test_runner, before, after):
+        _assert_partial_index_change(
+            new_test_runner, _partial_index_metadata(before), _partial_index_metadata(after),
+        )
+
+    @pytest.mark.parametrize("full_text", [False, True])
     @pytest.mark.parametrize("predicate", [
         "score IS NOT NULL",
         "(score - DATE '2020-01-01') > 1",
@@ -1249,6 +1287,8 @@ class TestPostgresRunner(BaseTestRunner):
         (None, "bio IS NULL"),
         ("bio IS NULL", None),
         ("bio IS NULL", "bio IS NOT NULL AND first_name = '100%'"),
+        ("TRUE", "NULL"),
+        ("'false'", "TRUE"),
     ])
     def test_full_text_index_predicate_change(self, new_test_runner, before, after):
         def metadata(predicate):

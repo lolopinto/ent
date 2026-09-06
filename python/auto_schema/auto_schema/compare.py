@@ -1207,7 +1207,7 @@ def _index_predicates_differ(
     conn_predicate = _index_predicate(conn_index, dialect, raw_index)
     if meta_predicate == conn_predicate:
         return False
-    if meta_predicate is None or conn_predicate is None or dialect.name != 'postgresql':
+    if dialect.name != 'postgresql':
         return True
     # Reflected columns still have their old types. If Alembic plans a type
     # change, PostgreSQL cannot reliably compare the new predicate in this table
@@ -1217,14 +1217,19 @@ def _index_predicates_differ(
 
     # PostgreSQL deparses predicates with extra parentheses, implicit casts, and
     # rewrites such as IN -> ANY. Ask its parser to render both expressions in the
-    # same table context, without executing them or stripping meaningful SQL.
+    # same WHERE context, without executing them or stripping meaningful SQL.
+    # This applies boolean coercion to unknown literals such as NULL or 'false'.
+    # PostgreSQL omits a constant TRUE index predicate, so an absent predicate
+    # must compare as TRUE rather than immediately count as an addition/removal.
     # The temporary view is confined to a savepoint that is always rolled back.
     view_name = f'ent_index_predicate_{uuid.uuid4().hex}'
     savepoint = connection.begin_nested()
     try:
         definitions = []
         for predicate in (meta_predicate, conn_predicate):
-            query = sa.select(sa.literal_column(predicate).label('predicate')).select_from(conn_table)
+            query = sa.select(sa.literal_column('1')).select_from(conn_table).where(
+                sa.literal_column(predicate if predicate is not None else 'TRUE'),
+            )
             connection.exec_driver_sql(
                 f'CREATE OR REPLACE TEMP VIEW {view_name} AS {query.compile(dialect=dialect)}',
                 execution_options={'no_parameters': True},
