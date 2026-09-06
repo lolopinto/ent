@@ -294,12 +294,19 @@ test.each([
 });
 
 test.each([
-  { packageName: "dep", subpath: "", declarations: true, esm: false },
-  { packageName: "dep", subpath: "", declarations: false, esm: false },
+  { packageName: "dep", subpath: "", declarations: "bundled", esm: false },
+  { packageName: "dep", subpath: "", declarations: "none", esm: false },
+  { packageName: "dep", subpath: "", declarations: "separate", esm: false },
   {
     packageName: "@scope/dep",
     subpath: "/value",
-    declarations: true,
+    declarations: "bundled",
+    esm: true,
+  },
+  {
+    packageName: "@scope/dep",
+    subpath: "/value",
+    declarations: "separate",
     esm: true,
   },
 ])("preserves node_modules mappings for $packageName$subpath (declarations: $declarations, ESM: $esm)", ({
@@ -311,6 +318,10 @@ test.each([
   const specifier = packageName + subpath;
   const pattern = packageName + (subpath ? "/*" : "");
   const packageRoot = `node_modules/${packageName}`;
+  const declarationRoot =
+    declarations === "separate"
+      ? `node_modules/@types/${packageName.replace(/^@/, "").replace("/", "__")}`
+      : packageRoot;
   const root = fixture(
     {
       "src/main.ts": `
@@ -329,7 +340,7 @@ test.each([
       [`${packageRoot}/package.json`]: JSON.stringify({
         type: esm ? "module" : "commonjs",
         main: "index.js",
-        ...(declarations ? { types: "index.d.ts" } : {}),
+        ...(declarations === "bundled" ? { types: "index.d.ts" } : {}),
         exports: { ".": "./index.js", "./value": "./index.js" },
       }),
       [`${packageRoot}/index.js`]: esm
@@ -339,10 +350,10 @@ test.each([
       [`${packageRoot}/value.js`]: esm
         ? `export const value = "mapped-file";`
         : `exports.value = "mapped-file";`,
-      ...(declarations
+      ...(declarations !== "none"
         ? {
-            [`${packageRoot}/index.d.ts`]: `export declare const value: string;`,
-            [`${packageRoot}/value.d.ts`]: `export declare const value: string;`,
+            [`${declarationRoot}/index.d.ts`]: `export declare const value: string;`,
+            [`${declarationRoot}/value.d.ts`]: `export declare const value: string;`,
           }
         : {}),
     },
@@ -367,6 +378,65 @@ test("rewrites aliases that rename an installed dependency", () => {
     { paths: { "vendor/*": ["./node_modules/dep/*"] } },
   );
   expect(run(root)).toBe("package,package,package");
+});
+
+test.each([
+  {
+    specifier: "dep/value",
+    pattern: "dep/*",
+    target: "./node_modules/dep/lib/*",
+    packageName: "dep",
+    runtime: "lib/value.js",
+    esm: false,
+  },
+  {
+    specifier: "@scope/dep/value.js",
+    pattern: "@scope/dep/*",
+    target: "./node_modules/@scope/dep/lib/*",
+    packageName: "@scope/dep",
+    runtime: "lib/value.js",
+    esm: true,
+  },
+  {
+    specifier: "dep/value",
+    pattern: "dep/value",
+    target: "./node_modules/dep/value/impl.js",
+    packageName: "dep",
+    runtime: "value/impl.js",
+    esm: false,
+  },
+])("applies explicit package subpath remapping from $specifier to $target", ({
+  specifier,
+  pattern,
+  target,
+  packageName,
+  runtime,
+  esm,
+}) => {
+  const packageRoot = `node_modules/${packageName}`;
+  const root = fixture(
+    {
+      "src/main.ts": `
+        import { value } from "${specifier}";
+        import { exported } from "./exports.js";
+        import("${specifier}").then(mod => console.log([value, exported, mod.value].join(",")));
+      `,
+      "src/exports.ts": `export { value as exported } from "${specifier}";`,
+      [`${packageRoot}/package.json`]: JSON.stringify({
+        type: esm ? "module" : "commonjs",
+      }),
+      [`${packageRoot}/value.js`]: esm
+        ? `export const value = "original";`
+        : `exports.value = "original";`,
+      [`${packageRoot}/${runtime}`]: esm
+        ? `export const value = "mapped";`
+        : `exports.value = "mapped";`,
+      [`${packageRoot}/${runtime.replace(/\.js$/, ".d.ts")}`]: `export declare const value: string;`,
+    },
+    { paths: { [pattern]: [target] } },
+    esm,
+  );
+  expect(run(root)).toBe("mapped,mapped,mapped");
 });
 
 test("rewrites aliases to JavaScript modules with companion declarations", () => {

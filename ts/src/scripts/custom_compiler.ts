@@ -231,27 +231,19 @@ class Compiler {
           if (declarationFilePattern.test(targetPath)) {
             return undefined;
           }
-          const resolvedPath = resolveModule(text, fullPath)?.resolvedFileName;
-          // Installed dependencies stay outside outDir. Keep Node's package
-          // resolution (including exports) instead of making them relative to
-          // emitted source files. Match the package name so aliases that rename
-          // a dependency still get rewritten. The external-library flag alone
-          // is insufficient when TypeScript resolves paths against a relative
-          // baseUrl and returns a filename starting with node_modules/.
-          const packageName = text
-            .split("/")
-            .slice(0, text.startsWith("@") ? 2 : 1)
-            .join(path.sep);
+          // Installed dependencies stay outside outDir. Preserve Node's package
+          // lookup only when the mapping keeps the entire specifier unchanged;
+          // dep/value -> dep/lib/value is an explicit remap that must still apply.
+          // Check the mapped runtime path because TS may find declarations in a
+          // separate @types package instead of alongside the JavaScript.
           if (
-            resolvedPath &&
-            path
-              .resolve(cwd, resolvedPath)
-              .includes(
-                `${path.sep}node_modules${path.sep}${packageName}${path.sep}`,
-              )
+            targetPath.endsWith(
+              `${path.sep}node_modules${path.sep}${text.split("/").join(path.sep)}`,
+            )
           ) {
             return undefined;
           }
+          const resolvedPath = resolveModule(text, fullPath)?.resolvedFileName;
           if (resolvedPath && declarationFilePattern.test(resolvedPath)) {
             // Extensionless paths can resolve to dep.d.ts or dep/index.d.ts.
             // A JavaScript module may also have companion declarations, so
