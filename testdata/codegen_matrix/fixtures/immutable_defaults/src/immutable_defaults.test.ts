@@ -115,6 +115,7 @@ test("creation defaults reach hooks and persist with inverse edges", async () =>
 
 test("creation assignments win over defaults; edits require explicit overrides", async () => {
   const viewer = await createViewer();
+  const previousOwner = await createViewer();
   const syncDefault = jest.spyOn(
     DocumentSchema.fields.syncValue,
     "defaultValueOnCreate",
@@ -125,14 +126,25 @@ test("creation assignments win over defaults; edits require explicit overrides",
   );
   const create = new CreateDocumentActionBase(viewer, {
     title: "Created",
+    ownerId: previousOwner.viewerID,
     syncValue: " CONSTRUCTOR ",
   });
   create.builder.updateInput({ asyncValue: " SETTER " });
+  await create.builder.orchestrator.getEditedData();
+  create.builder.updateInput({ ownerId: viewer.viewerID });
   const document = await create.saveX();
   expect(document).toMatchObject({
+    ownerId: viewer.viewerID,
     syncValue: "constructor",
     asyncValue: "setter",
   });
+  expect(
+    await loadEdges({
+      id1: previousOwner.viewerID,
+      edgeType: EdgeType.UserToDocuments,
+    }),
+  ).toHaveLength(0);
+  await expectEdges(viewer, document);
   expect(syncDefault).not.toHaveBeenCalled();
   expect(asyncDefault).not.toHaveBeenCalled();
 
@@ -259,6 +271,7 @@ test.each([
   false,
 ])("creation assignments in transformWrite retain precedence (returns transform: %s)", async (returnsTransform) => {
   const viewer = await createViewer();
+  const previousOwner = await createViewer();
   const syncDefault = jest.spyOn(
     DocumentSchema.fields.syncValue,
     "defaultValueOnCreate",
@@ -266,15 +279,27 @@ test.each([
   class AssignDuringCreate extends CreateDocumentActionBase {
     async transformWrite() {
       await Promise.resolve();
-      this.builder.updateInput({ syncValue: " ASSIGNED DURING TRANSFORM " });
+      this.builder.updateInput({
+        ownerId: viewer.viewerID,
+        syncValue: " ASSIGNED DURING TRANSFORM ",
+      });
       return returnsTransform ? { op: SQLStatementOperation.Insert } : null;
     }
   }
   const document = await new AssignDuringCreate(viewer, {
     title: "Created",
+    ownerId: previousOwner.viewerID,
   }).saveX();
+  expect(document.ownerId).toBe(viewer.viewerID);
   expect(document.syncValue).toBe("assigned during transform");
   expect(syncDefault).not.toHaveBeenCalled();
+  expect(
+    await loadEdges({
+      id1: previousOwner.viewerID,
+      edgeType: EdgeType.UserToDocuments,
+    }),
+  ).toHaveLength(0);
+  await expectEdges(viewer, document);
 });
 
 test("privacy refresh preserves default provenance without rerunning default callbacks", async () => {

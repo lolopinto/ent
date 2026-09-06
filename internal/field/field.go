@@ -413,6 +413,10 @@ func (f *Field) DisableUserGraphQLEditable() bool {
 	return f.disableUserGraphQLEditable
 }
 
+func (f *Field) Immutable() bool {
+	return f.immutable
+}
+
 func (f *Field) HasDefaultValueOnCreate() bool {
 	return f.hasDefaultValueOnCreate
 }

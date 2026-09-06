@@ -17,6 +17,15 @@
 
   {{/* we magically expect a local variable input to be defined when this is used */ -}}
   if (input.{{$tsFieldName}} !== undefined || this.operation === WriteOperation.Delete) {
+    {{ if $field.Immutable -}}
+      // Rebuild immutable creation edges from the current input on each pass.
+      if (this.orchestrator.__getWriteOperation() === WriteOperation.Insert) {
+        this.orchestrator.clearInputEdges(
+          {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
+          WriteOperation.Insert,
+        );
+      }
+    {{ end -}}
     {{ if $isList -}}
       const input{{$tsFieldName}} = input.{{$tsFieldName}};
       if (input{{$tsFieldName}}) {
