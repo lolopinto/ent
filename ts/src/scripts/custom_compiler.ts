@@ -22,7 +22,16 @@ class Compiler {
     private sourceFiles: string[],
     private moduleSearchLocations: string[],
   ) {
+    this.cwd = process.cwd();
     this.options = readCompilerOptions(".");
+    // Composite builds use the config directory as their default root. Normalize
+    // it for both the actual program and output prediction, not just the latter.
+    if (typeof this.options.configFilePath === "string") {
+      this.options.configFilePath = path.resolve(
+        this.cwd,
+        this.options.configFilePath,
+      );
+    }
     if (this.options.paths) {
       for (let key in this.options.paths) {
         // Match the whole, case-sensitive TS path pattern, including the slash
@@ -34,7 +43,6 @@ class Compiler {
         this.regexMap.set(key, new RegExp("^" + pattern + "$"));
       }
     }
-    this.cwd = process.cwd();
 
     // set resolvers
     this.resolvers = [
@@ -260,17 +268,16 @@ class Compiler {
     const resolveRuntime = this.resolveRuntimeModule.bind(this);
     const moduleSuffixes = this.options.moduleSuffixes;
     const declarationFilePattern = /\.d\.(ts|mts|cts)$/;
-    const commonJS = this.options.module === ts.ModuleKind.CommonJS;
+    // Match TypeScript's emit default: ES2015+ targets use ES2015 modules;
+    // omitted/older targets use CommonJS unless module is explicitly configured.
+    const moduleKind =
+      this.options.module ??
+      ((this.options.target ?? ts.ScriptTarget.ES5) >= ts.ScriptTarget.ES2015
+        ? ts.ModuleKind.ES2015
+        : ts.ModuleKind.CommonJS);
+    const commonJS = moduleKind === ts.ModuleKind.CommonJS;
     const emitConfig: ts.ParsedCommandLine = {
-      options: {
-        ...this.options,
-        configFilePath: path.resolve(
-          cwd,
-          typeof this.options.configFilePath === "string"
-            ? this.options.configFilePath
-            : "tsconfig.json",
-        ),
-      },
+      options: this.options,
       fileNames: program
         .getSourceFiles()
         .filter(
@@ -283,7 +290,7 @@ class Compiler {
         ),
       errors: [],
     };
-    const emittedFiles = new Set(
+    const localSources = new Set(
       emitConfig.fileNames.map((file) => path.resolve(file)),
     );
     return function (node: ts.SourceFile) {
@@ -453,11 +460,19 @@ class Compiler {
           resolvedPath && !declarationFilePattern.test(resolvedPath)
             ? path.resolve(cwd, resolvedPath)
             : runtimePath;
+        const emittedPath =
+          sourcePath && localSources.has(sourcePath)
+            ? ts.getOutputFileNames(
+                emitConfig,
+                sourcePath,
+                !ts.sys.useCaseSensitiveFileNames,
+              )[0]
+            : undefined;
+        // In-place JSON belongs to the program but has no emitted copy.
         if (
           runtimePath &&
           sourcePath &&
-          (!emittedFiles.has(sourcePath) ||
-            sourcePath.split(path.sep).includes("node_modules"))
+          (!emittedPath || sourcePath.split(path.sep).includes("node_modules"))
         ) {
           // This runtime module is not copied with the application's sources.
           // Use the emitted importer's directory, including inferred rootDir.
@@ -483,15 +498,10 @@ class Compiler {
             ? externalPath
             : "./" + externalPath;
         }
-        if (!sourcePath || !emittedFiles.has(sourcePath)) return undefined;
+        if (!emittedPath) return undefined;
         // Use the source TypeScript selected, not the configured directory or
         // basename. Its emitted filename reflects package entries, moduleSuffixes,
         // and JSX mode even when package.json is not copied into outDir.
-        const emittedPath = ts.getOutputFileNames(
-          emitConfig,
-          sourcePath,
-          !ts.sys.useCaseSensitiveFileNames,
-        )[0];
         let relPath = path
           .relative(
             path.dirname(getOutputPath()),

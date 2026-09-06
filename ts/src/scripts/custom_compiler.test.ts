@@ -255,6 +255,36 @@ test("ESNext output preserves explicit JS extensions and dynamic import options 
 });
 
 test.each([
+  { outDir: undefined, absolute: false },
+  { outDir: "src", absolute: false },
+  { outDir: "src", absolute: true },
+])("loads in-place JSON aliases with outDir $outDir (absolute: $absolute)", ({
+  outDir,
+  absolute,
+}) => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+      import { value } from "src/data.json";
+      import { exported } from "./exports";
+      import("src/data.json").then(mod => console.log([value, exported, mod.value].join(",")));
+    `,
+      "src/exports.ts": 'export { value as exported } from "src/data.json";',
+      "src/data.json": '{"value":"json"}',
+    },
+    { outDir, resolveJsonModule: true },
+  );
+  if (absolute) {
+    const config = JSON.parse(
+      fs.readFileSync(path.join(root, "tsconfig.json"), "utf8"),
+    );
+    config.compilerOptions.outDir = path.join(root, "src");
+    write(root, "tsconfig.json", JSON.stringify(config));
+  }
+  expect(run(root, "src/main.js")).toBe("json,json,json");
+});
+
+test.each([
   { pattern: "vendor/*.js", target: "./src/*", specifier: "vendor/value.js" },
   {
     pattern: "alias/value.js",
@@ -552,6 +582,31 @@ test.each([
   expect(run(root, "dist/src/main.js")).toBe("modern,modern,modern");
 });
 
+test.each([
+  undefined,
+  "es5",
+])("uses the effective CommonJS default with target %s", (target) => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+      import { value } from "dep";
+      import { exported } from "./exports";
+      import("dep").then(mod => console.log([value, exported, mod.value].join(",")));
+    `,
+      "src/exports.ts": 'export { value as exported } from "dep";',
+      "node_modules/dep/package.json": JSON.stringify({
+        main: "legacy.js",
+        exports: "./modern.js",
+      }),
+      "node_modules/dep/legacy.js": 'exports.value = "legacy";',
+      "node_modules/dep/modern.js": 'exports.value = "modern";',
+    },
+    { module: undefined, target, paths: { dep: ["./node_modules/dep"] } },
+  );
+  fs.mkdirSync(path.join(root, "dist/node_modules/dep"), { recursive: true });
+  expect(run(root)).toBe("modern,modern,modern");
+});
+
 test("preserves CommonJS package exports through a symlink outside its root", () => {
   const root = fixture(
     {
@@ -631,6 +686,28 @@ test.each([
     { rootDir, outDir, paths: { "vendor/*": ["./node_modules/dep/*"] } },
   );
   expect(run(root, entry)).toBe("package,package,package");
+});
+
+test("composite aliases use the configured output directory", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+      import { value } from "alias/value";
+      import { exported } from "./exports";
+      import("alias/value").then(mod => console.log([value, exported, mod.value].join(",")));
+    `,
+      "src/exports.ts": 'export { value as exported } from "alias/value";',
+      "node_modules/dep/value.js": 'exports.value = "javascript";',
+    },
+    {
+      composite: true,
+      rootDir: undefined,
+      paths: { "alias/*": ["./node_modules/dep/*"] },
+    },
+  );
+  expect(run(root, "dist/src/main.js")).toBe(
+    "javascript,javascript,javascript",
+  );
 });
 
 test.each([
@@ -735,7 +812,14 @@ test.each([
   expect(run(root, "dist/src/main.js")).toBe("mapped,mapped,mapped");
 });
 
-test("ESNext explicit remapping does not substitute the package's import condition", () => {
+test.each([
+  { module: "esnext", target: "es2020" },
+  { module: undefined, target: "es2015" },
+  { module: undefined, target: "es2020" },
+])("ESM explicit remapping does not substitute the package's import condition (module: $module, target: $target)", ({
+  module,
+  target,
+}) => {
   const root = fixture(
     {
       "src/main.ts": `
@@ -752,7 +836,12 @@ test("ESNext explicit remapping does not substitute the package's import conditi
       "node_modules/dep/require.cjs": `exports.value = "mapped";`,
       "node_modules/dep/require.d.cts": `export declare const value: string;`,
     },
-    { rootDir: ".", paths: { dep: ["./node_modules/dep/require.cjs"] } },
+    {
+      module,
+      target,
+      rootDir: ".",
+      paths: { dep: ["./node_modules/dep/require.cjs"] },
+    },
     true,
   );
   expect(run(root, "dist/src/main.js")).toBe("mapped,mapped,mapped");
