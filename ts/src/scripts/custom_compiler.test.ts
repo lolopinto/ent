@@ -254,6 +254,35 @@ test("ESNext output preserves explicit JS extensions and dynamic import options 
   expect(run(root)).toBe("ok");
 });
 
+test.each([
+  { pattern: "vendor/*.js", target: "./src/*", specifier: "vendor/value.js" },
+  {
+    pattern: "alias/value.js",
+    target: "./src/value.ts",
+    specifier: "alias/value.js",
+  },
+])("preserves an explicit ESM extension when $pattern maps to $target", ({
+  pattern,
+  target,
+  specifier,
+}) => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+      import { value } from "${specifier}";
+      import { exported } from "./exports.js";
+      const dynamic = await import("${specifier}");
+      console.log([value, exported, dynamic.value].join(","));
+    `,
+      "src/exports.ts": `export { value as exported } from "${specifier}";`,
+      "src/value.ts": 'export const value = "mapped";',
+    },
+    { paths: { [pattern]: [target] } },
+    true,
+  );
+  expect(run(root)).toBe("mapped,mapped,mapped");
+});
+
 test("does not rewrite imports without configured paths", () => {
   const root = fixture(
     {

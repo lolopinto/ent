@@ -449,10 +449,12 @@ class Compiler {
           )
           .split(path.sep)
           .join("/");
-        // Preserve the existing extensionless convention for TS/CommonJS
-        // aliases; explicit runtime extensions and JSX/MJS/CJS outputs keep theirs.
+        // Preserve the existing extensionless convention for TS/CommonJS aliases.
+        // Runtime extensions in the original specifier or target, and JSX/MJS/CJS
+        // outputs, keep their emitted extension even if substitution removes it.
         if (
           relPath.endsWith(".js") &&
+          !/\.(js|jsx|mjs|cjs)$/.test(text) &&
           !/\.(js|jsx|mjs|cjs|tsx|mts|cts)$/.test(targetPath)
         ) {
           relPath = relPath.slice(0, -3);
