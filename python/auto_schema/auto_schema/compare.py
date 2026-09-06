@@ -1225,6 +1225,9 @@ def _index_predicates_differ(
     # identify create/update/schema-move operations before a failed parse could
     # abort the savepoint and prevent querying the extension catalog.
     has_extension_changes = bool(_get_pending_extension_ops(autogen_context))
+    # Enum reflection can omit a schema visible through the search path. Resolve
+    # type identities while catalog queries can still run, before parsing SQL.
+    has_pending_enum_values = _index_has_pending_enum_values(connection, meta_index, conn_table)
 
     # PostgreSQL deparses predicates with extra parentheses, implicit casts, and
     # rewrites such as IN -> ANY. Ask its parser to render both expressions in the
@@ -1269,7 +1272,7 @@ def _index_predicates_differ(
         if (
             getattr(error.orig, 'pgcode', None) == '22P02'
             and getattr(error.orig.diag, 'source_function', None) == 'enum_in'
-            and _index_has_pending_enum_values(meta_index, conn_table)
+            and has_pending_enum_values
         ):
             return True
         raise
@@ -1277,7 +1280,9 @@ def _index_predicates_differ(
         savepoint.rollback()
 
 
-def _index_has_pending_enum_values(meta_index, conn_table):
+def _index_has_pending_enum_values(connection, meta_index, conn_table):
+    # These identifiers are bound values, so do not apply DBAPI percent escaping.
+    preparer = literal_sql_dialect(connection.dialect).identifier_preparer
     for column in meta_index.table.columns:
         conn_column = conn_table.c.get(column.name)
         if conn_column is None:
@@ -1286,11 +1291,21 @@ def _index_has_pending_enum_values(meta_index, conn_table):
         if (
             isinstance(meta_type, postgresql.ENUM)
             and isinstance(conn_type, postgresql.ENUM)
-            and meta_type.name == conn_type.name
-            and meta_type.schema == conn_type.schema
             and set(meta_type.enums) - set(conn_type.enums)
         ):
-            return True
+            # Let PostgreSQL resolve quoted and unqualified names according to
+            # the current search path, without conflating shadowed enum types.
+            if connection.execute(
+                sa.text(
+                    'SELECT pg_catalog.to_regtype(:metadata_type)::oid '
+                    '= pg_catalog.to_regtype(:reflected_type)::oid'
+                ),
+                {
+                    'metadata_type': preparer.format_type(meta_type),
+                    'reflected_type': preparer.format_type(conn_type),
+                },
+            ).scalar_one():
+                return True
     return False
 
 

@@ -53,10 +53,10 @@ def _partial_index_metadata(predicate, *, columns=("owner_id",), full_text=False
     return metadata
 
 
-def _enum_partial_index_metadata(values, predicate, full_text=False):
+def _enum_partial_index_metadata(values, predicate, full_text=False, *, schema=None, name="contact_status"):
     metadata = _partial_index_metadata(predicate, full_text=full_text)
     metadata.tables["contacts"].c.status.type = postgresql.ENUM(
-        *values, name="contact_status", create_type=False,
+        *values, name=name, schema=schema, create_type=False,
     )
     return metadata
 
@@ -1295,15 +1295,16 @@ class TestPostgresRunner(BaseTestRunner):
         _assert_no_predicate_views(r2)
 
     @pytest.mark.parametrize("full_text", [False, True])
-    def test_partial_index_predicate_with_pending_enum_values(self, new_test_runner, full_text):
+    @pytest.mark.parametrize("enum_schema", [None, "public"])
+    def test_partial_index_predicate_with_pending_enum_values(self, new_test_runner, full_text, enum_schema):
         before = _enum_partial_index_metadata(
-            ["active", "deleted"], "status = 'active'", full_text,
+            ["active", "deleted"], "status = 'active'", full_text, schema=enum_schema,
         )
         r = new_test_runner(before)
         r.run()
         after = _enum_partial_index_metadata(
             ["active", "archived", "deleted", "purged"],
-            "status IN ('active', 'archived', 'purged')", full_text,
+            "status IN ('active', 'archived', 'purged')", full_text, schema=enum_schema,
         )
         r2 = new_test_runner(after, r)
         changes = r2.compute_changes()
@@ -1341,6 +1342,39 @@ class TestPostgresRunner(BaseTestRunner):
         replay.upgrade()
         assert replay.compute_changes() == []
 
+    @pytest.mark.parametrize("enum_schema", ["Enum Types", "public"])
+    @pytest.mark.parametrize("enum_name", ["Contact Status", "Contact % Status"])
+    def test_pending_enum_predicate_resolves_search_path_identity(self, new_test_runner, enum_schema, enum_name):
+        r = new_test_runner(sa.MetaData())
+        connection = r.get_connection()
+        schema = "Enum Types"
+        connection.execute(sa.schema.CreateSchema(schema))
+        for type_schema in (schema, "public"):
+            postgresql.ENUM("active", name=enum_name, schema=type_schema).create(connection)
+        connection.exec_driver_sql(
+            f'SET LOCAL search_path TO {connection.dialect.identifier_preparer.quote_schema(schema)}, public'
+        )
+        before = _enum_partial_index_metadata(
+            ["active"], "status = 'active'", schema=schema, name=enum_name,
+        )
+        before.create_all(connection)
+        reflected = sa.Table("contacts", sa.MetaData(), autoload_with=connection)
+        assert reflected.c.status.type.schema is None
+        after = _enum_partial_index_metadata(
+            ["active", "archived"], "status = 'archived'", schema=enum_schema, name=enum_name,
+        )
+        context = AutogenContext(MigrationContext.configure(connection), metadata=after)
+        result = alembicops.ModifyTableOps("contacts", [])
+        if enum_schema == schema:
+            compare._compare_indexes(context, result, None, "contacts", reflected, after.tables["contacts"])
+            assert [type(op) for op in result.ops] == [alembicops.DropIndexOp, alembicops.CreateIndexOp]
+        else:
+            # A pending label on the shadowed public enum does not change the
+            # actual column's type, so this invalid predicate must still fail.
+            with pytest.raises(sa.exc.DataError, match="invalid input value for enum"):
+                compare._compare_indexes(context, result, None, "contacts", reflected, after.tables["contacts"])
+        _assert_no_predicate_views(r)
+
     def test_pending_enum_values_leave_unchanged_predicate_alone(self, new_test_runner):
         r = new_test_runner(_enum_partial_index_metadata(["active"], "status = 'active'"))
         r.run()
@@ -1351,11 +1385,14 @@ class TestPostgresRunner(BaseTestRunner):
         r2.run()
         assert r2.compute_changes() == []
 
-    def test_invalid_enum_predicate_without_pending_type_change_still_fails(self, new_test_runner):
-        r = new_test_runner(_enum_partial_index_metadata(["active"], "status = 'active'"))
+    @pytest.mark.parametrize("enum_schema", [None, "public"])
+    def test_invalid_enum_predicate_without_pending_type_change_still_fails(self, new_test_runner, enum_schema):
+        r = new_test_runner(_enum_partial_index_metadata(
+            ["active"], "status = 'active'", schema=enum_schema,
+        ))
         r.run()
         r2 = new_test_runner(
-            _enum_partial_index_metadata(["active"], "status = 'typo'"), r,
+            _enum_partial_index_metadata(["active"], "status = 'typo'", schema=enum_schema), r,
         )
         with pytest.raises(sa.exc.DataError, match="invalid input value for enum"):
             r2.compute_changes()
