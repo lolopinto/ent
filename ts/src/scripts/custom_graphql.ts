@@ -633,7 +633,10 @@ async function main() {
 }
 
 main()
-  .then()
+  // Imported application modules can leave database pools or other handles open.
+  // The awaited stdout write above is the script's final required work, so exit
+  // explicitly instead of waiting for the event loop to drain.
+  .then(() => exit(0))
   .catch((err) => {
     console.error(err);
     exit(1);

@@ -246,6 +246,50 @@ function commonTests() {
     expect(action.builder.getStoredData("key2b")).toBe("called");
   });
 
+  test("with individual triggers before and after a list", async () => {
+    const action = getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+    );
+    const calls = new Map<string, number>();
+    const recordCall = (key: string) => {
+      calls.set(key, (calls.get(key) ?? 0) + 1);
+      action.builder.storeData(key, "called");
+    };
+    action.getTriggers = () => [
+      {
+        changeset: () => {
+          recordCall("key1");
+        },
+      },
+      [
+        {
+          changeset: (builder: SimpleBuilder<User>) => {
+            expect(builder.getStoredData("key1")).toBe("called");
+            recordCall("key2");
+          },
+        },
+      ],
+      {
+        changeset: (builder: SimpleBuilder<User>) => {
+          expect(builder.getStoredData("key2")).toBe("called");
+          recordCall("key3");
+        },
+      },
+    ];
+
+    await action.saveX();
+    expect(calls).toEqual(
+      new Map([
+        ["key1", 1],
+        ["key2", 1],
+        ["key3", 1],
+      ]),
+    );
+  });
+
   test("combine all the things", async () => {
     const action = getInsertUserAction(
       new Map([

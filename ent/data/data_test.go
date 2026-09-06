@@ -6,8 +6,11 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/jmoiron/sqlx"
+	"github.com/lolopinto/ent/ent/config"
+	"github.com/lolopinto/ent/ent/data"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestSQLite(t *testing.T) {
@@ -43,4 +46,29 @@ func doTest(t *testing.T, file string) {
 	err = row.MapScan(g)
 	assert.NoError(t, err)
 	assert.Equal(t, g["col"], int64(1))
+}
+
+func TestDBLifecycle(t *testing.T) {
+	t.Setenv("ENT_DEV_SCHEMA_ENABLED", "false")
+	require.NoError(t, data.CloseDB())
+	t.Cleanup(func() {
+		require.NoError(t, data.CloseDB())
+	})
+
+	config.ResetConfig(&config.DBConfig{
+		Dialect:  "sqlite",
+		FilePath: ":memory:",
+	})
+
+	require.NoError(t, data.InitDB())
+	first := data.DBConn()
+	require.NoError(t, first.Ping())
+	require.Same(t, first, data.DBConn())
+
+	require.NoError(t, data.CloseDB())
+	require.Error(t, first.Ping())
+
+	second := data.DBConn()
+	require.NotSame(t, first, second)
+	require.NoError(t, second.Ping())
 }

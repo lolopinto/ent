@@ -13,15 +13,25 @@ import (
 var db *sqlx.DB
 var dbMutex sync.RWMutex
 
-// init() initializes the database connection pool for use later
-// init function called as package is initalized. Maybe make this explicit with InitDB()?
-func init() {
-	cfg := config.Get()
-	var err error
-	db, err = cfg.DB.Init()
-	if err != nil {
-		log.Fatal(err)
+func initDB() error {
+	if db != nil {
+		return nil
 	}
+
+	cfg := config.Get()
+	db2, err := cfg.DB.Init()
+	if err != nil {
+		return err
+	}
+	db = db2
+	return nil
+}
+
+// InitDB initializes the database connection pool if it has not been initialized.
+func InitDB() error {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+	return initDB()
 }
 
 // GetSQLAlchemyDatabaseURIgo returns the databause uri needed by sqlalchemy to generate a schema file
@@ -29,17 +39,26 @@ func GetSQLAlchemyDatabaseURIgo() string {
 	return config.Get().DB.GetSQLAlchemyDatabaseURIgo()
 }
 
-// DBConn returns a database connection pool to the DB for use
+// DBConn returns a database connection pool to the DB for use, initializing it
+// on first access.
 func DBConn() *sqlx.DB {
 	dbMutex.Lock()
 	defer dbMutex.Unlock()
+	if err := initDB(); err != nil {
+		log.Fatal(err)
+	}
 	return db
 }
 
 // CloseDB closes the database connection pool
 func CloseDB() error {
+	dbMutex.Lock()
+	defer dbMutex.Unlock()
+
 	if db != nil {
-		return db.Close()
+		err := db.Close()
+		db = nil
+		return err
 	}
 	return nil
 }
@@ -55,7 +74,7 @@ func ResetDB(db2 *sqlx.DB, rdbi *config.DBConfig) error {
 			return err
 		}
 	}
-	*db = *db2
+	db = db2
 	config.ResetConfig(rdbi)
 	return nil
 }

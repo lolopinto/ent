@@ -884,26 +884,20 @@ export class Orchestrator<
     >,
   ): Promise<void> {
     const groups: Trigger<TEnt, Builder<TEnt, TViewer>>[][] = [];
-    let lastArray = 0;
-    let prevWasArray = false;
-    for (let i = 0; i < triggers.length; i++) {
-      let t = triggers[i];
-      if (Array.isArray(t)) {
-        if (!prevWasArray) {
-          // @ts-ignore
-          groups.push(triggers.slice(lastArray, i));
+    let group: Trigger<TEnt, Builder<TEnt, TViewer>>[] = [];
+    for (const trigger of triggers) {
+      if (Array.isArray(trigger)) {
+        if (group.length) {
+          groups.push(group);
+          group = [];
         }
-        groups.push(t);
-
-        prevWasArray = true;
-        lastArray++;
+        groups.push(trigger);
       } else {
-        if (i === triggers.length - 1) {
-          // @ts-ignore
-          groups.push(triggers.slice(lastArray, i + 1));
-        }
-        prevWasArray = false;
+        group.push(trigger);
       }
+    }
+    if (group.length) {
+      groups.push(group);
     }
 
     for (const triggers of groups) {
