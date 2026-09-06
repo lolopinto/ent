@@ -1035,6 +1035,153 @@ class BaseTestRunner(object):
 class TestPostgresRunner(BaseTestRunner):
 
     @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("extension_name,predicate", [
+        ("pg_trgm", "similarity(status, 'active') > 0.5"),
+        ("citext", "status::citext = 'active'"),
+    ])
+    def test_partial_index_predicate_with_pending_extension(self, new_test_runner, full_text, extension_name, predicate):
+        before = _partial_index_metadata("status = 'active'", full_text=full_text)
+        r = new_test_runner(before)
+        r.run()
+        original_predicate = _reflected_predicate(r)
+        after = _partial_index_metadata(predicate, full_text=full_text)
+        after.info.update(_db_extension_metadata(name=extension_name).info)
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        assert [type(op) for op in changes] == [
+            ops.CreateExtensionOp, alembicops.ModifyTableOps,
+        ]
+        assert [type(op) for op in changes[1].ops] == (
+            [ops.DropFullTextIndexOp, ops.CreateFullTextIndexOp] if full_text else
+            [alembicops.DropIndexOp, alembicops.CreateIndexOp]
+        )
+        r2.revision()
+        # Autogeneration must leave extension installation to the migration.
+        assert r2.get_connection().execute(sa.text(
+            "SELECT count(*) FROM pg_extension WHERE extname = :name"
+        ), {"name": extension_name}).scalar_one() == 0
+        assert _reflected_predicate(r2) == original_predicate
+        _assert_no_predicate_views(r2)
+        r2.upgrade()
+        updated_predicate = _reflected_predicate(r2)
+        assert updated_predicate != original_predicate
+        for _ in range(2):
+            assert r2.compute_changes() == []
+            _assert_no_predicate_views(r2)
+            r2.run()
+            testingutils.assert_num_files(r2, 2)
+
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original_predicate
+        assert r2.get_connection().execute(sa.text(
+            "SELECT count(*) FROM pg_extension WHERE extname = :name"
+        ), {"name": extension_name}).scalar_one() == 0
+        r2.get_connection().commit()
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert _reflected_predicate(r2) == updated_predicate
+        assert r2.compute_changes() == []
+
+    def test_partial_index_predicate_with_pending_extension_update(self, new_test_runner):
+        before = _partial_index_metadata("status = 'active'")
+        before.info.update(_db_extension_metadata(name="pg_trgm", version="1.3").info)
+        r = new_test_runner(before)
+        r.run()
+        after = _partial_index_metadata("strict_word_similarity(status, 'active') > 0.5")
+        after.info.update(_db_extension_metadata(name="pg_trgm", version="1.4").info)
+        r2 = new_test_runner(after, r)
+        assert [type(op) for op in r2.compute_changes()] == [
+            ops.UpdateExtensionOp, alembicops.ModifyTableOps,
+        ]
+        r2.revision()
+        assert r2.get_connection().execute(sa.text(
+            "SELECT extversion FROM pg_extension WHERE extname = 'pg_trgm'"
+        )).scalar_one() == "1.3"
+        r2.get_connection().commit()
+        r2.upgrade()
+        assert "strict_word_similarity" in _reflected_predicate(r2)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+        # PostgreSQL provides an upgrade path but no reverse version script.
+        replay = new_test_runner(after, new_database=True)
+        shutil.copytree(
+            os.path.join(r2.get_schema_path(), "versions"),
+            os.path.join(replay.get_schema_path(), "versions"), dirs_exist_ok=True,
+        )
+        replay.upgrade()
+        assert replay.compute_changes() == []
+
+    def test_partial_index_predicate_with_pending_extension_schema_move(self, new_test_runner):
+        before = _partial_index_metadata("status = 'active'")
+        before.info.update(_db_extension_metadata(name="pg_trgm", install_schema="public").info)
+        r = new_test_runner(before)
+        r.run()
+        original_predicate = _reflected_predicate(r)
+        r.get_connection().execute(sa.schema.CreateSchema("trigram_ext"))
+        r.get_connection().commit()
+        after = _partial_index_metadata("trigram_ext.similarity(status, 'active') > 0.5")
+        after.info.update(_db_extension_metadata(name="pg_trgm", install_schema="trigram_ext").info)
+        r2 = new_test_runner(after, r)
+        assert [type(op) for op in r2.compute_changes()] == [
+            ops.SetExtensionSchemaOp, alembicops.ModifyTableOps,
+        ]
+        r2.revision()
+        assert r2.get_connection().execute(sa.text(
+            "SELECT extnamespace::regnamespace::text FROM pg_extension WHERE extname = 'pg_trgm'"
+        )).scalar_one() == "public"
+        r2.get_connection().commit()
+        r2.upgrade()
+        updated_predicate = _reflected_predicate(r2)
+        assert updated_predicate != original_predicate
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original_predicate
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert _reflected_predicate(r2) == updated_predicate
+        assert r2.compute_changes() == []
+
+    def test_pending_extension_does_not_defer_syntax_errors(self, new_test_runner):
+        r = new_test_runner(_partial_index_metadata("status = 'active'"))
+        r.run()
+        after = _partial_index_metadata("status =")
+        after.info.update(_db_extension_metadata(name="pg_trgm").info)
+        r2 = new_test_runner(after, r)
+        with pytest.raises(sa.exc.ProgrammingError, match="syntax error"):
+            r2.compute_changes()
+        _assert_no_predicate_views(r2)
+
+    def test_pending_extension_leaves_unchanged_predicate_alone(self, new_test_runner):
+        r = new_test_runner(_partial_index_metadata("status = 'active'"))
+        r.run()
+        after = _partial_index_metadata("status = 'active'")
+        after.info.update(_db_extension_metadata(name="pg_trgm").info)
+        r2 = new_test_runner(after, r)
+        assert [type(op) for op in r2.compute_changes()] == [ops.CreateExtensionOp]
+        r2.run()
+        assert r2.compute_changes() == []
+
+    @pytest.mark.parametrize("installed", [False, True])
+    def test_missing_function_without_pending_extension_still_fails(self, new_test_runner, installed):
+        before = _partial_index_metadata("status = 'active'")
+        if installed:
+            before.info.update(_db_extension_metadata(name="pg_trgm").info)
+        r = new_test_runner(before)
+        r.run()
+        after = _partial_index_metadata("missing_similarity(status, 'active') > 0.5")
+        if installed:
+            after.info.update(_db_extension_metadata(name="pg_trgm").info)
+        r2 = new_test_runner(after, r)
+        with pytest.raises(sa.exc.ProgrammingError, match="function missing_similarity.*does not exist"):
+            r2.compute_changes()
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("full_text", [False, True])
     @pytest.mark.parametrize("predicate,reflected", [
         ("NULL", "NULL::boolean"),
         ("'false'", "false"),

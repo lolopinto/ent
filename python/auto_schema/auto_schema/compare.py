@@ -121,18 +121,24 @@ def _get_extension_ops(
     return extension_ops
 
 
-@comparators.dispatch_for("schema")
-def compare_extensions(autogen_context, upgrade_ops, schemas):
+def _get_pending_extension_ops(autogen_context):
+    if autogen_context.metadata is None:
+        return []
     metadata_extensions = _get_metadata_extensions(autogen_context)
     if len(metadata_extensions) == 0:
-        return
+        return []
 
     dialect = _dialect_name(autogen_context)
     if dialect != "postgresql":
         raise ValueError("db extensions are only supported for postgres")
 
     db_extensions = _get_db_extensions(autogen_context)
-    extension_ops = _get_extension_ops(metadata_extensions, db_extensions)
+    return _get_extension_ops(metadata_extensions, db_extensions)
+
+
+@comparators.dispatch_for("schema")
+def compare_extensions(autogen_context, upgrade_ops, schemas):
+    extension_ops = _get_pending_extension_ops(autogen_context)
     if len(extension_ops) == 0:
         return
 
@@ -1215,6 +1221,11 @@ def _index_predicates_differ(
     if has_type_changes:
         return True
 
+    # Extension comparison runs after table comparison. Use the same planner to
+    # identify create/update/schema-move operations before a failed parse could
+    # abort the savepoint and prevent querying the extension catalog.
+    has_extension_changes = bool(_get_pending_extension_ops(autogen_context))
+
     # PostgreSQL deparses predicates with extra parentheses, implicit casts, and
     # rewrites such as IN -> ANY. Ask its parser to render both expressions in the
     # same WHERE context, without executing them or stripping meaningful SQL.
@@ -1240,9 +1251,15 @@ def _index_predicates_differ(
             ).scalar_one())
         return definitions[0] != definitions[1]
     except sa.exc.ProgrammingError as error:
+        sqlstate = getattr(error.orig, 'pgcode', None)
         # A changed predicate can reference a column added by this migration,
         # which is not available in the reflected table yet.
-        if getattr(error.orig, 'pgcode', None) == '42703':
+        if sqlstate == '42703':
+            return True
+        # A pending extension can supply missing functions/operators (42883),
+        # types (42704), or schemas (3F000). Valid predicates still normalize as
+        # usual; declarations for already installed extensions do not defer SQL.
+        if has_extension_changes and sqlstate in ('42883', '42704', '3F000'):
             return True
         raise
     except sa.exc.DataError as error:
