@@ -218,7 +218,8 @@ func (fieldInfo *FieldInfo) GetImmutableFields() []*Field {
 	return fields
 }
 
-// Internal writes and defaults need the same inverse maintenance as public inputs.
+// GetInverseEdgeFieldsInBuilder returns fields whose inverse edges the builder
+// maintains for public inputs, internal writes, and defaults.
 func (fieldInfo *FieldInfo) GetInverseEdgeFieldsInBuilder() []*Field {
 	var fields []*Field
 	for _, f := range fieldInfo.fields {
@@ -229,7 +230,8 @@ func (fieldInfo *FieldInfo) GetInverseEdgeFieldsInBuilder() []*Field {
 	return fields
 }
 
-// Keep default-derived inverse inputs available to triggers when defaults are set.
+// NotEditableInverseEdgeFieldsWithDefaults returns noneditable fields whose
+// defaults update inverse edges before triggers run.
 func (fieldInfo *FieldInfo) NotEditableInverseEdgeFieldsWithDefaults() []*Field {
 	var fields []*Field
 	for _, f := range fieldInfo.GetInverseEdgeFieldsInBuilder() {

@@ -90,8 +90,8 @@ export async function verifyInternalRelationships(
         `${field.key}: stored field`,
       );
     };
-    // These cases exercise emitted field selection and stored-ID normalization.
-    // Runtime reconciliation combinations live in orchestrator_field_edges.test.ts.
+    // Check which fields generated builders persist and how they normalize stored
+    // IDs. orchestrator_field_edges.test.ts covers runtime edge reconciliation.
     const create = CreateAssignmentAction.create(viewer, { name: field.key });
     if (!field.defaults)
       create.builder.updateInput({ [field.key]: value(ownerA) });
@@ -165,7 +165,7 @@ export async function verifyInternalRelationships(
     );
   }
 
-  // Distinct generated field names must register separate contributions.
+  // Each generated field must register its own contribution to a shared edge.
   const shared = EdgeType.ContactToSharedAssignments;
   await client.query(
     `INSERT INTO assoc_edge_config
@@ -205,8 +205,8 @@ export async function verifyInternalRelationships(
     [ownerB],
   );
 
-  // The generated private accessor hides this value, so transformed writes need
-  // emitted raw-data loading before defaults and triggers observe inverse IDs.
+  // The private accessor hides defaultOwnerId. For a transformed write, the
+  // generated builder must load the stored ID before defaults and triggers run.
   const seed = CreateAssignmentAction.create(viewer, {
     name: "private stored owner",
   });

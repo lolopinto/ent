@@ -155,15 +155,13 @@ adds this column as a primary key on the table. There can be only one primary ke
 ### disableUserEditable
 
 Excludes the field from generated action and GraphQL mutation inputs. Internal
-code can still set it through the builder, including from a trigger. Use
-`builder.updateInput` for mutable fields. Explicit immutable assignments require
-the generated override method during both creation and editing.
-Required fields must receive a value from internal code, `defaultValueOnCreate`,
-or a database `serverDefault`. Nullable fields can remain unset. Defaults still
-apply when no value is provided; an explicit `null` clears a nullable field.
+code, including triggers, can still set the field through the builder. To set a
+mutable field, use `builder.updateInput`. To set an immutable field explicitly,
+use the generated override method when creating or editing an Ent.
 
-This option does not make a field database-only. Use `dbOnly` for fields that
-should be excluded from Ent and builder persistence as well.
+Required fields need a value from internal code, `defaultValueOnCreate`, or a
+database `serverDefault`. Nullable fields can remain unset. If you omit a value,
+any configured default applies. To clear a nullable field, set it to `null`.
 
 ### defaultValueOnCreate
 

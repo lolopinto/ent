@@ -23,7 +23,7 @@
       let existingIDs: {{useTypeImport "ID"}}[] = [];
       if (this.existingEnt) {
         {{if or ($field.HasAsyncAccessor $cfg) $field.HasFieldPrivacy -}}
-          // Inverse membership uses stored IDs even when field privacy hides them.
+          // Load stored IDs for inverse edges even when field privacy hides the values.
           const rawData = await {{$node}}.loadRawData(this.existingEnt.id, this.viewer.context);
           const stored = rawData?.{{$field.GetDbColName}};
           {{if $isList -}}

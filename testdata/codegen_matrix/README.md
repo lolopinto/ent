@@ -68,17 +68,26 @@ snippets, and then runs `tsc --noEmit` against the generated app.
 It locates the repository from the Go test source path, so it does not require
 `git rev-parse` at runtime.
 
-Core field-edge reconciliation is tested by `ts/src/action/orchestrator_field_edges.test.ts`.
-Run it with `cd ts && npm test -- src/action/orchestrator_field_edges.test.ts --runInBand`,
-or as part of the ordinary `npm test` suite. It uses SQLite and the real runtime
-without invoking Go or codegen, covering shared ownership, manual edge operations,
-Builder dependencies, defaults, trigger changes, and transformed writes.
+`ts/src/action/orchestrator_field_edges.test.ts` tests how the runtime keeps field
+values and inverse edges consistent. It covers edges shared by multiple fields,
+explicit edge operations, builder dependencies, defaults, trigger updates, and
+transformed writes. The tests use SQLite and the Ent runtime without running Go
+or codegen. Run them as part of `npm test` in `ts/`, or run only this file from
+the repository root:
 
-`TestDisableUserEditableBuilderPersistence` generates a small SQLite app for the
-remaining generator contracts: internal field selection and persistence, public
-TypeScript/GraphQL inputs, private/list stored-ID normalization, default callback
-wiring, and distinct shared-field registrations. Run it with
-`go test ./internal/codegenmatrix -run TestDisableUserEditableBuilderPersistence -count=1`.
+```sh
+cd ts && npm test -- src/action/orchestrator_field_edges.test.ts --runInBand
+```
+
+`TestDisableUserEditableBuilderPersistence` generates a SQLite app to verify
+which fields generated builders persist, which fields public TypeScript and
+GraphQL inputs expose, and how builders load stored IDs for private and list
+fields. It also checks default callbacks and separate registrations for fields
+that share an inverse edge. Run it from the repository root:
+
+```sh
+go test ./internal/codegenmatrix -run TestDisableUserEditableBuilderPersistence -count=1
+```
 
 ## Bar For Adding Coverage
 

@@ -46,7 +46,7 @@ async function main() {
       db_only_note TEXT NOT NULL DEFAULT 'db-only'
     )`);
 
-    // Public TS input contracts above and generated GraphQL inputs stay closed.
+    // Verify that generated TypeScript and GraphQL inputs exclude internal fields.
     for (const name of ["ContactCreateInput", "ContactEditInput"]) {
       const input = schema.getType(name) as GraphQLInputObjectType;
       assert(input instanceof GraphQLInputObjectType);
@@ -91,8 +91,8 @@ async function main() {
     console.log("PASS: generated TS and GraphQL public input protection");
 
     const viewer = new LoggedOutViewer();
-    // Seed an existing row independently of INSERT so a missing required derived
-    // field on create cannot mask silently dropped nullable updates on edit.
+    // Seed the row with SQL so a missing required value in a create action cannot
+    // prevent the test from detecting dropped updates to nullable fields.
     const seededID = "66635c36-2b24-4b88-a81c-98e91db8c33b";
     await client.query(
       `INSERT INTO contacts (id, created_at, updated_at, name, normalized_name,
@@ -166,7 +166,7 @@ async function main() {
       "PASS: nullable INSERT, untouched defaults, and no-op EDIT preserve default behavior",
     );
 
-    // Exercise internal updates independently of the custom action triggers.
+    // Test internal builder updates without running custom action triggers.
     const internal = new CreateContactActionBase(viewer, { name: "Internal" });
     internal.builder.overrideInternalToken("create-token");
     internal.builder.updateInput({

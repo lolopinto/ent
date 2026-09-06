@@ -71,9 +71,10 @@ const ids = (value: any) =>
         ? value
         : [value];
 
-// Supply the metadata/callback contract of generated builders. All reconciliation,
-// defaults, transforms, dependency resolution and SQL use the real Orchestrator.
-// Generated field selection and private/list normalization stay in the Go fixture.
+// Supply the metadata and callbacks that generated builders pass to Orchestrator.
+// Orchestrator handles edge reconciliation, defaults, transforms, dependencies,
+// and SQL. The Go fixture checks generated field selection and normalization of
+// stored IDs for private and list fields.
 class FieldAction extends SimpleAction<Assignment> {
   constructor(
     input: Data,

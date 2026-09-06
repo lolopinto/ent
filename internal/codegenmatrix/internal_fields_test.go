@@ -9,9 +9,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Exercise real generated builders and actions against a disposable SQLite DB.
-// The ordinary TS test builders collect fields dynamically and cannot catch a
-// field omitted by builder.tmpl.
+// TestDisableUserEditableBuilderPersistence checks generated builders and actions
+// against a temporary SQLite database. Unlike the TypeScript test builders,
+// generated builders collect only the fields emitted by builder.tmpl.
 func TestDisableUserEditableBuilderPersistence(t *testing.T) {
 	repo := repoRoot(t)
 	entDist := buildEntDist(t, repo)
@@ -29,7 +29,7 @@ func TestDisableUserEditableBuilderPersistence(t *testing.T) {
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, err, "generated action input types:\n%s", out)
 
-	// Resolve Ent to the freshly built package, just as a generated app does.
+	// Resolve Ent imports to the package built for this test.
 	t.Setenv("TS_NODE_PROJECT", filepath.Join(appRoot, "tsconfig.generated.json"))
 	cmd = exec.Command("node", "-r", "ts-node/register", "src/internal_fields_test.ts")
 	cmd.Dir = appRoot

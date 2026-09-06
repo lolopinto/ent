@@ -578,8 +578,8 @@ export interface FieldOptions {
   immutable?: boolean;
 
   // indicates that this can't be edited by the user
-  // omitted from action and GraphQL mutation inputs; internal builder updates
-  // (including triggers) and defaults can still set the field
+  // Generated action and GraphQL mutation inputs exclude the field.
+  // Internal builder code, triggers, and defaults can still set the field.
   disableUserEditable?: boolean;
   // indicates that this can't be edited by the user in graphql
   // must have a defaultValueOnCreate() field if set

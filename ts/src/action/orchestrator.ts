@@ -351,9 +351,10 @@ export class Orchestrator<
     );
   }
 
-  // Internal: refresh generated field contributions without replacing caller edges.
-  // Stored metadata enables edit/delete reconciliation; an empty object
-  // reuses stored IDs captured before synchronous default updates.
+  // Update inverse edges for generated fields while preserving explicit edge
+  // operations. This method is internal. For edits and deletions, use stored IDs.
+  // If `stored` omits `existingIDs`, reuse the IDs captured before synchronous
+  // default updates.
   __setFieldEdges<T2 extends Ent>(
     fieldName: string,
     ids: readonly (ID | Builder<T2, any>)[] | undefined,
@@ -361,8 +362,8 @@ export class Orchestrator<
     nodeType: string,
     stored: { existingIDs?: readonly ID[] },
   ) {
-    // Existing builders and literal IDs can name the same stored endpoint.
-    // Keep placeholder queue keys so new builders still resolve as dependencies.
+    // Existing builders and literal IDs can refer to the same database row.
+    // Use placeholder IDs as queue keys so unsaved builders remain dependencies.
     const endpointID = (id: ID | Builder<Ent, any>): ID =>
       isBuilder(id) ? (id.existingEnt?.id ?? id.placeholderID) : id;
     this.fieldEdgeInputs.set(fieldName, {
@@ -1180,7 +1181,8 @@ export class Orchestrator<
       (initialOperation !== this.actualOperation ||
         initialEnt !== this.existingEnt)
     ) {
-      // Refresh inverse membership before defaults and triggers use the resolved row.
+      // Refresh inverse edges for the transformed operation and row before
+      // applying defaults or running triggers.
       editedFields = await this.options.editedFields();
     }
     // transforming before doing default fields so that we don't create a new id
@@ -1424,9 +1426,9 @@ export class Orchestrator<
       }
     }
 
-    // Triggers may clear an input while SQL still falls back to its computed
-    // default. Reconcile only defaults selected for persistence above, including
-    // edit defaults only when the edit has data to save.
+    // If a trigger clears an input, the SQL write can still use its computed
+    // default. Update inverse edges for defaults included in `data`; apply edit
+    // defaults only when the edit has data to save.
     for (const [fieldName, field] of this.fieldEdgeInputs) {
       if (
         field.ids !== undefined ||
