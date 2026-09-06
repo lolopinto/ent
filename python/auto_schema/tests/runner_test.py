@@ -5,12 +5,16 @@ import os
 
 import sqlalchemy as sa
 import alembic.operations.ops as alembicops
+from alembic.autogenerate.api import AutogenContext
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 
 from . import conftest
 from . import testingutils
 from auto_schema import runner
 from auto_schema import ops
 from auto_schema import schema_item
+from auto_schema import compare
 
 from typing import Any, Callable
 
@@ -20,6 +24,84 @@ def _get_revision_file(r, rev="head"):
     assert revisions is not None
     assert len(revisions) == 1
     return testingutils.find_file_by_revision(r, revisions[0])
+
+
+def _partial_index_metadata(predicate, *, columns=("owner_id",), **kwargs):
+    metadata = sa.MetaData()
+    table = sa.Table(
+        "contacts", metadata,
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("owner_id", sa.Integer(), nullable=False),
+        sa.Column("deleted_at", sa.TIMESTAMP()),
+        sa.Column("status", sa.Text()),
+        sa.Column("score", sa.Integer()),
+    )
+    if predicate is not None:
+        kwargs.update(postgresql_where=sa.text(predicate), sqlite_where=sa.text(predicate))
+    sa.Index("contacts_active_idx", *(table.c[col] for col in columns), **kwargs)
+    return metadata
+
+
+def _reflected_partial_index(r):
+    r.get_connection().commit()
+    return next(
+        index for index in sa.inspect(r.engine).get_indexes("contacts")
+        if index["name"] == "contacts_active_idx"
+    )
+
+
+def _reflected_predicate(r):
+    index = _reflected_partial_index(r)
+    predicate = index.get("dialect_options", {}).get(
+        f"{r.get_connection().dialect.name}_where"
+    )
+    return str(predicate) if predicate is not None else None
+
+
+def _assert_no_predicate_views(r):
+    if r.get_connection().dialect.name == "postgresql":
+        assert r.get_connection().execute(sa.text(
+            "SELECT count(*) FROM pg_class WHERE relnamespace = pg_my_temp_schema() "
+            "AND relname LIKE 'ent_index_predicate_%'"
+        )).scalar_one() == 0
+
+
+def _assert_partial_index_change(new_test_runner, before, after):
+    r = new_test_runner(before)
+    r.run()
+    original_predicate = _reflected_predicate(r)
+    assert r.compute_changes() == []
+    _assert_no_predicate_views(r)
+
+    r2 = new_test_runner(after, r)
+    changes = r2.compute_changes()
+    assert len(changes) == 1
+    assert isinstance(changes[0], alembicops.ModifyTableOps)
+    assert [type(op) for op in changes[0].ops] == [
+        alembicops.DropIndexOp, alembicops.CreateIndexOp,
+    ]
+    r2.run()
+    updated_predicate = _reflected_predicate(r2)
+    assert original_predicate != updated_predicate
+    expected = next(iter(after.tables["contacts"].indexes))
+    assert bool(_reflected_partial_index(r2)["unique"]) == bool(expected.unique)
+    for _ in range(2):
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+
+    # Execute the generated downgrade and replay the upgrade, including predicates
+    # reflected from PostgreSQL rather than copied from schema metadata.
+    r2.downgrade("-1", delete_files=False)
+    assert _reflected_predicate(r2) == original_predicate
+    restored = new_test_runner(before, r2)
+    assert restored.compute_changes() == []
+    r2 = new_test_runner(after, restored)
+    r2.upgrade()
+    assert _reflected_predicate(r2) == updated_predicate
+    assert r2.compute_changes() == []
+    return r2
 
 
 def test_normalize_generated_file_text_trims_trailing_whitespace():
@@ -62,6 +144,51 @@ def _db_extension_metadata(
 
 
 class BaseTestRunner(object):
+
+    @pytest.mark.parametrize("before,after", [
+        (None, "deleted_at IS NULL"),
+        ("deleted_at IS NULL", None),
+        ("deleted_at IS NULL", "deleted_at IS NOT NULL"),
+        ("deleted_at IS NULL", "deleted_at IS NULL AND status = 'active'"),
+        ("status = 'O''Brien  active'", "status = 'O''Brien active'"),
+        ("CAST(score AS TEXT) > '2'", "score > 2"),
+        ("status = '100%'", "status = '100%%'"),
+        ("status LIKE 'active%'", "status LIKE 'archived%'"),
+        (
+            "deleted_at IS NULL AND (status = 'active' OR score > 2)",
+            "(deleted_at IS NULL AND status = 'active') OR score > 2",
+        ),
+    ], ids=["added", "removed", "changed", "compound", "literal", "cast", "percent", "like", "precedence"])
+    def test_same_name_index_predicate_change(self, new_test_runner, before, after):
+        _assert_partial_index_change(
+            new_test_runner,
+            _partial_index_metadata(before, unique=True),
+            _partial_index_metadata(after, unique=True),
+        )
+
+    def test_index_predicate_and_columns_change(self, new_test_runner):
+        _assert_partial_index_change(
+            new_test_runner,
+            _partial_index_metadata("deleted_at IS NULL"),
+            _partial_index_metadata(
+                "deleted_at IS NOT NULL", columns=("owner_id", "status"), unique=True,
+            ),
+        )
+
+    @pytest.mark.parametrize("predicate", [
+        "deleted_at IS NULL",
+        "deleted_at IS NULL AND (status = 'active' OR score > 2)",
+        "status IN ('O''Brien  active', '100%')",
+        "CAST(score AS TEXT) > '2'",
+    ])
+    def test_partial_index_repeated_autogen_no_change(self, new_test_runner, predicate):
+        r = new_test_runner(_partial_index_metadata(predicate))
+        r.run()
+        for _ in range(2):
+            assert r.compute_changes() == []
+            _assert_no_predicate_views(r)
+            r.run()
+            testingutils.assert_num_files(r, 1)
 
     @pytest.mark.usefixtures("empty_metadata")
     def test_compute_changes_with_empty_metadata(self, new_test_runner, empty_metadata):
@@ -887,6 +1014,127 @@ class BaseTestRunner(object):
 
 
 class TestPostgresRunner(BaseTestRunner):
+
+    def test_partial_index_predicate_preserves_percent_literals(self, new_test_runner):
+        metadata = _partial_index_metadata("status = '100%'")
+        r = new_test_runner(metadata)
+        r.run()
+        assert _reflected_predicate(r) == "(status = '100%'::text)"
+        assert r.compute_changes() == []
+        _assert_no_predicate_views(r)
+        r2 = new_test_runner(_partial_index_metadata("status = '100%%'"), r)
+        assert len(r2.compute_changes()) == 1
+        _assert_no_predicate_views(r2)
+
+    def test_schema_qualified_index_predicate_change(self, new_test_runner):
+        r = new_test_runner(sa.MetaData())
+        connection = r.get_connection()
+        schema = "Private Contacts"
+        connection.execute(sa.schema.CreateSchema(schema))
+
+        def table(predicate):
+            metadata = _partial_index_metadata(predicate, unique=True)
+            return metadata.tables["contacts"].to_metadata(sa.MetaData(), schema=schema)
+
+        before = table("deleted_at IS NULL")
+        before.create(connection)
+        after = table("deleted_at IS NOT NULL AND status = 'active'")
+        context = AutogenContext(MigrationContext.configure(connection))
+
+        def changes(metadata_table):
+            reflected = sa.Table("contacts", sa.MetaData(), schema=schema, autoload_with=connection)
+            result = alembicops.ModifyTableOps("contacts", [], schema=schema)
+            compare._compare_indexes(context, result, schema, "contacts", reflected, metadata_table)
+            return result.ops
+
+        replacement = changes(after)
+        assert [type(op) for op in replacement] == [alembicops.DropIndexOp, alembicops.CreateIndexOp]
+        assert all(op.schema == schema for op in replacement)
+        operations = Operations(context.migration_context)
+        for op in replacement:
+            operations.invoke(op)
+        assert changes(after) == []
+        for op in reversed(replacement):
+            operations.invoke(op.reverse())
+        assert changes(before) == []
+        _assert_no_predicate_views(r)
+
+    def test_partial_index_preserves_operator_class_and_storage(self, new_test_runner):
+        options = dict(
+            columns=("status",),
+            postgresql_ops={"status": "text_pattern_ops"},
+            postgresql_with={"fillfactor": 70},
+        )
+        r = _assert_partial_index_change(
+            new_test_runner,
+            _partial_index_metadata("deleted_at IS NULL", **options),
+            _partial_index_metadata("deleted_at IS NOT NULL", **options),
+        )
+        index = _reflected_partial_index(r)
+        assert index["dialect_options"]["postgresql_ops"] == {"status": "text_pattern_ops"}
+        assert index["dialect_options"]["postgresql_with"] == {"fillfactor": "70"}
+
+    def test_partial_index_predicate_references_new_column(self, new_test_runner):
+        r = new_test_runner(_partial_index_metadata("deleted_at IS NULL"))
+        r.run()
+        after = _partial_index_metadata("deleted_at IS NULL AND archived_at IS NULL")
+        after.tables["contacts"].append_column(sa.Column("archived_at", sa.TIMESTAMP()))
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        assert len(changes) == 1
+        assert [type(op) for op in changes[0].ops] == [
+            alembicops.AddColumnOp, alembicops.DropIndexOp, alembicops.CreateIndexOp,
+        ]
+        _assert_no_predicate_views(r2)
+        r2.run()
+        assert "archived_at IS NULL" in _reflected_predicate(r2)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("before,after", [
+        (None, "bio IS NULL"),
+        ("bio IS NULL", None),
+        ("bio IS NULL", "bio IS NOT NULL AND first_name = '100%'"),
+    ])
+    def test_full_text_index_predicate_change(self, new_test_runner, before, after):
+        def metadata(predicate):
+            result = conftest.metadata_with_base_table_restored()
+            conftest.metadata_with_multicolumn_fulltext_search_index(result)
+            index = next(iter(result.tables["accounts"].indexes))
+            if predicate is not None:
+                index.info["postgresql_where"] = predicate
+            return result
+
+        def reflected_predicate(r):
+            r.get_connection().commit()
+            return r.get_connection().execute(sa.text(
+                "SELECT pg_get_expr(indpred, indrelid) FROM pg_index "
+                "WHERE indexrelid = 'accounts_full_text_idx'::regclass"
+            )).scalar_one()
+
+        r = new_test_runner(metadata(before))
+        r.run()
+        original = reflected_predicate(r)
+        assert r.compute_changes() == []
+        r2 = new_test_runner(metadata(after), r)
+        changes = r2.compute_changes()
+        assert len(changes) == 1
+        assert [type(op) for op in changes[0].ops] == [
+            ops.DropFullTextIndexOp, ops.CreateFullTextIndexOp,
+        ]
+        r2.run()
+        updated = reflected_predicate(r2)
+        assert updated != original
+        for _ in range(2):
+            assert r2.compute_changes() == []
+            _assert_no_predicate_views(r2)
+            r2.run()
+            testingutils.assert_num_files(r2, 2)
+        r2.downgrade("-1", delete_files=False)
+        assert reflected_predicate(r2) == original
+        r2.upgrade()
+        assert reflected_predicate(r2) == updated
+        assert r2.compute_changes() == []
 
     # only in postgres because modifying columns not supported by Sqlite
     @pytest.mark.usefixtures("metadata_with_table")

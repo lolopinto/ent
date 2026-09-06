@@ -1,9 +1,22 @@
 from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
+import copy
 import re
 import datetime
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+
+def literal_sql_dialect(dialect):
+    """Compile SQL source without DBAPI percent escaping or changing the live dialect."""
+    if dialect.paramstyle not in ('format', 'pyformat'):
+        return dialect
+    dialect = copy.copy(dialect)
+    dialect.paramstyle = 'named'
+    dialect.positional = False
+    dialect.identifier_preparer = dialect.preparer(dialect)
+    return dialect
+
 
 clause_regex = re.compile("(.+)'::(.+)")
 date_regex = re.compile(

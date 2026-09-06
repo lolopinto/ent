@@ -1,6 +1,7 @@
 import functools
 import pprint
 import re
+import uuid
 from typing import Any
 
 import alembic.operations.ops as alembicops
@@ -13,7 +14,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
 
-from auto_schema.clause_text import normalize_clause_text
+from auto_schema.clause_text import literal_sql_dialect, normalize_clause_text
 from auto_schema.schema_item import FullTextIndex
 
 from . import ops
@@ -692,6 +693,9 @@ def _compare_indexes(autogen_context: AutogenContext,
                 index,
                 conn_indexes.get(name),
                 all_conn_indexes.get(name, {}),
+            ) or _index_predicates_differ(
+                autogen_context, index, conn_indexes.get(name),
+                all_conn_indexes[name], conn_table,
             ):
                 _remove_generic_index_ops(modify_table_ops, name)
 
@@ -724,13 +728,18 @@ def _compare_indexes(autogen_context: AutogenContext,
                 )
             continue
 
-        # if index is there and postgresql_using changes, drop the index and add it again
-        # should hopefully be a one-time migration change...
+        # Alembic does not compare partial-index predicates or all dialect options.
         if name in conn_indexes and isinstance(index, sa.Index):
             meta_signature = _get_index_signature(index, all_conn_indexes.get(name, {}))
             conn_signature = _get_index_signature(conn_indexes[name], all_conn_indexes.get(name, {}))
 
-            if _index_signatures_differ(meta_signature, conn_signature):
+            if _index_signatures_differ(meta_signature, conn_signature) or _index_predicates_differ(
+                autogen_context, index, conn_indexes[name],
+                all_conn_indexes.get(name, {}), conn_table,
+            ):
+                # Alembic may already have replaced this index for a column or
+                # uniqueness change. Emit a single replacement with all options.
+                _remove_generic_index_ops(modify_table_ops, name)
                 conn_index = conn_indexes[name]
                 if conn_signature.get('postgresql_using') is not None:
                     conn_index.kwargs['postgresql_using'] = conn_signature.get('postgresql_using')
@@ -742,13 +751,9 @@ def _compare_indexes(autogen_context: AutogenContext,
                 modify_table_ops.ops.append(
                     alembicops.DropIndexOp.from_index(conn_index))
 
-                modify_table_ops.ops.append(
-                    alembicops.CreateIndexOp(
-                        name,
-                        index.table.name,
-                        index.columns,
-                        **_get_create_index_kwargs(index, meta_signature),
-                    ))
+                create_op = alembicops.CreateIndexOp.from_index(index)
+                create_op.kw.update(_get_create_index_kwargs(index, meta_signature))
+                modify_table_ops.ops.append(create_op)
 # this handles computed columns changing and so drops and re-creates the column.
 
 
@@ -856,6 +861,7 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | 
             name,
             {
                 'postgresql_using': row_dict['access_method'],
+                'postgresql_where': row_dict['predicate'],
                 'postgresql_using_internals': None,
                 'postgresql_ops': {},
                 'postgresql_with': {},
@@ -906,6 +912,7 @@ def _get_db_index_key_rows(
             SELECT
                 idx.relname AS index_name,
                 am.amname AS access_method,
+                pg_get_expr(i.indpred, i.indrelid) AS predicate,
                 key_parts.ord AS key_position,
                 pg_get_indexdef(i.indexrelid, key_parts.ord::int, false) AS key_definition,
                 attr.attname AS column_name,
@@ -1033,6 +1040,9 @@ def _get_full_text_index_info(
     for key in ('postgresql_concurrently', 'postgresql_where'):
         if info.get(key) not in (None, False):
             continue
+        if raw_index.get(key) is not None:
+            info[key] = raw_index[key]
+            continue
         if index is None:
             continue
         value = _get_index_kwarg(index, key)
@@ -1140,6 +1150,66 @@ def _get_index_signature(index: sa.Index, raw_index: dict[str, Any]) -> dict[str
             _get_index_kwarg(index, 'postgresql_with') or raw_index.get('postgresql_with')
         ),
     }
+
+
+def _index_predicate(index: sa.Index | None, dialect, raw_index):
+    key = f'{dialect.name}_where'
+    value = None
+    if index is not None:
+        value = index.info.get(key) if isinstance(index, FullTextIndex) else None
+        if value is None:
+            value = index.kwargs.get(key)
+    if value is None:
+        value = raw_index.get(key)
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value.strip()
+    return str(value.compile(
+        dialect=dialect,
+        compile_kwargs={'literal_binds': True, 'include_table': False},
+    )).strip()
+
+
+def _index_predicates_differ(autogen_context, meta_index, conn_index, raw_index, conn_table):
+    connection = autogen_context.connection
+    # These expressions are sent as SQL without DBAPI parameters. Avoid pyformat
+    # escaping percent signs inside literals when compiling them for comparison.
+    dialect = literal_sql_dialect(connection.dialect)
+    meta_predicate = _index_predicate(meta_index, dialect, {})
+    conn_predicate = _index_predicate(conn_index, dialect, raw_index)
+    if meta_predicate == conn_predicate:
+        return False
+    if meta_predicate is None or conn_predicate is None or dialect.name != 'postgresql':
+        return True
+
+    # PostgreSQL deparses predicates with extra parentheses, implicit casts, and
+    # rewrites such as IN -> ANY. Ask its parser to render both expressions in the
+    # same table context, without executing them or stripping meaningful SQL.
+    # The temporary view is confined to a savepoint that is always rolled back.
+    view_name = f'ent_index_predicate_{uuid.uuid4().hex}'
+    savepoint = connection.begin_nested()
+    try:
+        definitions = []
+        for predicate in (meta_predicate, conn_predicate):
+            query = sa.select(sa.literal_column(predicate).label('predicate')).select_from(conn_table)
+            connection.exec_driver_sql(
+                f'CREATE OR REPLACE TEMP VIEW {view_name} AS {query.compile(dialect=dialect)}',
+                execution_options={'no_parameters': True},
+            )
+            definitions.append(connection.execute(
+                sa.text('SELECT pg_get_viewdef(to_regclass(:view_name), false)'),
+                {'view_name': f'pg_temp.{view_name}'},
+            ).scalar_one())
+        return definitions[0] != definitions[1]
+    except sa.exc.ProgrammingError as error:
+        # A changed predicate can reference a column added by this migration,
+        # which is not available in the reflected table yet.
+        if getattr(error.orig, 'pgcode', None) == '42703':
+            return True
+        raise
+    finally:
+        savepoint.rollback()
 
 
 def _get_create_index_kwargs(
