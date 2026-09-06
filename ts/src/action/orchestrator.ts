@@ -385,11 +385,15 @@ export class Orchestrator<
     ) => {
       const key = isBuilder(id) ? id.placeholderID : id;
       let entry = map.get(key);
-      if (!entry) map.set(key, (entry = { id, sources: new Set() }));
+      if (!entry) {
+        map.set(key, (entry = { id, sources: new Set() }));
+      }
       entry.sources.add(source);
     };
     for (const [source, field] of this.fieldEdgeInputs) {
-      if (field.edgeType !== edgeType) continue;
+      if (field.edgeType !== edgeType) {
+        continue;
+      }
       const existing =
         this.actualOperation === WriteOperation.Insert ? [] : field.existingIDs;
       const current =
@@ -398,26 +402,35 @@ export class Orchestrator<
         retained.add(endpointID(id));
       }
       if (current !== undefined) {
-        for (const id of current) contribute(inserts, id, source);
-        for (const id of existing) contribute(removals, id, source);
+        for (const id of current) {
+          contribute(inserts, id, source);
+        }
+        for (const id of existing) {
+          contribute(removals, id, source);
+        }
       }
     }
     const manualEndpoints = (op: WriteOperation) => {
       const endpoints = new Set<ID>();
       for (const edge of this.edges.get(edgeType)?.get(op)?.values() ?? []) {
-        if (!this.fieldEdgeSources.has(edge))
+        if (!this.fieldEdgeSources.has(edge)) {
           endpoints.add(endpointID(edge.id));
+        }
       }
       return endpoints;
     };
     const manualInserts = manualEndpoints(WriteOperation.Insert);
     const manualRemovals = manualEndpoints(WriteOperation.Delete);
     for (const id of removals.keys()) {
-      if (retained.has(id) || manualInserts.has(id)) removals.delete(id);
+      if (retained.has(id) || manualInserts.has(id)) {
+        removals.delete(id);
+      }
     }
     for (const [key, contribution] of inserts) {
       const id = endpointID(contribution.id);
-      if (manualInserts.has(id) || manualRemovals.has(id)) inserts.delete(key);
+      if (manualInserts.has(id) || manualRemovals.has(id)) {
+        inserts.delete(key);
+      }
     }
     for (const [op, desired] of [
       [WriteOperation.Insert, inserts],
@@ -425,13 +438,20 @@ export class Orchestrator<
     ] as const) {
       const queued = this.edges.get(edgeType)?.get(op);
       for (const [id, edge] of queued ?? []) {
-        if (!this.fieldEdgeSources.has(edge)) continue;
+        if (!this.fieldEdgeSources.has(edge)) {
+          continue;
+        }
         const contribution = desired.get(id);
-        if (contribution) this.fieldEdgeSources.set(edge, contribution.sources);
-        else queued!.delete(id);
+        if (contribution) {
+          this.fieldEdgeSources.set(edge, contribution.sources);
+        } else {
+          queued!.delete(id);
+        }
       }
       for (const [key, contribution] of desired) {
-        if (this.edges.get(edgeType)?.get(op)?.has(key)) continue;
+        if (this.edges.get(edgeType)?.get(op)?.has(key)) {
+          continue;
+        }
         const edge = new edgeInputData<TViewer>({
           id: contribution.id,
           edgeType,
@@ -1415,7 +1435,9 @@ export class Orchestrator<
         continue;
       }
       const value = this.defaultFieldsByFieldName[fieldName];
-      if (value === undefined) continue;
+      if (value === undefined) {
+        continue;
+      }
       this.__setFieldEdges(
         fieldName,
         value === null ? [] : Array.isArray(value) ? value : [value],

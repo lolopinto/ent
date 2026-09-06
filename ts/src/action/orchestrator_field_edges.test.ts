@@ -533,8 +533,9 @@ for (const operation of ["create", "edit"]) {
     action.getTriggers = () => [
       {
         changeset: (builder) => {
-          if (reset === "delete") builder.fields.delete("default_owner_id");
-          else
+          if (reset === "delete") {
+            builder.fields.delete("default_owner_id");
+          } else {
             builder.updateInput({
               default_owner_id:
                 reset === "undefined"
@@ -543,6 +544,7 @@ for (const operation of ["create", "edit"]) {
                     ? null
                     : c.id,
             });
+          }
         },
       },
     ];
