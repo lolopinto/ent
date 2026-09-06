@@ -71,9 +71,9 @@ import {
 } from "../core/transaction_context";
 
 type MaybeNull<T extends Ent> = T | null;
-// Expected validator/privacy failures from child builds remain recoverable
-// during a standalone validation probe. SQL and composition failures still
-// poison the owning transaction.
+// Expected validation and privacy failures in child builds remain recoverable
+// during standalone validation. SQL and composition failures still abort the
+// owning transaction.
 const validationFailures = new WeakSet<Error>();
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
@@ -300,7 +300,8 @@ export class Orchestrator<
     });
     this.memoizedGetFields = async () => {
       // Defaults and transformations may depend on reads, even for inserts.
-      // Keep stable IDs within an attempt, but never reuse a prior generation.
+      // Keep IDs stable within an attempt, but never reuse a previous
+      // generation.
       // Committed actions can still expose their retained data outside a scope.
       if (
         getTransactionState() &&
@@ -867,8 +868,8 @@ export class Orchestrator<
     }
 
     const fields = await this.memoizedGetFields();
-    // A completed action can expose stable snapshot fields/IDs, but those
-    // retained values never become fresh preparation for another save.
+    // A completed action can expose fields and IDs from its saved snapshot.
+    // Another save must not use those values as fresh preparation.
     if (getTransactionState()) {
       assertTransactionRead(this.fieldPreparationRead);
     }
@@ -1136,8 +1137,9 @@ export class Orchestrator<
       }
       if (transformed.changeset) {
         if (this.transaction) {
-          // Keep transformed fields/defaults stable, but rebuild child graphs
-          // inside each preparation. A standalone validation discards its graph.
+          // Keep transformed fields and defaults stable, but rebuild child
+          // graphs
+          // for each preparation. Standalone validation discards its graph.
           this.transformedChangeset = transformed.changeset.bind(transformed);
         } else {
           const changeset = await transformed.changeset();
@@ -1470,8 +1472,8 @@ export class Orchestrator<
     if (state) {
       this.preparationInProgress = true;
     }
-    // A public validation probe must discard each participant's child graph,
-    // including retained children that are rebuilt during the later save.
+    // Standalone validation must discard each participant's child graph,
+    // including retained children that a later save rebuilds.
     const probing = state && (validationOnly || isValidationPreparation());
     let restore: (() => void) | undefined;
     try {
@@ -1485,9 +1487,11 @@ export class Orchestrator<
             claimGuardedPreparation();
           }
           if (probing) {
-            // Defaults and transformed inputs are memoized once, including any
-            // inverse edges set by updateInput. Snapshot only after those are
-            // established so they survive probes without being applied twice.
+            // Defaults and transformed inputs are memoized once, including
+            // inverse
+            // edges set by updateInput. Take the snapshot after setting those
+            // edges
+            // so validation preserves them without applying them twice.
             await this.prepareFields();
             restore = this.snapshotPreparation();
           }
@@ -1615,8 +1619,8 @@ export class Orchestrator<
       return result;
     } catch (error) {
       // Generated saves load their result after executeOperations returns.
-      // Caught result failures must still roll back the active owning scope;
-      // direct getter failures belong only to their originating scope.
+      // Result failures must roll back the active owning scope even if caught.
+      // Direct getter failures affect only the scope that created the result.
       if (transaction?.active && transaction === this.transaction) {
         failTransaction(transaction, error);
       }

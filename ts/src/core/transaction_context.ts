@@ -74,15 +74,18 @@ export function runInActionPreparation<T>(
     try {
       return await prepare();
     } finally {
-      // A user trigger may hide a still-running child behind a rejected
-      // Promise.all. Drain descendants before restoring this participant or
-      // closing the root probe, without including the owner in its own set.
+      // If a trigger's Promise.all rejects, other children can still be
+      // running.
+      // Wait for descendants before restoring this participant or completing
+      // root validation. Exclude the owner from its own set of pending work.
       if (node.pending) {
         do {
           await Promise.allSettled([...node.pending]);
-          // A completed SQL/loader promise can resume several async wrappers
-          // before the caller enters its child preparation. Let that complete
-          // turn register subsequent reads/children before deciding we're idle.
+          // A completed SQL or loader promise can resume several async wrappers
+          // before the caller starts child preparation. Wait one event loop
+          // turn
+          // for those wrappers to register reads and children before checking
+          // again.
           await new Promise<void>((resolve) => setImmediate(resolve));
         } while (node.pending.size);
       }
@@ -107,8 +110,9 @@ export function runInActionPreparation<T>(
 
 export function trackValidationRead<T>(read: Promise<T>): Promise<T> {
   const node = preparationStorage.getStore();
-  // Tracking must not throw after a read has already produced a promise. The
-  // read's own boundary reports closed-scope errors without orphaning it.
+  // Once a read returns a promise, tracking must not throw and leave that
+  // promise
+  // unhandled. The read itself reports errors if its scope has closed.
   const state = transactionStorage.getStore();
   if (
     state?.active &&
@@ -137,8 +141,8 @@ export function isValidationPreparation(): boolean {
   return !!state && node?.token === state.token && !!node.validation;
 }
 
-// Drain framework-owned parallel work as well as registered child actions.
-// Keep Promise.all's first rejection, rather than choosing errors by array order.
+// Wait for parallel work started by the framework and registered child actions.
+// Preserve the first Promise.all rejection, regardless of the array order.
 export async function awaitActionPreparations<T>(
   work: Iterable<T | PromiseLike<T>>,
 ): Promise<Awaited<T>[]> {
@@ -237,8 +241,8 @@ export function completeGuardedPreparation(
       cache.clearCache();
     }
   }
-  // A result getter reconstructs a snapshot, not a new database read. Capture
-  // the completed write's provenance for every builder in the composed graph.
+  // A result getter reconstructs a snapshot without reading the database again.
+  // Record the completed write's transaction and generation for every builder.
   const provenance = { token: state.token, generation: state.generation };
   for (const builder of builders) {
     resultTransactions.set(builder, provenance);
@@ -342,8 +346,8 @@ export function recordRowTransaction(
 }
 
 export function copyEntTransaction(source: object, target: object) {
-  // Privacy can replace an Ent after awaiting policy checks. Preserve the
-  // original provenance, including absence, rather than reading ambient state.
+  // Privacy checks can replace an Ent after an await. Preserve the original
+  // transaction and generation, even if absent. Don't use the current scope.
   const provenance = entTransactions.get(source);
   if (provenance) {
     entTransactions.set(target, provenance);
@@ -394,9 +398,10 @@ export function failTransaction(state: TransactionState, error: unknown) {
   }
 }
 
-// Save entrypoints include preparation, executor assembly, and execution setup.
-// Any thrown or rejected error in those stages must abort the owning scope,
-// even if a caller catches it before withTransaction's callback returns.
+// Save entry points include preparation, executor assembly, and execution
+// setup.
+// An error in any of these stages must abort the owning scope, even if a caller
+// catches it before the withTransaction callback returns.
 export async function runActionExecution<T>(
   execute: () => Promise<T>,
 ): Promise<T> {

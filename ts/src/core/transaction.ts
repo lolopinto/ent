@@ -11,9 +11,15 @@ import {
 } from "./transaction_context";
 
 export interface TransactionOptions {
-  /** PostgreSQL only. Defaults to serializable. Read committed needs explicit locks. */
+  /**
+   * PostgreSQL only. Defaults to `serializable`.
+   * Use explicit locks to protect invariants with `read committed`.
+   */
   isolationLevel?: "serializable" | "read committed";
-  /** Additional attempts for PostgreSQL serialization failures/deadlocks. Default: 0. */
+  /**
+   * Additional attempts for PostgreSQL serialization failures or deadlocks.
+   * Defaults to 0.
+   */
   maxRetries?: number;
 }
 
@@ -56,11 +62,11 @@ function dispose(state: TransactionState) {
 }
 
 /**
- * Include Ent loads, action preparation, validators, triggers and writes in one
- * PostgreSQL transaction. Nested scopes are rejected. Existing action Transaction
- * groups join this scope. Action observers run after commit, outside the scope.
- * Await every operation; construct actions, queries and loaders inside callback.
- * Retried callbacks must not perform external side effects.
+ * Include Ent loads, action preparation, validators, triggers, and writes in one
+ * PostgreSQL transaction. Reject nested scopes and let existing `Transaction`
+ * groups join this scope. Run action observers after commit, outside the scope.
+ * Await every operation. Construct actions, queries, and loaders inside the
+ * callback. If the callback can be retried, keep external side effects outside it.
  */
 export async function withTransaction<T>(
   callback: (scope: TransactionScope) => Promise<T>,
@@ -111,8 +117,9 @@ export async function withTransaction<T>(
         return Promise.reject(state.error);
       }
       const read = { transaction: state, generation: state.generation };
-      // Raw SQL may write or acquire a lock after an earlier cached read. Flush
-      // every participating cache, including other viewers in this attempt.
+      // Raw SQL can write or acquire a lock after a cached read. Clear every
+      // participating cache, including caches for other viewers in this
+      // attempt.
       const pending = client
         .query(sql, values)
         .then((result) => {
@@ -181,7 +188,7 @@ export async function withTransaction<T>(
         await client.release(releaseError);
       } catch (error) {
         releaseError = true;
-        // A successful COMMIT must never be retried because cleanup failed.
+        // Never retry a successful COMMIT because cleanup failed.
         log("error", error);
       }
     }
@@ -200,8 +207,8 @@ export async function withTransaction<T>(
           log("error", error);
         }
       }
-      // Clear every participating request cache only after commit. Transaction
-      // rows were never primed into them, and rollback leaves them untouched.
+      // Clear participating request caches only after commit. Transaction rows
+      // never enter these caches, so rollback leaves the caches unchanged.
       for (const cache of state.caches.keys()) {
         try {
           cache.clearCache();
@@ -213,8 +220,9 @@ export async function withTransaction<T>(
         try {
           await observe();
         } catch (error) {
-          // Match existing Ent observer semantics: observer failure cannot undo
-          // committed writes or trigger callback retries.
+          // Preserve existing observer behavior: a failure cannot undo
+          // committed
+          // writes or cause the callback to retry.
           log("error", error);
         }
       }

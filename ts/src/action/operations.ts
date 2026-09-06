@@ -66,7 +66,8 @@ export interface DataOperation<
   shortCircuit?(executor: Executor): boolean;
   updatedOperation?(): UpdatedOperation<TEnt, TViewer> | null;
   resolve?(executor: Executor): void; //throws?
-  // Known row mutations, checked after conditional skips and placeholder resolution.
+  // Check known row mutations after resolving placeholders and skipping
+  // writes that don't apply.
   transactionWriteTarget?(): readonly [string, ID] | undefined;
 
   // any data that needs to be fetched asynchronously post write|post transaction

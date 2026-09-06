@@ -18,8 +18,8 @@ export function memoizeNoArgs<T>(fn: () => T): () => T {
   };
 }
 
-// Cached query/loader state cannot cross scopes. Ordinary builder field
-// memoization remains readable by post-commit observers and result callers.
+// Cached query and loader state cannot cross scopes. Observers and result
+// callers can still read memoized builder fields after commit.
 export function memoizeInTransaction<T>(fn: () => T): () => T {
   const transaction = getTransactionReadState();
   const memoized = memoizeNoArgs(fn);

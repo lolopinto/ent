@@ -150,9 +150,12 @@ export interface Action<
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   readonly viewer: Viewer;
-  /** Require a scoped transaction, or require serializable isolation specifically. */
+  /** Require a transaction scope, optionally with serializable isolation. */
   requiresTransaction?(): boolean | "serializable";
-  /** Invariant keys for proven independent actions, including parent/child pairs; roots remain sequential. */
+  /**
+   * Declare invariant keys for independent actions, including parents and children.
+   * Root actions must still run sequentially.
+   */
   getTransactionResources?():
     | readonly string[]
     | undefined
@@ -259,7 +262,8 @@ async function saveBuilderImpl<
       try {
         return executor.execute();
       } catch (e) {
-        // Preserve non-X synchronous-error suppression, but abort its scope.
+        // Preserve synchronous error suppression for non-X saves and abort the
+        // scope.
         const transaction = getTransactionState();
         if (transaction) {
           failTransaction(transaction, e);

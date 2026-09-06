@@ -1739,7 +1739,10 @@ export async function applyPrivacyPolicyForRow<
   return rowIsError(r) ? null : r;
 }
 
-/** @internal Materialize a write result with its originating builder's provenance. */
+/**
+ * @internal Create an Ent from a write result using its builder's transaction
+ * and generation.
+ */
 export async function applyPrivacyPolicyForActionResult<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
