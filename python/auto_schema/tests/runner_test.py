@@ -1228,9 +1228,10 @@ class TestPostgresRunner(BaseTestRunner):
 
     @pytest.mark.parametrize("full_text", [False, True])
     @pytest.mark.parametrize("predicate", [
+        None,
         "score IS NOT NULL",
         "(score - DATE '2020-01-01') > 1",
-    ], ids=["either_type", "old_type_only"])
+    ], ids=["added", "either_type", "old_type_only"])
     def test_partial_index_predicate_with_pending_column_type(self, new_test_runner, full_text, predicate):
         before = _partial_index_metadata(predicate, full_text=full_text)
         before.tables["contacts"].c.score.type = sa.Date()
@@ -1285,6 +1286,98 @@ class TestPostgresRunner(BaseTestRunner):
         r2.upgrade()
         assert _reflected_predicate(r2) == updated_predicate
         assert r2.compute_changes() == []
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    def test_same_predicate_sql_with_changed_type_is_recreated(self, new_test_runner, full_text):
+        # The old DATE parser discards the time, making the predicates compare
+        # equal. The TIMESTAMP index must retain the original noon cutoff.
+        predicate = "score = '2020-01-03 12:00:00'"
+        before = _partial_index_metadata(predicate, full_text=full_text)
+        before.tables["contacts"].c.score.type = sa.Date()
+        r = new_test_runner(before)
+        r.run()
+        original_predicate = _reflected_predicate(r)
+        r.get_connection().execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, score) VALUES (1, 1, DATE '2020-01-03')"
+        ))
+        r.get_connection().commit()
+
+        after = _partial_index_metadata(predicate, full_text=full_text)
+        after.tables["contacts"].c.score.type = sa.TIMESTAMP()
+        r2 = new_test_runner(after, r)
+        r2.run()
+        updated_predicate = _reflected_predicate(r2)
+        assert "12:00:00" in updated_predicate
+        columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+        assert isinstance(columns["score"]["type"], sa.TIMESTAMP)
+        assert r2.get_connection().execute(sa.text(
+            "SELECT score::text FROM contacts"
+        )).scalar_one() == "2020-01-03 00:00:00"
+        r2.get_connection().commit()
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original_predicate
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert _reflected_predicate(r2) == updated_predicate
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("predicate", ["TRUE", "((TRUE::boolean))", "'yes'"])
+    def test_true_predicate_with_unrelated_type_change_preserves_index_and_fk(self, new_test_runner, predicate):
+        def metadata(score_type):
+            result = _partial_index_metadata(predicate, unique=True)
+            result.tables["contacts"].c.score.type = score_type
+            sa.Table(
+                "children", result,
+                sa.Column("id", sa.Integer(), primary_key=True),
+                sa.Column("owner_id", sa.Integer(), nullable=False),
+                sa.ForeignKeyConstraint(["owner_id"], ["contacts.owner_id"], name="children_contact_fk"),
+            )
+            return result
+
+        before = metadata(sa.Date())
+        r = new_test_runner(before)
+        r.run()
+        r.get_connection().execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, score) VALUES (1, 10, DATE '2020-01-03')"
+        ))
+        r.get_connection().execute(before.tables["children"].insert(), {"id": 1, "owner_id": 10})
+        identities_sql = sa.text(
+            "SELECT 'contacts_active_idx'::regclass::oid, oid FROM pg_constraint "
+            "WHERE conrelid = 'children'::regclass AND conname = 'children_contact_fk'"
+        )
+        identities = r.get_connection().execute(identities_sql).one()
+        r.get_connection().commit()
+        after = metadata(sa.TIMESTAMP())
+        r2 = new_test_runner(after, r)
+        r2.run()
+
+        def assert_state(score_type):
+            assert _reflected_predicate(r2) is None
+            assert _reflected_partial_index(r2)["unique"]
+            assert r2.get_connection().execute(identities_sql).one() == identities
+            columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+            assert isinstance(columns["score"]["type"], score_type)
+            assert r2.get_connection().execute(sa.text(
+                "SELECT contacts.id, score::date::text, children.owner_id "
+                "FROM contacts JOIN children USING (owner_id)"
+            )).all() == [(1, "2020-01-03", 10)]
+            r2.get_connection().commit()
+
+        assert_state(sa.TIMESTAMP)
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert_state(sa.Date)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_state(sa.TIMESTAMP)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
 
     def test_index_type_change_preserves_foreign_key_dependencies(self, new_test_runner):
         def metadata(score_type, fillfactor):

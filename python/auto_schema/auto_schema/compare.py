@@ -1290,7 +1290,9 @@ def _index_predicates_differ(
     # Reflected columns still have their old types. If Alembic plans a type
     # change, PostgreSQL cannot reliably compare the new predicate in this table
     # context yet. Conservatively recreate it after the type migration instead.
-    if has_type_changes:
+    # An absent predicate can still match constant TRUE independently of column
+    # types; normalize that case before deciding to replace an unchanged index.
+    if has_type_changes and meta_predicate is not None and conn_predicate is not None:
         return True
 
     # Extension comparison runs after table comparison. Use the same planner to
@@ -1326,6 +1328,10 @@ def _index_predicates_differ(
             ).scalar_one())
         return definitions[0] != definitions[1]
     except sa.exc.ProgrammingError as error:
+        # An added/removed predicate may need the pending column types. If it
+        # cannot normalize against the old types, defer to index recreation.
+        if has_type_changes:
+            return True
         sqlstate = getattr(error.orig, 'pgcode', None)
         # A changed predicate can reference a column added by this migration,
         # which is not available in the reflected table yet.
@@ -1338,6 +1344,8 @@ def _index_predicates_differ(
             return True
         raise
     except sa.exc.DataError as error:
+        if has_type_changes:
+            return True
         # Enum labels are migrated after comparison and cannot be made visible
         # inside this savepoint. Defer a predicate that needs the declared new
         # labels to index recreation; unrelated invalid inputs still fail here.
