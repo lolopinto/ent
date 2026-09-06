@@ -26,6 +26,7 @@ interface PreparationNode {
   root: object;
   token: object;
   resources?: readonly string[];
+  resourcesPending?: boolean;
   validation?: { active: boolean };
   pending?: Set<Promise<unknown>>;
 }
@@ -167,7 +168,7 @@ export async function awaitActionPreparations<T>(
   return results as Awaited<T>[];
 }
 
-export function claimGuardedPreparation(resources?: readonly string[]) {
+function getGuardedPreparation() {
   const state = getTransactionState();
   const node = preparationStorage.getStore();
   if (!state || !node || node.token !== state.token) {
@@ -178,6 +179,23 @@ export function claimGuardedPreparation(resources?: readonly string[]) {
       "guarded root actions must be prepared and saved sequentially; await each save and reload before preparing the next action",
     );
   }
+  return { state, node };
+}
+
+export function reserveGuardedPreparation(): TransactionReadState {
+  const { state, node } = getGuardedPreparation();
+  // Reserve the root before user code can await. Keep the pending claim through
+  // nested validation cleanup, then check its resource keys when they resolve.
+  node.resourcesPending = true;
+  if (!state.branchClaims.includes(node)) {
+    state.branchClaims.push(node);
+  }
+  state.guardedRoot = node.root;
+  return { transaction: state, generation: state.generation };
+}
+
+export function claimGuardedPreparation(resources?: readonly string[]) {
+  const { state, node } = getGuardedPreparation();
   if (
     resources !== undefined &&
     (!Array.isArray(resources) ||
@@ -191,7 +209,9 @@ export function claimGuardedPreparation(resources?: readonly string[]) {
   for (const owner of state.branchClaims) {
     // The same action can validate while being built. Different actions must
     // prove independence even when one was created by the other's trigger.
-    if (owner.builder === node.builder) {
+    // A pending hook checks resolved claims when it finishes, so independent
+    // siblings can resolve their keys concurrently.
+    if (owner.builder === node.builder || owner.resourcesPending) {
       continue;
     }
     if (
@@ -205,7 +225,10 @@ export function claimGuardedPreparation(resources?: readonly string[]) {
     }
   }
   node.resources = resources && [...resources];
-  state.branchClaims.push(node);
+  node.resourcesPending = false;
+  if (!state.branchClaims.includes(node)) {
+    state.branchClaims.push(node);
+  }
   state.guardedRoot = node.root;
 }
 

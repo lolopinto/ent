@@ -74,6 +74,8 @@ getTransactionResources(): readonly string[] {
 
 Use non-empty arrays of non-empty strings to declare explicit resources. The runtime takes a snapshot of these arrays. Only actions with disjoint resource keys can prepare together; ancestors and descendants must also have disjoint keys. Guarded roots must still run sequentially, even with explicit keys.
 
+The runtime reserves the guarded root before invoking `getTransactionResources()`, including when the hook returns a promise. Other guarded roots can't prepare while the hook resolves. The hook's reads and awaited work must stay within the same transaction generation.
+
 If you omit the hook or return `undefined`, the action reserves a wildcard resource. This reservation conflicts with every other guarded action in the prepared graph, including actions with explicit keys. There is no special wildcard string. Defining the hook requires `withTransaction`, even without `requiresTransaction()`.
 
 Declare every dependency that another action could invalidate, including aggregate predicates and privacy checks, rather than only the row being written. For example, a parent that changes account A's balance and a child that changes account B's balance can declare separate account keys if neither decision depends on the other account. Two actions that depend on the same admin count must share an invariant key and will be rejected. Consolidate their decisions into one action, or save sequentially and reload. Existing parent-child compositions that relied on ancestry alone must adopt this contract.

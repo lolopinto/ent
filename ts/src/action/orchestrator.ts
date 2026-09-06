@@ -62,6 +62,7 @@ import {
   getTransactionReadState,
   getTransactionState,
   claimGuardedPreparation,
+  reserveGuardedPreparation,
   runInActionPreparation,
   isPreparingAction,
   isValidationPreparation,
@@ -1650,7 +1651,10 @@ export class Orchestrator<
         async () => {
           const action = this.options.action;
           if (action?.getTransactionResources) {
-            claimGuardedPreparation(await action.getTransactionResources());
+            const resourceRead = reserveGuardedPreparation();
+            const resources = await action.getTransactionResources();
+            assertTransactionRead(resourceRead);
+            claimGuardedPreparation(resources);
           } else if (action?.requiresTransaction?.() && getTransactionState()) {
             claimGuardedPreparation();
           }
