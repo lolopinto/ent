@@ -36,6 +36,10 @@ parser.add_argument(
     help='if set, include public in search_path (true/false). defaults to false when db_schema is set',
 )
 parser.add_argument('-f', '--fix_edges', help='fix edges in schema into db')
+parser.add_argument(
+    '--ignore_table', action='append', default=[],
+    help='external table: table, schema.table, or schema.*; repeat for multiple entries',
+)
 parser.add_argument('-u', '--upgrade', help='upgrade')
 # this is getting bad and needs to be changed soon to something that's more extensible and makes more sense
 parser.add_argument('-d', '--downgrade', help='downgrade')

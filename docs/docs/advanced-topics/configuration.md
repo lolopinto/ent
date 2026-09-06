@@ -31,11 +31,64 @@ The following properties can be configured:
 - `defaultGraphQLMutationName`: default names for graphql actions|mutations is nounVerb e.g. userCreate. If you wanna change it to verbNoun e.g. createUser, set this field to `VERB_NOUN`
 - `defaultGraphQLFieldFormat`: default format for fields is lowerCamelCase e.g. firstName. If you wanna change it to snake_case e.g. first_name, set this field to snake_case
 - `schemaSQLFilePath`: if we should generate schema.sql file and path to generate it
+- `ignoreTables`: external table names excluded from migration autogeneration; see [External tables](#external-tables).
 - `globalImportPath`: path to add to src/ent/internal.ts so that it's included everywhere. Where things like [global augmentation](https://www.typescriptlang.org/docs/handbook/declaration-merging.html#global-augmentation) can be done
 - `userOverridenFiles`: list of files to not override during codegen i.e. because there's a bug in codegen and the user has decided to override it.
 - `transformLoadMethod`: if set, overrides the loadNoTransform(X) methods to be this instead of the default loadNoTransform(X)
 - `transformDeleteMethod`: if set, overrides the saveWithoutTransform(X) methods to be this instead of the default saveWithoutTransform(X)
 - `disableDefaultExportForActions`: by default, actions are exported with `export default`. This changes that to named defaults.
+
+### External tables
+
+Use `codegen.ignoreTables` when another system owns tables in the same database:
+
+```yaml title="ent.yml"
+codegen:
+  ignoreTables:
+    - auth.*
+    - public.session
+    - billing_accounts
+```
+
+Entries are case-sensitive exact identifiers: `table`, `schema.table`, or
+`schema.*`. Identifiers start with an ASCII letter or underscore and may then
+contain letters, digits, underscores, or `$`. Quoted identifiers, whitespace,
+and table-prefix globs such as `public.auth_*` are rejected. `auth.*` means every
+table in the schema named `auth`; it does not match `public.auth_users`.
+
+An unqualified entry applies to the connection's default schema (`current_schema()`
+on Postgres, normally `public`; `main` on SQLite). With dev schemas enabled, it
+applies to the active dev schema. A qualified `public.session` entry never hides
+`session` in a dev schema. These rules do not expand Ent's schema comparison scope
+or enable public fallback. Existing PostGIS/system-table exclusions still apply.
+Omitting this option retains the existing behavior.
+
+Ignored tables retain their rows, indexes, and constraints during autogeneration.
+The rules apply to change inspection, generated migrations, `schema.sql`,
+`all_sql`, and `squash all`. Generated SQL contains the managed schema; provision
+external tables separately when bootstrapping a database. The comparison database
+for `all_sql` may contain ignored tables but must contain no managed tables.
+
+An entry matching an Ent-generated table is an error. Remove its Ent schema
+before marking it external; this option does not turn an Ent node into a partial
+database definition. Ent-declared foreign keys targeting ignored tables are also
+rejected. External migrations own foreign keys crossing this ownership boundary,
+including existing foreign keys on managed tables that reference ignored tables.
+Autogeneration preserves those foreign keys. Destructive changes to their tables
+or endpoint columns, removal of the supporting unique key, and seed-row or edge changes
+that could cascade through managed tables into external rows fail before
+generating a migration. Dependency checks account for foreign keys added,
+replaced, or removed earlier in that migration; unrelated managed changes continue
+normally. Coordinate the external migration before changing an endpoint.
+
+The option governs new autogeneration. It does not rewrite previously committed
+revisions or interpret handwritten SQL. Explicit upgrade/downgrade, numeric
+squash, progressive SQL, and custom SQL still execute/replay their existing
+migrations. Review those migrations when transferring table ownership.
+
+The standalone Python CLI accepts the same entries as repeated arguments, for
+example `--ignore_table='auth.*' --ignore_table=public.session`. Go codegen passes
+these arguments automatically; no Python dependency changes are required.
 
 ### PrivacyConfig
 

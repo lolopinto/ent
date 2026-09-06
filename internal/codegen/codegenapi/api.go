@@ -99,6 +99,7 @@ type Config interface {
 	GetAssocEdgePath() *ImportedObject
 	CustomSQLInclude() []string
 	CustomSQLExclude() []string
+	IgnoreTables() []string
 }
 
 // DummyConfig exists for tests/legacy paths which need Configs and don't want to create the production one
@@ -165,6 +166,10 @@ func (cfg DummyConfig) CustomSQLInclude() []string {
 
 func (cfg DummyConfig) CustomSQLExclude() []string {
 	return []string{}
+}
+
+func (cfg DummyConfig) IgnoreTables() []string {
+	return nil
 }
 
 var _ Config = &DummyConfig{}

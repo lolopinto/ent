@@ -504,7 +504,7 @@ func replaceHarnessPlaceholders(t *testing.T, appRoot string) {
 
 func postgresDatabaseName(t *testing.T) string {
 	t.Helper()
-	hash := sha256.Sum256([]byte(t.Name()))
+	hash := sha256.Sum256([]byte(t.Name() + ":" + t.TempDir()))
 	return fmt.Sprintf("codegen_matrix_%s", hex.EncodeToString(hash[:])[:16])
 }
 
@@ -526,6 +526,7 @@ func runCodegenFixture(t *testing.T, repo, appRoot string, fixture fixture) {
 	t.Setenv("LOCAL_SCRIPT_PATH", "true")
 	t.Setenv("GRAPHQL_PATH", filepath.Join(repo, "ts", "src", "graphql"))
 	configureFixtureDatabase(t, fixture)
+	verifyExternalTables := prepareExternalTables(t, fixture, appRoot)
 	tsentBinary := buildTsentBinary(t, repo)
 
 	// The first pass bootstraps generated files and build metadata. The second
@@ -540,6 +541,7 @@ func runCodegenFixture(t *testing.T, repo, appRoot string, fixture fixture) {
 	secondHash := hashGeneratedSnapshot(secondSnapshot)
 	require.Equal(t, firstHash, secondHash, "codegen fixture is not idempotent; changed files: %s\n%s", strings.Join(changedSnapshotFiles(firstSnapshot, secondSnapshot), ", "), snapshotChangeSummary(firstSnapshot, secondSnapshot))
 
+	verifyExternalTables()
 	runFixtureGeneratedAssertions(t, appRoot)
 
 	cmd := exec.Command(filepath.Join(repo, "ts", "node_modules", ".bin", "tsc"), "--noEmit", "--project", filepath.Join(appRoot, "tsconfig.generated.json"))
@@ -879,6 +881,7 @@ func syntheticOwners() []string {
 		"custom_graphql.gqlConnection",
 		"custom_graphql.mutationReturnType",
 		"codegen.prettier",
+		"codegen.ignoreTables",
 	}
 }
 

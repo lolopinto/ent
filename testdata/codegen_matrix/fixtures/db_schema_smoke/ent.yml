@@ -1,4 +1,6 @@
 codegen:
+  ignoreTables: [external_accounts, main.external_sessions]
+  schemaSQLFilePath: src/schema/schema.sql
   relativeImports: true
   generatedHeader: "Codegen matrix DB fixture"
   fieldPrivacyEvaluated: on_demand

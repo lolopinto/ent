@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/lolopinto/ent/ent/data"
@@ -31,6 +32,7 @@ func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...str
 		fmt.Sprintf("-s=%s", pathToConfigs),
 		fmt.Sprintf("-e=%s", data.GetSQLAlchemyDatabaseURIgo()),
 	}
+	args = append(args, ignoreTableArgs(cfg.IgnoreTables())...)
 
 	if cfg.DebugMode() {
 		args = append(args, "--debug")
@@ -84,6 +86,18 @@ func RunPythonCommandWriter(cfg codegenapi.Config, w io.Writer, extraArgs ...str
 		return errors.New(errMsg)
 	}
 	return nil
+}
+
+func ignoreTableArgs(patterns []string) []string {
+	patterns = append([]string(nil), patterns...)
+	sort.Strings(patterns)
+	var args []string
+	for i, pattern := range patterns {
+		if i == 0 || pattern != patterns[i-1] {
+			args = append(args, "--ignore_table="+pattern)
+		}
+	}
+	return args
 }
 
 func trimErrorMsg(berr *bytes.Buffer, local bool) string {
