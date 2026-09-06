@@ -729,12 +729,13 @@ export function setupSqlite(
       const client = await DB.getInstance().getNewClient();
       for (const [key, _] of tdb.__getTables()) {
         const query = `delete from ${key}`;
-        if (isSyncClient(client))
+        if (isSyncClient(client)) {
           if (client.execSync) {
             client.execSync(query);
           } else {
             await client.exec(query);
           }
+        }
       }
     });
   }
