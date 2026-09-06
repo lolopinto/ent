@@ -219,16 +219,48 @@ test("does not rewrite imports without configured paths", () => {
 });
 
 test.each([
-  { extension: "d.ts", pattern: "dep", specifier: "dep", esm: false },
-  { extension: "d.mts", pattern: "dep", specifier: "dep", esm: true },
-  { extension: "d.cts", pattern: "dep/*", specifier: "dep/value", esm: false },
-])("preserves package imports mapped to $extension declarations ($pattern)", ({
-  extension,
+  {
+    target: "./types/dep.d.ts",
+    declaration: "types/dep.d.ts",
+    pattern: "dep",
+    specifier: "dep",
+    esm: false,
+  },
+  {
+    target: "./types/dep.d.mts",
+    declaration: "types/dep.d.mts",
+    pattern: "dep",
+    specifier: "dep",
+    esm: true,
+  },
+  {
+    target: "./types/*.d.cts",
+    declaration: "types/value.d.cts",
+    pattern: "dep/*",
+    specifier: "dep/value",
+    esm: false,
+  },
+  {
+    target: "./types/dep",
+    declaration: "types/dep.d.ts",
+    pattern: "dep",
+    specifier: "dep",
+    esm: false,
+  },
+  {
+    target: "./types/dep",
+    declaration: "types/dep/index.d.ts",
+    pattern: "dep",
+    specifier: "dep",
+    esm: false,
+  },
+])("preserves package imports when $target resolves to $declaration", ({
+  target,
+  declaration,
   pattern,
   specifier,
   esm,
 }) => {
-  const declarationName = pattern.includes("*") ? "value" : "dep";
   const root = fixture(
     {
       "src/main.ts": `
@@ -244,7 +276,7 @@ test.each([
           main().catch(error => { console.error(error); process.exitCode = 1; });
         `,
       "src/exports.ts": `export { value as exported } from "${specifier}";`,
-      [`types/${declarationName}.${extension}`]: `export declare const value: string;`,
+      [declaration]: `export declare const value: string;`,
       "node_modules/dep/package.json": JSON.stringify({
         type: esm ? "module" : "commonjs",
         exports: { ".": "./index.js", "./value": "./index.js" },
@@ -254,15 +286,36 @@ test.each([
         : `exports.value = "package";`,
     },
     {
-      paths: {
-        [pattern]: [
-          pattern.includes("*")
-            ? `./types/*.${extension}`
-            : `./types/dep.${extension}`,
-        ],
-      },
+      paths: { [pattern]: [target] },
     },
     esm,
+  );
+  expect(run(root)).toBe("ok");
+});
+
+test("rewrites aliases to JavaScript modules with companion declarations", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+        import assert from "node:assert/strict";
+        import { value } from "vendor/dep.js";
+        import { exported } from "./exports.js";
+        async function main() {
+          assert.equal(value, "javascript");
+          assert.equal(exported, "javascript");
+          assert.equal((await import("vendor/dep.js")).value, "javascript");
+          assert.equal((await import("vendor/directory")).value, "directory");
+          console.log("ok");
+        }
+        main().catch(error => { console.error(error); process.exitCode = 1; });
+      `,
+      "src/exports.ts": `export { value as exported } from "vendor/dep.js";`,
+      "vendor/dep.js": `exports.value = "javascript";`,
+      "vendor/dep.d.ts": `export declare const value: string;`,
+      "vendor/directory/index.js": `exports.value = "directory";`,
+      "vendor/directory/index.d.ts": `export declare const value: string;`,
+    },
+    { paths: { "vendor/*": ["./vendor/*"] } },
   );
   expect(run(root)).toBe("ok");
 });

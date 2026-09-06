@@ -178,6 +178,8 @@ class Compiler {
     let cwd = this.cwd;
     let paths = this.options.paths;
     let regexMap = this.regexMap;
+    const resolveModule = this.standardModules.bind(this);
+    const declarationFilePattern = /\.d\.(ts|mts|cts)$/;
     return function (node: ts.SourceFile) {
       // don't do anything with declaration files
       // nothing to do here
@@ -226,8 +228,21 @@ class Compiler {
           );
           // Declaration mappings supply types, not runtime modules. Preserve
           // the original specifier so Node can still load the actual package.
-          if (/\.d\.(ts|mts|cts)$/.test(targetPath)) {
+          if (declarationFilePattern.test(targetPath)) {
             return undefined;
+          }
+          const resolvedPath = resolveModule(text, fullPath)?.resolvedFileName;
+          if (resolvedPath && declarationFilePattern.test(resolvedPath)) {
+            // Extensionless paths can resolve to dep.d.ts or dep/index.d.ts.
+            // A JavaScript module may also have companion declarations, so
+            // retain rewriting when the mapped target has a runtime module.
+            try {
+              if (declarationFilePattern.test(require.resolve(targetPath))) {
+                return undefined;
+              }
+            } catch {
+              return undefined;
+            }
           }
           relPath = path.relative(
             // just because of how imports work. it's relative from directory not current path
