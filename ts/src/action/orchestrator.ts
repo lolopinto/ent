@@ -364,11 +364,17 @@ export class Orchestrator<
     nodeType: string,
     stored?: { existingIDs?: readonly ID[] },
   ) {
-    const isBuilder = (id: ID | Builder<any, any>): id is Builder<any, any> =>
-      (id as Builder<any, any>).placeholderID !== undefined;
-    // Older generated callers reconcile creation inserts only. Keep their
-    // non-insert behavior until regeneration supplies stored field values.
-    if (!stored && this.actualOperation !== WriteOperation.Insert) {
+    // Legacy callers have no stored metadata. Preserve their additive edit
+    // updates and queued-object contributors across edit-to-insert transforms.
+    if (!stored) {
+      const isInsert = this.actualOperation === WriteOperation.Insert;
+      const queued = this.edges.get(edgeType)?.get(WriteOperation.Insert);
+      for (const [id, edge] of queued ?? []) {
+        const sources = this.fieldEdgeSources.get(edge);
+        if (isInsert && sources?.delete(fieldName) && sources.size === 0) {
+          queued!.delete(id);
+        }
+      }
       for (const id of ids ?? []) {
         const edge = new edgeInputData<TViewer>({
           id,
@@ -376,27 +382,28 @@ export class Orchestrator<
           nodeType,
           direction: edgeDirection.inboundEdge,
         });
-        const key = isBuilder(id) ? id.placeholderID : id;
-        const prior = this.edges
-          .get(edgeType)
-          ?.get(WriteOperation.Insert)
-          ?.get(key);
+        const key = edge.isBuilder(edge.id) ? edge.id.placeholderID : edge.id;
+        const existing = queued?.get(key);
+        const sources = existing && this.fieldEdgeSources.get(existing);
+        if (isInsert && existing) {
+          sources?.add(fieldName);
+          continue;
+        }
         this.fieldEdgeSources.set(
           edge,
-          new Set([
-            ...((prior && this.fieldEdgeSources.get(prior)) || []),
-            fieldName,
-          ]),
+          new Set([...(sources ?? []), fieldName]),
         );
         this.addEdge(edge, WriteOperation.Insert);
       }
       return;
     }
+    const isBuilder = (id: ID | Builder<any, any>): id is Builder<any, any> =>
+      (id as Builder<any, any>).placeholderID !== undefined;
     this.fieldEdgeInputs.set(fieldName, {
       edgeType,
       ids,
       existingIDs:
-        stored?.existingIDs ??
+        stored.existingIDs ??
         this.fieldEdgeInputs.get(fieldName)?.existingIDs ??
         [],
     });

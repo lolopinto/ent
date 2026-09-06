@@ -3,6 +3,7 @@ import { Ent, Viewer } from "../core/base";
 import { loadEdges, loadRow } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
+import { SQLStatementOperation } from "../schema";
 import { StringType } from "../schema/field";
 import {
   User,
@@ -1229,6 +1230,50 @@ function commonTests() {
         expect(e.message).toBe("existing ent required with operation edit");
       }
     });
+  });
+
+  test.each([
+    ["accumulated", false, ["A", "C", "B"]],
+    ["explicitly cleared", true, ["C", "B"]],
+  ] as const)("legacy edit-to-insert respects %s field contributions", async (_name, clear, expected) => {
+    const viewer = new IDViewer("1");
+    const action = Object.assign(
+      new SimpleAction(
+        viewer,
+        UserSchema,
+        new Map([
+          ["FirstName", "Jon"],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Edit,
+        new User(viewer, { id: "1" }),
+      ),
+      {
+        transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+      },
+    );
+    const { orchestrator } = action.builder;
+    orchestrator.__setFieldEdges("owner", ["A"], "edge", "User");
+    orchestrator.__setFieldEdges("otherOwner", ["A"], "edge", "User");
+    // Legacy edits accumulate contributions on queued edge objects. Keeping
+    // only each field's latest input would lose A when the sibling changes.
+    orchestrator.__setFieldEdges("owner", ["C"], "edge", "User");
+    if (clear) {
+      orchestrator.clearInputEdges("edge", WriteOperation.Insert, "A");
+    }
+    await orchestrator.getEditedData();
+    orchestrator.__setFieldEdges("otherOwner", ["B"], "edge", "User");
+    expect(
+      orchestrator
+        .getInputEdges("edge", WriteOperation.Insert)
+        .map((edge) => edge.id),
+    ).toEqual(expected);
+    orchestrator.__setFieldEdges("owner", [], "edge", "User");
+    expect(
+      orchestrator
+        .getInputEdges("edge", WriteOperation.Insert)
+        .map((edge) => edge.id),
+    ).toEqual(["B"]);
   });
 
   describe("remove outbound edge", () => {
