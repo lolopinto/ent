@@ -224,6 +224,11 @@ class Compiler {
             cwd,
             str.replace("*", () => match[1] ?? ""),
           );
+          // Declaration mappings supply types, not runtime modules. Preserve
+          // the original specifier so Node can still load the actual package.
+          if (/\.d\.(ts|mts|cts)$/.test(targetPath)) {
+            return undefined;
+          }
           relPath = path.relative(
             // just because of how imports work. it's relative from directory not current path
             path.dirname(fullPath),

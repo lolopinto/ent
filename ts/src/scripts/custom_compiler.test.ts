@@ -218,6 +218,55 @@ test("does not rewrite imports without configured paths", () => {
   expect(run(root)).toBe("relative");
 });
 
+test.each([
+  { extension: "d.ts", pattern: "dep", specifier: "dep", esm: false },
+  { extension: "d.mts", pattern: "dep", specifier: "dep", esm: true },
+  { extension: "d.cts", pattern: "dep/*", specifier: "dep/value", esm: false },
+])("preserves package imports mapped to $extension declarations ($pattern)", ({
+  extension,
+  pattern,
+  specifier,
+  esm,
+}) => {
+  const declarationName = pattern.includes("*") ? "value" : "dep";
+  const root = fixture(
+    {
+      "src/main.ts": `
+          import assert from "node:assert/strict";
+          import { value } from "${specifier}";
+          import { exported } from "./exports.js";
+          async function main() {
+            assert.equal(value, "package");
+            assert.equal(exported, "package");
+            assert.equal((await import("${specifier}")).value, "package");
+            console.log("ok");
+          }
+          main().catch(error => { console.error(error); process.exitCode = 1; });
+        `,
+      "src/exports.ts": `export { value as exported } from "${specifier}";`,
+      [`types/${declarationName}.${extension}`]: `export declare const value: string;`,
+      "node_modules/dep/package.json": JSON.stringify({
+        type: esm ? "module" : "commonjs",
+        exports: { ".": "./index.js", "./value": "./index.js" },
+      }),
+      "node_modules/dep/index.js": esm
+        ? `export const value = "package";`
+        : `exports.value = "package";`,
+    },
+    {
+      paths: {
+        [pattern]: [
+          pattern.includes("*")
+            ? `./types/*.${extension}`
+            : `./types/dep.${extension}`,
+        ],
+      },
+    },
+    esm,
+  );
+  expect(run(root)).toBe("ok");
+});
+
 test("retains nonzero exit and error reporting when emit is skipped", () => {
   const root = fixture(
     { "src/main.ts": `const value: string = 42;` },
