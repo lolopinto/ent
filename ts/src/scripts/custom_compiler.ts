@@ -174,12 +174,38 @@ class Compiler {
     return resolvedModules;
   }
 
-  private transformer(context: ts.TransformationContext) {
+  private transformer(program: ts.Program, context: ts.TransformationContext) {
     let cwd = this.cwd;
     let paths = this.options.paths;
     let regexMap = this.regexMap;
     const resolveModule = this.standardModules.bind(this);
     const declarationFilePattern = /\.d\.(ts|mts|cts)$/;
+    const commonJS = this.options.module === ts.ModuleKind.CommonJS;
+    const emitConfig: ts.ParsedCommandLine = {
+      options: {
+        ...this.options,
+        configFilePath: path.resolve(
+          cwd,
+          typeof this.options.configFilePath === "string"
+            ? this.options.configFilePath
+            : "tsconfig.json",
+        ),
+      },
+      fileNames: program
+        .getSourceFiles()
+        .filter(
+          (file) =>
+            !file.isDeclarationFile &&
+            !program.isSourceFileFromExternalLibrary(file),
+        )
+        .map((file) =>
+          path.resolve(cwd, file.fileName).split(path.sep).join("/"),
+        ),
+      errors: [],
+    };
+    const emittedFiles = new Set(
+      emitConfig.fileNames.map((file) => path.resolve(file)),
+    );
     return function (node: ts.SourceFile) {
       // don't do anything with declaration files
       // nothing to do here
@@ -202,6 +228,17 @@ class Compiler {
       let relativePath = path.relative(cwd, fullPath);
       if (relativePath.startsWith("..")) {
         return node;
+      }
+      let outputPath: string | undefined;
+      function getOutputPath() {
+        return (outputPath ??= path.resolve(
+          cwd,
+          ts.getOutputFileNames(
+            emitConfig,
+            fullPath,
+            !ts.sys.useCaseSensitiveFileNames,
+          )[0],
+        ));
       }
 
       function checkPath(
@@ -244,17 +281,58 @@ class Compiler {
             return undefined;
           }
           const resolvedPath = resolveModule(text, fullPath)?.resolvedFileName;
+          let runtimePath: string | undefined;
+          try {
+            runtimePath = require.resolve(targetPath);
+          } catch {
+            // TypeScript source aliases need not have JavaScript on disk yet.
+          }
           if (resolvedPath && declarationFilePattern.test(resolvedPath)) {
             // Extensionless paths can resolve to dep.d.ts or dep/index.d.ts.
             // A JavaScript module may also have companion declarations, so
             // retain rewriting when the mapped target has a runtime module.
-            try {
-              if (declarationFilePattern.test(require.resolve(targetPath))) {
-                return undefined;
-              }
-            } catch {
+            if (!runtimePath || declarationFilePattern.test(runtimePath)) {
               return undefined;
             }
+          }
+          // TypeScript extension substitution wins over stale JavaScript beside
+          // a source file: that import must continue to use the freshly emitted code.
+          const sourcePath =
+            resolvedPath && !declarationFilePattern.test(resolvedPath)
+              ? path.resolve(cwd, resolvedPath)
+              : runtimePath;
+          if (
+            runtimePath &&
+            sourcePath &&
+            (!emittedFiles.has(sourcePath) ||
+              sourcePath.split(path.sep).includes("node_modules"))
+          ) {
+            // This runtime module is not copied with the application's sources.
+            // Use the emitted importer's directory, including inferred rootDir.
+            const outputDirectory = path.dirname(getOutputPath());
+            if (commonJS) {
+              // require.resolve uses CommonJS export conditions; an ESM import
+              // of the same package may intentionally select another entry.
+              try {
+                if (
+                  require.resolve(text, { paths: [outputDirectory] }) ===
+                  runtimePath
+                ) {
+                  return undefined;
+                }
+              } catch {
+                // A renamed dependency may have no corresponding bare package.
+              }
+            }
+            // Use the actual runtime filename so native ESM receives an extension
+            // and directory mappings reach their package entry point.
+            const externalPath = path
+              .relative(outputDirectory, runtimePath)
+              .split(path.sep)
+              .join("/");
+            return externalPath.startsWith("../")
+              ? externalPath
+              : "./" + externalPath;
           }
           relPath = path.relative(
             // just because of how imports work. it's relative from directory not current path
@@ -360,7 +438,7 @@ class Compiler {
     const host = this.createCompilerHost();
     const program = ts.createProgram(this.sourceFiles, this.options, host);
     let emitResult = program.emit(undefined, undefined, undefined, undefined, {
-      before: [this.transformer.bind(this)],
+      before: [(context) => this.transformer(program, context)],
     });
     if (emitResult.emitSkipped) {
       console.error("error emitting code");

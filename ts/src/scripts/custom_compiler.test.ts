@@ -363,7 +363,23 @@ test.each([
   expect(run(root, "dist/src/main.js")).toBe("ok");
 });
 
-test("rewrites aliases that rename an installed dependency", () => {
+test.each([
+  { rootDir: "src", outDir: "dist", entry: "dist/main.js" },
+  { rootDir: ".", outDir: "dist", entry: "dist/src/main.js" },
+  { rootDir: undefined, outDir: "build/js", entry: "build/js/main.js" },
+  { rootDir: "src", outDir: undefined, entry: "src/main.js" },
+  {
+    rootDir: undefined,
+    outDir: "build/js",
+    entry: "build/js/src/main.js",
+    extraSource: true,
+  },
+])("rewrites renamed dependencies with rootDir $rootDir and outDir $outDir", ({
+  rootDir,
+  outDir,
+  entry,
+  extraSource,
+}) => {
   const root = fixture(
     {
       "src/main.ts": `
@@ -374,10 +390,38 @@ test("rewrites aliases that rename an installed dependency", () => {
       "src/exports.ts": `export { value as exported } from "vendor/value";`,
       "node_modules/dep/value.js": `exports.value = "package";`,
       "node_modules/dep/value.d.ts": `export declare const value: string;`,
+      ...(extraSource ? { "scripts/extra.ts": "export const value = 1;" } : {}),
     },
-    { paths: { "vendor/*": ["./node_modules/dep/*"] } },
+    { rootDir, outDir, paths: { "vendor/*": ["./node_modules/dep/*"] } },
   );
-  expect(run(root)).toBe("package,package,package");
+  expect(run(root, entry)).toBe("package,package,package");
+});
+
+test.each([
+  "index",
+  "index.js",
+  "lib/entry",
+])("preserves equivalent package entry mapping to dep/%s", (entry) => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+          import { value } from "dep";
+          import { exported } from "./exports";
+          import("dep").then(mod => console.log([value, exported, mod.value].join(",")));
+        `,
+      "src/exports.ts": `export { value as exported } from "dep";`,
+      "node_modules/dep/package.json": JSON.stringify({
+        main: entry.endsWith(".js") ? entry : `${entry}.js`,
+      }),
+      [`node_modules/dep/${entry.endsWith(".js") ? entry : `${entry}.js`}`]: `exports.value = "package";`,
+      "node_modules/@types/dep/index.d.ts": `export declare const value: string;`,
+    },
+    { rootDir: ".", paths: { dep: [`./node_modules/dep/${entry}`] } },
+  );
+  expect(run(root, "dist/src/main.js")).toBe("package,package,package");
+  expect(
+    fs.readFileSync(path.join(root, "dist/src/main.js"), "utf8"),
+  ).toContain('require("dep")');
 });
 
 test.each([
@@ -433,10 +477,48 @@ test.each([
         : `exports.value = "mapped";`,
       [`${packageRoot}/${runtime.replace(/\.js$/, ".d.ts")}`]: `export declare const value: string;`,
     },
-    { paths: { [pattern]: [target] } },
+    { rootDir: ".", paths: { [pattern]: [target] } },
     esm,
   );
-  expect(run(root)).toBe("mapped,mapped,mapped");
+  expect(run(root, "dist/src/main.js")).toBe("mapped,mapped,mapped");
+});
+
+test("ESNext explicit remapping does not substitute the package's import condition", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+        import { value } from "dep";
+        import { exported } from "./exports.js";
+        import("dep").then(mod => console.log([value, exported, mod.value].join(",")));
+      `,
+      "src/exports.ts": `export { value as exported } from "dep";`,
+      "node_modules/dep/package.json": JSON.stringify({
+        type: "module",
+        exports: { import: "./import.js", require: "./require.cjs" },
+      }),
+      "node_modules/dep/import.js": `export const value = "original";`,
+      "node_modules/dep/require.cjs": `exports.value = "mapped";`,
+      "node_modules/dep/require.d.cts": `export declare const value: string;`,
+    },
+    { rootDir: ".", paths: { dep: ["./node_modules/dep/require.cjs"] } },
+    true,
+  );
+  expect(run(root, "dist/src/main.js")).toBe("mapped,mapped,mapped");
+});
+
+test.each([
+  false,
+  true,
+])("resolves JavaScript aliases with allowJs %s after moving the importer", (allowJs) => {
+  const root = fixture(
+    {
+      "src/main.ts": `import { value } from "vendor/value"; console.log(value);`,
+      "vendor/value.js": `exports.value = "javascript";`,
+    },
+    { rootDir: ".", allowJs, paths: { "vendor/*": ["./vendor/*"] } },
+  );
+  expect(run(root, "dist/src/main.js")).toBe("javascript");
+  expect(fs.existsSync(path.join(root, "dist/vendor/value.js"))).toBe(allowJs);
 });
 
 test("rewrites aliases to JavaScript modules with companion declarations", () => {
@@ -464,6 +546,18 @@ test("rewrites aliases to JavaScript modules with companion declarations", () =>
     { paths: { "vendor/*": ["./vendor/*"] } },
   );
   expect(run(root)).toBe("ok");
+});
+
+test("prefers emitted TypeScript over existing JavaScript beside the source", () => {
+  const root = fixture({
+    "src/main.ts": `
+      import { value } from "src/value.js";
+      import("src/value").then(mod => console.log([value, mod.value].join(",")));
+    `,
+    "src/value.ts": `export const value = "compiled";`,
+    "src/value.js": `exports.value = "stale";`,
+  });
+  expect(run(root)).toBe("compiled,compiled");
 });
 
 test("retains nonzero exit and error reporting when emit is skipped", () => {
