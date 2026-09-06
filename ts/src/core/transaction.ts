@@ -26,7 +26,9 @@ export interface TransactionScope extends Queryer {
 /** Inspect the current scope so a composed operation can join its caller. */
 export function getTransactionScope(): TransactionScope | undefined {
   const state = getTransactionState();
-  if (!state) return undefined;
+  if (!state) {
+    return undefined;
+  }
   return {
     ...state.queryer,
     attempt: state.attempt,
@@ -115,8 +117,12 @@ export async function withTransaction<T>(
         .query(sql, values)
         .then((result) => {
           assertTransactionRead(read);
-          for (const row of result.rows) recordRowTransaction(row, read);
-          for (const cache of state.caches.values()) cache.clearCache();
+          for (const row of result.rows) {
+            recordRowTransaction(row, read);
+          }
+          for (const cache of state.caches.values()) {
+            cache.clearCache();
+          }
           for (const resource of state.resources.values()) {
             (resource as { clearAll?(): void }).clearAll?.();
           }

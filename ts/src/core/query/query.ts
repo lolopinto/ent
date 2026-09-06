@@ -771,7 +771,9 @@ async function applyPrivacyPolicyForEdgeQ<
       if (!ent) {
         ent = await edgeQ.sourceEnt(id);
       }
-      if (ent) assertEntTransaction(ent);
+      if (ent) {
+        assertEntTransaction(ent);
+      }
       const r = await applyPrivacyPolicy(
         viewer,
         edgeQ.getPrivacyPolicy(),

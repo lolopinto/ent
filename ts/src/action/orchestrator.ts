@@ -306,14 +306,16 @@ export class Orchestrator<
         getTransactionState() &&
         prepared &&
         !hasActionResultTransaction(this.options.builder)
-      )
+      ) {
         assertTransactionRead(this.fieldPreparationRead);
+      }
       const result = await fields();
       if (
         getTransactionState() &&
         !hasActionResultTransaction(this.options.builder)
-      )
+      ) {
         assertTransactionRead(this.fieldPreparationRead);
+      }
       return result;
     };
   }
@@ -695,7 +697,9 @@ export class Orchestrator<
     viewerToUse: TViewer,
     rowToUse?: Data,
   ): Promise<TEnt> {
-    if (getTransactionState()) assertTransactionRead(this.fieldPreparationRead);
+    if (getTransactionState()) {
+      assertTransactionRead(this.fieldPreparationRead);
+    }
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt!;
     }
@@ -708,7 +712,9 @@ export class Orchestrator<
     }
 
     // we create an unsafe ent to be used for privacy policies
-    if (getTransactionState()) assertTransactionRead(this.fieldPreparationRead);
+    if (getTransactionState()) {
+      assertTransactionRead(this.fieldPreparationRead);
+    }
     const ent = new this.options.builder.ent(viewerToUse, rowToUse);
     recordPreparedEntTransaction(ent, this.fieldPreparationRead);
     return ent;
@@ -846,7 +852,9 @@ export class Orchestrator<
       );
     }
     assertLoaderTransaction(this.transaction);
-    if (this.existingEnt) assertEntTransaction(this.existingEnt);
+    if (this.existingEnt) {
+      assertEntTransaction(this.existingEnt);
+    }
     // existing ent required for edit or delete operations
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -861,9 +869,13 @@ export class Orchestrator<
     const fields = await this.memoizedGetFields();
     // A completed action can expose stable snapshot fields/IDs, but those
     // retained values never become fresh preparation for another save.
-    if (getTransactionState()) assertTransactionRead(this.fieldPreparationRead);
+    if (getTransactionState()) {
+      assertTransactionRead(this.fieldPreparationRead);
+    }
     // A schema transform may replace the original mutation target.
-    if (this.existingEnt) assertEntTransaction(this.existingEnt);
+    if (this.existingEnt) {
+      assertEntTransaction(this.existingEnt);
+    }
     return fields;
   }
 
@@ -1455,7 +1467,9 @@ export class Orchestrator<
       failTransaction(state, error);
       throw error;
     }
-    if (state) this.preparationInProgress = true;
+    if (state) {
+      this.preparationInProgress = true;
+    }
     // A public validation probe must discard each participant's child graph,
     // including retained children that are rebuilt during the later save.
     const probing = state && (validationOnly || isValidationPreparation());
@@ -1485,11 +1499,14 @@ export class Orchestrator<
       if (
         state &&
         !(probing && error instanceof Error && validationFailures.has(error))
-      )
+      ) {
         failTransaction(state, error);
+      }
       throw error;
     } finally {
-      if (state) this.preparationInProgress = false;
+      if (state) {
+        this.preparationInProgress = false;
+      }
       restore?.();
     }
   }
@@ -1546,7 +1563,9 @@ export class Orchestrator<
     // TODO test actualOperation value
     // observers is fine since they're run after and we have the actualOperation value...
 
-    if (getTransactionState()) assertTransactionRead(this.fieldPreparationRead);
+    if (getTransactionState()) {
+      assertTransactionRead(this.fieldPreparationRead);
+    }
     return new EntChangeset(
       this.options.viewer,
       this.options.builder,

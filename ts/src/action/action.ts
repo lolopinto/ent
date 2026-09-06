@@ -241,7 +241,9 @@ async function saveBuilderImpl<
       changeset = await builder.build();
     } catch (e) {
       const transaction = getTransactionState();
-      if (transaction) failTransaction(transaction, e);
+      if (transaction) {
+        failTransaction(transaction, e);
+      }
       log("error", e);
       if (throwErr) {
         throw e;
@@ -259,7 +261,9 @@ async function saveBuilderImpl<
       } catch (e) {
         // Preserve non-X synchronous-error suppression, but abort its scope.
         const transaction = getTransactionState();
-        if (transaction) failTransaction(transaction, e);
+        if (transaction) {
+          failTransaction(transaction, e);
+        }
       }
     }
   });

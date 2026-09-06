@@ -134,7 +134,9 @@ export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
   load(key: K): Promise<V> {
     assertTransactionRead(this.transaction);
     const result = super.load(key);
-    if (!this.transaction) return result;
+    if (!this.transaction) {
+      return result;
+    }
     return trackValidationRead(
       result.then((value) => {
         assertTransactionRead(this.transaction);
@@ -146,7 +148,9 @@ export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
   loadMany(keys: ArrayLike<K>): Promise<(V | Error)[]> {
     assertTransactionRead(this.transaction);
     const result = super.loadMany(keys);
-    if (!this.transaction) return result;
+    if (!this.transaction) {
+      return result;
+    }
     return trackValidationRead(
       result.then((value) => {
         assertTransactionRead(this.transaction);

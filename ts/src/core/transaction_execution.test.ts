@@ -99,9 +99,12 @@ describe("transaction execution preparation generations", () => {
             first,
           ).saveX();
           const execute = async () => {
-            if (mode === "iterator") return executor!.next();
-            if (mode === "executeOperations")
+            if (mode === "iterator") {
+              return executor!.next();
+            }
+            if (mode === "executeOperations") {
               return executeOperations(executor!);
+            }
             return (executor ?? changeset.executor()).execute();
           };
           await expect(execute()).rejects.toThrow(
@@ -131,14 +134,17 @@ describe("transaction execution preparation generations", () => {
             },
           },
         ];
-        if (mode === "Transaction")
+        if (mode === "Transaction") {
           await new Transaction(viewer, [first, second]).run();
+        }
         else {
-          if (mode === "complex")
+          if (mode === "complex") {
             first.getTriggers = () => [{ changeset: () => second.changeset() }];
+          }
           await (await first.changeset()).executor().execute();
-          if (mode === "list")
+          if (mode === "list") {
             await (await second.changeset()).executor().execute();
+          }
         }
         return first;
       });

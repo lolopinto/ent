@@ -36,7 +36,9 @@ describe("scoped transaction lifecycle", () => {
   test("BEGIN failure rolls back and releases without invoking callback", async () => {
     const error = new Error("begin failed");
     behavior = async (sql) => {
-      if (sql.startsWith("BEGIN")) throw error;
+      if (sql.startsWith("BEGIN")) {
+        throw error;
+      }
     };
     const callback = jest.fn();
     await expect(withTransaction(callback)).rejects.toBe(error);
@@ -48,7 +50,9 @@ describe("scoped transaction lifecycle", () => {
   test("rollback failure preserves original error and discards connection", async () => {
     const error = new Error("callback failed");
     behavior = async (sql) => {
-      if (sql === "ROLLBACK") throw new Error("rollback failed");
+      if (sql === "ROLLBACK") {
+        throw new Error("rollback failed");
+      }
     };
     await expect(
       withTransaction(async () => {
@@ -61,7 +65,9 @@ describe("scoped transaction lifecycle", () => {
   test("unknown COMMIT result is never retried or marked committed", async () => {
     const error = new Error("connection closed during COMMIT");
     behavior = async (sql) => {
-      if (sql === "COMMIT") throw error;
+      if (sql === "COMMIT") {
+        throw error;
+      }
     };
     const receipt = jest.fn();
     const observer = jest.fn();
@@ -146,7 +152,9 @@ describe("scoped transaction lifecycle", () => {
       finish = r;
     });
     behavior = async (sql) => {
-      if (sql === "SELECT slow") await waiting;
+      if (sql === "SELECT slow") {
+        await waiting;
+      }
       return { rows: [], rowCount: 0 };
     };
     const transaction = withTransaction(async (tx) => {

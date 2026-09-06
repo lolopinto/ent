@@ -84,7 +84,9 @@ function deferred() {
 function barrier(n: number) {
   const gate = deferred();
   return async () => {
-    if (--n === 0) gate.resolve();
+    if (--n === 0) {
+      gate.resolve();
+    }
     await gate.promise;
   };
 }
@@ -615,8 +617,12 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         const privacy = jest
           .spyOn(ScopedAccount.prototype, "getPrivacyPolicy")
           .mockImplementation(function (this: ScopedAccount) {
-            if (this.data.balance !== 12) return original.call(this);
-            if (source === "privacy throw") throw error;
+            if (this.data.balance !== 12) {
+              return original.call(this);
+            }
+            if (source === "privacy throw") {
+              throw error;
+            }
             if (source === "privacy reject") {
               return {
                 rules: [
@@ -819,7 +825,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       }
       await expect(
         withTransaction(async () => {
-          if (origin === "same scope") await savePrevious();
+          if (origin === "same scope") {
+            await savePrevious();
+          }
           await edit(await load(owner.id as string), 80).saveX();
           const snapshot = await previous[method]();
           expect(snapshot!.data.balance).toBe(90);
@@ -1028,7 +1036,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         async (tx) => {
           attempts.push(tx.attempt);
           const current = await load(account.id as string);
-          if (tx.attempt === 0) await meet();
+          if (tx.attempt === 0) {
+            await meet();
+          }
           const action = edit(current, current.data.balance - amount);
           action.getTriggers = () => [
             {
@@ -1082,8 +1092,12 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
                   clause: Eq("admin", true),
                   context,
                 });
-                if (tx.attempt === 0) await meet();
-                if (rows.length <= 1) throw new Error("last admin");
+                if (tx.attempt === 0) {
+                  await meet();
+                }
+                if (rows.length <= 1) {
+                  throw new Error("last admin");
+                }
               },
             },
           ];
@@ -1383,7 +1397,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
                     clause: Eq("admin", true),
                     context,
                   });
-                  if (rows.length <= 1) throw new Error("last admin");
+                  if (rows.length <= 1) {
+                    throw new Error("last admin");
+                  }
                 },
               },
             ];
@@ -1672,7 +1688,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
                           clause: Eq("admin", true),
                           context,
                         });
-                        if (rows.length <= 1) throw new Error("last admin");
+                        if (rows.length <= 1) {
+                          throw new Error("last admin");
+                        }
                       },
                     },
                   ];
@@ -1710,7 +1728,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
           WriteOperation.Edit,
           await load(id),
         );
-        if (key) independent(action, key);
+        if (key) {
+          independent(action, key);
+        }
         action.getValidators = () => [
           {
             async validate() {
@@ -1719,7 +1739,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
                 clause: Eq("admin", true),
                 context,
               });
-              if (rows.length <= 1) throw new Error("last admin");
+              if (rows.length <= 1) {
+                throw new Error("last admin");
+              }
             },
           },
         ];
@@ -1733,7 +1755,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
           parent.getTriggers = () => [
             {
               async changeset() {
-                if (!wrapper) return child();
+                if (!wrapper) {
+                  return child();
+                }
                 const intermediate = new SimpleAction(
                   viewer,
                   auditSchema,
@@ -2116,9 +2140,11 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         const candidate = edit(await load(owner.id as string), 50);
         const error = new Error("invalid candidate");
         candidate.getValidators = () => [{ validate: async () => error }];
-        if (method === "validX")
+        if (method === "validX") {
           await expect(candidate.validX()).rejects.toBe(error);
-        else await candidate[method]();
+        } else {
+          await candidate[method]();
+        }
         await edit(await load(target.id as string), 60).saveX();
       });
       expect((await load(owner.id as string)).data.balance).toBe(100);
@@ -2174,12 +2200,13 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         parent.getValidators = () => [
           { validate: async () => (invalid ? error : undefined) },
         ];
-        if (method === "validX")
+        if (method === "validX") {
           await expect(parent.validX()).rejects.toBe(error);
-        else
+        } else {
           expect(await parent[method]()).toEqual(
             method === "valid" ? false : [error],
           );
+        }
         invalid = false;
         await parent[method]();
         await parent.saveX();
@@ -2235,7 +2262,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       await withTransaction(async () => {
         let message = "probe";
         const transform = ({ op }: { op: SQLStatementOperation }) => {
-          if (op !== SQLStatementOperation.Delete) return null;
+          if (op !== SQLStatementOperation.Delete) {
+            return null;
+          }
           return {
             op: SQLStatementOperation.Update,
             data: { admin: false },
@@ -2272,19 +2301,21 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
           WriteOperation.Delete,
           await load(owner.id as string),
         );
-        if (source === "action")
+        if (source === "action") {
           Object.assign(parent, { transformWrite: transform });
+        }
         let invalid = true;
         const error = new Error("invalid transformed action");
         parent.getValidators = () => [
           { validate: async () => (invalid ? error : undefined) },
         ];
-        if (method === "validX")
+        if (method === "validX") {
           await expect(parent.validX()).rejects.toBe(error);
-        else
+        } else {
           expect(await parent[method]()).toEqual(
             method === "valid" ? false : [error],
           );
+        }
         invalid = false;
         await parent[method]();
         await parent[method]();
@@ -2316,7 +2347,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       );
       Object.assign(parent, {
         transformWrite: async ({ op }: { op: SQLStatementOperation }) => {
-          if (op !== SQLStatementOperation.Insert) return null;
+          if (op !== SQLStatementOperation.Insert) {
+            return null;
+          }
           return {
             op: SQLStatementOperation.Update,
             existingEnt: await load(owner.id as string),

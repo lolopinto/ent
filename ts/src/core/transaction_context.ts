@@ -55,7 +55,9 @@ export function runInActionPreparation<T>(
   validationOnly = false,
 ): Promise<T> {
   const state = getTransactionState();
-  if (!state) return prepare();
+  if (!state) {
+    return prepare();
+  }
   const parent = preparationStorage.getStore();
   const scopedParent = parent?.token === state.token ? parent : undefined;
   const root = scopedParent?.root ?? builder;
@@ -140,7 +142,9 @@ export function isValidationPreparation(): boolean {
 export async function awaitActionPreparations<T>(
   work: Iterable<T | PromiseLike<T>>,
 ): Promise<Awaited<T>[]> {
-  if (!isValidationPreparation()) return Promise.all(work);
+  if (!isValidationPreparation()) {
+    return Promise.all(work);
+  }
   let failed = false;
   let failure: unknown;
   const results = await Promise.all(
@@ -153,7 +157,9 @@ export async function awaitActionPreparations<T>(
       }),
     ),
   );
-  if (failed) throw failure;
+  if (failed) {
+    throw failure;
+  }
   return results as Awaited<T>[];
 }
 
@@ -181,7 +187,9 @@ export function claimGuardedPreparation(resources?: readonly string[]) {
   for (const owner of state.branchClaims) {
     // The same action can validate while being built. Different actions must
     // prove independence even when one was created by the other's trigger.
-    if (owner.builder === node.builder) continue;
+    if (owner.builder === node.builder) {
+      continue;
+    }
     if (
       !owner.resources ||
       !resources ||
@@ -225,12 +233,16 @@ export function completeGuardedPreparation(
     state.branchClaims.length = 0;
     state.generation++;
     state.resources.clear();
-    for (const cache of state.caches.values()) cache.clearCache();
+    for (const cache of state.caches.values()) {
+      cache.clearCache();
+    }
   }
   // A result getter reconstructs a snapshot, not a new database read. Capture
   // the completed write's provenance for every builder in the composed graph.
   const provenance = { token: state.token, generation: state.generation };
-  for (const builder of builders) resultTransactions.set(builder, provenance);
+  for (const builder of builders) {
+    resultTransactions.set(builder, provenance);
+  }
 }
 
 export const transactionStorage = new AsyncLocalStorage<TransactionState>();
@@ -268,16 +280,20 @@ export function hasActionResultTransaction(builder: object): boolean {
 export function recordEntTransaction(ent: object, row?: object) {
   if (row && rowTransactions.has(row)) {
     const provenance = rowTransactions.get(row);
-    if (provenance) entTransactions.set(ent, provenance);
-    else entTransactions.delete(ent);
+    if (provenance) {
+      entTransactions.set(ent, provenance);
+    } else {
+      entTransactions.delete(ent);
+    }
     return;
   }
   const state = getTransactionState();
-  if (state)
+  if (state) {
     entTransactions.set(ent, {
       token: state.token,
       generation: state.generation,
     });
+  }
 }
 
 export interface TransactionReadState {
@@ -388,7 +404,9 @@ export async function runActionExecution<T>(
   try {
     return await execute();
   } catch (error) {
-    if (state) failTransaction(state, error);
+    if (state) {
+      failTransaction(state, error);
+    }
     throw error;
   }
 }

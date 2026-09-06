@@ -88,7 +88,9 @@ async function main() {
           assert.equal(getTransactionScope().isolationLevel, "serializable");
           const account = await load();
           if (tx.attempt === 0) {
-            if (++arrivals === 2) meet();
+            if (++arrivals === 2) {
+              meet();
+            }
             await ready;
           }
           await tx.query(
@@ -115,7 +117,9 @@ async function main() {
       `transaction runtime passed: ${process.versions.bun ? "bun" : "node"}/${process.argv[2] || "pg"}`,
     );
   } finally {
-    if (DB.instance) await DB.getInstance().endPool();
+    if (DB.instance) {
+      await DB.getInstance().endPool();
+    }
     await admin.query(`DROP DATABASE ${database} WITH (FORCE)`);
     await admin.end();
   }

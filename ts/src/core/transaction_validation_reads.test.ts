@@ -108,7 +108,9 @@ describe.each(["valid", "validX", "validWithErrors"] as const)(
         const sql = mode === "SQL setup" || mode === "late SQL failure";
         const key = 1_000_000 + Math.floor(Math.random() * 1_000_000_000);
         const lock = sql ? await DB.getInstance().getNewClient() : undefined;
-        if (lock) await lock.query("SELECT pg_advisory_lock($1)", [key]);
+        if (lock) {
+          await lock.query("SELECT pg_advisory_lock($1)", [key]);
+        }
         let invalid = true;
         let settled = false;
         let settledBeforeRelease = false;
@@ -196,7 +198,9 @@ describe.each(["valid", "validX", "validWithErrors"] as const)(
                 {},
               );
               ent = await reader.load(records[2].id as string);
-            } else ent = await load(records[2].id as string);
+            } else {
+              ent = await load(records[2].id as string);
+            }
             const changeset = await independent(
               edit(ent, 70),
               "slow",
@@ -233,7 +237,9 @@ describe.each(["valid", "validX", "validWithErrors"] as const)(
             parent.getTriggers = () => [
               { changeset: () => intermediate.changeset() },
             ];
-          } else parent.getTriggers = () => [trigger];
+          } else {
+            parent.getTriggers = () => [trigger];
+          }
           const validation = parent[method]().then(
             () => {
               settled = true;
@@ -269,7 +275,9 @@ describe.each(["valid", "validX", "validWithErrors"] as const)(
           await new Promise<void>((resolve) => setImmediate(resolve));
           settledBeforeRelease = settled;
           release.resolve();
-          if (lock) await lock.query("SELECT pg_advisory_unlock($1)", [key]);
+          if (lock) {
+            await lock.query("SELECT pg_advisory_unlock($1)", [key]);
+          }
           const result = await transactionOutcome;
           if (mode === "late SQL failure") {
             expect(validationError).toBe(ordinary);

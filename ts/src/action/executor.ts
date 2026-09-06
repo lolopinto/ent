@@ -279,7 +279,9 @@ export class ComplexExecutor<T extends Ent> implements Executor {
         ]),
       );
     } catch (error) {
-      if (this.transaction) failTransaction(this.transaction, error);
+      if (this.transaction) {
+        failTransaction(this.transaction, error);
+      }
       throw error;
     }
   }
@@ -409,8 +411,12 @@ export async function executeOperations(
         await executor.preFetch(transaction.queryer, context);
       }
       for (const operation of executor) {
-        if (operation.shortCircuit?.(executor)) continue;
-        if (trackOps) operations.push(operation);
+        if (operation.shortCircuit?.(executor)) {
+          continue;
+        }
+        if (trackOps) {
+          operations.push(operation);
+        }
         operation.resolve?.(executor);
         const target =
           transaction.guardedRoot && operation.transactionWriteTarget?.();

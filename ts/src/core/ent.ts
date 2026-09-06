@@ -903,7 +903,9 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
   const res = await pool.query(queryData.query, queryData.values);
   assertTransactionRead(read);
-  for (const row of res.rows) recordRowTransaction(row, read);
+  for (const row of res.rows) {
+    recordRowTransaction(row, read);
+  }
   if (res.rowCount != 1) {
     if (res.rowCount > 1) {
       log("error", "got more than one row for query " + queryData.query);
@@ -938,7 +940,9 @@ export async function performRawQuery(
   try {
     const res = await pool.queryAll(query, values);
     assertTransactionRead(read);
-    for (const row of res.rows) recordRowTransaction(row, read);
+    for (const row of res.rows) {
+      recordRowTransaction(row, read);
+    }
     return res.rows;
   } catch (e) {
     if (_logQueryWithError) {
@@ -1404,7 +1408,9 @@ export const assocEdgeLoader = createAssocEdgeConfigLoader({
 
 function getAssocEdgeConfigLoader() {
   const state = getTransactionState();
-  if (!state) return assocEdgeLoader;
+  if (!state) {
+    return assocEdgeLoader;
+  }
   let loader = state.resources.get(assocEdgeLoader) as
     | typeof assocEdgeLoader
     | undefined;
@@ -1757,8 +1763,11 @@ async function applyPrivacyPolicyForRowImpl<
   resultBuilder?: object,
 ): Promise<TEnt | Error> {
   const ent = new options.ent(viewer, row);
-  if (resultBuilder) recordActionResultTransaction(ent, resultBuilder);
-  else recordEntTransaction(ent, row);
+  if (resultBuilder) {
+    recordActionResultTransaction(ent, resultBuilder);
+  } else {
+    recordEntTransaction(ent, row);
+  }
   return trackValidationRead(
     applyPrivacyPolicyForEnt(viewer, ent, row, options),
   );

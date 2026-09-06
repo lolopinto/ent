@@ -155,8 +155,9 @@ describe("safe consumer provenance outcomes", () => {
           await edit(stale, 80).saveX();
           try {
             const query = accountQuery(mode === "supplied" ? stale : owner.id);
-            if (mode === "sourceEnt fallback")
+            if (mode === "sourceEnt fallback") {
               query.sourceEnt = async () => stale;
+            }
             await query.queryRawCount();
           } catch (error) {
             caught = error;
@@ -239,7 +240,9 @@ describe("safe consumer provenance outcomes", () => {
           WriteOperation.Insert,
           null,
         );
-        if (kind === "action privacy") action.getPrivacyPolicy = () => policy;
+        if (kind === "action privacy") {
+          action.getPrivacyPolicy = () => policy;
+        }
         if (kind === "unsafe getter") {
           const proposed =
             await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
@@ -248,7 +251,9 @@ describe("safe consumer provenance outcomes", () => {
         const result = await action.saveX();
         expect(result.data.balance).toBe(100);
       });
-      if (kind !== "unsafe getter") expect(calls).toBe(1);
+      if (kind !== "unsafe getter") {
+        expect(calls).toBe(1);
+      }
     },
   );
   test("retained proposed Ent cannot authorize a query after another guarded save", async () => {

@@ -63,7 +63,9 @@ function make(
     WriteOperation.Insert,
     null,
   );
-  if (source === "action transform") Object.assign(action, { transformWrite });
+  if (source === "action transform") {
+    Object.assign(action, { transformWrite });
+  }
   return action;
 }
 function deferred() {
@@ -96,13 +98,18 @@ describe("transaction field preparation generations", () => {
       await expect(
         withTransaction(async () => {
           const retained = make(source, next);
-          if (entry === "validX") await retained.validX();
-          else if (entry === "valid") expect(await retained.valid()).toBe(true);
-          else if (entry === "validWithErrors")
+          if (entry === "validX") {
+            await retained.validX();
+          } else if (entry === "valid") {
+            expect(await retained.valid()).toBe(true);
+          }
+          else if (entry === "validWithErrors") {
             expect(await retained.validWithErrors()).toEqual([]);
-          else if (entry === "privacy getter")
+          } else if (entry === "privacy getter") {
             await retained.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
-          else await retained.builder.orchestrator.getEditedData();
+          } else {
+            await retained.builder.orchestrator.getEditedData();
+          }
           await make(source, next).saveX();
           await expect(retained.saveX()).rejects.toThrow(
             "cannot cross transaction generations",
