@@ -82,8 +82,12 @@ func prepareExternalTables(t *testing.T, fixture fixture, appRoot string) func()
 
 		// Verify the policy against an actual Go-generated FK, including the
 		// ignored target's generated definition. This is read-only inspection.
+		engineURL := os.Getenv("DB_CONNECTION_STRING")
+		if strings.HasPrefix(engineURL, "postgres://") {
+			engineURL = "postgresql://" + strings.TrimPrefix(engineURL, "postgres://")
+		}
 		cmd := exec.Command("auto_schema", "--schema="+filepath.Join(appRoot, "src/schema"),
-			"--engine="+os.Getenv("DB_CONNECTION_STRING"), "--changes",
+			"--engine="+engineURL, "--changes",
 			"--ignore_table=matrix_core_users")
 		// The legacy CLI reports errors on stderr; the Go launcher treats
 		// that diagnostic as failure even when the CLI exits with status 0.

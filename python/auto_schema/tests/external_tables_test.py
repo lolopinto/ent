@@ -77,6 +77,46 @@ def create_external_tables(r, schema=None):
     connection.commit()
 
 
+def cascade_runner(new_test_runner, ondelete='CASCADE', onupdate='CASCADE', dev_schema=False):
+    metadata = sa.MetaData()
+    parents = sa.Table('parents', metadata, sa.Column('id', sa.Integer(), primary_key=True),
+                       sa.Column('code', sa.Integer()), sa.Column('label', sa.Text()),
+                       sa.UniqueConstraint('code', name='parents_code_key'))
+    children = sa.Table('children', metadata, sa.Column('id', sa.Integer(), primary_key=True),
+                        sa.Column('code', sa.Integer(), server_default='20'),
+                        sa.UniqueConstraint('code', name='children_code_key'),
+                        sa.ForeignKeyConstraint(['code'], ['parents.code'], name='children_parent_fkey',
+                                                ondelete=ondelete, onupdate=onupdate))
+    args = {'ignore_table': ['sessions']}
+    if dev_schema:
+        args = {'db_schema': 'ent_dev_external_test', 'ignore_table': ['auth.*']}
+    r = new_test_runner(metadata, args_override=args)
+    if r.connection.dialect.name == 'sqlite':
+        r.connection.execute(sa.text('PRAGMA foreign_keys=ON'))
+    metadata.create_all(r.connection)
+    sessions = 'sessions'
+    target = 'children'
+    if dev_schema:
+        r.connection.execute(sa.text('CREATE SCHEMA auth'))
+        sessions = 'auth.sessions'
+        target = 'ent_dev_external_test.children'
+    r.connection.execute(sa.text(f'CREATE TABLE {sessions} (id INTEGER PRIMARY KEY, code INTEGER REFERENCES {target}(code) ON DELETE CASCADE ON UPDATE CASCADE)'))
+    r.connection.execute(parents.insert(), [{'id': 1, 'code': 10, 'label': 'keep'},
+                                          {'id': 2, 'code': 20, 'label': 'other'}])
+    r.connection.execute(children.insert().values(id=3, code=10))
+    r.connection.execute(sa.text(f'INSERT INTO {sessions} VALUES (4, 10)'))
+    r.connection.commit()
+    return r
+
+
+def change_parent_seed(r, operation):
+    rows = [{'id': 2, 'code': 20, 'label': 'other'}]
+    if operation != 'delete':
+        rows.append({'id': 1, 'code': 11 if operation == 'update_key' else 10,
+                     'label': 'updated' if operation == 'update_label' else 'keep'})
+    r.metadata.info['data'] = {'public': {'parents': {'pkeys': ['id'], 'rows': rows}}}
+
+
 class ExternalTablesTests:
     @pytest.mark.parametrize('qualified', [False, True])
     def test_preserve_external_objects_and_apply_managed_change(self, new_test_runner, qualified):
@@ -203,6 +243,96 @@ class ExternalTablesTests:
             r.run()
         assert external_snapshot(r.connection) == before
 
+    def test_seed_delete_cannot_cascade_through_managed_tables(self, new_test_runner):
+        metadata = sa.MetaData()
+        parents = sa.Table('parents', metadata, sa.Column('id', sa.Integer(), primary_key=True))
+        children = sa.Table('children', metadata, sa.Column('id', sa.Integer(), primary_key=True),
+                            sa.Column('parent_id', sa.Integer()),
+                            sa.ForeignKeyConstraint(['parent_id'], ['parents.id'],
+                                                    name='children_parent_fkey', ondelete='CASCADE'))
+        r = new_test_runner(metadata, args_override={'ignore_table': ['sessions']})
+        if r.connection.dialect.name == 'sqlite':
+            r.connection.execute(sa.text('PRAGMA foreign_keys=ON'))
+        metadata.create_all(r.connection)
+        r.connection.execute(sa.text('CREATE TABLE sessions (id INTEGER PRIMARY KEY, child_id INTEGER REFERENCES children(id) ON DELETE CASCADE)'))
+        r.connection.execute(parents.insert().values(id=1))
+        r.connection.execute(children.insert().values(id=2, parent_id=1))
+        r.connection.execute(sa.text('INSERT INTO sessions VALUES (3, 2)'))
+        r.connection.commit()
+        metadata.info['data'] = {'public': {'parents': {'pkeys': ['id'], 'rows': []}}}
+        with pytest.raises(ValueError, match='ownership boundary'):
+            r.run()
+        assert list(r.connection.execute(sa.text('SELECT * FROM sessions'))) == [(3, 2)]
+        assert not list(Path(r.schema_path, 'versions').glob('*.py'))
+
+    def test_removing_unrelated_overlapping_unique_index_is_allowed(self, new_test_runner):
+        metadata = sa.MetaData()
+        sa.Table('accounts', metadata, sa.Column('id', sa.Integer(), primary_key=True),
+                 sa.Column('label', sa.Text()))
+        r = new_test_runner(metadata, args_override={'ignore_table': ['sessions']})
+        metadata.create_all(r.connection)
+        r.connection.execute(sa.text('CREATE UNIQUE INDEX accounts_id_label_key ON accounts(id, label)'))
+        r.connection.execute(sa.text('CREATE TABLE sessions (id INTEGER PRIMARY KEY, account_id INTEGER REFERENCES accounts(id))'))
+        r.connection.execute(sa.text("INSERT INTO accounts VALUES (1, 'keep')"))
+        r.connection.execute(sa.text('INSERT INTO sessions VALUES (2, 1)'))
+        r.connection.commit()
+        r.run()
+        r.connection.commit()
+        assert r.compute_changes() == []
+        assert 'accounts_id_label_key' not in {i['name'] for i in sa.inspect(r.connection).get_indexes('accounts')}
+        assert list(r.connection.execute(sa.text('SELECT * FROM sessions'))) == [(2, 1)]
+
+    @pytest.mark.parametrize('operation,ondelete', [('delete', 'CASCADE'), ('update_key', 'CASCADE'),
+                                                   ('delete', 'SET NULL'), ('delete', 'SET DEFAULT')])
+    def test_seed_changes_cannot_reach_external_rows_indirectly(self, new_test_runner, operation, ondelete):
+        r = cascade_runner(new_test_runner, ondelete=ondelete)
+        change_parent_seed(r, operation)
+        with pytest.raises(ValueError, match='ownership boundary'):
+            r.run()
+        assert list(r.connection.execute(sa.text('SELECT * FROM sessions'))) == [(4, 10)]
+        assert r.connection.scalar(sa.text('SELECT code FROM children')) == 10
+        assert not list(Path(r.schema_path, 'versions').glob('*.py'))
+
+    def test_unrelated_seed_updates_remain_managed_with_cascades(self, new_test_runner):
+        r = cascade_runner(new_test_runner)
+        change_parent_seed(r, 'update_label')
+        r.run()
+        r.connection.commit()
+        assert r.compute_changes() == []
+        assert r.connection.scalar(sa.text('SELECT label FROM parents WHERE id = 1')) == 'updated'
+        assert list(r.connection.execute(sa.text('SELECT * FROM sessions'))) == [(4, 10)]
+
+    def test_managed_cascade_cycle_without_external_dependents_allows_seed_update(self, new_test_runner):
+        metadata = sa.MetaData()
+        parents = sa.Table('parents', metadata, sa.Column('id', sa.Integer(), primary_key=True),
+                           sa.Column('code', sa.Integer()), sa.UniqueConstraint('code', name='parents_code_key'),
+                           sa.ForeignKeyConstraint(['code'], ['parents.code'], name='parents_self_fkey',
+                                                   onupdate='CASCADE'))
+        r = new_test_runner(metadata, args_override={'ignore_table': ['sessions']})
+        metadata.create_all(r.connection)
+        r.connection.execute(sa.text('CREATE TABLE sessions (id INTEGER PRIMARY KEY)'))
+        r.connection.execute(parents.insert().values(id=1, code=10))
+        r.connection.commit()
+        metadata.info['data'] = {'public': {'parents': {'pkeys': ['id'], 'rows': [{'id': 1, 'code': 11}]}}}
+        r.run()
+        r.connection.commit()
+        assert r.connection.scalar(sa.text('SELECT code FROM parents')) == 11
+        assert r.compute_changes() == []
+
+    @pytest.mark.parametrize('action', ['NO ACTION', 'RESTRICT'])
+    def test_non_cascading_managed_dependency_does_not_block_unreferenced_seed_delete(self, new_test_runner, action):
+        r = cascade_runner(new_test_runner, ondelete=action)
+        # The removed parent has no children; the other parent has external
+        # dependents behind a managed FK that cannot propagate a deletion.
+        r.connection.execute(sa.text('UPDATE children SET code = 20'))
+        r.connection.commit()
+        change_parent_seed(r, 'delete')
+        r.run()
+        r.connection.commit()
+        assert r.compute_changes() == []
+        assert r.connection.scalar(sa.text('SELECT COUNT(*) FROM parents')) == 1
+        assert list(r.connection.execute(sa.text('SELECT * FROM sessions'))) == [(4, 20)]
+
     def test_ignored_seed_data_is_not_touched(self, new_test_runner):
         r = new_test_runner(managed_metadata(), args_override={'ignore_table': ['identities', 'sessions']})
         create_external_tables(r)
@@ -244,6 +374,52 @@ class TestSQLiteExternalTables(ExternalTablesTests):
 
 
 class TestPostgresExternalTables(ExternalTablesTests):
+    def test_removing_supporting_composite_unique_constraint_is_rejected(self, new_test_runner):
+        metadata = sa.MetaData()
+        sa.Table('accounts', metadata, sa.Column('id', sa.Integer(), primary_key=True),
+                 sa.Column('code', sa.Integer()), sa.Column('label', sa.Text()))
+        r = new_test_runner(metadata, args_override={'ignore_table': ['sessions']})
+        metadata.create_all(r.connection)
+        r.connection.execute(sa.text('ALTER TABLE accounts ADD CONSTRAINT accounts_code_label_key UNIQUE (code, label)'))
+        r.connection.execute(sa.text('CREATE TABLE sessions (id INTEGER PRIMARY KEY, code INTEGER, label TEXT, FOREIGN KEY (code, label) REFERENCES accounts(code, label))'))
+        r.connection.commit()
+        with pytest.raises(ValueError, match='ownership boundary'):
+            r.run()
+        assert 'accounts_code_label_key' in {k['name'] for k in sa.inspect(r.connection).get_unique_constraints('accounts')}
+        assert not list(Path(r.schema_path, 'versions').glob('*.py'))
+
+    @pytest.mark.parametrize('kind,columns', [('INDEX', 'id'), ('CONSTRAINT', 'id'),
+                                             ('CONSTRAINT', 'id, label')])
+    def test_remove_unused_unique_key_when_external_fk_uses_primary_key(self, new_test_runner, kind, columns):
+        metadata = sa.MetaData()
+        sa.Table('accounts', metadata, sa.Column('id', sa.Integer(), primary_key=True),
+                 sa.Column('label', sa.Text()))
+        r = new_test_runner(metadata, args_override={'ignore_table': ['sessions']})
+        metadata.create_all(r.connection)
+        r.connection.execute(sa.text('CREATE TABLE sessions (id INTEGER PRIMARY KEY, account_id INTEGER REFERENCES accounts(id))'))
+        if kind == 'INDEX':
+            r.connection.execute(sa.text(f'CREATE UNIQUE INDEX unused_key ON accounts({columns})'))
+        else:
+            r.connection.execute(sa.text(f'ALTER TABLE accounts ADD CONSTRAINT unused_key UNIQUE ({columns})'))
+        r.connection.execute(sa.text("INSERT INTO accounts VALUES (1, 'keep')"))
+        r.connection.execute(sa.text('INSERT INTO sessions VALUES (2, 1)'))
+        r.connection.commit()
+        r.run()
+        r.connection.commit()
+        assert r.compute_changes() == []
+        assert 'unused_key' not in {i['name'] for i in sa.inspect(r.connection).get_indexes('accounts')}
+        assert list(r.connection.execute(sa.text('SELECT * FROM sessions'))) == [(2, 1)]
+
+    @pytest.mark.parametrize('operation,ondelete', [('delete', 'CASCADE'), ('update_key', 'CASCADE'),
+                                                   ('delete', 'SET NULL'), ('delete', 'SET DEFAULT')])
+    def test_indirect_cascade_into_external_schema_in_dev_mode(self, new_test_runner, operation, ondelete):
+        r = cascade_runner(new_test_runner, ondelete=ondelete, dev_schema=True)
+        change_parent_seed(r, operation)
+        with pytest.raises(ValueError, match='ownership boundary'):
+            r.run()
+        assert list(r.connection.execute(sa.text('SELECT * FROM auth.sessions'))) == [(4, 10)]
+        assert not list(Path(r.schema_path, 'versions').glob('*.py'))
+
     @pytest.mark.parametrize('patterns', [['auth.*'], ['auth.identities', 'auth.sessions']])
     def test_named_schema_and_search_path(self, new_test_runner, patterns):
         r = new_test_runner(managed_metadata(True), args_override={'ignore_table': patterns})
