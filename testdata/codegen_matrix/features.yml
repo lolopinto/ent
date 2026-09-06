@@ -928,6 +928,14 @@ features:
     mode: explicit
     rationale: Imported custom GraphQL enum types must not be serialized as scalars, and unused optional scalar helpers must not churn custom_schema.json.
 
+  - id: struct.graphql_literal_input_runtime
+    owns: []
+    mode: existing_test
+    test_refs:
+      - ts/src/schema/struct_input.test.ts
+      - ts/src/action/orchestrator.test.ts
+      - examples/todo-sqlite/src/graphql/tests/account.test.ts
+    rationale: Null-prototype GraphQL literal records require runtime validation and formatting; generated mutations and nested structs/lists are exercised outside the compile-only matrix.
   - id: transform_write.struct_input_runtime
     owns: []
     mode: existing_test
