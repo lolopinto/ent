@@ -1286,6 +1286,64 @@ class TestPostgresRunner(BaseTestRunner):
         assert _reflected_predicate(r2) == updated_predicate
         assert r2.compute_changes() == []
 
+    def test_index_type_change_preserves_foreign_key_dependencies(self, new_test_runner):
+        def metadata(score_type, fillfactor):
+            result = _partial_index_metadata(None, unique=True, postgresql_with={"fillfactor": fillfactor})
+            result.tables["contacts"].c.score.type = score_type
+            result.tables["contacts"].append_column(sa.Column("parent_owner", sa.Integer()))
+            return result
+
+        before = metadata(sa.Date(), 70)
+        r = new_test_runner(before)
+        r.run()
+        # The referenced UNIQUE index must exist before the FK is installed.
+        r.get_connection().execute(sa.text(
+            "ALTER TABLE contacts ADD CONSTRAINT contacts_parent_fk "
+            "FOREIGN KEY (parent_owner) REFERENCES contacts(owner_id)"
+        ))
+        r.get_connection().execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, parent_owner, score) "
+            "VALUES (1, 10, NULL, DATE '2020-01-03'), (2, 20, 10, DATE '2020-01-04')"
+        ))
+        r.get_connection().commit()
+        before.tables["contacts"].append_constraint(sa.ForeignKeyConstraint(
+            ["parent_owner"], ["contacts.owner_id"], name="contacts_parent_fk",
+        ))
+        assert r.compute_changes() == []
+
+        after = metadata(sa.TIMESTAMP(), 80)
+        r2 = new_test_runner(after, r)
+        r2.run()
+
+        def assert_state(r, score_type, fillfactor, has_foreign_key):
+            index = _reflected_partial_index(r)
+            assert index["unique"]
+            assert index["dialect_options"]["postgresql_with"] == {"fillfactor": str(fillfactor)}
+            inspector = sa.inspect(r.engine)
+            columns = {column["name"]: column for column in inspector.get_columns("contacts")}
+            assert isinstance(columns["score"]["type"], score_type)
+            foreign_keys = inspector.get_foreign_keys("contacts")
+            assert [fk["name"] for fk in foreign_keys] == (["contacts_parent_fk"] if has_foreign_key else [])
+            if has_foreign_key:
+                assert foreign_keys[0]["constrained_columns"] == ["parent_owner"]
+                assert foreign_keys[0]["referred_columns"] == ["owner_id"]
+            assert r.get_connection().execute(sa.text(
+                "SELECT id, owner_id, parent_owner, score::date::text FROM contacts ORDER BY id"
+            )).all() == [(1, 10, None, "2020-01-03"), (2, 20, 10, "2020-01-04")]
+            r.get_connection().commit()
+
+        assert_state(r2, sa.TIMESTAMP, 80, False)
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert_state(r2, sa.Date, 70, True)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_state(r2, sa.TIMESTAMP, 80, False)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
     def test_invalid_operator_without_pending_column_type_still_fails(self, new_test_runner):
         r = new_test_runner(_partial_index_metadata("score > 1"))
         r.run()

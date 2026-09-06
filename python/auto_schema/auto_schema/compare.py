@@ -779,12 +779,16 @@ def _compare_indexes(autogen_context: AutogenContext,
 
     if has_type_changes:
         # PostgreSQL reparses existing indexes during ALTER COLUMN TYPE. Drop
-        # indexes being replaced first, while their old predicates are valid;
-        # their replacements must wait until the new column types are in place.
-        drops = [op for op in modify_table_ops.ops if isinstance(
+        # indexes being replaced while their old predicates are valid, after
+        # removing constraints that can depend on those indexes. Reversing this
+        # order restores the old indexes before recreating their constraints.
+        index_drops = [op for op in modify_table_ops.ops if isinstance(
             op, (alembicops.DropIndexOp, ops.DropFullTextIndexOp),
         )]
-        modify_table_ops.ops[:] = drops + [op for op in modify_table_ops.ops if op not in drops]
+        if index_drops:
+            constraint_drops = [op for op in modify_table_ops.ops if isinstance(op, alembicops.DropConstraintOp)]
+            drops = constraint_drops + index_drops
+            modify_table_ops.ops[:] = drops + [op for op in modify_table_ops.ops if op not in drops]
 # this handles computed columns changing and so drops and re-creates the column.
 
 
