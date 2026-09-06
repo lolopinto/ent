@@ -3,7 +3,6 @@ import { Ent, Viewer } from "../core/base";
 import { loadEdges, loadRow } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
-import { SQLStatementOperation } from "../schema";
 import { StringType } from "../schema/field";
 import {
   User,
@@ -147,87 +146,6 @@ const createUser = async (map: Map<string, any>): Promise<User> => {
 };
 
 function commonTests() {
-  describe("generated field edges", () => {
-    test("refresh replaces only field-generated edges and preserves explicit association data", () => {
-      const { orchestrator } = getCreateBuilder(new Map());
-      orchestrator.__setFieldEdges("owner", ["old owner"], "edge", "User");
-      orchestrator.addInboundEdge("associated", "edge", "User", {
-        data: "explicit association",
-      });
-      orchestrator.__setFieldEdges("owner", ["new owner"], "edge", "User");
-      // A caller may replace an already-generated edge at the same ID.
-      orchestrator.addInboundEdge("new owner", "edge", "User", {
-        data: "explicit owner association",
-      });
-      orchestrator.__setFieldEdges("owner", ["new owner"], "edge", "User");
-      orchestrator.__setFieldEdges("owner", [], "edge", "User");
-      expect(orchestrator.getInputEdges("edge", WriteOperation.Insert)).toEqual(
-        [
-          expect.objectContaining({
-            id: "associated",
-            options: { data: "explicit association" },
-          }),
-          expect.objectContaining({
-            id: "new owner",
-            options: { data: "explicit owner association" },
-          }),
-        ],
-      );
-    });
-
-    test("shared edges remain until every field releases them", () => {
-      const { orchestrator } = getCreateBuilder(new Map());
-      orchestrator.__setFieldEdges("owner", ["A"], "edge", "User");
-      orchestrator.__setFieldEdges("otherOwner", ["B"], "edge", "User");
-      orchestrator.__setFieldEdges("owner", ["B"], "edge", "User");
-      orchestrator.__setFieldEdges("otherOwner", [], "edge", "User");
-      expect(
-        orchestrator
-          .getInputEdges("edge", WriteOperation.Insert)
-          .map((edge) => edge.id),
-      ).toEqual(["B"]);
-      orchestrator.__setFieldEdges("owner", [], "edge", "User");
-      expect(orchestrator.getInputEdges("edge", WriteOperation.Insert)).toEqual(
-        [],
-      );
-    });
-
-    test("field contributions survive an edit-to-insert transform", async () => {
-      const viewer = new IDViewer("1");
-      const action = Object.assign(
-        new SimpleAction(
-          viewer,
-          UserSchema,
-          new Map([
-            ["FirstName", "Jon"],
-            ["LastName", "Snow"],
-          ]),
-          WriteOperation.Edit,
-          new User(viewer, { id: "1" }),
-        ),
-        {
-          transformWrite: () => ({ op: SQLStatementOperation.Insert }),
-        },
-      );
-      const { orchestrator } = action.builder;
-      orchestrator.__setFieldEdges("owner", ["A"], "edge", "User");
-      orchestrator.__setFieldEdges("otherOwner", ["A"], "edge", "User");
-      await orchestrator.getEditedData();
-      orchestrator.__setFieldEdges("otherOwner", ["B"], "edge", "User");
-      expect(
-        orchestrator
-          .getInputEdges("edge", WriteOperation.Insert)
-          .map((edge) => edge.id),
-      ).toEqual(["A", "B"]);
-      orchestrator.__setFieldEdges("owner", [], "edge", "User");
-      expect(
-        orchestrator
-          .getInputEdges("edge", WriteOperation.Insert)
-          .map((edge) => edge.id),
-      ).toEqual(["B"]);
-    });
-  });
-
   describe("inbound edge", () => {
     test("no options", async () => {
       const builder = getLoggedInBuilder();

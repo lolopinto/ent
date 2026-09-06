@@ -378,159 +378,54 @@ function getInsertCountryAction(
 }
 
 function commonTests() {
-  describe("immutable creation input", () => {
-    test.each([
-      "action insert",
-      "action null",
-      "schema null",
-    ])("assignments in %s transforms beat defaults", async (source) => {
-      const defaultValue = jest.fn(() => "default");
-      const schema = new EntBuilderSchema(User, {
-        fields: {
-          FirstName: StringType({
-            immutable: true,
-            defaultValueOnCreate: defaultValue,
-          })
-            .trim()
-            .toLowerCase(),
-          LastName: StringType(),
-        },
-      });
-      const action = new SimpleAction(
+  test.each([
+    SQLStatementOperation.Insert,
+    SQLStatementOperation.Update,
+  ])("default synchronization receives the transformed operation %s", async (op) => {
+    const existing = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      undefined,
+    ).saveX();
+    const schema = new EntBuilderSchema(User, {
+      fields: {
+        FirstName: StringType({
+          immutable: true,
+          defaultValueOnCreate: () => "created",
+          defaultValueOnEdit: () => "edited",
+        }),
+        LastName: StringType({ defaultValueOnCreate: () => "Snow" }),
+      },
+    });
+    const action = Object.assign(
+      new SimpleAction(
         new LoggedOutViewer(),
         schema,
-        new Map([["LastName", "Snow"]]),
-        WriteOperation.Insert,
-        null,
-      );
-      const assign = jest.fn(() => {
-        action.builder.updateInput({
-          FirstName: " ASSIGNED DURING TRANSFORM ",
-        });
-        return source === "action insert"
-          ? { op: SQLStatementOperation.Insert }
-          : null;
-      });
-      if (source === "schema null") {
-        schema.patterns.push({
-          name: "assign_immutable",
-          fields: {},
-          transformWrite: assign,
-        });
-      } else {
-        Object.assign(action, {
-          async transformWrite() {
-            await Promise.resolve();
-            return assign();
-          },
-        });
-      }
-      expect((await action.saveX()).firstName).toBe(
-        "assigned during transform",
-      );
-      expect(defaultValue).not.toHaveBeenCalled();
-      expect(assign).toHaveBeenCalledTimes(1);
-    });
-
-    test("create-to-edit preserves creation input and skips creation defaults", async () => {
-      const existing = await getInsertUserAction(
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-        ]),
-        undefined,
-      ).saveX();
-      const defaultValue = jest.fn(async () => "default");
-      const schema = new EntBuilderSchema(User, {
-        fields: {
-          FirstName: StringType({ immutable: true }),
-          LastName: StringType({
-            immutable: true,
-            defaultValueOnCreate: defaultValue,
-          }),
-        },
-      });
-      const action = Object.assign(
-        new SimpleAction(
-          new LoggedOutViewer(),
-          schema,
-          new Map([["FirstName", "Created input"]]),
-          WriteOperation.Insert,
-          null,
-        ),
-        {
-          transformWrite: jest.fn(() => ({
-            op: SQLStatementOperation.Update,
-            existingEnt: existing,
-          })),
-        },
-      );
-      await action.builder.orchestrator.getEditedData();
-      expect(action.builder.orchestrator.__getWriteOperation()).toBe(
-        WriteOperation.Edit,
-      );
-      expect((await action.saveX()).data).toMatchObject({
-        id: existing.id,
-        first_name: "Created input",
-        last_name: "Snow",
-      });
-      expect(defaultValue).not.toHaveBeenCalled();
-      expect(action.transformWrite).toHaveBeenCalledTimes(1);
-    });
-
-    test("edit-to-insert uses creation defaults before triggers", async () => {
-      const existing = await getInsertUserAction(
-        new Map([
-          ["FirstName", "Jon"],
-          ["LastName", "Snow"],
-        ]),
-        undefined,
-      ).saveX();
-      const schema = new EntBuilderSchema(User, {
-        fields: {
-          FirstName: StringType({
-            immutable: true,
-            defaultValueOnCreate: () => "sync",
-          }),
-          LastName: StringType({
-            immutable: true,
-            defaultValueOnCreate: async () => "async",
-          }),
-        },
-      });
-      const action = Object.assign(
-        new SimpleAction(
-          new LoggedOutViewer(),
-          schema,
-          new Map(),
-          WriteOperation.Edit,
-          existing,
-        ),
-        {
-          transformWrite: () => ({ op: SQLStatementOperation.Insert }),
-        },
-      );
-      action.getTriggers = () => [
-        {
-          changeset(builder) {
-            expect(builder.getInput()).toMatchObject({
-              FirstName: "sync",
-              LastName: "async",
-            });
-            expect(builder.orchestrator.__getWriteOperation()).toBe(
-              WriteOperation.Insert,
-            );
-            builder.updateInput({ FirstName: "trigger insert" });
-          },
-        },
-      ];
-      // Existing edit-to-insert persistence retains existingEnt; validate initialization only.
-      await action.validX();
-      expect(action.builder.orchestrator.getValidatedFields()).toMatchObject({
-        first_name: "trigger insert",
-        last_name: "async",
-      });
-    });
+        new Map(),
+        op === SQLStatementOperation.Insert
+          ? WriteOperation.Edit
+          : WriteOperation.Insert,
+        existing,
+      ),
+      {
+        transformWrite: () => ({ op, existingEnt: existing }),
+      },
+    );
+    const options = action.builder.orchestrator.__getOptions();
+    // Existing one-argument callbacks still work when the runtime adds context.
+    const updateInput = jest.fn(options.updateInput!);
+    options.updateInput = updateInput;
+    await action.validX();
+    expect(updateInput).toHaveBeenCalledWith(
+      expect.objectContaining({
+        FirstName: op === SQLStatementOperation.Insert ? "created" : "edited",
+      }),
+      op === SQLStatementOperation.Insert
+        ? WriteOperation.Insert
+        : WriteOperation.Edit,
+    );
   });
 
   test("delete -> update", async () => {

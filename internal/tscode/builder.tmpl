@@ -17,17 +17,8 @@
 
   {{/* we magically expect a local variable input to be defined when this is used */ -}}
   if (input.{{$tsFieldName}} !== undefined || this.operation === WriteOperation.Delete) {
-    {{ if $field.Immutable -}}
-      this.orchestrator.__setFieldEdges(
-        "{{$field.FieldName}}",
-        {{if $isList}}input.{{$tsFieldName}} ?? []{{else}}input.{{$tsFieldName}} ? [input.{{$tsFieldName}}] : []{{end}},
-        {{useImport "EdgeType"}}.{{$inverseEdge.TsEdgeConst}},
-        {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
-      );
-    {{ end -}}
     {{ if $isList -}}
       const input{{$tsFieldName}} = input.{{$tsFieldName}};
-      {{ if not $field.Immutable -}}
       if (input{{$tsFieldName}}) {
         input{{$tsFieldName}}.forEach((id) =>
           this.orchestrator.addInboundEdge(
@@ -37,7 +28,6 @@
           ),
         );
       }
-      {{ end -}}
       {{ if $field.HasAsyncAccessor $cfg -}}
         // can't have this be dependent on privacy so need to fetch the raw data...
         if (this.existingEnt) {
@@ -68,7 +58,6 @@
         }
       {{ end -}}
     {{ else -}}
-      {{ if not $field.Immutable -}}
       if (input.{{$tsFieldName}}) {
         this.orchestrator.addInboundEdge(
           input.{{$tsFieldName}},
@@ -76,7 +65,6 @@
           {{useImport "NodeType"}}.{{$inverseEdge.NodeInfo.Node}},
         );
       }
-      {{ end -}}
       {{ if $field.HasAsyncAccessor $cfg -}}
         // can't have this be dependent on privacy so need to fetch the raw data...
         if (this.existingEnt) {
@@ -194,7 +182,17 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
     {{ end -}}
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
+    {{ if .FieldInfo.GetImmutableFields -}}
+    const updateInput = (input: {{$input}}, operation?: WriteOperation) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+    };
+    {{ else -}}
     const updateInput = (d: {{$input}}) => this.updateInput.apply(this, [d]);
+    {{ end -}}
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
       viewer,
@@ -217,12 +215,25 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
   }
 
   {{ $immutableFields := .FieldInfo.GetImmutableFields -}}
-  updateInput(input: {{$input}}) {
+  {{$updateInputType := $input }}
+  {{ if $immutableFields }}
+    {{/* TODO this really doesn't quite matter since input allows any key because of action only fields */}}
+    {{$updateInputType = excludedFieldsType $input $immutableFields }}
+  {{ end }}
+
+  updateInput(input: {{$updateInputType}}) {
     {{ range $f := $immutableFields }}
-      if (input.{{$f.TsBuilderFieldName}} !== undefined && this.orchestrator.__getWriteOperation() !== WriteOperation.Insert) {
+      if (input.{{$f.TsBuilderFieldName}} !==undefined) {
         throw new Error(`{{$f.TsBuilderFieldName}} cannot be passed to updateInput. use {{$f.GetImmutableOverrideFieldNameInBuilder}} instead`);
       }
     {{ end }}
+    {{ if $immutableFields -}}
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: {{$input}}) {
+    {{ end -}}
     {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
       {{$tsFieldName := $field.TsBuilderFieldName -}}
       {{ $inverseEdge := $field.GetInverseEdge -}}

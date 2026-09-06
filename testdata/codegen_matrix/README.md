@@ -32,9 +32,10 @@ The matrix catalog lives in `features.yml`.
   Postgres value conversion helpers stay covered by the same broad fixture.
 - `immutable_defaults` also runs fixture-local Jest tests against actual generated
   builders and local Ent source, using a temporary SQLite database. It verifies
-  generated immutable setters/defaults, explicit edit overrides, action hooks,
-  effective-operation guards, and inverse-edge wiring. Detailed runtime coverage
-  lives in `ts/src/action/{orchestrator,transformed_orchestrator,orchestrator_edge}.test.ts`
+  immutable creation defaults, constructor precedence, explicit overrides, action
+  hooks, immutable guards across transformed operations, and inverse-edge wiring.
+  Core default and privacy coverage lives in
+  `ts/src/action/{orchestrator,transformed_orchestrator}.test.ts`
   and runs with `cd ts && npm test`; that command does not run the codegen matrix.
   Fixtures opt into this step with `runtime_tests` and supply their own
   `jest.config.js`; the harness exposes the local source path in

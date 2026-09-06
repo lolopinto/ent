@@ -28,8 +28,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - when GraphQL ID encoding is enabled, infer GraphQL Node fields for struct
   UUID fields whose `...Id` name matches an existing Ent schema, without
   requiring redundant edge metadata (#2021).
-- allow immutable fields to be assigned during creation, including creation
-  defaults, while preserving existing edit restrictions (#2026).
+- fix creation defaults for immutable fields in generated builders (#2026).
 
 ## [0.2.13]
 

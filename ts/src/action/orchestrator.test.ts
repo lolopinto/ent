@@ -15,7 +15,6 @@ import {
   DenyWithReason,
   Skip,
   Allow,
-  Deny,
 } from "../core/base";
 import { loadRows } from "../core/ent";
 import {
@@ -2670,364 +2669,42 @@ function commonTests() {
     });
   });
 
-  describe("immutable creation input", () => {
-    test("defaults reach hooks and explicit assignments take precedence", async () => {
-      const syncDefault = jest.fn(() => " SYNC ");
-      const asyncDefault = jest.fn(async () => " ASYNC ");
-      const schema = getBuilderSchemaFromFields(
-        {
-          FirstName: StringType({
-            immutable: true,
-            defaultValueOnCreate: syncDefault,
-          })
-            .trim()
-            .toLowerCase(),
-          LastName: StringType({
-            immutable: true,
-            defaultValueOnCreate: asyncDefault,
-          })
-            .trim()
-            .toLowerCase(),
-        },
-        User,
-      );
-      const action = new SimpleAction(
-        new LoggedOutViewer(),
-        schema,
-        new Map(),
-        WriteOperation.Insert,
-        null,
-      );
-      action.getTriggers = () => [
-        {
-          changeset(builder) {
-            expect(builder.getInput()).toMatchObject({
-              FirstName: " SYNC ",
-              LastName: " ASYNC ",
-            });
-            builder.updateInput({ LastName: " TRIGGER " });
-          },
-        },
-      ];
-      action.getValidators = () => [
-        {
-          validate(builder) {
-            expect(builder.getInput().LastName).toBe(" TRIGGER ");
-          },
-        },
-      ];
-      expect((await action.saveX()).data).toMatchObject({
-        first_name: "sync",
-        last_name: "trigger",
-      });
-
-      const explicit = new SimpleAction(
-        new LoggedOutViewer(),
-        schema,
-        new Map([["FirstName", " CONSTRUCTOR "]]),
-        WriteOperation.Insert,
-        null,
-      );
-      explicit.builder.updateInput({ LastName: " SETTER " });
-      expect((await explicit.saveX()).data).toMatchObject({
-        first_name: "constructor",
-        last_name: "setter",
-      });
-      expect(syncDefault).toHaveBeenCalledTimes(1);
-      expect(asyncDefault).toHaveBeenCalledTimes(1);
-    });
-
-    test.each([
-      "action policy",
-      "unsafe-ent helper",
-    ])("%s sees immutable assignments after defaults were cached", async (entryPoint) => {
-      const schema = getBuilderSchemaFromFields(
-        {
-          FirstName: StringType({
-            immutable: true,
-            defaultToViewerOnCreate: true,
-          }),
-          LastName: StringType(),
-        },
-        User,
-      );
-      const action = new SimpleAction(
-        new IDViewer("owner"),
-        schema,
-        new Map([["LastName", "Snow"]]),
-        WriteOperation.Insert,
-        null,
-      );
-      action.getPrivacyPolicy = () => ({
-        rules:
-          entryPoint === "action policy"
-            ? [
-                new AllowIfViewerIsEntPropertyRule<User>("firstName"),
-                AlwaysDenyRule,
-              ]
-            : [
-                {
-                  async apply() {
-                    const ent =
-                      await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
-                    return ent.firstName === action.viewer.viewerID
-                      ? Allow()
-                      : Deny();
-                  },
-                },
-              ],
-      });
-      const id = (await action.builder.orchestrator.getEditedData()).id;
-      action.builder.updateInput({ FirstName: "other owner" });
-      await expect(action.saveX()).rejects.toThrow(
-        /does not have permission to create/,
-      );
-      expect(
-        await loadRows({
-          tableName: "users",
-          fields: ["id"],
-          clause: clause.Eq("id", id),
+  test.each([
+    false,
+    true,
+  ])("immutable defaults preserve trusted triggers (prevalidate=%s)", async (prevalidate) => {
+    const defaultValue = jest.fn(() => "default");
+    const schema = getBuilderSchemaFromFields(
+      {
+        FirstName: StringType({
+          immutable: true,
+          defaultValueOnCreate: defaultValue,
+          editPrivacyPolicy: AlwaysDenyPrivacyPolicy,
         }),
-      ).toEqual([]);
-    });
-
-    test.each([
-      "field policy",
-      "action policy",
-      "unsafe-ent helper",
-    ])("trusted trigger and later caller assignments retain %s checks", async (entryPoint) => {
-      const defaultValue = jest.fn(() => "owner");
-      const schema = getBuilderSchemaFromFields(
-        {
-          FirstName: StringType({
-            immutable: true,
-            defaultValueOnCreate: defaultValue,
-            editPrivacyPolicy:
-              entryPoint === "field policy"
-                ? AlwaysDenyPrivacyPolicy
-                : undefined,
-          }),
-          LastName: StringType(),
+        LastName: StringType(),
+      },
+      User,
+    );
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      schema,
+      new Map([["LastName", "Snow"]]),
+      WriteOperation.Insert,
+      null,
+    );
+    action.getTriggers = () => [
+      {
+        changeset(builder) {
+          expect(builder.getInput().FirstName).toBeDefined();
+          builder.updateInput({ FirstName: "trusted trigger" });
         },
-        User,
-      );
-      const createAction = () => {
-        const action = new SimpleAction(
-          new IDViewer("owner"),
-          schema,
-          new Map([["LastName", "Snow"]]),
-          WriteOperation.Insert,
-          null,
-        );
-        if (entryPoint !== "field policy") {
-          action.getPrivacyPolicy = () => ({
-            rules:
-              entryPoint === "action policy"
-                ? [
-                    new AllowIfViewerIsEntPropertyRule<User>("firstName"),
-                    AlwaysDenyRule,
-                  ]
-                : [
-                    {
-                      async apply() {
-                        const ent =
-                          await action.builder.orchestrator.getPossibleUnsafeEntForPrivacy();
-                        return ent.firstName === action.viewer.viewerID
-                          ? Allow()
-                          : Deny();
-                      },
-                    },
-                  ],
-          });
-        }
-        action.getTriggers = () => [
-          {
-            changeset(builder) {
-              builder.updateInput({ FirstName: "trusted trigger" });
-            },
-          },
-        ];
-        return action;
-      };
-      expect((await createAction().saveX()).firstName).toBe("trusted trigger");
-
-      const repeated = createAction();
-      await repeated.validX();
-      await repeated.validX();
-      expect(await repeated.valid()).toBe(true);
-      // General data reads still expose the current trigger-written value.
-      expect(
-        (await repeated.builder.orchestrator.getEditedData()).first_name,
-      ).toBe("trusted trigger");
-      expect((await repeated.saveX()).firstName).toBe("trusted trigger");
-
-      const changed = createAction();
-      await changed.validX();
-      // Restoring the original default must also count as a caller assignment.
-      changed.builder.updateInput({
-        FirstName: entryPoint === "field policy" ? "owner" : "other owner",
-      });
-      await expect(changed.saveX()).rejects.toThrow(
-        entryPoint === "field policy"
-          ? /does not have permission to edit field first_name/
-          : /does not have permission to create/,
-      );
-      expect(defaultValue).toHaveBeenCalledTimes(3);
-    });
-
-    test.each([
-      "unchanged",
-      "mutated",
-      "toJSON unchanged",
-      "toJSON mutated",
-      "toJSON date mutated",
-      "array mutated",
-    ])("trusted trigger object privacy: %s", async (scenario) => {
-      const schema = getBuilderSchemaFromFields(
-        {
-          FirstName: JSONBType({
-            immutable: true,
-            defaultValueOnCreate: () => ({ label: "default" }),
-            editPrivacyPolicy: AlwaysDenyPrivacyPolicy,
-          }),
-          LastName: StringType(),
-        },
-        User,
-      );
-      const action = new SimpleAction(
-        new LoggedOutViewer(),
-        schema,
-        new Map([["LastName", "Snow"]]),
-        WriteOperation.Insert,
-        null,
-      );
-      let initialized = false;
-      action.getTriggers = () => [
-        {
-          changeset(builder) {
-            if (!initialized) {
-              const value = {
-                label: "trusted trigger",
-                dates: [new Date("2026-01-01T00:00:00Z")],
-              };
-              if (scenario.startsWith("toJSON")) {
-                Object.assign(value, {
-                  toJSON() {
-                    return { label: this.label, dates: this.dates };
-                  },
-                });
-              }
-              builder.updateInput({ FirstName: value });
-              initialized = true;
-            }
-          },
-        },
-      ];
+      },
+    ];
+    if (prevalidate) {
       await action.validX();
-      if (scenario.endsWith("mutated")) {
-        const value = action.builder.getInput().FirstName;
-        if (scenario === "toJSON date mutated") {
-          value.dates[0].setUTCFullYear(2027);
-        } else if (scenario === "array mutated") {
-          value.dates.push(new Date("2027-01-01T00:00:00Z"));
-        } else {
-          value.label = "caller mutation";
-        }
-        await expect(action.saveX()).rejects.toThrow(
-          /does not have permission to edit field first_name/,
-        );
-      } else {
-        expect(convertJSON((await action.saveX()).data.first_name)).toEqual({
-          label: "trusted trigger",
-          dates: ["2026-01-01T00:00:00.000Z"],
-        });
-      }
-    });
-
-    test("caller values untouched by triggers retain field privacy on revalidation", async () => {
-      let allow = true;
-      const policy = jest.fn(async () => (allow ? Allow() : Deny()));
-      const schema = getBuilderSchemaFromFields(
-        {
-          FirstName: StringType({
-            immutable: true,
-            defaultValueOnCreate: () => "default",
-            editPrivacyPolicy: { rules: [{ apply: policy }] },
-          }),
-          LastName: StringType(),
-        },
-        User,
-      );
-      const action = new SimpleAction(
-        new LoggedOutViewer(),
-        schema,
-        new Map([["LastName", "Snow"]]),
-        WriteOperation.Insert,
-        null,
-      );
-      action.getTriggers = () => [
-        {
-          changeset(builder) {
-            builder.updateInput({ LastName: "trusted trigger" });
-          },
-        },
-      ];
-      await action.builder.orchestrator.getEditedData();
-      action.builder.updateInput({ FirstName: "caller value" });
-      await action.validX();
-      allow = false;
-      await expect(action.saveX()).rejects.toThrow(
-        /does not have permission to edit field first_name/,
-      );
-      expect(policy).toHaveBeenCalledTimes(2);
-    });
-
-    test("privacy refresh distinguishes defaults from assignments without rerunning callbacks", async () => {
-      const defaultValue = jest.fn(() => "sync");
-      const schema = getBuilderSchemaFromFields(
-        {
-          FirstName: StringType({
-            immutable: true,
-            defaultValueOnCreate: defaultValue,
-            editPrivacyPolicy: AlwaysDenyPrivacyPolicy,
-          }),
-          LastName: StringType(),
-        },
-        User,
-      );
-      const allowed = new SimpleAction(
-        new LoggedOutViewer(),
-        schema,
-        new Map([["LastName", "Snow"]]),
-        WriteOperation.Insert,
-        null,
-      );
-      await allowed.builder.orchestrator.getEditedData();
-      await allowed.validX();
-      expect((await allowed.saveX()).firstName).toBe("sync");
-      expect(defaultValue).toHaveBeenCalledTimes(1);
-
-      const denied = new SimpleAction(
-        new LoggedOutViewer(),
-        schema,
-        new Map([["LastName", "Snow"]]),
-        WriteOperation.Insert,
-        null,
-      );
-      const id = (await denied.builder.orchestrator.getEditedData()).id;
-      denied.builder.updateInput({ FirstName: "caller value" });
-      await expect(denied.saveX()).rejects.toThrow(
-        /does not have permission to edit field first_name/,
-      );
-      expect(
-        await loadRows({
-          tableName: "users",
-          fields: ["id"],
-          clause: clause.Eq("id", id),
-        }),
-      ).toEqual([]);
-      expect(defaultValue).toHaveBeenCalledTimes(2);
-    });
+    }
+    expect((await action.saveX()).firstName).toBe("trusted trigger");
+    expect(defaultValue).toHaveBeenCalledTimes(1);
   });
 
   test("defaultValueOnCreate", async () => {

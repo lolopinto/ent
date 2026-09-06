@@ -1,4 +1,8 @@
-import { IDViewer, LoggedOutViewer } from "@snowtop/ent";
+import {
+  AlwaysDenyPrivacyPolicy,
+  IDViewer,
+  LoggedOutViewer,
+} from "@snowtop/ent";
 import { SQLStatementOperation } from "@snowtop/ent/schema";
 import { Dialect } from "@snowtop/ent/core/db";
 import { loadEdges } from "@snowtop/ent/core/ent";
@@ -10,7 +14,7 @@ import {
   setupSqlite,
 } from "@snowtop/ent/testutils/db/temp_db";
 import { Document, User } from "./ent";
-import { EdgeType, NodeType } from "./ent/generated/types";
+import { EdgeType } from "./ent/generated/types";
 import { CreateUserActionBase } from "./ent/generated/user/actions/create_user_action_base";
 import { CreateDocumentActionBase } from "./ent/generated/document/actions/create_document_action_base";
 import { EditDocumentActionBase } from "./ent/generated/document/actions/edit_document_action_base";
@@ -61,10 +65,13 @@ async function expectEdges(viewer: IDViewer, document: Document) {
   }
 }
 
-// Detailed privacy, transform, and edge bookkeeping cases live in ts/src/action.
-// These checks exercise generated setters, accessors, and field-edge wiring.
-test("generated creation defaults reach hooks and inverse edges", async () => {
+// Core default evaluation and privacy tests live in ts/src/action.
+// These cases require generated setters, accessors, or inverse-edge wiring.
+test("generated defaults reach hooks and edges; trusted overrides survive prevalidation", async () => {
   const viewer = await createViewer();
+  const field = DocumentSchema.fields.syncValue;
+  const previousPolicy = field.editPrivacyPolicy;
+  field.editPrivacyPolicy = AlwaysDenyPrivacyPolicy;
   class HookedCreate extends CreateDocumentActionBase {
     getTriggers() {
       return [
@@ -78,72 +85,92 @@ test("generated creation defaults reach hooks and inverse edges", async () => {
               ownerId: viewer.viewerID,
               asyncValue: " ASYNC ",
             });
-            expect(builder.getNewSyncValueValue()).toBe(" SYNC ");
-            builder.updateInput({ syncValue: " TRIGGER VALUE " });
+            builder.overrideSyncValue(" TRIGGER VALUE ");
+          },
+        },
+      ];
+    }
+    getValidators() {
+      return [
+        {
+          validate: async (builder: this["builder"]) => {
+            expect(builder.getNewSyncValueValue()).toBe(" TRIGGER VALUE ");
           },
         },
       ];
     }
   }
-  const document = await new HookedCreate(viewer, { title: "Created" }).saveX();
-  expect(document).toMatchObject({
-    ownerId: viewer.viewerID,
-    internalOwnerId: viewer.viewerID,
-    syncValue: "trigger value",
-    asyncValue: "async",
-  });
-  await expectEdges(viewer, document);
-});
-
-test("generated creation setters accept immutable inputs; edits require overrides", async () => {
-  const viewer = await createViewer();
-  const create = new CreateDocumentActionBase(viewer, {
-    title: "Created",
-    syncValue: " CONSTRUCTOR ",
-  });
-  create.builder.updateInput({ asyncValue: " SETTER " });
-  const document = await create.saveX();
-  expect(document).toMatchObject({
-    syncValue: "constructor",
-    asyncValue: "setter",
-  });
-
-  const edit = new EditDocumentActionBase(viewer, document, {
-    title: "Edited",
-  });
-  edit.builder.overrideSyncValue(" OVERRIDDEN ");
-  expect(() => edit.builder.updateInput({ syncValue: "forbidden" })).toThrow(
-    /overrideSyncValue/,
-  );
-  expect((await edit.saveX()).syncValue).toBe("overridden");
-});
-
-test("generated create-to-edit guards use the effective operation", async () => {
-  const viewer = await createViewer();
-  const existing = await new CreateDocumentActionBase(viewer, {
-    title: "Original",
-  }).saveX();
-  class CreateAsEdit extends CreateDocumentActionBase {
-    transformWrite() {
-      return { op: SQLStatementOperation.Update, existingEnt: existing };
-    }
+  try {
+    const action = new HookedCreate(viewer, { title: "Created" });
+    await action.builder.orchestrator.getEditedData();
+    expect(action.builder.getNewSyncValueValue()).toBe(" SYNC ");
+    await action.validX();
+    const document = await action.saveX();
+    expect(document).toMatchObject({
+      ownerId: viewer.viewerID,
+      internalOwnerId: viewer.viewerID,
+      syncValue: "trigger value",
+      asyncValue: "async",
+    });
+    await expectEdges(viewer, document);
+  } finally {
+    field.editPrivacyPolicy = previousPolicy;
   }
-  const action = new CreateAsEdit(viewer, {
-    title: "Edited",
-    syncValue: " CREATE INPUT ",
-  });
-  await action.builder.orchestrator.getEditedData();
-  expect(() =>
-    action.builder.updateInput({ ownerId: viewer.viewerID }),
-  ).toThrow(/overrideOwnerId/);
-  expect(await action.saveX()).toMatchObject({
-    id: existing.id,
-    title: "Edited",
-    syncValue: "create input",
-  });
 });
 
-test("generated edit-to-insert guards allow creation setters", async () => {
+test("constructor values take precedence; public immutable setters require overrides", async () => {
+  const viewer = await createViewer();
+  const syncDefault = jest.spyOn(
+    DocumentSchema.fields.syncValue,
+    "defaultValueOnCreate",
+  );
+  const asyncDefault = jest.spyOn(
+    DocumentSchema.fields.asyncValue,
+    "defaultValueOnCreate",
+  );
+  try {
+    const create = new CreateDocumentActionBase(viewer, {
+      title: "Created",
+      syncValue: " CONSTRUCTOR ",
+      asyncValue: " PROVIDED ",
+    });
+    expect(() =>
+      create.builder.updateInput({ syncValue: "forbidden" }),
+    ).toThrow(/overrideSyncValue/);
+    const document = await create.saveX();
+    expect(document).toMatchObject({
+      syncValue: "constructor",
+      asyncValue: "provided",
+    });
+    expect(syncDefault).not.toHaveBeenCalled();
+    expect(asyncDefault).not.toHaveBeenCalled();
+
+    const edit = new EditDocumentActionBase(viewer, document, {
+      title: "Edited",
+    });
+    expect(() => edit.builder.updateInput({ syncValue: "forbidden" })).toThrow(
+      /overrideSyncValue/,
+    );
+    edit.builder.overrideSyncValue(" OVERRIDDEN ");
+    expect((await edit.saveX()).syncValue).toBe("overridden");
+  } finally {
+    syncDefault.mockRestore();
+    asyncDefault.mockRestore();
+  }
+});
+
+test("constructor ownership still passes through action privacy", async () => {
+  const viewer = await createViewer();
+  const other = await createViewer();
+  await expect(
+    new CreateDocumentActionBase(viewer, {
+      title: "Forged",
+      ownerId: other.viewerID,
+    }).saveX(),
+  ).rejects.toThrow(/permission/);
+});
+
+test("edit-to-insert initializes defaults while keeping public immutable setters guarded", async () => {
   const viewer = await createViewer();
   const existing = await new CreateDocumentActionBase(viewer, {
     title: "Original",
@@ -157,7 +184,7 @@ test("generated edit-to-insert guards allow creation setters", async () => {
         {
           changeset: (builder: this["builder"]) => {
             expect(builder.getNewOwnerIdValue()).toBe(viewer.viewerID);
-            builder.updateInput({ syncValue: " TRIGGER INSERT " });
+            builder.overrideSyncValue(" TRIGGER INSERT ");
           },
         },
       ];
@@ -169,69 +196,46 @@ test("generated edit-to-insert guards allow creation setters", async () => {
   // Existing edit-to-insert persistence retains existingEnt; validate initialization only.
   await action.validX();
   expect(action.builder.orchestrator.getValidatedFields()).toMatchObject({
+    owner_id: viewer.viewerID,
     sync_value: "trigger insert",
+    async_value: "async",
   });
+  expect(() => action.builder.updateInput({ syncValue: "forbidden" })).toThrow(
+    /overrideSyncValue/,
+  );
 });
 
-test.each([
-  "cached initialization",
-  "transformWrite",
-])("generated field edges follow reassignment during %s", async (stage) => {
+test("insert-to-edit rejects immutable edit defaults and preserves constructor input", async () => {
   const viewer = await createViewer();
-  const previous = await createViewer();
-  const associated = await createViewer();
-  class ReassignOwner extends CreateDocumentActionBase {
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+  }).saveX();
+  class CreateAsEdit extends CreateDocumentActionBase {
     transformWrite() {
-      if (stage === "transformWrite") {
-        this.builder.updateInput({
-          ownerId: viewer.viewerID,
-          otherOwnerId: null,
-        });
-      }
-      return null;
+      return { op: SQLStatementOperation.Update, existingEnt: existing };
     }
   }
-  const action = new ReassignOwner(viewer, {
-    title: "Shared inverse",
-    ownerId: previous.viewerID,
-    otherOwnerId: viewer.viewerID,
-  });
-  action.builder.orchestrator.addInboundEdge(
-    associated.viewerID,
-    EdgeType.UserToDocuments,
-    NodeType.User,
-    { data: "explicit association" },
-  );
-  await action.builder.orchestrator.getEditedData();
-  if (stage === "cached initialization") {
-    action.builder.updateInput({
-      ownerId: viewer.viewerID,
-      otherOwnerId: null,
+  const field = DocumentSchema.fields.syncValue;
+  const previousDefault = field.defaultValueOnEdit;
+  field.defaultValueOnEdit = () => " EDIT DEFAULT ";
+  try {
+    await expect(
+      new CreateAsEdit(viewer, { title: "Rejected" }).validX(),
+    ).rejects.toThrow(/overrideSyncValue/);
+    const action = new CreateAsEdit(viewer, {
+      title: "Edited",
+      syncValue: " CREATE INPUT ",
     });
+    await action.validX();
+    expect(() =>
+      action.builder.updateInput({ syncValue: "forbidden" }),
+    ).toThrow(/overrideSyncValue/);
+    expect(await action.saveX()).toMatchObject({
+      id: existing.id,
+      title: "Edited",
+      syncValue: "create input",
+    });
+  } finally {
+    field.defaultValueOnEdit = previousDefault;
   }
-  const document = await action.saveX();
-  expect(document).toMatchObject({
-    ownerId: viewer.viewerID,
-    otherOwnerId: null,
-  });
-  expect(
-    await loadEdges({
-      id1: viewer.viewerID,
-      edgeType: EdgeType.UserToDocuments,
-    }),
-  ).toEqual([expect.objectContaining({ id2: document.id })]);
-  expect(
-    await loadEdges({
-      id1: previous.viewerID,
-      edgeType: EdgeType.UserToDocuments,
-    }),
-  ).toHaveLength(0);
-  expect(
-    await loadEdges({
-      id1: associated.viewerID,
-      edgeType: EdgeType.UserToDocuments,
-    }),
-  ).toEqual([
-    expect.objectContaining({ id2: document.id, data: "explicit association" }),
-  ]);
 });

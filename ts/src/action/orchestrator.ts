@@ -1,5 +1,3 @@
-import { deserialize, serialize } from "v8";
-import { isDeepStrictEqual } from "util";
 import {
   ID,
   Data,
@@ -89,7 +87,7 @@ export interface OrchestratorOptions<
   schema: SchemaInputType;
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
   // this is called with fields with defaultValueOnCreate|Edit
-  updateInput?: (data: TInput) => void;
+  updateInput?: (data: TInput, operation?: WriteOperation) => void;
 
   // mapping of column to expressions to use
   // if set and a column exists, we use the expression here instead of the given expression in the sql query
@@ -239,7 +237,7 @@ class EntCannotDeleteEntError extends Error implements PrivacyError {
 
 interface fieldsInfo {
   editedData: Data;
-  inputSnapshot: Map<string, unknown>;
+  editedFields: Map<string, any>;
   schemaFields: Map<string, Field>;
   userDefinedKeys: Set<string>;
   editPrivacyFields: Map<string, PrivacyPolicy>;
@@ -253,7 +251,6 @@ export class Orchestrator<
 > {
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap<TViewer> = new Map();
-  private fieldEdgeSources = new WeakMap<edgeInputData<TViewer>, Set<string>>();
   private conditionalEdges: EdgeMap<TViewer> = new Map();
   private validatedFields: Data | null = null;
   private logValues: Data | null;
@@ -285,11 +282,6 @@ export class Orchestrator<
   // don't type this because we don't care
   __getOptions(): OrchestratorOptions<any, any, any, any> {
     return this.options;
-  }
-
-  // Internal: starts with the builder operation and reflects resolved transforms.
-  __getWriteOperation(): WriteOperation {
-    return this.actualOperation;
   }
 
   private addEdge(
@@ -346,40 +338,6 @@ export class Orchestrator<
       WriteOperation.Insert,
       options?.conditional,
     );
-  }
-
-  // Internal: refresh a generated field's edges without replacing caller edges.
-  __setFieldEdges<T2 extends Ent>(
-    fieldName: string,
-    ids: (ID | Builder<T2, any>)[],
-    edgeType: string,
-    nodeType: string,
-  ) {
-    const isInsert = this.actualOperation === WriteOperation.Insert;
-    const queued = this.edges.get(edgeType)?.get(WriteOperation.Insert);
-    for (const [id, edge] of queued ?? []) {
-      const sources = this.fieldEdgeSources.get(edge);
-      if (isInsert && sources?.delete(fieldName) && sources.size === 0) {
-        queued!.delete(id);
-      }
-    }
-    for (const id of ids) {
-      const edge = new edgeInputData<TViewer>({
-        id,
-        edgeType,
-        nodeType,
-        direction: edgeDirection.inboundEdge,
-      });
-      const key = edge.isBuilder(edge.id) ? edge.id.placeholderID : edge.id;
-      const existing = queued?.get(key);
-      const sources = existing && this.fieldEdgeSources.get(existing);
-      if (isInsert && existing) {
-        sources?.add(fieldName);
-        continue;
-      }
-      this.fieldEdgeSources.set(edge, new Set([...(sources ?? []), fieldName]));
-      this.addEdge(edge, WriteOperation.Insert);
-    }
   }
 
   addOutboundEdge<T2 extends Ent>(
@@ -743,8 +701,7 @@ export class Orchestrator<
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt!;
     }
-    const { schemaFields, editedData } =
-      await this.getFieldsWithPendingImmutableValues(true);
+    const { schemaFields, editedData } = await this.memoizedGetFields();
     return this.getEntForPrivacyPolicyImpl(
       schemaFields,
       editedData,
@@ -761,7 +718,7 @@ export class Orchestrator<
    * i.e. includes lists which have been converted to JSON strings, etc
    */
   async getEditedData() {
-    const { editedData } = await this.getFieldsWithPendingImmutableValues();
+    const { editedData } = await this.memoizedGetFields();
     return editedData;
   }
 
@@ -776,98 +733,6 @@ export class Orchestrator<
       );
     }
     return this.validatedFields;
-  }
-
-  private async getFieldsWithPendingImmutableValues(
-    forPrivacy = false,
-  ): Promise<fieldsInfo> {
-    const fields = await this.memoizedGetFields();
-    if (this.actualOperation !== WriteOperation.Insert) {
-      return fields;
-    }
-    const editedData = { ...fields.editedData };
-    const userDefinedKeys = new Set(fields.userDefinedKeys);
-    // Creation-time setters can run after defaults were resolved. Privacy must
-    // check the pending immutable value, rather than a cached creation default.
-    const input = this.options.builder.getInput();
-    const snapshot = forPrivacy
-      ? this.snapshotImmutableInput(fields.schemaFields)
-      : undefined;
-    for (const [fieldName, field] of fields.schemaFields) {
-      if (!field.immutable) {
-        continue;
-      }
-      const inputKey = this.getInputKey(fieldName);
-      const value = input[inputKey];
-      const dbKey = this.getStorageKey(fieldName);
-      const changed =
-        snapshot?.has(inputKey) && fields.inputSnapshot.has(inputKey)
-          ? !isDeepStrictEqual(
-              fields.inputSnapshot.get(inputKey),
-              snapshot.get(inputKey),
-            )
-          : value !== editedData[dbKey];
-      if (value !== undefined && changed) {
-        editedData[dbKey] = value;
-        userDefinedKeys.add(dbKey);
-      }
-    }
-    return { ...fields, editedData, userDefinedKeys };
-  }
-
-  private snapshotImmutableInput(
-    schemaFields: Map<string, Field>,
-  ): Map<string, unknown> {
-    const input = this.options.builder.getInput();
-    const snapshot = new Map<string, unknown>();
-    for (const [fieldName, field] of schemaFields) {
-      if (!field.immutable) {
-        continue;
-      }
-      const key = this.getInputKey(fieldName);
-      const value = input[key];
-      // Builders denote an ID; their mutable implementation is not field data.
-      const comparable =
-        value && this.isBuilder(value) ? value.placeholderID : value;
-      try {
-        snapshot.set(key, this.copyInputData(comparable));
-      } catch {
-        // Opaque custom inputs retain the existing reference comparison.
-      }
-    }
-    return snapshot;
-  }
-
-  private copyInputData(value: any, seen = new Map<any, any>()): any {
-    if (value === null || typeof value !== "object") {
-      // Keep callback identity without invoking user-supplied toJSON methods.
-      return value;
-    }
-    if (seen.has(value)) {
-      return seen.get(value);
-    }
-    const prototype = Object.getPrototypeOf(value);
-    if (
-      !Array.isArray(value) &&
-      prototype !== Object.prototype &&
-      prototype !== null
-    ) {
-      return deserialize(serialize(value));
-    }
-    const copy = Array.isArray(value)
-      ? new Array(value.length)
-      : Object.create(prototype);
-    seen.set(value, copy);
-    for (const key of Reflect.ownKeys(value)) {
-      if (Array.isArray(value) && key === "length") {
-        continue;
-      }
-      Object.defineProperty(copy, key, {
-        value: this.copyInputData(value[key], seen),
-        enumerable: true,
-      });
-    }
-    return copy;
   }
 
   // Note: this is memoized. call memoizedGetFields instead
@@ -908,7 +773,7 @@ export class Orchestrator<
 
     return {
       editedData,
-      inputSnapshot: this.snapshotImmutableInput(schemaFields),
+      editedFields,
       schemaFields,
       userDefinedKeys,
       editPrivacyFields,
@@ -928,7 +793,7 @@ export class Orchestrator<
     }
 
     const { schemaFields, editedData, userDefinedKeys, editPrivacyFields } =
-      await this.getFieldsWithPendingImmutableValues(true);
+      await this.memoizedGetFields();
     const action = this.options.action;
     const builder = this.options.builder;
 
@@ -1002,14 +867,6 @@ export class Orchestrator<
     // so running this first to build things up
     if (action?.getTriggers) {
       await this.triggers(action!, builder, action.getTriggers());
-      if (this.actualOperation === WriteOperation.Insert) {
-        const cached = await this.memoizedGetFields();
-        // Recheck the approved privacy inputs until the caller changes them.
-        // Trigger-written values form the comparison baseline, not caller input.
-        cached.editedData = editedData;
-        cached.userDefinedKeys = userDefinedKeys;
-        cached.inputSnapshot = this.snapshotImmutableInput(schemaFields);
-      }
     }
 
     let validators: Validator<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>[] =
@@ -1180,6 +1037,10 @@ export class Orchestrator<
           // this.defaultFieldsByFieldName[k] = val;
         }
       }
+      if (transformed.changeset) {
+        const changeset = await transformed.changeset();
+        this.changesets.push(changeset);
+      }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
         // @ts-ignore
@@ -1187,18 +1048,6 @@ export class Orchestrator<
         // modify existing ent in builder. it's readonly in generated ents but doesn't apply here
         builder.existingEnt = transformed.existingEnt;
       }
-      if (transformed.changeset) {
-        const changeset = await transformed.changeset();
-        this.changesets.push(changeset);
-      }
-    }
-    if (
-      this.actualOperation === WriteOperation.Insert &&
-      (action?.transformWrite || !this.disableTransformations) &&
-      Array.from(schemaFields.values()).some((field) => field.immutable)
-    ) {
-      // Preserve assignments from action or schema transforms, including null results.
-      editedFields = await this.options.editedFields();
     }
     // transforming before doing default fields so that we don't create a new id
     // and anything that depends on the type of operations knows what it is
@@ -1274,8 +1123,11 @@ export class Orchestrator<
         ...defaultData,
       };
       if (updateInput && this.options.updateInput) {
-        // Defaults must reach the builder before privacy, triggers, and validators.
-        this.options.updateInput(this.defaultFieldsByTSName as TInput);
+        // this basically fixes #605. just needs to be exposed correctly
+        this.options.updateInput(
+          this.defaultFieldsByTSName as TInput,
+          this.actualOperation,
+        );
       }
     }
 
