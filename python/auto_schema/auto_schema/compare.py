@@ -600,6 +600,10 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
+    has_type_changes = any(
+        isinstance(op, alembicops.AlterColumnOp) and op.modify_type is not None
+        for op in modify_table_ops.ops
+    )
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
     all_conn_indexes = raw_db_indexes.get('all')
@@ -706,6 +710,7 @@ def _compare_indexes(autogen_context: AutogenContext,
             ) or _index_predicates_differ(
                 autogen_context, index, conn_indexes.get(name),
                 all_conn_indexes[name], conn_table,
+                has_type_changes=has_type_changes,
             ):
                 _remove_generic_index_ops(modify_table_ops, name)
 
@@ -746,6 +751,7 @@ def _compare_indexes(autogen_context: AutogenContext,
             if _index_signatures_differ(meta_signature, conn_signature) or _index_predicates_differ(
                 autogen_context, index, conn_indexes[name],
                 all_conn_indexes.get(name, {}), conn_table,
+                has_type_changes=has_type_changes,
             ):
                 # Alembic may already have replaced this index for a column or
                 # uniqueness change. Emit a single replacement with all options.
@@ -764,6 +770,15 @@ def _compare_indexes(autogen_context: AutogenContext,
                 create_op = alembicops.CreateIndexOp.from_index(index)
                 create_op.kw.update(_get_create_index_kwargs(index, meta_signature))
                 modify_table_ops.ops.append(create_op)
+
+    if has_type_changes:
+        # PostgreSQL reparses existing indexes during ALTER COLUMN TYPE. Drop
+        # indexes being replaced first, while their old predicates are valid;
+        # their replacements must wait until the new column types are in place.
+        drops = [op for op in modify_table_ops.ops if isinstance(
+            op, (alembicops.DropIndexOp, ops.DropFullTextIndexOp),
+        )]
+        modify_table_ops.ops[:] = drops + [op for op in modify_table_ops.ops if op not in drops]
 # this handles computed columns changing and so drops and re-creates the column.
 
 
@@ -1181,7 +1196,9 @@ def _index_predicate(index: sa.Index | None, dialect, raw_index):
     )).strip()
 
 
-def _index_predicates_differ(autogen_context, meta_index, conn_index, raw_index, conn_table):
+def _index_predicates_differ(
+    autogen_context, meta_index, conn_index, raw_index, conn_table, *, has_type_changes,
+):
     connection = autogen_context.connection
     # These expressions are sent as SQL without DBAPI parameters. Avoid pyformat
     # escaping percent signs inside literals when compiling them for comparison.
@@ -1191,6 +1208,11 @@ def _index_predicates_differ(autogen_context, meta_index, conn_index, raw_index,
     if meta_predicate == conn_predicate:
         return False
     if meta_predicate is None or conn_predicate is None or dialect.name != 'postgresql':
+        return True
+    # Reflected columns still have their old types. If Alembic plans a type
+    # change, PostgreSQL cannot reliably compare the new predicate in this table
+    # context yet. Conservatively recreate it after the type migration instead.
+    if has_type_changes:
         return True
 
     # PostgreSQL deparses predicates with extra parentheses, implicit casts, and

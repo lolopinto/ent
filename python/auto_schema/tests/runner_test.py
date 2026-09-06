@@ -28,7 +28,7 @@ def _get_revision_file(r, rev="head"):
     return testingutils.find_file_by_revision(r, revisions[0])
 
 
-def _partial_index_metadata(predicate, *, columns=("owner_id",), **kwargs):
+def _partial_index_metadata(predicate, *, columns=("owner_id",), full_text=False, **kwargs):
     metadata = sa.MetaData()
     table = sa.Table(
         "contacts", metadata,
@@ -38,25 +38,26 @@ def _partial_index_metadata(predicate, *, columns=("owner_id",), **kwargs):
         sa.Column("status", sa.Text()),
         sa.Column("score", sa.Integer()),
     )
-    if predicate is not None:
-        kwargs.update(postgresql_where=sa.text(predicate), sqlite_where=sa.text(predicate))
-    sa.Index("contacts_active_idx", *(table.c[col] for col in columns), **kwargs)
-    return metadata
-
-
-def _enum_partial_index_metadata(values, predicate, full_text=False):
-    metadata = _partial_index_metadata(predicate)
-    table = metadata.tables["contacts"]
-    table.c.status.type = postgresql.ENUM(*values, name="contact_status", create_type=False)
     if full_text:
         table.append_column(sa.Column("label", sa.Text()))
-        table.indexes.clear()
         table.append_constraint(schema_item.FullTextIndex("contacts_active_idx", info={
             "columns": ["label"],
             "postgresql_using": "gin",
             "postgresql_using_internals": "to_tsvector('english', label)",
             "postgresql_where": predicate,
         }))
+    else:
+        if predicate is not None:
+            kwargs.update(postgresql_where=sa.text(predicate), sqlite_where=sa.text(predicate))
+        sa.Index("contacts_active_idx", *(table.c[col] for col in columns), **kwargs)
+    return metadata
+
+
+def _enum_partial_index_metadata(values, predicate, full_text=False):
+    metadata = _partial_index_metadata(predicate, full_text=full_text)
+    metadata.tables["contacts"].c.status.type = postgresql.ENUM(
+        *values, name="contact_status", create_type=False,
+    )
     return metadata
 
 
@@ -1032,6 +1033,74 @@ class BaseTestRunner(object):
 
 
 class TestPostgresRunner(BaseTestRunner):
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("predicate", [
+        "score IS NOT NULL",
+        "(score - DATE '2020-01-01') > 1",
+    ], ids=["either_type", "old_type_only"])
+    def test_partial_index_predicate_with_pending_column_type(self, new_test_runner, full_text, predicate):
+        before = _partial_index_metadata(predicate, full_text=full_text)
+        before.tables["contacts"].c.score.type = sa.Date()
+        r = new_test_runner(before)
+        r.run()
+        original_predicate = _reflected_predicate(r)
+        r.get_connection().execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, score) VALUES (1, 1, DATE '2020-01-03')"
+        ))
+        r.get_connection().commit()
+
+        after = _partial_index_metadata(
+            "(score - DATE '2020-01-01') > INTERVAL '1 day'", full_text=full_text,
+        )
+        after.tables["contacts"].c.score.type = sa.TIMESTAMP()
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        assert len(changes) == 1
+        assert [type(op) for op in changes[0].ops] == [
+            ops.DropFullTextIndexOp if full_text else alembicops.DropIndexOp,
+            alembicops.AlterColumnOp,
+            ops.CreateFullTextIndexOp if full_text else alembicops.CreateIndexOp,
+        ]
+        r2.revision()
+        # Comparison must use the pending operation without changing the live DB.
+        columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+        assert isinstance(columns["score"]["type"], sa.Date)
+        assert _reflected_predicate(r2) == original_predicate
+        _assert_no_predicate_views(r2)
+        r2.upgrade()
+        updated_predicate = _reflected_predicate(r2)
+        assert updated_predicate != original_predicate
+        columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+        assert isinstance(columns["score"]["type"], sa.TIMESTAMP)
+        assert r2.get_connection().execute(sa.text(
+            "SELECT count(*) FROM contacts WHERE score = TIMESTAMP '2020-01-03 00:00:00'"
+        )).scalar_one() == 1
+        r2.get_connection().commit()
+        for _ in range(2):
+            assert r2.compute_changes() == []
+            r2.run()
+            testingutils.assert_num_files(r2, 2)
+        _assert_no_predicate_views(r2)
+
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original_predicate
+        columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+        assert isinstance(columns["score"]["type"], sa.Date)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert _reflected_predicate(r2) == updated_predicate
+        assert r2.compute_changes() == []
+
+    def test_invalid_operator_without_pending_column_type_still_fails(self, new_test_runner):
+        r = new_test_runner(_partial_index_metadata("score > 1"))
+        r.run()
+        r2 = new_test_runner(_partial_index_metadata("score > INTERVAL '1 day'"), r)
+        with pytest.raises(sa.exc.ProgrammingError, match="operator does not exist: integer > interval"):
+            r2.compute_changes()
+        _assert_no_predicate_views(r2)
 
     @pytest.mark.parametrize("full_text", [False, True])
     def test_partial_index_predicate_with_pending_enum_values(self, new_test_runner, full_text):
