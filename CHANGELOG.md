@@ -13,7 +13,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - rewrite path aliases in dynamic imports so compiled Node applications can
   load deferred modules, while preserving package imports mapped to declaration
-  files (#2027).
+  files or installed dependencies (#2027).
 - avoid opening the Go codegen database pool until first use and close it when
   `tsent` commands finish (#2024).
 - preserve trigger priority groups when individual triggers appear before and

@@ -232,6 +232,26 @@ class Compiler {
             return undefined;
           }
           const resolvedPath = resolveModule(text, fullPath)?.resolvedFileName;
+          // Installed dependencies stay outside outDir. Keep Node's package
+          // resolution (including exports) instead of making them relative to
+          // emitted source files. Match the package name so aliases that rename
+          // a dependency still get rewritten. The external-library flag alone
+          // is insufficient when TypeScript resolves paths against a relative
+          // baseUrl and returns a filename starting with node_modules/.
+          const packageName = text
+            .split("/")
+            .slice(0, text.startsWith("@") ? 2 : 1)
+            .join(path.sep);
+          if (
+            resolvedPath &&
+            path
+              .resolve(cwd, resolvedPath)
+              .includes(
+                `${path.sep}node_modules${path.sep}${packageName}${path.sep}`,
+              )
+          ) {
+            return undefined;
+          }
           if (resolvedPath && declarationFilePattern.test(resolvedPath)) {
             // Extensionless paths can resolve to dep.d.ts or dep/index.d.ts.
             // A JavaScript module may also have companion declarations, so

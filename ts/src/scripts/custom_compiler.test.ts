@@ -92,14 +92,14 @@ function compile(root: string) {
   });
 }
 
-function run(root: string) {
+function run(root: string, entry = "dist/main.js") {
   const compiled = compile(root);
   expect({
     status: compiled.status,
     stderr: compiled.stderr,
     error: compiled.error,
   }).toEqual({ status: 0, stderr: "", error: undefined });
-  const result = spawnSync(process.execPath, ["dist/main.js"], {
+  const result = spawnSync(process.execPath, [entry], {
     cwd: root,
     encoding: "utf8",
     timeout: 30000,
@@ -291,6 +291,82 @@ test.each([
     esm,
   );
   expect(run(root)).toBe("ok");
+});
+
+test.each([
+  { packageName: "dep", subpath: "", declarations: true, esm: false },
+  { packageName: "dep", subpath: "", declarations: false, esm: false },
+  {
+    packageName: "@scope/dep",
+    subpath: "/value",
+    declarations: true,
+    esm: true,
+  },
+])("preserves node_modules mappings for $packageName$subpath (declarations: $declarations, ESM: $esm)", ({
+  packageName,
+  subpath,
+  declarations,
+  esm,
+}) => {
+  const specifier = packageName + subpath;
+  const pattern = packageName + (subpath ? "/*" : "");
+  const packageRoot = `node_modules/${packageName}`;
+  const root = fixture(
+    {
+      "src/main.ts": `
+        import assert from "node:assert/strict";
+        import { value } from "${specifier}";
+        import { exported } from "./exports.js";
+        async function main() {
+          assert.equal(value, "package");
+          assert.equal(exported, "package");
+          assert.equal((await import("${specifier}")).value, "package");
+          console.log("ok");
+        }
+        main().catch(error => { console.error(error); process.exitCode = 1; });
+      `,
+      "src/exports.ts": `export { value as exported } from "${specifier}";`,
+      [`${packageRoot}/package.json`]: JSON.stringify({
+        type: esm ? "module" : "commonjs",
+        main: "index.js",
+        ...(declarations ? { types: "index.d.ts" } : {}),
+        exports: { ".": "./index.js", "./value": "./index.js" },
+      }),
+      [`${packageRoot}/index.js`]: esm
+        ? `export const value = "package";`
+        : `exports.value = "package";`,
+      // Preserve package exports instead of loading the paths target directly.
+      [`${packageRoot}/value.js`]: esm
+        ? `export const value = "mapped-file";`
+        : `exports.value = "mapped-file";`,
+      ...(declarations
+        ? {
+            [`${packageRoot}/index.d.ts`]: `export declare const value: string;`,
+            [`${packageRoot}/value.d.ts`]: `export declare const value: string;`,
+          }
+        : {}),
+    },
+    { rootDir: ".", paths: { [pattern]: [`./node_modules/${pattern}`] } },
+    esm,
+  );
+  expect(run(root, "dist/src/main.js")).toBe("ok");
+});
+
+test("rewrites aliases that rename an installed dependency", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `
+        import { value } from "vendor/value";
+        import { exported } from "./exports";
+        import("vendor/value").then(mod => console.log([value, exported, mod.value].join(",")));
+      `,
+      "src/exports.ts": `export { value as exported } from "vendor/value";`,
+      "node_modules/dep/value.js": `exports.value = "package";`,
+      "node_modules/dep/value.d.ts": `export declare const value: string;`,
+    },
+    { paths: { "vendor/*": ["./node_modules/dep/*"] } },
+  );
+  expect(run(root)).toBe("package,package,package");
 });
 
 test("rewrites aliases to JavaScript modules with companion declarations", () => {
