@@ -118,8 +118,8 @@ export async function withTransaction<T>(
       }
       const read = { transaction: state, generation: state.generation };
       // Raw SQL can write or acquire a lock after a cached read. Clear every
-      // participating cache, including caches for other viewers in this
-      // attempt.
+      // participating cache, including caches for other
+      // viewers in this attempt.
       const pending = client
         .query(sql, values)
         .then((result) => {
@@ -221,8 +221,7 @@ export async function withTransaction<T>(
           await observe();
         } catch (error) {
           // Preserve existing observer behavior: a failure cannot undo
-          // committed
-          // writes or cause the callback to retry.
+          // committed writes or cause the callback to retry.
           log("error", error);
         }
       }

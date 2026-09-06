@@ -432,8 +432,8 @@ export async function executeOperations(
         }
         await operation.performWrite(transaction.queryer, context);
       }
-      // Result loads are provisional; a failure can still roll back the owning
-      // scope.
+      // Result loads are provisional; a failure can still roll
+      // back the owning scope.
       await executor.postFetch?.(transaction.queryer, context);
       completeGuardedPreparation(transaction, executor);
       transaction.receipts.push(() => {

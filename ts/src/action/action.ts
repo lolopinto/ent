@@ -262,8 +262,8 @@ async function saveBuilderImpl<
       try {
         return executor.execute();
       } catch (e) {
-        // Preserve synchronous error suppression for non-X saves and abort the
-        // scope.
+        // Preserve synchronous error suppression for non-X saves
+        // and abort the scope.
         const transaction = getTransactionState();
         if (transaction) {
           failTransaction(transaction, e);

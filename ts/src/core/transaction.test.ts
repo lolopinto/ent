@@ -161,8 +161,8 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
             null,
           );
           // The parent needs the child's ID, and the conditional child depends
-          // on the parent. Preparation succeeds; executor assembly detects the
-          // cycle.
+          // on the parent. Preparation succeeds; executor
+          // assembly detects the cycle.
           builder.updateInput({ ownerID: child.builder });
           return child.changesetWithOptions_BETA({
             conditionalBuilder: builder,
@@ -1516,8 +1516,8 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
             async changeset() {
               const current = await load(target.id as string);
               return [
-                // Even incorrect resource keys cannot hide known duplicate row
-                // writes.
+                // Even incorrect resource keys cannot hide
+                // known duplicate row writes.
                 await independent(edit(current, 80), "first").changeset(),
                 await independent(edit(current, 70), "second").changeset(),
               ];
@@ -1982,8 +1982,8 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
             );
             await started.promise;
             // Release without waiting for validation so the test is
-            // deterministic
-            // whether validation rejects early or waits for the pending work.
+            // deterministic whether validation rejects early or
+            // waits for the pending work.
             await new Promise((resolve) => setImmediate(resolve));
             const settledBeforeRelease = settled;
             finish.resolve();
@@ -2241,8 +2241,8 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
           { validate: async () => (invalid ? error : undefined) },
         ];
         parent.getTriggers = () => [{ changeset: () => child.changeset() }];
-        // Trigger changeset failures propagate even from valid and
-        // validWithErrors.
+        // Trigger changeset failures propagate even
+        // from valid and validWithErrors.
         await expect(parent[method]()).rejects.toBe(error);
         invalid = false;
         await parent.saveX();

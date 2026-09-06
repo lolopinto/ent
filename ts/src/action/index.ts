@@ -28,7 +28,7 @@ export type {
   RelativeNumberValue,
 } from "./relative_value";
 export { Transaction } from "./transaction";
-// Internal entry point for generated saves. Handle load and construction
-// failures.
+// Internal entry point for generated saves. Handle
+// load and construction failures.
 export { runActionExecution } from "../core/transaction_context";
 export type { AssocEdgeOptions } from "./operations";

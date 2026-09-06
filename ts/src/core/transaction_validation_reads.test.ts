@@ -120,8 +120,7 @@ describe.each(["valid", "validX", "validWithErrors"] as const)(
         const observations: string[] = [];
         const transaction = withTransaction(async (tx) => {
           // Keep the earlier write after correcting validation errors. Roll it
-          // back
-          // if a later SQL operation fails.
+          // back if a later SQL operation fails.
           const earlier = edit(await load(records[3].id as string), 60);
           earlier.getObservers = () => [
             {
@@ -256,8 +255,8 @@ describe.each(["valid", "validX", "validWithErrors"] as const)(
           const outcome = await setupOutcome!;
           setupError = outcome?.error;
           if (mode === "late SQL failure") {
-            // Catch validation and SQL errors so withTransaction must enforce
-            // rollback.
+            // Catch validation and SQL errors so
+            // withTransaction must enforce rollback.
             return;
           }
           expect(validationError).toBe(ordinary);
@@ -274,8 +273,8 @@ describe.each(["valid", "validX", "validWithErrors"] as const)(
         );
         try {
           await started.promise;
-          // Release this gate outside validation so waiting for reads cannot
-          // deadlock.
+          // Release this gate outside validation so waiting
+          // for reads cannot deadlock.
           await new Promise<void>((resolve) => setImmediate(resolve));
           settledBeforeRelease = settled;
           release.resolve();

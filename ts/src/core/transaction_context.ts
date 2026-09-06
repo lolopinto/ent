@@ -76,17 +76,16 @@ export function runInActionPreparation<T>(
       return await prepare();
     } finally {
       // If a trigger's Promise.all rejects, other children can still be
-      // running.
-      // Wait for descendants before restoring this participant or completing
-      // root validation. Exclude the owner from its own set of pending work.
+      // running. Wait for descendants before restoring this participant or
+      // completing root validation. Exclude the owner from its
+      // own set of pending work.
       if (node.pending) {
         do {
           await Promise.allSettled([...node.pending]);
           // A completed SQL or loader promise can resume several async wrappers
           // before the caller starts child preparation. Wait one event loop
-          // turn
-          // for those wrappers to register reads and children before checking
-          // again.
+          // turn for those wrappers to register reads
+          // and children before checking again.
           await new Promise<void>((resolve) => setImmediate(resolve));
         } while (node.pending.size);
       }
@@ -112,8 +111,7 @@ export function runInActionPreparation<T>(
 export function trackValidationRead<T>(read: Promise<T>): Promise<T> {
   const node = preparationStorage.getStore();
   // Once a read returns a promise, tracking must not throw and leave that
-  // promise
-  // unhandled. The read itself reports errors if its scope has closed.
+  // promise unhandled. The read itself reports errors if its scope has closed.
   const state = transactionStorage.getStore();
   if (
     state?.active &&
@@ -433,9 +431,8 @@ export function failTransaction(state: TransactionState, error: unknown) {
 }
 
 // Save entry points include preparation, executor assembly, and execution
-// setup.
-// An error in any of these stages must abort the owning scope, even if a caller
-// catches it before the withTransaction callback returns.
+// setup. An error in any of these stages must abort the owning scope, even if a
+// caller catches it before the withTransaction callback returns.
 export async function runActionExecution<T>(
   execute: () => Promise<T>,
 ): Promise<T> {
