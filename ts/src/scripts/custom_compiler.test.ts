@@ -671,6 +671,216 @@ test("prefers emitted TypeScript over existing JavaScript beside the source", ()
   expect(run(root)).toBe("compiled,compiled");
 });
 
+test.each<{
+  name: string;
+  paths: Record<string, string[]>;
+  files: Record<string, string>;
+  expected: string;
+  dynamicOnly?: boolean;
+  esm?: boolean;
+}>([
+  {
+    name: "absent first fallback in a dynamic import",
+    paths: { "dep/*": ["./overrides/*", "./node_modules/dep/*"] },
+    files: {},
+    expected: "package",
+    dynamicOnly: true,
+  },
+  {
+    name: "valid first JavaScript override",
+    paths: { "dep/*": ["./overrides/*", "./node_modules/dep/*"] },
+    files: { "overrides/value.js": 'exports.value = "override";' },
+    expected: "override",
+  },
+  {
+    name: "third fallback after two missing candidates",
+    paths: {
+      "dep/*": ["./missing/*", "./also-missing/*", "./node_modules/dep/*"],
+    },
+    files: {},
+    expected: "package",
+  },
+  {
+    name: "normal package lookup after all mappings fail",
+    paths: { "dep/*": ["./overrides/*"] },
+    files: {},
+    expected: "package",
+  },
+  {
+    name: "later TypeScript source before an earlier JavaScript candidate",
+    paths: { "dep/*": ["./overrides/*", "./src/typed/*"] },
+    files: {
+      "overrides/value.js": 'exports.value = "wrong-js";',
+      "src/typed/value.ts": 'export const value = "typed";',
+    },
+    expected: "typed",
+  },
+  {
+    name: "later declarations before an earlier JavaScript candidate",
+    paths: { "dep/*": ["./overrides/*", "./types/*", "./src/typed/*"] },
+    files: {
+      "overrides/value.js": 'exports.value = "wrong-js";',
+      "types/value.d.ts": "export declare const value: string;",
+      "src/typed/value.ts": 'export const value = "wrong-ts";',
+    },
+    expected: "package",
+  },
+  {
+    name: "explicit declarations before a runtime candidate",
+    paths: { "dep/*": ["./types/*.d.ts", "./overrides/*"] },
+    files: {
+      "types/value.d.ts": "export declare const value: string;",
+      "overrides/value.js": 'exports.value = "wrong-js";',
+    },
+    expected: "package",
+  },
+  {
+    name: "exact pattern before an earlier wildcard",
+    paths: {
+      "dep/*": ["./overrides/*"],
+      "dep/value": ["./node_modules/dep/value"],
+    },
+    files: { "overrides/value.js": 'exports.value = "wrong-pattern";' },
+    expected: "package",
+  },
+  {
+    name: "longest prefix before an earlier wildcard",
+    paths: { "dep/*": ["./overrides/*"], "dep/v*": ["./node_modules/dep/v*"] },
+    files: { "overrides/value.js": 'exports.value = "wrong-pattern";' },
+    expected: "package",
+  },
+  {
+    name: "normal lookup instead of a less-specific pattern",
+    paths: { "dep/*": ["./overrides/*"], "dep/value": ["./missing/value"] },
+    files: { "overrides/value.js": 'exports.value = "wrong-pattern";' },
+    expected: "package",
+  },
+  {
+    name: "native ESM exports after a missing fallback",
+    paths: { "dep/*": ["./overrides/*", "./node_modules/dep/*"] },
+    files: {},
+    expected: "package",
+    esm: true,
+  },
+])("follows TypeScript mapping selection: $name", ({
+  paths,
+  files,
+  expected,
+  dynamicOnly,
+  esm = false,
+}) => {
+  const root = fixture(
+    {
+      "src/main.ts": dynamicOnly
+        ? `import("dep/value").then(mod => console.log(mod.value));`
+        : `
+          import { value } from "dep/value";
+          import { exported } from "./exports.js";
+          import("dep/value").then(mod => console.log([value, exported, mod.value].join(",")));
+        `,
+      "src/exports.ts": 'export { value as exported } from "dep/value";',
+      "node_modules/dep/package.json": JSON.stringify({
+        type: esm ? "module" : "commonjs",
+        exports: { "./value": esm ? { import: "./import.js" } : "./value.js" },
+      }),
+      "node_modules/dep/value.js": esm
+        ? 'export const value = "physical";'
+        : 'exports.value = "package";',
+      "node_modules/dep/import.js": 'export const value = "package";',
+      ...files,
+    },
+    { rootDir: ".", paths },
+    esm,
+  );
+  expect(run(root, "dist/src/main.js")).toBe(
+    dynamicOnly ? expected : [expected, expected, expected].join(","),
+  );
+});
+
+test.each([
+  true,
+  false,
+])("uses the resolved directory entry with an index decoy: %s", (indexDecoy) => {
+  const root = fixture({
+    "src/main.ts": `
+      import { value } from "src/dep";
+      import { exported } from "./exports";
+      import("src/dep").then(mod => console.log([value, exported, mod.value].join(",")));
+    `,
+    "src/exports.ts": 'export { value as exported } from "src/dep";',
+    "src/dep/package.json": JSON.stringify({ main: "lib/value.js" }),
+    "src/dep/lib/value.ts": 'export const value = "selected-main";',
+    ...(indexDecoy
+      ? { "src/dep/index.ts": 'export const value = "wrong-index";' }
+      : {}),
+  });
+  expect(run(root)).toBe("selected-main,selected-main,selected-main");
+});
+
+test("uses the emitted JSX extension for an extensionless TSX alias", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `import("src/component").then(mod => console.log(mod.value));`,
+      "src/component.tsx": 'export const value = "jsx-output";',
+    },
+    { jsx: "preserve" },
+  );
+  expect(run(root)).toBe("jsx-output");
+});
+
+test("uses the source selected by moduleSuffixes", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `import("src/value").then(mod => console.log(mod.value));`,
+      "src/value.native.ts": 'export const value = "native";',
+      "src/value.ts": 'export const value = "wrong-default";',
+    },
+    { moduleSuffixes: [".native", ""] },
+  );
+  expect(run(root)).toBe("native");
+});
+
+test.each([
+  false,
+  true,
+])("rewrites an empty wildcard match with a sibling file: %s", (sibling) => {
+  const root = fixture(
+    {
+      "src/main.ts": `import("src/").then(mod => console.log(mod.value));`,
+      "src/index.ts": 'export const value = "empty-match";',
+      ...(sibling ? { "src.ts": 'export const value = "wrong-file";' } : {}),
+    },
+    { rootDir: "." },
+  );
+  expect(run(root, "dist/src/main.js")).toBe("empty-match");
+});
+
+test.each([
+  "./src",
+  undefined,
+])("resolves path mappings with baseUrl %s", (baseUrl) => {
+  const root = fixture(
+    {
+      "src/main.ts": `import("alias/value").then(mod => console.log(mod.value));`,
+      "src/value.ts": 'export const value = "mapped";',
+    },
+    { baseUrl, paths: { "alias/*": [baseUrl ? "./*" : "./src/*"] } },
+  );
+  expect(run(root)).toBe("mapped");
+});
+
+test("uses moduleSuffixes for JavaScript outside the emitted sources", () => {
+  const root = fixture(
+    {
+      "src/main.ts": `import("vendor/value").then(mod => console.log(mod.value));`,
+      "vendor/value.native.js": 'exports.value = "native-js";',
+      "vendor/value.js": 'exports.value = "wrong-default";',
+    },
+    { paths: { "vendor/*": ["./vendor/*"] }, moduleSuffixes: [".native", ""] },
+  );
+  expect(run(root)).toBe("native-js");
+});
+
 test("retains nonzero exit and error reporting when emit is skipped", () => {
   const root = fixture(
     { "src/main.ts": `const value: string = 42;` },

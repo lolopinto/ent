@@ -11,9 +11,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- rewrite path aliases in dynamic imports so compiled Node applications can
-  load deferred modules with the correct runtime extensions, package resolution,
-  and dependency remappings when emitting into a different directory (#2027).
+- rewrite path aliases in dynamic imports so compiled Node applications load
+  deferred modules using TypeScript's selected targets and runtime extensions,
+  preserving package resolution and explicit dependency remappings outside
+  output directories (#2027).
 - avoid opening the Go codegen database pool until first use and close it when
   `tsent` commands finish (#2024).
 - preserve trigger priority groups when individual triggers appear before and
