@@ -197,7 +197,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
         graph.addNode(c.placeholderID.toString());
         if (c.dependencies) {
           for (let [_, builder] of c.dependencies) {
-            // dependency should go first...
+            // Execute dependencies before the changeset that uses them.
             graph.addEdge(
               builder.placeholderID.toString(),
               c.placeholderID.toString(),
@@ -214,7 +214,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
       let localChangesets = new Map<ID, Changeset>();
       changesets.forEach((c) => localChangesets.set(c.placeholderID, c));
 
-      // create a new changeset representing the source changeset with the simple executor
+      // Represent the root operations as a changeset with a list executor.
       impl({
         viewer: this.viewer,
         placeholderID: this.placeholderID,
@@ -230,8 +230,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
         },
       });
 
-      // use a set to handle repeated ops because of how the executor logic currently works
-      // TODO: can this logic be rewritten to not have a set yet avoid duplicates?
+      // Deduplicate operations that appear in more than one executor.
       let nodeOps: Set<DataOperation<Ent>> = new Set();
       let remainOps: Set<DataOperation<Ent>> = new Set();
 
@@ -240,9 +239,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
         let c = changesetMap.get(node);
 
         if (!c) {
-          // phew. expect it to be handled somewhere else
-          // we can just skip it and expect the resolver to handle this correctly
-          // this means it's not a changeset that was created by this ent and can/will be handled elsewhere
+          // Leave dependencies outside this changeset graph to the resolver.
           if (dependencies.has(node)) {
             return;
           }
@@ -251,7 +248,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
           );
         }
 
-        // get ordered list of ops
+        // Read operations in dependency order.
         let executor = c.executor();
         for (let op of executor) {
           if (op.createdEnt) {
@@ -261,8 +258,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
           }
         }
 
-        // only add executors that are part of the changeset to what should be tracked here
-        // or self.
+        // Track the root executor and executors for its direct child changesets.
         if (
           localChangesets.has(c.placeholderID) ||
           c.placeholderID === placeholderID
@@ -270,7 +266,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
           this.executors.push(executor);
         }
       });
-      // get all the operations and put node operations first
+      // Run node operations before the remaining operations.
       this.allOperations = [...nodeOps, ...remainOps];
       setExecutorBuilders(
         this,
@@ -432,8 +428,7 @@ export async function executeOperations(
         }
         await operation.performWrite(transaction.queryer, context);
       }
-      // Result loads are provisional; a failure can still roll
-      // back the owning scope.
+      // Load results before commit so a failure can roll back the owning scope.
       await executor.postFetch?.(transaction.queryer, context);
       completeGuardedPreparation(transaction, executor);
       transaction.receipts.push(() => {

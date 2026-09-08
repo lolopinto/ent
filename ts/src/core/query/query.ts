@@ -577,7 +577,7 @@ export abstract class BaseEdgeQuery<
 
   readonly queryAllEnts = async (): Promise<Map<ID, TDest[]>> => {
     return this.readInTransaction(async () => {
-      // applies filters and then gets things after
+      // Apply edge filters before loading the corresponding Ents.
       const edges = await this.memoizedloadEdges();
       let promises: Promise<void>[] = [];
       const results: Map<ID, TDest[]> = new Map();

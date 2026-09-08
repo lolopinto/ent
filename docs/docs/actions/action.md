@@ -37,7 +37,9 @@ We'll dive into each of these in the following sections.
 
 ## Transactions
 
-If you need to coordinate multiple actions at the call site, use a [Transaction](/docs/actions/transactions) to run them together. For work that belongs to an action, use [Triggers](/docs/actions/triggers) to queue changesets whose writes share the action's transaction. Trigger callbacks run before the ordinary write transaction. To include their reads and decisions in the transaction, call the action inside [`withTransaction`](/docs/actions/transactions#transaction-scoped-reads-and-actions).
+Use [Transaction](/docs/actions/transactions) to commit or roll back multiple actions' writes together. Use [triggers](/docs/actions/triggers) to add child changesets whose writes share an action's transaction.
+
+Trigger callbacks run before the ordinary write transaction. To include their reads and decisions in the transaction, call the action inside [`withTransaction`](/docs/actions/transactions#transaction-scoped-reads-and-actions).
 
 ## Default Privacy Policy
 

@@ -43,7 +43,7 @@ export class Transaction<TViewer extends Viewer = Viewer> {
 
       const executor = new ComplexExecutor(
         this.viewer,
-        "", // no placeholder, no opers
+        "", // No root placeholder or operations; execute the child changesets.
         [],
         new Map(),
         changesets,

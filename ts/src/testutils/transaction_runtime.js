@@ -1,5 +1,5 @@
 // transaction_runtime.test.ts runs this regression test in a child process so
-// Node pg, Bun pg, and native Bun SQL cannot share singleton state.
+// Node with pg, Bun with pg, and native Bun SQL cannot share singleton state.
 const assert = require("node:assert/strict");
 const { randomUUID } = require("node:crypto");
 const { Client } = require("pg");

@@ -28,8 +28,8 @@ export type {
   RelativeNumberValue,
 } from "./relative_value";
 export { Transaction } from "./transaction";
-// Internal entry point for generated saves. Handle
-// load and construction failures.
+// Internal entry points that handle load, construction, and setup failures
+// in generated actions.
 export {
   runActionExecution,
   runActionChangeset,

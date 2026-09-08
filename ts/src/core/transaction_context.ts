@@ -16,7 +16,7 @@ export function createTransactionToken(): TransactionToken {
   return { [transactionTokenBrand]: true };
 }
 
-// Internal state only. Never replace DB.instance or a viewer's request context.
+// Keep transaction state separate from DB.instance and viewer request contexts.
 export interface TransactionState {
   token: TransactionToken;
   isolationLevel: "serializable" | "read committed";
@@ -96,17 +96,15 @@ export function runInActionPreparation<T>(
     try {
       return await prepare();
     } finally {
-      // If a trigger's Promise.all rejects, other children can still be
-      // running. Wait for descendants before restoring this participant or
-      // completing root validation. Exclude the owner from its
-      // own set of pending work.
+      // If a trigger's Promise.all rejects, other children can still be running.
+      // Wait for descendants before restoring this action or completing root
+      // validation. The action must not wait on its own preparation promise.
       if (node.pending) {
         do {
           await Promise.allSettled([...node.pending]);
-          // A completed SQL or loader promise can resume several async wrappers
-          // before the caller starts child preparation. Wait one event loop
-          // turn for those wrappers to register reads
-          // and children before checking again.
+          // Completed SQL or loader reads can resume several asynchronous
+          // wrappers before child preparation starts. Allow one event loop turn
+          // for those wrappers to register reads and children before checking again.
           await new Promise<void>((resolve) => setImmediate(resolve));
         } while (node.pending.size);
       }
@@ -131,8 +129,8 @@ export function runInActionPreparation<T>(
 
 export function trackValidationRead<T>(read: Promise<T>): Promise<T> {
   const node = preparationStorage.getStore();
-  // Once a read returns a promise, tracking must not throw and leave that
-  // promise unhandled. The read itself reports errors if its scope has closed.
+  // Track the returned promise without throwing and leaving it unhandled.
+  // The read reports an error if its scope has closed.
   const state = transactionStorage.getStore();
   if (
     state?.active &&
@@ -205,8 +203,8 @@ function getGuardedPreparation() {
 
 export function reserveGuardedPreparation(): TransactionReadState {
   const { state, node } = getGuardedPreparation();
-  // Reserve the root before user code can await. Keep the pending claim through
-  // nested validation cleanup, then check its resource keys when they resolve.
+  // Reserve the root before awaiting application code. Retain the pending claim
+  // through nested validation cleanup, then check the resolved resource keys.
   node.resourcesPending = true;
   if (!state.branchClaims.includes(node)) {
     state.branchClaims.push(node);
@@ -228,10 +226,10 @@ export function claimGuardedPreparation(resources?: readonly string[]) {
     );
   }
   for (const owner of state.branchClaims) {
-    // The same action can validate while being built. Different actions must
-    // prove independence even when one was created by the other's trigger.
-    // A pending hook checks resolved claims when it finishes, so independent
-    // siblings can resolve their keys concurrently.
+    // An action can validate during its own preparation. Other actions must
+    // declare disjoint resources, including children created by its triggers.
+    // Check resolved claims when each hook finishes so independent siblings can
+    // resolve their keys concurrently.
     if (owner.builder === node.builder || owner.resourcesPending) {
       continue;
     }

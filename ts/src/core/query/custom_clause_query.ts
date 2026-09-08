@@ -142,7 +142,7 @@ export class CustomClauseQuery<
 
   async queryRawCount(): Promise<number> {
     return this.readInTransaction(async () => {
-      // sqlite needs as count otherwise it returns count(1)
+      // Alias the count column; SQLite otherwise names it count(1).
       let fields: SelectBaseDataOptions["fields"] = ["count(1) as count"];
       if (this.options.joinBETA) {
         const firstRequestedField = this.options.loadEntOptions.fields[0];

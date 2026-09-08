@@ -941,7 +941,9 @@ export async function performRawQuery(
   return performQuery(DB.getInstance().getPool(), query, values, logValues);
 }
 
-/** @internal Execute SQL constructed by framework read loaders without evicting their caches. */
+/**
+ * @internal Execute SQL from framework read loaders and preserve their caches.
+ */
 export async function performReadQuery(
   query: string,
   values: Parameters<Queryer["queryAll"]>[1],

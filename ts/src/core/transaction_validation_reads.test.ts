@@ -476,8 +476,7 @@ describe.each([
       const outcome = await setupOutcome!;
       setupError = outcome?.error;
       if (mode === "late SQL failure") {
-        // Catch validation and SQL errors so
-        // withTransaction must enforce rollback.
+        // Catch both errors to verify that withTransaction still rolls back.
         return;
       }
       expect(validationError).toBe(ordinary);
@@ -494,8 +493,7 @@ describe.each([
     );
     try {
       await started.promise;
-      // Release this gate outside validation so waiting
-      // for reads cannot deadlock.
+      // Release outside validation so waiting for reads cannot deadlock.
       await new Promise<void>((resolve) => setImmediate(resolve));
       settledBeforeRelease = settled;
       release.resolve();

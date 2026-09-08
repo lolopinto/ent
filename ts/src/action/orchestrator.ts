@@ -324,9 +324,8 @@ export class Orchestrator<
     });
     this.memoizedGetFields = async () => {
       // Defaults and transformations may depend on reads, even for inserts.
-      // Keep IDs stable within an attempt, but never reuse a previous
-      // generation. Committed actions can still expose their retained data
-      // outside a scope.
+      // Keep IDs stable within an attempt, but reject prepared values from an
+      // earlier generation. Committed actions can expose retained data outside a scope.
       if (
         getTransactionState() &&
         prepared &&
@@ -1271,9 +1270,8 @@ export class Orchestrator<
       }
       if (transformed.changeset) {
         if (this.transaction) {
-          // Keep transformed fields and defaults stable, but rebuild child
-          // graphs for each preparation. Standalone
-          // validation discards its graph.
+          // Preserve transformed fields and defaults. Rebuild the child graph
+          // for each preparation because standalone validation discards it.
           this.transformedChangeset = transformed.changeset.bind(transformed);
         } else {
           const changeset = await transformed.changeset();
@@ -1659,10 +1657,9 @@ export class Orchestrator<
             claimGuardedPreparation();
           }
           if (probing) {
-            // Defaults and transformed inputs are memoized once, including
-            // inverse edges set by updateInput. Take the snapshot after setting
-            // those edges so validation preserves them
-            // without applying them twice.
+            // Memoize defaults and transformed inputs, including inverse edges
+            // set by updateInput. Snapshot those edges so validation preserves
+            // them without applying them twice.
             await this.prepareFields();
             restore = this.snapshotPreparation();
           }
@@ -2006,10 +2003,8 @@ export class EntChangeset<
       }
 
       if (!this.changesets?.length) {
-        // if we have dependencies but no changesets, we just need a simple
-        // executor and depend on something else in the stack to handle this correctly
-        // ComplexExecutor which could be a parent of this should make sure the dependency
-        // is resolved beforehand
+        // Without child changesets, use a list executor. The parent complex
+        // executor resolves any dependencies before running these operations.
         return (this._executor = new ListBasedExecutor(
           this.viewer,
           this.placeholderID,

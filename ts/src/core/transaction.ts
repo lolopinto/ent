@@ -13,11 +13,10 @@ import {
 
 export interface TransactionOptions {
   /**
-   * Defaults to `serializable` so conflicting read/validate/write decisions
-   * can fail instead of violating an invariant. Only this opt-in API uses this
-   * default; ordinary action transactions keep their configured isolation.
-   * Serializable conflicts may require retrying the whole callback. Use
-   * explicit locks to protect invariants with `read committed`.
+   * Defaults to `serializable`. Conflicting decisions based on earlier reads
+   * can abort the transaction and require a retry of the whole callback.
+   * Use explicit locks to protect invariants with `read committed`.
+   * Ordinary action transactions keep their configured isolation level.
    */
   isolationLevel?: "serializable" | "read committed";
   /**
@@ -69,7 +68,8 @@ function dispose(state: TransactionState) {
  * Include Ent loads, field defaults and transformations, privacy checks,
  * triggers, validators, and writes in one PostgreSQL transaction. Reject nested
  * scopes and let existing `Transaction` groups join this scope. Run action
- * observers after commit, outside the scope.
+ * observers after commit and connection release, outside the scope.
+ *
  * Await every operation. Construct actions, queries, and loaders inside the
  * callback. If the callback can be retried, keep external side effects outside it.
  */
@@ -80,8 +80,8 @@ export async function withTransaction<T>(
   if (getTransactionState()) {
     throw new Error("nested withTransaction is not supported");
   }
-  // Serializable protects decisions based on earlier reads. This default is
-  // local to the new scope and doesn't change ordinary action transactions.
+  // Serializable isolation protects decisions based on earlier reads.
+  // This default applies only to withTransaction.
   const isolation = options.isolationLevel ?? "serializable";
   if (isolation !== "serializable" && isolation !== "read committed") {
     throw new Error(`unsupported transaction isolation level: ${isolation}`);
@@ -114,8 +114,8 @@ export async function withTransaction<T>(
           return Promise.reject(state.error);
         }
         const read = { transaction: state, generation: state.generation };
-        // Public SQL can write or acquire locks. Framework read loaders use a
-        // separate path; their generated reads preserve other cached results.
+        // Public SQL can write or acquire locks, so invalidate caches after it
+        // completes. Framework reads preserve cached results.
         const pending = client[method](sql, values)
           .then((result) => {
             assertTransactionRead(read);
@@ -193,7 +193,7 @@ export async function withTransaction<T>(
       try {
         await client.query("ROLLBACK");
       } catch {
-        // Preserve the original failure and discard the unusable pg connection.
+        // Preserve the original failure and discard the unusable connection.
         releaseError = true;
       }
     } finally {
