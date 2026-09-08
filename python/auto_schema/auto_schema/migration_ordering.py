@@ -5,6 +5,7 @@ creation, then seed/edge data changes. Within a type-changing table, constraints
 and replaced indexes drop before ALTER TYPE. Alembic reverses that sequence for downgrade;
 only irreversible guards and extension namespace restoration must move ahead
 of the reversed operations. Keep both directions here as new operations arise.
+Edge-config cleanup is a pre-drop exception to the normal trailing data phase.
 """
 
 import uuid
@@ -19,6 +20,7 @@ _EXTENSION_SETUP = (ops.CreateExtensionOp, ops.UpdateExtensionOp, ops.SetExtensi
 _ENUM_SETUP = (ops.AddEnumOp, ops.AlterEnumOp)
 _INDEX_DROPS = (alembicops.DropIndexOp, ops.DropFullTextIndexOp)
 _TABLE_DDL = (alembicops.ModifyTableOps, alembicops.CreateTableOp, alembicops.DropTableOp)
+_EDGE_OPERATIONS = (ops.AddEdgesOp, ops.RemoveEdgesOp, ops.ModifyEdgeOp)
 
 
 def order_upgrade(upgrade_ops, *, dialect_name):
@@ -40,6 +42,7 @@ def order_upgrade(upgrade_ops, *, dialect_name):
     upgrade_ops.ops[:] = extensions + enums + tables + remaining
     if dialect_name == "postgresql":
         _order_foreign_keys_for_index_changes(upgrade_ops)
+    _order_edge_config_cleanup(upgrade_ops)
 
 
 def _order_column_type_changes(table_ops):
@@ -127,6 +130,22 @@ def _order_foreign_keys_for_index_changes(upgrade_ops):
         remaining[:position] + foreign_key_drops + remaining[position:ddl_end]
         + foreign_key_creates + remaining[ddl_end:]
     )
+
+
+def _order_edge_config_cleanup(upgrade_ops):
+    drop = next((
+        op for op in upgrade_ops.ops
+        if isinstance(op, alembicops.DropTableOp) and op.table_name == "assoc_edge_config"
+    ), None)
+    if drop is None:
+        return
+    # Edge operations access assoc_edge_config. When that table is removed,
+    # cleanup must precede the drop; the inverse creates it before restoring
+    # edges. Ordinary seed changes retain their position after FK creation.
+    edge_ops = [op for op in upgrade_ops.ops if isinstance(op, _EDGE_OPERATIONS)]
+    remaining = [op for op in upgrade_ops.ops if not isinstance(op, _EDGE_OPERATIONS)]
+    position = remaining.index(drop)
+    upgrade_ops.ops[:] = remaining[:position] + edge_ops + remaining[position:]
 
 
 def order_downgrade(downgrade_ops):

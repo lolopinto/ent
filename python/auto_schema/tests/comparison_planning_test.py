@@ -1,6 +1,7 @@
 from collections import Counter
 from contextlib import contextmanager
 from unittest.mock import patch
+from alembic.autogenerate import produce_migrations
 
 import pytest
 import sqlalchemy as sa
@@ -52,20 +53,21 @@ class TestPostgresComparisonPlanning:
             provisioned_by="ent" if install_extension else "external",
         ).info)
         r2 = new_test_runner(after, r)
-        # Each compare uses the same Runner/MigrationContext/connection, but a
-        # new AutogenContext. Formatting-only predicates still use the PG parser.
+        # Reuse one MigrationContext and connection across comparisons and the
+        # upgrade. Each produce_migrations must get a fresh AutogenContext cache.
+        context = r2._migration_context()
         for _ in range(2):
             with _discovery_queries(r2) as queries, patch.object(
                 compare, "_get_extension_ops", wraps=compare._get_extension_ops,
             ) as plan:
-                changes = r2.compute_changes()
+                changes = produce_migrations(context, after).upgrade_ops.ops
             assert [type(op) for op in changes] == ([ops.CreateExtensionOp] if install_extension else [])
             assert queries["extensions"] == 1
             assert queries["predicate_views"] == index_count * 2
             assert plan.call_count == 1
         r2.run()
         with _discovery_queries(r2) as queries:
-            assert r2.compute_changes() == []
+            assert produce_migrations(context, after).upgrade_ops.ops == []
         assert queries["extensions"] == 1
         assert queries["predicate_views"] == index_count * 2
 

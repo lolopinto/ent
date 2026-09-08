@@ -85,6 +85,26 @@ def test_setup_and_irreversibility_precede_index_sql():
     assert downgrade.ops == ordered
 
 
+@pytest.mark.parametrize("dialect_name", ["postgresql", "sqlite"])
+def test_edge_cleanup_precedes_table_drop_while_seed_changes_follow_fks(dialect_name):
+    edge_table = sa.Table("assoc_edge_config", sa.MetaData(), sa.Column("edge_name", sa.Text()))
+    drop = alembicops.DropTableOp.from_table(edge_table)
+    remove_edges = ops.RemoveEdgesOp([])
+    remove_rows = ops.RemoveRowsOp("parent", ["id"], [{"id": 1}])
+    fk = alembicops.CreateForeignKeyOp("fk", "child", "parent", ["owner_id"], ["id"])
+    child = alembicops.ModifyTableOps("child", [fk])
+    upgrade = alembicops.UpgradeOps([drop, remove_edges, _index_changes(), child, remove_rows])
+    migration_ordering.order_upgrade(upgrade, dialect_name=dialect_name)
+    flattened = _flatten(upgrade)
+    assert flattened.index(remove_edges) < flattened.index(drop)
+    assert flattened.index(fk) < flattened.index(remove_rows)
+    downgrade = upgrade.reverse()
+    migration_ordering.order_downgrade(downgrade)
+    reversed_types = [type(op) for op in _flatten(downgrade)]
+    assert reversed_types.index(alembicops.CreateTableOp) < reversed_types.index(ops.AddEdgesOp)
+    assert reversed_types.index(ops.AddRowsOp) < reversed_types.index(alembicops.DropConstraintOp)
+
+
 @pytest.mark.parametrize("constraint_name", [None, "child_parent_fk"])
 def test_new_table_fk_is_reversible_without_losing_table_options(constraint_name):
     metadata = sa.MetaData(schema="tenant")

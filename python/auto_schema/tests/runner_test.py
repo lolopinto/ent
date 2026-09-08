@@ -588,6 +588,39 @@ class BaseTestRunner(object):
             num_changes=0
         )
 
+    @pytest.mark.usefixtures("metadata_with_one_edge", "empty_metadata")
+    def test_remove_last_edge_before_dropping_assoc_edge_config(
+        self, new_test_runner, metadata_with_one_edge, empty_metadata
+    ):
+        r = new_test_runner(metadata_with_one_edge)
+        r.run()
+        edge_sql = sa.text("SELECT edge_name, edge_table, symmetric_edge FROM assoc_edge_config")
+        original_edges = r.get_connection().execute(edge_sql).all()
+        r.get_connection().commit()
+        r2 = new_test_runner(empty_metadata, r)
+        diff = r2.compute_changes()
+        remove_idx = next(idx for idx, op in enumerate(diff) if isinstance(op, ops.RemoveEdgesOp))
+        drop_idx = next(
+            idx for idx, op in enumerate(diff)
+            if isinstance(op, alembicops.DropTableOp) and op.table_name == "assoc_edge_config"
+        )
+        assert remove_idx < drop_idx
+        r2.get_connection().commit()
+        r2.revision(diff)
+        r2.upgrade()
+        assert not sa.inspect(r2.engine).has_table("assoc_edge_config")
+        assert r2.compute_changes() == []
+        r2.get_connection().commit()
+        r2.downgrade("-1", delete_files=False)
+        assert r2.get_connection().execute(edge_sql).all() == original_edges
+        r2.get_connection().commit()
+        restored = new_test_runner(metadata_with_one_edge, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(empty_metadata, restored)
+        r2.upgrade()
+        assert not sa.inspect(r2.engine).has_table("assoc_edge_config")
+        assert r2.compute_changes() == []
+
     @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_assoc_edge_config")
     def test_one_new_edge(self, new_test_runner, metadata_with_one_edge, metadata_with_assoc_edge_config):
         testingutils.run_edge_metadata_script(
@@ -3040,30 +3073,6 @@ class TestPostgresRunner(BaseTestRunner):
 
 
 class TestSqliteRunner(BaseTestRunner):
-    @pytest.mark.usefixtures("metadata_with_one_edge", "empty_metadata")
-    def test_remove_last_edge_before_dropping_assoc_edge_config(
-        self, new_test_runner, metadata_with_one_edge, empty_metadata
-    ):
-        r = new_test_runner(metadata_with_one_edge)
-        r.run()
-
-        r2 = new_test_runner(empty_metadata, r)
-        diff = r2.compute_changes()
-        remove_idx = next(
-            idx for idx, op in enumerate(diff) if isinstance(op, ops.RemoveEdgesOp)
-        )
-        drop_idx = next(
-            idx
-            for idx, op in enumerate(diff)
-            if (
-                isinstance(op, alembicops.DropTableOp)
-                and op.table_name == "assoc_edge_config"
-            )
-        )
-        assert remove_idx < drop_idx
-
-        r2.run()
-
     @pytest.mark.usefixtures("metadata_with_one_edge")
     def test_all_sql_adds_edges_after_assoc_edge_config_table(
         self, new_test_runner, metadata_with_one_edge
