@@ -21,6 +21,7 @@ from auto_schema.schema_item import FullTextIndex
 
 from . import ops
 from . import migration_ordering
+from . import postgresql_dependencies
 
 
 def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
@@ -466,6 +467,8 @@ def compare_schema(autogen_context, upgrade_ops, schemas):
 
 @comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
 def _order_migration_operations(autogen_context, upgrade_ops, schemas):
+    if _dialect_name(autogen_context) == "postgresql":
+        postgresql_dependencies.collect_index_foreign_keys(autogen_context, upgrade_ops, schemas)
     migration_ordering.order_upgrade(upgrade_ops, dialect_name=_dialect_name(autogen_context))
 
 
