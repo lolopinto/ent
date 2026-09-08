@@ -1344,6 +1344,8 @@ def _get_pending_enum_changes(autogen_context):
 def _plan_enum_changes(autogen_context):
     # Predicates can cast to enums declared on any table. Read their identities
     # and labels together, once per comparison, before a parse aborts a savepoint.
+    if autogen_context.metadata is None:
+        return _PendingEnumChanges()
     connection = autogen_context.connection
     # These identifiers are bound values, so do not apply DBAPI percent escaping.
     preparer = literal_sql_dialect(connection.dialect).identifier_preparer
