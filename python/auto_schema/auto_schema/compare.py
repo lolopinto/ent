@@ -15,7 +15,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
 
-from auto_schema.clause_text import literal_sql_dialect, normalize_clause_text
+from auto_schema.clause_text import compile_index_predicate, literal_sql_dialect, normalize_clause_text
 from auto_schema.schema_item import FullTextIndex
 
 from . import ops
@@ -605,10 +605,10 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
-    has_type_changes = any(
-        isinstance(op, alembicops.AlterColumnOp) and op.modify_type is not None
-        for op in modify_table_ops.ops
-    )
+    changed_column_types = {
+        op.column_name for op in modify_table_ops.ops
+        if isinstance(op, alembicops.AlterColumnOp) and op.modify_type is not None
+    }
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
     all_conn_indexes = raw_db_indexes.get('all')
@@ -677,7 +677,7 @@ def _compare_indexes(autogen_context: AutogenContext,
                     }
                     for key in ('postgresql_concurrently', 'postgresql_where'):
                         value = _get_index_kwarg(conn_index, key)
-                        if value not in (None, False):
+                        if _index_option_is_set(key, value):
                             full_text_info[key] = value
 
                     modify_table_ops.ops[i] = ops.DropFullTextIndexOp(
@@ -715,7 +715,7 @@ def _compare_indexes(autogen_context: AutogenContext,
             ) or _index_predicates_differ(
                 autogen_context, index, conn_indexes.get(name),
                 all_conn_indexes[name], conn_table,
-                has_type_changes=has_type_changes,
+                changed_column_types=changed_column_types,
             ):
                 _remove_generic_index_ops(modify_table_ops, name)
 
@@ -756,7 +756,7 @@ def _compare_indexes(autogen_context: AutogenContext,
             if _index_signatures_differ(meta_signature, conn_signature) or _index_predicates_differ(
                 autogen_context, index, conn_indexes[name],
                 all_conn_indexes.get(name, {}), conn_table,
-                has_type_changes=has_type_changes,
+                changed_column_types=changed_column_types,
             ):
                 # Alembic may already have replaced this index for a column or
                 # uniqueness change. Emit a single replacement with all options.
@@ -1060,7 +1060,7 @@ def _get_full_text_index_info(
         info['postgresql_using_internals'] = internals
 
     for key in ('postgresql_concurrently', 'postgresql_where'):
-        if info.get(key) not in (None, False):
+        if _index_option_is_set(key, info.get(key)):
             continue
         if raw_index.get(key) is not None:
             info[key] = raw_index[key]
@@ -1068,7 +1068,7 @@ def _get_full_text_index_info(
         if index is None:
             continue
         value = _get_index_kwarg(index, key)
-        if value not in (None, False):
+        if _index_option_is_set(key, value):
             info[key] = value
 
     return info
@@ -1147,15 +1147,20 @@ def _normalize_index_map(value) -> dict[str, str]:
     }
 
 
+def _index_option_is_set(key, value):
+    # SQL expressions cannot be truth-tested, and a FALSE predicate is present.
+    return value is not None and (key.endswith('_where') or value is not False)
+
+
 def _get_index_kwarg(index: sa.Index, key: str):
     value = index.kwargs.get(key)
-    if value not in (None, False):
+    if _index_option_is_set(key, value):
         return value
 
     postgres_options = index.dialect_options.get('postgresql')
     if postgres_options is not None:
         value = postgres_options.get(key.removeprefix('postgresql_'))
-        if value not in (None, False, [], {}):
+        if _index_option_is_set(key, value):
             return value
     return None
 
@@ -1183,18 +1188,11 @@ def _index_predicate(index: sa.Index | None, dialect, raw_index):
             value = index.kwargs.get(key)
     if value is None:
         value = raw_index.get(key)
-    if value is None:
-        return None
-    if isinstance(value, str):
-        return value.strip()
-    return str(value.compile(
-        dialect=dialect,
-        compile_kwargs={'literal_binds': True, 'include_table': False},
-    )).strip()
+    return compile_index_predicate(value, dialect)
 
 
 def _index_predicates_differ(
-    autogen_context, meta_index, conn_index, raw_index, conn_table, *, has_type_changes,
+    autogen_context, meta_index, conn_index, raw_index, conn_table, *, changed_column_types,
 ):
     connection = autogen_context.connection
     # These expressions are sent as SQL without DBAPI parameters. Avoid pyformat
@@ -1206,14 +1204,6 @@ def _index_predicates_differ(
         return False
     if dialect.name != 'postgresql':
         return True
-    # Reflected columns still have their old types. If Alembic plans a type
-    # change, PostgreSQL cannot reliably compare the new predicate in this table
-    # context yet. Conservatively recreate it after the type migration instead.
-    # An absent predicate can still match constant TRUE independently of column
-    # types; normalize that case before deciding to replace an unchanged index.
-    if has_type_changes and meta_predicate is not None and conn_predicate is not None:
-        return True
-
     # Extension comparison runs after table comparison. Use the same planner to
     # identify create/update/schema-move operations before a failed parse could
     # abort the savepoint and prevent querying the extension catalog.
@@ -1245,11 +1235,30 @@ def _index_predicates_differ(
                 sa.text('SELECT pg_get_viewdef(to_regclass(:view_name), false)'),
                 {'view_name': f'pg_temp.{view_name}'},
             ).scalar_one())
-        return definitions[0] != definitions[1]
+        if definitions[0] != definitions[1]:
+            return True
+        # Equality to an absent predicate proves constant TRUE independently of
+        # column types. Otherwise inspect resolved dependencies before accepting
+        # equality under the old types: a DATE parser can discard timestamp time.
+        if not changed_column_types or meta_predicate is None or conn_predicate is None:
+            return False
+        columns = _predicate_column_dependencies(connection, view_name, conn_table, dialect)
+        if columns is not None:
+            return not changed_column_types.isdisjoint(columns)
+        # Relation-level dependencies can mean a whole-row predicate or a
+        # constant. Parsing without a FROM proves independence for constants;
+        # whole-row references fail and retain conservative recreation below.
+        query = sa.select(sa.literal_column('1')).where(sa.literal_column(meta_predicate))
+        connection.exec_driver_sql(
+            f'CREATE OR REPLACE TEMP VIEW {view_name} AS {query.compile(dialect=dialect)}',
+            execution_options={'no_parameters': True},
+        )
+        # Composite casts can depend on the table's row type even without FROM.
+        return _predicate_column_dependencies(connection, view_name, conn_table, dialect) is None
     except sa.exc.ProgrammingError as error:
-        # An added/removed predicate may need the pending column types. If it
-        # cannot normalize against the old types, defer to index recreation.
-        if has_type_changes:
+        # Pending types or whole-row references can prevent comparison against
+        # the old table context. Conservatively defer to index recreation.
+        if changed_column_types:
             return True
         sqlstate = getattr(error.orig, 'pgcode', None)
         # A changed predicate can reference a column added by this migration,
@@ -1263,7 +1272,7 @@ def _index_predicates_differ(
             return True
         raise
     except sa.exc.DataError as error:
-        if has_type_changes:
+        if changed_column_types:
             return True
         # Enum labels are migrated after comparison and cannot be made visible
         # inside this savepoint. Defer a predicate that needs the declared new
@@ -1277,6 +1286,44 @@ def _index_predicates_differ(
         raise
     finally:
         savepoint.rollback()
+
+
+def _predicate_column_dependencies(connection, view_name, table, dialect):
+    """Return resolved predicate columns, or None for whole-row dependencies."""
+    rows = connection.execute(sa.text('''
+        WITH RECURSIVE dependencies AS (
+            SELECT dependency.refclassid, dependency.refobjid, dependency.refobjsubid
+            FROM pg_rewrite AS rewrite
+            JOIN pg_depend AS dependency
+              ON dependency.classid = 'pg_rewrite'::regclass AND dependency.objid = rewrite.oid
+            WHERE rewrite.ev_class = to_regclass(:view_name)
+        ), dependency_types AS (
+            SELECT type.oid, type.typrelid, type.typelem, type.typbasetype
+            FROM dependencies JOIN pg_type AS type
+              ON dependencies.refclassid = 'pg_type'::regclass AND type.oid = dependencies.refobjid
+            UNION
+            SELECT base.oid, base.typrelid, base.typelem, base.typbasetype
+            FROM dependency_types JOIN pg_type AS base
+              ON base.oid IN (dependency_types.typelem, dependency_types.typbasetype)
+        )
+        SELECT dependency.refobjsubid, attribute.attname, false AS composite_type
+        FROM dependencies AS dependency
+        LEFT JOIN pg_attribute AS attribute
+          ON attribute.attrelid = dependency.refobjid AND attribute.attnum = dependency.refobjsubid
+        WHERE dependency.refclassid = 'pg_class'::regclass
+          AND dependency.refobjid = to_regclass(:table_name)
+        UNION ALL
+        SELECT 0, NULL, true FROM dependency_types WHERE typrelid <> 0
+    '''), {
+        'view_name': f'pg_temp.{view_name}',
+        'table_name': dialect.identifier_preparer.format_table(table),
+    }).mappings().all()
+    # Composite casts may depend on the table's row shape even when a named
+    # column suppresses its relation-level dependency. Follow array/domain links;
+    # other composite types remain conservative because they can nest row types.
+    if any(row['composite_type'] or row['refobjsubid'] == 0 or row['attname'] is None for row in rows):
+        return None
+    return {row['attname'] for row in rows}
 
 
 def _index_has_pending_enum_values(autogen_context, meta_index, conn_table):
@@ -1329,7 +1376,7 @@ def _get_create_index_kwargs(
         'sqlite_where',
     ):
         value = index.kwargs.get(key)
-        if value not in (None, False):
+        if _index_option_is_set(key, value):
             kwargs[key] = value
 
     if signature is not None:
