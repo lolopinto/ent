@@ -20,6 +20,8 @@ def _discovery_queries(r):
             counts["extensions"] += 1
         if "WITH ORDINALITY AS declared_enum" in statement:
             counts["enums"] += 1
+        if "CAST(%(enum_label)s AS" in statement:
+            counts["enum_label_probes"] += 1
         if statement.startswith("CREATE OR REPLACE TEMP VIEW ent_index_predicate_"):
             counts["predicate_views"] += 1
 
@@ -104,6 +106,7 @@ class TestPostgresComparisonPlanning:
                 assert produce_migrations(context, after).upgrade_ops.ops
             assert queries["enums"] == 1
             assert queries["predicate_views"] == count  # Pending enums fail the first parse.
+            assert queries["enum_label_probes"] == (1 if declaration in ("indexed_table", "other_table") else 0)
             assert discover.call_count == 1
         r2.run()
         with _discovery_queries(r2) as queries, patch.object(
@@ -111,5 +114,6 @@ class TestPostgresComparisonPlanning:
         ) as discover:
             assert produce_migrations(context, after).upgrade_ops.ops == []
         assert queries["enums"] == 1
+        assert queries["enum_label_probes"] == 0
         assert queries["predicate_views"] == count * 2
         assert discover.call_count == 1

@@ -2,7 +2,7 @@ import functools
 import pprint
 import re
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import alembic.operations.ops as alembicops
@@ -16,6 +16,7 @@ from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
 
 from auto_schema.clause_text import compile_index_predicate, literal_sql_dialect, normalize_clause_text
+from auto_schema.postgresql_parser import type_name_at_position
 from auto_schema.schema_item import FullTextIndex
 
 from . import ops
@@ -125,14 +126,20 @@ def _get_extension_ops(
 
 @dataclass
 class _PendingEnumChanges:
-    new_types: bool = False
-    new_values: bool = False
+    new_types: set[tuple[str, str]] = field(default_factory=set)
+    search_path: tuple[str, ...] = ()
+    database_name: str | None = None
+    standard_conforming_strings: bool = True
+    backslash_quote: bool = True
+    new_values: dict[int, tuple[postgresql.ENUM, set[str]]] = field(default_factory=dict)
+    label_errors: set[tuple[str, str, str]] | None = None
 
 
 @dataclass
 class _PendingSchemaChanges:
     extension_ops: list[ops.MigrateOpInterface] | None = None
     enum_changes: _PendingEnumChanges | None = None
+    enum_schemas: tuple[str | None, ...] = (None,)
 
 
 def _pending_schema_changes(autogen_context):
@@ -142,6 +149,13 @@ def _pending_schema_changes(autogen_context):
     if not hasattr(autogen_context, '_ent_pending_schema_changes'):
         autogen_context._ent_pending_schema_changes = _PendingSchemaChanges()
     return autogen_context._ent_pending_schema_changes
+
+
+@comparators.dispatch_for('schema', priority=DispatchPriority.FIRST)
+def _record_enum_migration_schemas(autogen_context, upgrade_ops, schemas):
+    # Enum emission below targets each comparison schema, not enum.type.schema.
+    # Capture those actual targets before table/index predicate comparison runs.
+    _pending_schema_changes(autogen_context).enum_schemas = tuple(schemas)
 
 
 def _get_pending_extension_ops(autogen_context):
@@ -1271,7 +1285,7 @@ def _index_predicates_differ(
         if sqlstate == '42703':
             return True
         # A predicate can cast to a new enum declared on another table.
-        if pending_enums.new_types and sqlstate == '42704':
+        if pending_enums.new_types and _pending_enum_type_explains(error, pending_enums):
             return True
         # A pending extension can supply missing functions/operators (42883),
         # types (42704), or schemas (3F000). Valid predicates still normalize as
@@ -1282,18 +1296,70 @@ def _index_predicates_differ(
     except sa.exc.DataError as error:
         if changed_column_types:
             return True
-        # Enum labels are migrated after comparison and cannot be made visible
-        # inside this savepoint. Defer a predicate that needs the declared new
-        # labels to index recreation; unrelated invalid inputs still fail here.
-        if (
-            getattr(error.orig, 'pgcode', None) == '22P02'
-            and getattr(error.orig.diag, 'source_function', None) == 'enum_in'
-            and pending_enums.new_values
-        ):
-            return True
+        if _postgres_error_signature(error)[:2] == ('22P02', 'enum_in'):
+            # Attribute the observed error to a specific declared enum addition.
+            # Another enum's pending label cannot make this predicate valid.
+            # Roll back before the read-only CAST probes need this connection.
+            savepoint.rollback()
+            if _postgres_error_signature(error) in _pending_enum_label_errors(connection, pending_enums):
+                return True
+            raise
         raise
     finally:
-        savepoint.rollback()
+        if savepoint.is_active:
+            savepoint.rollback()
+
+
+def _postgres_error_signature(error):
+    original = error.orig
+    diagnostic = getattr(original, 'diag', None)
+    return (
+        getattr(original, 'pgcode', None),
+        getattr(diagnostic, 'source_function', None),
+        getattr(diagnostic, 'message_primary', None),
+    )
+
+
+def _pending_enum_type_explains(error, pending_enums):
+    if _postgres_error_signature(error)[:2] != ('42704', 'typenameType'):
+        return False
+    names = type_name_at_position(
+        error.statement, error.orig.diag.statement_position,
+        standard_conforming_strings=pending_enums.standard_conforming_strings,
+        backslash_quote=pending_enums.backslash_quote,
+    )
+    if not names:
+        return False
+    if len(names) == 3 and names[0] == pending_enums.database_name:
+        names = names[1:]
+    if len(names) == 2:
+        return names in pending_enums.new_types
+    if len(names) == 1:
+        return any((schema, names[0]) in pending_enums.new_types for schema in pending_enums.search_path)
+    return False
+
+
+def _pending_enum_label_errors(connection, pending_enums):
+    if pending_enums.label_errors is not None:
+        return pending_enums.label_errors
+    errors = set()
+    for enum_type, labels in pending_enums.new_values.values():
+        for label in labels:
+            savepoint = connection.begin_nested()
+            try:
+                connection.execute(sa.select(sa.cast(sa.bindparam('enum_label', label), enum_type)))
+            except sa.exc.DataError as error:
+                signature = _postgres_error_signature(error)
+                if signature[:2] != ('22P02', 'enum_in'):
+                    raise
+                # PostgreSQL supplies the localized message and quotes the
+                # resolved type name. Compare exact errors from the same server;
+                # do not extract names or values from English error text.
+                errors.add(signature)
+            finally:
+                savepoint.rollback()
+    pending_enums.label_errors = errors
+    return errors
 
 
 def _predicate_column_dependencies(connection, view_name, table, dialect):
@@ -1359,6 +1425,11 @@ def _plan_enum_changes(autogen_context):
     rows = connection.execute(sa.text('''
         SELECT declared_enum.position,
             pg_catalog.to_regtype(declared_enum.type_name)::oid AS metadata_oid,
+            pg_catalog.parse_ident(declared_enum.type_name)::name[] AS identifiers,
+            current_schema() AS default_schema, current_schemas(true) AS search_path,
+            current_database() AS database_name,
+            current_setting('standard_conforming_strings') AS standard_conforming_strings,
+            current_setting('backslash_quote') AS backslash_quote,
             attribute.atttypid AS column_oid,
             actual_type.typtype AS column_kind,
             ARRAY(SELECT enumlabel FROM pg_catalog.pg_enum
@@ -1376,15 +1447,24 @@ def _plan_enum_changes(autogen_context):
         'types': [preparer.format_type(column.type) for column in columns],
     })
     for row in rows:
+        changes.search_path = tuple(row.search_path)
+        changes.database_name = row.database_name
+        changes.standard_conforming_strings = row.standard_conforming_strings == 'on'
+        changes.backslash_quote = row.backslash_quote != 'off'
         if row.column_oid is None and row.metadata_oid is None:
             # New columns/tables emit AddEnumOp. A type change on an existing
             # column does not by itself declare a new enum migration.
-            changes.new_types = True
+            names = tuple(row.identifiers)
+            for schema in _pending_schema_changes(autogen_context).enum_schemas:
+                changes.new_types.add((schema or row.default_schema, names[-1]))
         elif row.metadata_oid == row.column_oid and row.column_kind == 'e':
             # Match actual OIDs, including explicit public schemas and quoted
             # names, without conflating a shadowed type with the column's enum.
-            if set(columns[row.position - 1].type.enums) - set(row.labels):
-                changes.new_values = True
+            enum_type = columns[row.position - 1].type
+            labels = set(enum_type.enums) - set(row.labels)
+            if labels:
+                entry = changes.new_values.setdefault(row.metadata_oid, (enum_type, set()))
+                entry[1].update(labels)
     return changes
 
 
