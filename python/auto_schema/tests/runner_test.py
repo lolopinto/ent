@@ -1379,6 +1379,65 @@ class TestPostgresRunner(BaseTestRunner):
         assert r2.compute_changes() == []
         _assert_no_predicate_views(r2)
 
+    @pytest.mark.parametrize("change_predicate", [False, True])
+    def test_foreign_key_action_changes_precede_seed_deletion(self, new_test_runner, change_predicate):
+        def metadata(after):
+            result = _partial_index_metadata(
+                "owner_id > 0" if after and change_predicate else None,
+                postgresql_with={"fillfactor": 80 if after else 70},
+            )
+            sa.Table("parents", result, sa.Column("id", sa.Integer(), primary_key=True))
+            sa.Table(
+                "children", result,
+                sa.Column("id", sa.Integer(), primary_key=True),
+                sa.Column("parent_id", sa.Integer(), nullable=False),
+                sa.ForeignKeyConstraint(
+                    ["parent_id"], ["parents.id"], name="children_parent_fk",
+                    ondelete="CASCADE" if after else "RESTRICT",
+                ),
+            )
+            result.info["data"] = {"public": {
+                "parents": {"pkeys": ["id"], "rows": [] if after else [{"id": 1}]},
+            }}
+            return result
+
+        before, after = metadata(False), metadata(True)
+        r = new_test_runner(before)
+        r.run()
+        r.get_connection().execute(sa.text("INSERT INTO children VALUES (1, 1)"))
+        r.get_connection().commit()
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        # Seed comparison reads rows on this connection; release those read
+        # locks before Alembic executes DDL on its migration connection.
+        r2.get_connection().commit()
+        r2.revision(changes)
+        r2.upgrade()
+
+        def assert_state(upgraded):
+            foreign_key = sa.inspect(r2.engine).get_foreign_keys("children")[0]
+            assert foreign_key["options"]["ondelete"] == ("CASCADE" if upgraded else "RESTRICT")
+            assert r2.get_connection().execute(sa.text("SELECT id FROM parents")).all() == (
+                [] if upgraded else [(1,)]
+            )
+            assert r2.get_connection().execute(sa.text("SELECT id FROM children")).all() == []
+            r2.get_connection().commit()
+
+        assert_state(True)
+        assert r2.compute_changes() == []
+        r2.get_connection().commit()
+        r2.downgrade("-1", delete_files=False)
+        assert_state(False)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        # Cascaded rows are application data, so reseed a child to exercise replay.
+        restored.get_connection().execute(sa.text("INSERT INTO children VALUES (2, 1)"))
+        restored.get_connection().commit()
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_state(True)
+        assert r2.compute_changes() == []
+
     def test_index_type_change_preserves_foreign_key_dependencies(self, new_test_runner):
         def metadata(score_type, fillfactor):
             result = _partial_index_metadata(None, unique=True, postgresql_with={"fillfactor": fillfactor})

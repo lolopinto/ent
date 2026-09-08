@@ -34,6 +34,7 @@ from typing import Any
 from . import command
 from . import config
 from . import ops
+from . import migration_ordering
 from . import renderers
 from . import compare
 from . import ops_impl
@@ -116,18 +117,7 @@ class Runner(object):
     def process_revision_directives(context, revision, directives):
         for script in directives:
             for downgrade in script.downgrade_ops_list:
-                guards = [op for op in downgrade.ops if isinstance(op, ops.NoDowngradeOp)]
-                schema_moves = [op for op in downgrade.ops if isinstance(op, ops.SetExtensionSchemaOp)]
-                if not guards and not schema_moves:
-                    continue
-                # Reject irreversible revisions before any SQL, especially DDL
-                # in autocommit blocks that a later exception cannot roll back.
-                # Reversing upgrade order puts these moves after index recreation.
-                # Restore extension namespaces before old predicates/types are
-                # parsed. Moves preserve object identities, so existing indexes
-                # remain valid until their subsequent drop operations.
-                first = guards + schema_moves
-                downgrade.ops[:] = first + [op for op in downgrade.ops if op not in first]
+                migration_ordering.order_downgrade(downgrade)
 
     @staticmethod
     def _parse_bool(val):

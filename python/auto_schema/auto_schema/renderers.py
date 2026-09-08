@@ -1,12 +1,11 @@
 import uuid
-import copy
 from alembic.autogenerate import renderers
 from alembic.autogenerate.api import AutogenContext
 import alembic.operations.ops as alembicops
 from sqlalchemy.dialects import postgresql
 from . import ops
 from . import csv
-from .clause_text import literal_sql_dialect
+from .alembic_compat import index_render_context
 import sqlalchemy as sa
 # no need to put timestamps when rendering
 _IGNORED_KEYS = ['created_at', 'updated_at']
@@ -201,24 +200,10 @@ _orig_render_create_index = renderers._registry[(alembicops.CreateIndexOp, "defa
 _orig_render_drop_index = renderers._registry[(alembicops.DropIndexOp, "default")]
 
 
-def _index_render_context(autogen_context):
-    # Alembic embeds compiled dialect options in sa.text() in Python source.
-    # DBAPI escaping here would persist doubled '%' literals in the index and
-    # double them again on each generated downgrade. Only copy this render
-    # context; migration execution must keep the driver's original paramstyle.
-    context = copy.copy(autogen_context)
-    context.dialect = literal_sql_dialect(context.dialect)
-    context.migration_context = copy.copy(context.migration_context)
-    context.migration_context.dialect = context.dialect
-    context.migration_context.impl = copy.copy(context.migration_context.impl)
-    context.migration_context.impl.dialect = context.dialect
-    return context
-
-
 def _render_create_index_with_concurrently(
     autogen_context: AutogenContext, op
 ) -> str:
-    rendered = _orig_render_create_index(_index_render_context(autogen_context), op)
+    rendered = _orig_render_create_index(index_render_context(autogen_context), op)
     if (kw := _get_index_kw(op)).get("postgresql_concurrently") is True:
         return _wrap_autocommit(rendered)
     return rendered
@@ -227,7 +212,7 @@ def _render_create_index_with_concurrently(
 def _render_drop_index_with_concurrently(
     autogen_context: AutogenContext, op
 ) -> str:
-    rendered = _orig_render_drop_index(_index_render_context(autogen_context), op)
+    rendered = _orig_render_drop_index(index_render_context(autogen_context), op)
     if (kw := _get_index_kw(op)).get("postgresql_concurrently") is True:
         return _wrap_autocommit(rendered)
     return rendered

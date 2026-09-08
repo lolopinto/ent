@@ -2,6 +2,7 @@ import functools
 import pprint
 import re
 import uuid
+from dataclasses import dataclass, field
 from typing import Any
 
 import alembic.operations.ops as alembicops
@@ -18,6 +19,7 @@ from auto_schema.clause_text import literal_sql_dialect, normalize_clause_text
 from auto_schema.schema_item import FullTextIndex
 
 from . import ops
+from . import migration_ordering
 
 
 def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
@@ -121,7 +123,30 @@ def _get_extension_ops(
     return extension_ops
 
 
+@dataclass
+class _PendingSchemaChanges:
+    extension_ops: list[ops.MigrateOpInterface] | None = None
+    enum_tables: dict[tuple[sa.Table, sa.Table], bool] = field(default_factory=dict)
+    enum_identities: dict[tuple[str, str], bool | None] = field(default_factory=dict)
+
+
+def _pending_schema_changes(autogen_context):
+    # AutogenContext is created for each produce_migrations/revision comparison,
+    # even when a Runner, MigrationContext, or connection is reused after upgrade.
+    # Never store catalog state on those longer-lived objects or on metadata.
+    if not hasattr(autogen_context, '_ent_pending_schema_changes'):
+        autogen_context._ent_pending_schema_changes = _PendingSchemaChanges()
+    return autogen_context._ent_pending_schema_changes
+
+
 def _get_pending_extension_ops(autogen_context):
+    pending = _pending_schema_changes(autogen_context)
+    if pending.extension_ops is None:
+        pending.extension_ops = _plan_extension_ops(autogen_context)
+    return pending.extension_ops
+
+
+def _plan_extension_ops(autogen_context):
     if autogen_context.metadata is None:
         return []
     metadata_extensions = _get_metadata_extensions(autogen_context)
@@ -142,9 +167,7 @@ def compare_extensions(autogen_context, upgrade_ops, schemas):
     if len(extension_ops) == 0:
         return
 
-    # create/update extension ops need to happen before any dependent
-    # tables, columns, or indexes are created.
-    upgrade_ops.ops[0:0] = extension_ops
+    upgrade_ops.ops.extend(extension_ops)
 
 
 @comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
@@ -441,71 +464,8 @@ def compare_schema(autogen_context, upgrade_ops, schemas):
 
 
 @comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
-def _order_foreign_keys_for_index_changes(autogen_context, upgrade_ops, schemas):
-    if _dialect_name(autogen_context) != "postgresql":
-        return
-    if not any(
-        isinstance(operation, (alembicops.DropIndexOp, ops.DropFullTextIndexOp))
-        for table_ops in upgrade_ops.ops if isinstance(table_ops, alembicops.ModifyTableOps)
-        for operation in table_ops.ops
-    ):
-        return
-
-    # An index can support a foreign key on any table. Complete table comparison
-    # before moving FK drops ahead of index replacements and FK creates after
-    # them. Alembic then reverses this complete sequence for downgrade, preserving
-    # the same dependencies there instead of relying on table-name ordering.
-    foreign_key_drops, foreign_key_creates, remaining = [], [], []
-    for table_ops in upgrade_ops.ops:
-        if isinstance(table_ops, alembicops.CreateTableOp):
-            # New tables also depend on indexes changed later in this migration.
-            # Keep the table operation and all other constraints/options intact;
-            # explicit late FK creation gives downgrade an early FK drop too.
-            creates = []
-            for item in table_ops.columns:
-                if not isinstance(item, sa.ForeignKeyConstraint):
-                    continue
-                operation = alembicops.CreateForeignKeyOp.from_constraint(item)
-                if operation.constraint_name is None:
-                    # An inline FK normally drops with its table. Once deferred,
-                    # its inverse DROP CONSTRAINT needs a stable explicit name.
-                    signature = (
-                        operation.source_table, operation.referent_table,
-                        operation.local_cols, operation.remote_cols, sorted(operation.kw.items()),
-                    )
-                    operation.constraint_name = f"ent_fk_{uuid.uuid5(uuid.NAMESPACE_OID, repr(signature)).hex}"
-                creates.append(operation)
-            if creates:
-                table_ops.columns = [item for item in table_ops.columns if not isinstance(item, sa.ForeignKeyConstraint)]
-                foreign_key_creates.append(alembicops.ModifyTableOps(table_ops.table_name, creates, schema=table_ops.schema))
-            remaining.append(table_ops)
-            continue
-        if not isinstance(table_ops, alembicops.ModifyTableOps):
-            remaining.append(table_ops)
-            continue
-        drops, creates, other = [], [], []
-        for operation in table_ops.ops:
-            if isinstance(operation, alembicops.DropConstraintOp) and operation.constraint_type == "foreignkey":
-                drops.append(operation)
-            elif isinstance(operation, alembicops.CreateForeignKeyOp):
-                creates.append(operation)
-            else:
-                other.append(operation)
-        if drops:
-            foreign_key_drops.append(alembicops.ModifyTableOps(table_ops.table_name, drops, schema=table_ops.schema))
-        if creates:
-            foreign_key_creates.append(alembicops.ModifyTableOps(table_ops.table_name, creates, schema=table_ops.schema))
-        if other:
-            table_ops.ops[:] = other
-            remaining.append(table_ops)
-
-    # Keep extension/enum setup ahead of table DDL, as planned by their schema
-    # comparators. Preserve every table/schema attribute on the moved operations.
-    position = next((
-        i for i, operation in enumerate(remaining)
-        if isinstance(operation, (alembicops.ModifyTableOps, alembicops.CreateTableOp, alembicops.DropTableOp))
-    ), len(remaining))
-    upgrade_ops.ops[:] = remaining[:position] + foreign_key_drops + remaining[position:] + foreign_key_creates
+def _order_migration_operations(autogen_context, upgrade_ops, schemas):
+    migration_ordering.order_upgrade(upgrade_ops, dialect_name=_dialect_name(autogen_context))
 
 
 def _check_removed_table(metadata_table, upgrade_ops, sch):
@@ -590,11 +550,7 @@ def _check_new_column(metadata_column, upgrade_ops, sch):
     if not isinstance(metadata_type, postgresql.ENUM):
         return
 
-    # new column with enum type
-    # time to create the type
-    # adding a new type. just add to front of list
-    upgrade_ops.ops.insert(
-        0,
+    upgrade_ops.ops.append(
         ops.AddEnumOp(metadata_type.name, metadata_type.enums, schema=sch)
     )
 
@@ -655,14 +611,7 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
                     ops.AlterEnumOp(conn_type.name, value, schema=sch)
                 )
 
-    # New labels must be committed by AlterEnumOp's autocommit block before
-    # table changes (including index predicates) can reference them. Preserve
-    # label insertion order and any preceding extension/type setup operations.
-    position = next((
-        i for i, op in enumerate(upgrade_ops.ops)
-        if isinstance(op, (alembicops.CreateTableOp, alembicops.ModifyTableOps))
-    ), len(upgrade_ops.ops))
-    upgrade_ops.ops[position:position] = enum_ops
+    upgrade_ops.ops.extend(enum_ops)
 
 
 @ comparators.dispatch_for("table", priority=DispatchPriority.LAST)
@@ -845,18 +794,6 @@ def _compare_indexes(autogen_context: AutogenContext,
                 create_op.kw.update(_get_create_index_kwargs(index, meta_signature))
                 modify_table_ops.ops.append(create_op)
 
-    if has_type_changes:
-        # PostgreSQL reparses existing indexes during ALTER COLUMN TYPE. Drop
-        # indexes being replaced while their old predicates are valid, after
-        # removing constraints that can depend on those indexes. Reversing this
-        # order restores the old indexes before recreating their constraints.
-        index_drops = [op for op in modify_table_ops.ops if isinstance(
-            op, (alembicops.DropIndexOp, ops.DropFullTextIndexOp),
-        )]
-        if index_drops:
-            constraint_drops = [op for op in modify_table_ops.ops if isinstance(op, alembicops.DropConstraintOp)]
-            drops = constraint_drops + index_drops
-            modify_table_ops.ops[:] = drops + [op for op in modify_table_ops.ops if op not in drops]
 # this handles computed columns changing and so drops and re-creates the column.
 
 
@@ -1301,7 +1238,7 @@ def _index_predicates_differ(
     has_extension_changes = bool(_get_pending_extension_ops(autogen_context))
     # Enum reflection can omit a schema visible through the search path. Resolve
     # type identities while catalog queries can still run, before parsing SQL.
-    has_pending_enum_values = _index_has_pending_enum_values(connection, meta_index, conn_table)
+    has_pending_enum_values = _index_has_pending_enum_values(autogen_context, meta_index, conn_table)
 
     # PostgreSQL deparses predicates with extra parentheses, implicit casts, and
     # rewrites such as IN -> ANY. Ask its parser to render both expressions in the
@@ -1360,10 +1297,20 @@ def _index_predicates_differ(
         savepoint.rollback()
 
 
-def _index_has_pending_enum_values(connection, meta_index, conn_table):
+def _index_has_pending_enum_values(autogen_context, meta_index, conn_table):
+    pending = _pending_schema_changes(autogen_context)
+    key = (meta_index.table, conn_table)
+    if key not in pending.enum_tables:
+        pending.enum_tables[key] = _table_has_pending_enum_values(
+            autogen_context.connection, pending, meta_index.table, conn_table,
+        )
+    return pending.enum_tables[key]
+
+
+def _table_has_pending_enum_values(connection, pending, meta_table, conn_table):
     # These identifiers are bound values, so do not apply DBAPI percent escaping.
     preparer = literal_sql_dialect(connection.dialect).identifier_preparer
-    for column in meta_index.table.columns:
+    for column in meta_table.columns:
         conn_column = conn_table.c.get(column.name)
         if conn_column is None:
             continue
@@ -1375,16 +1322,16 @@ def _index_has_pending_enum_values(connection, meta_index, conn_table):
         ):
             # Let PostgreSQL resolve quoted and unqualified names according to
             # the current search path, without conflating shadowed enum types.
-            if connection.execute(
-                sa.text(
-                    'SELECT pg_catalog.to_regtype(:metadata_type)::oid '
-                    '= pg_catalog.to_regtype(:reflected_type)::oid'
-                ),
-                {
-                    'metadata_type': preparer.format_type(meta_type),
-                    'reflected_type': preparer.format_type(conn_type),
-                },
-            ).scalar_one():
+            identity = (preparer.format_type(meta_type), preparer.format_type(conn_type))
+            if identity not in pending.enum_identities:
+                pending.enum_identities[identity] = connection.execute(
+                    sa.text(
+                        'SELECT pg_catalog.to_regtype(:metadata_type)::oid '
+                        '= pg_catalog.to_regtype(:reflected_type)::oid'
+                    ),
+                    {'metadata_type': identity[0], 'reflected_type': identity[1]},
+                ).scalar_one()
+            if pending.enum_identities[identity]:
                 return True
     return False
 
