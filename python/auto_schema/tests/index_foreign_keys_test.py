@@ -259,7 +259,7 @@ class TestPostgresIndexForeignKeys:
         original = connection.execute(definition).one()
         connection.commit()
         after = _metadata_with_child(True)
-        next(iter(after.tables['children'].foreign_key_constraints)).ondelete = 'SET NULL'
+        next(iter(after.tables['children'].foreign_key_constraints)).ondelete = 'SET NULL (owner_id)'
         r2 = new_test_runner(after, r)
         with pytest.raises(ValueError, match='attributes requiring an explicit migration'):
             r2.revision()
