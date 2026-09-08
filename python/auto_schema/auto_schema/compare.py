@@ -2,7 +2,7 @@ import functools
 import pprint
 import re
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import alembic.operations.ops as alembicops
@@ -124,10 +124,15 @@ def _get_extension_ops(
 
 
 @dataclass
+class _PendingEnumChanges:
+    new_types: bool = False
+    new_values: bool = False
+
+
+@dataclass
 class _PendingSchemaChanges:
     extension_ops: list[ops.MigrateOpInterface] | None = None
-    enum_tables: dict[tuple[sa.Table, sa.Table], bool] = field(default_factory=dict)
-    enum_identities: dict[tuple[str, str], bool | None] = field(default_factory=dict)
+    enum_changes: _PendingEnumChanges | None = None
 
 
 def _pending_schema_changes(autogen_context):
@@ -1210,7 +1215,7 @@ def _index_predicates_differ(
     has_extension_changes = bool(_get_pending_extension_ops(autogen_context))
     # Enum reflection can omit a schema visible through the search path. Resolve
     # type identities while catalog queries can still run, before parsing SQL.
-    has_pending_enum_values = _index_has_pending_enum_values(autogen_context, meta_index, conn_table)
+    pending_enums = _get_pending_enum_changes(autogen_context)
 
     # PostgreSQL deparses predicates with extra parentheses, implicit casts, and
     # rewrites such as IN -> ANY. Ask its parser to render both expressions in the
@@ -1265,6 +1270,9 @@ def _index_predicates_differ(
         # which is not available in the reflected table yet.
         if sqlstate == '42703':
             return True
+        # A predicate can cast to a new enum declared on another table.
+        if pending_enums.new_types and sqlstate == '42704':
+            return True
         # A pending extension can supply missing functions/operators (42883),
         # types (42704), or schemas (3F000). Valid predicates still normalize as
         # usual; declarations for already installed extensions do not defer SQL.
@@ -1280,7 +1288,7 @@ def _index_predicates_differ(
         if (
             getattr(error.orig, 'pgcode', None) == '22P02'
             and getattr(error.orig.diag, 'source_function', None) == 'enum_in'
-            and has_pending_enum_values
+            and pending_enums.new_values
         ):
             return True
         raise
@@ -1326,43 +1334,56 @@ def _predicate_column_dependencies(connection, view_name, table, dialect):
     return {row['attname'] for row in rows}
 
 
-def _index_has_pending_enum_values(autogen_context, meta_index, conn_table):
+def _get_pending_enum_changes(autogen_context):
     pending = _pending_schema_changes(autogen_context)
-    key = (meta_index.table, conn_table)
-    if key not in pending.enum_tables:
-        pending.enum_tables[key] = _table_has_pending_enum_values(
-            autogen_context.connection, pending, meta_index.table, conn_table,
-        )
-    return pending.enum_tables[key]
+    if pending.enum_changes is None:
+        pending.enum_changes = _plan_enum_changes(autogen_context)
+    return pending.enum_changes
 
 
-def _table_has_pending_enum_values(connection, pending, meta_table, conn_table):
+def _plan_enum_changes(autogen_context):
+    # Predicates can cast to enums declared on any table. Read their identities
+    # and labels together, once per comparison, before a parse aborts a savepoint.
+    connection = autogen_context.connection
     # These identifiers are bound values, so do not apply DBAPI percent escaping.
     preparer = literal_sql_dialect(connection.dialect).identifier_preparer
-    for column in meta_table.columns:
-        conn_column = conn_table.c.get(column.name)
-        if conn_column is None:
-            continue
-        meta_type, conn_type = column.type, conn_column.type
-        if (
-            isinstance(meta_type, postgresql.ENUM)
-            and isinstance(conn_type, postgresql.ENUM)
-            and set(meta_type.enums) - set(conn_type.enums)
-        ):
-            # Let PostgreSQL resolve quoted and unqualified names according to
-            # the current search path, without conflating shadowed enum types.
-            identity = (preparer.format_type(meta_type), preparer.format_type(conn_type))
-            if identity not in pending.enum_identities:
-                pending.enum_identities[identity] = connection.execute(
-                    sa.text(
-                        'SELECT pg_catalog.to_regtype(:metadata_type)::oid '
-                        '= pg_catalog.to_regtype(:reflected_type)::oid'
-                    ),
-                    {'metadata_type': identity[0], 'reflected_type': identity[1]},
-                ).scalar_one()
-            if pending.enum_identities[identity]:
-                return True
-    return False
+    columns = [
+        column for table in autogen_context.metadata.tables.values()
+        for column in table.columns if isinstance(column.type, postgresql.ENUM)
+    ]
+    changes = _PendingEnumChanges()
+    if not columns:
+        return changes
+    rows = connection.execute(sa.text('''
+        SELECT declared_enum.position,
+            pg_catalog.to_regtype(declared_enum.type_name)::oid AS metadata_oid,
+            attribute.atttypid AS column_oid,
+            actual_type.typtype AS column_kind,
+            ARRAY(SELECT enumlabel FROM pg_catalog.pg_enum
+                  WHERE enumtypid = attribute.atttypid) AS labels
+        FROM unnest(CAST(:tables AS text[]), CAST(:columns AS text[]), CAST(:types AS text[]))
+            WITH ORDINALITY AS declared_enum(table_name, column_name, type_name, position)
+        LEFT JOIN pg_catalog.pg_attribute AS attribute
+            ON attribute.attrelid = pg_catalog.to_regclass(declared_enum.table_name)
+            AND attribute.attname = declared_enum.column_name
+            AND attribute.attnum > 0 AND NOT attribute.attisdropped
+        LEFT JOIN pg_catalog.pg_type AS actual_type ON actual_type.oid = attribute.atttypid
+    '''), {
+        'tables': [preparer.format_table(column.table) for column in columns],
+        'columns': [column.name for column in columns],
+        'types': [preparer.format_type(column.type) for column in columns],
+    })
+    for row in rows:
+        if row.column_oid is None and row.metadata_oid is None:
+            # New columns/tables emit AddEnumOp. A type change on an existing
+            # column does not by itself declare a new enum migration.
+            changes.new_types = True
+        elif row.metadata_oid == row.column_oid and row.column_kind == 'e':
+            # Match actual OIDs, including explicit public schemas and quoted
+            # names, without conflating a shadowed type with the column's enum.
+            if set(columns[row.position - 1].type.enums) - set(row.labels):
+                changes.new_values = True
+    return changes
 
 
 def _get_create_index_kwargs(

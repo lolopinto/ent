@@ -5,6 +5,7 @@ from alembic.autogenerate import produce_migrations
 
 import pytest
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 
 from auto_schema import compare, ops
 from .runner_test import _db_extension_metadata, _enum_partial_index_metadata, _partial_index_metadata
@@ -17,8 +18,8 @@ def _discovery_queries(r):
     def record(connection, cursor, statement, parameters, context, executemany):
         if "FROM pg_catalog.pg_extension AS ext" in statement:
             counts["extensions"] += 1
-        if statement.startswith("SELECT pg_catalog.to_regtype("):
-            counts["enum_identity"] += 1
+        if "WITH ORDINALITY AS declared_enum" in statement:
+            counts["enums"] += 1
         if statement.startswith("CREATE OR REPLACE TEMP VIEW ent_index_predicate_"):
             counts["predicate_views"] += 1
 
@@ -71,30 +72,44 @@ class TestPostgresComparisonPlanning:
         assert queries["extensions"] == 1
         assert queries["predicate_views"] == index_count * 2
 
-    def test_enum_discovery_is_once_per_table_and_fresh_after_upgrade(self, new_test_runner):
-        count = 12
-        before = _more_indexes(_enum_partial_index_metadata(
-            ["active"], "status = 'active'", schema="public",
-        ), "status = 'active'", count)
+    @pytest.mark.parametrize("count", [1, 12])
+    @pytest.mark.parametrize("declaration", ["indexed_table", "other_table", "new_table", "new_column"])
+    def test_enum_discovery_is_once_per_run_and_fresh_after_upgrade(self, new_test_runner, count, declaration):
+        def metadata(after):
+            values = ["active", "archived"] if after else ["active"]
+            if declaration == "indexed_table":
+                predicate = "status = 'archived'" if after else "status = 'active'"
+                result = _enum_partial_index_metadata(values, predicate, schema="public")
+            else:
+                predicate = "score > CASE WHEN 'archived'::other_status = 'active'::other_status THEN 2 ELSE 1 END" if after else "score > 0"
+                result = _partial_index_metadata(predicate)
+                if after or declaration != "new_table":
+                    other = sa.Table("other", result, sa.Column("id", sa.Integer(), primary_key=True))
+                    if after or declaration != "new_column":
+                        other.append_column(sa.Column("status", postgresql.ENUM(
+                            *values, name="other_status", schema="public", create_type=False,
+                        )))
+            return _more_indexes(result, predicate, count)
+
+        before = metadata(False)
         r = new_test_runner(before)
         r.run()
-        after = _more_indexes(_enum_partial_index_metadata(
-            ["active", "archived"], "status = 'archived'", schema="public",
-        ), "status = 'archived'", count)
+        after = metadata(True)
         r2 = new_test_runner(after, r)
+        context = r2._migration_context()
         for _ in range(2):
             with _discovery_queries(r2) as queries, patch.object(
-                compare, "_table_has_pending_enum_values", wraps=compare._table_has_pending_enum_values,
+                compare, "_plan_enum_changes", wraps=compare._plan_enum_changes,
             ) as discover:
-                assert r2.compute_changes()
-            assert queries["enum_identity"] == 1
-            assert queries["predicate_views"] == count  # New labels fail the first parse.
+                assert produce_migrations(context, after).upgrade_ops.ops
+            assert queries["enums"] == 1
+            assert queries["predicate_views"] == count  # Pending enums fail the first parse.
             assert discover.call_count == 1
         r2.run()
         with _discovery_queries(r2) as queries, patch.object(
-            compare, "_table_has_pending_enum_values", wraps=compare._table_has_pending_enum_values,
+            compare, "_plan_enum_changes", wraps=compare._plan_enum_changes,
         ) as discover:
-            assert r2.compute_changes() == []
-        assert queries["enum_identity"] == 0
+            assert produce_migrations(context, after).upgrade_ops.ops == []
+        assert queries["enums"] == 1
         assert queries["predicate_views"] == count * 2
         assert discover.call_count == 1
