@@ -1,4 +1,4 @@
-{{ reserveImport .Package.ActionPackagePath "WriteOperation" "setEdgeTypeInGroup" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions" "runActionExecution"}}
+{{ reserveImport .Package.ActionPackagePath "WriteOperation" "setEdgeTypeInGroup" "convertRelativeInput" "maybeConvertRelativeInputPlusExpressions" "runActionExecution" "runActionChangeset"}}
 {{ reserveTypeImport .Package.ActionPackagePath "Action" "Builder" "Changeset" "Trigger" "Observer" "Validator" "ChangesetOptions"}}
 {{ reserveTypeImport .Package.PackagePath "ID" "Ent" "AssocEdgeInputOptions" "PrivacyPolicy" "Clause" "CreateRowOptions"}}
 {{ reserveImport .Package.TypesImportPath "NodeType"}}
@@ -269,16 +269,24 @@ export class {{$actionName}} implements {{useTypeImport "Action"}}<{{$node}}, {{
 
   async changeset(): Promise<{{useTypeImport "Changeset"}}> {
     {{if edgeGroupAction $action }}
-      await this.setEdgeType();
-    {{ end -}}
-    return this.builder.build();
+      return {{useImport "runActionChangeset"}}(async () => {
+        await this.setEdgeType();
+        return this.builder.build();
+      });
+    {{else}}
+      return this.builder.build();
+    {{end -}}
   }
 
   async changesetWithOptions_BETA(options: {{useTypeImport "ChangesetOptions"}}): Promise<{{useTypeImport "Changeset"}}> {
     {{if edgeGroupAction $action }}
-      await this.setEdgeType();
-    {{ end -}}
-    return this.builder.buildWithOptions_BETA(options);
+      return {{useImport "runActionChangeset"}}(async () => {
+        await this.setEdgeType();
+        return this.builder.buildWithOptions_BETA(options);
+      });
+    {{else}}
+      return this.builder.buildWithOptions_BETA(options);
+    {{end -}}
   }
 
   {{ if edgeGroupAction $action -}}
@@ -315,10 +323,15 @@ export class {{$actionName}} implements {{useTypeImport "Action"}}<{{$node}}, {{
   {{ else -}}
     async save(): Promise<{{$node}} | null> {
       {{ if edgeGroupAction $action }}
-        await this.setEdgeType();
-      {{ end -}}
-      await this.builder.save();
-      return this.builder.editedEnt();
+        return {{useImport "runActionExecution"}}(async () => {
+          await this.setEdgeType();
+          await this.builder.save();
+          return this.builder.editedEnt();
+        });
+      {{else}}
+        await this.builder.save();
+        return this.builder.editedEnt();
+      {{end -}}
   {{ end -}}
   }
 
@@ -328,10 +341,15 @@ export class {{$actionName}} implements {{useTypeImport "Action"}}<{{$node}}, {{
   {{ else -}}
     async saveX(): Promise<{{$node}}> {
       {{ if edgeGroupAction $action }}
-        await this.setEdgeType();
-      {{ end -}}
-      await this.builder.saveX();
-      return this.builder.editedEntX();
+        return {{useImport "runActionExecution"}}(async () => {
+          await this.setEdgeType();
+          await this.builder.saveX();
+          return this.builder.editedEntX();
+        });
+      {{else}}
+        await this.builder.saveX();
+        return this.builder.editedEntX();
+      {{end -}}
   {{ end -}}
   }
 

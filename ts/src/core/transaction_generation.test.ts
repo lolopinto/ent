@@ -1,5 +1,6 @@
 import DB, { Dialect } from "./db";
 import { withTransaction } from "./transaction";
+import { getTransactionState } from "./transaction_context";
 import { Allow, Data, EdgeQueryableDataOptions, ID } from "./base";
 import { Eq } from "./clause";
 import {
@@ -146,22 +147,19 @@ describe("transaction read generations", () => {
     "queryCount",
     "queryAllCount",
     "queryRawCount",
-  ] as const)(
-    "retained clause query %s expires after a guarded save",
-    async (method) => {
-      const owner = await create();
-      await expect(
-        withTransaction(async () => {
-          const query = makeQuery(owner.id);
-          const first = await query[method]();
-          expect(await query[method]()).toEqual(first);
-          await edit(await load(owner.id), 80).saveX();
-          await expect(query[method]()).rejects.toThrow(expired);
-        }),
-      ).rejects.toThrow(expired);
-      expect((await load(owner.id)).data.balance).toBe(100);
-    },
-  );
+  ] as const)("retained clause query %s expires after a guarded save", async (method) => {
+    const owner = await create();
+    await expect(
+      withTransaction(async () => {
+        const query = makeQuery(owner.id);
+        const first = await query[method]();
+        expect(await query[method]()).toEqual(first);
+        await edit(await load(owner.id), 80).saveX();
+        await expect(query[method]()).rejects.toThrow(expired);
+      }),
+    ).rejects.toThrow(expired);
+    expect((await load(owner.id)).data.balance).toBe(100);
+  });
 
   test("rebuilding the query after each save computes 100 minus 20 minus 30 as 50", async () => {
     const owner = await create();
@@ -181,26 +179,23 @@ describe("transaction read generations", () => {
     "queryCount",
     "queryRawCount",
     "queryAllRawCount",
-  ] as const)(
-    "custom edge query %s follows the same generation boundary",
-    async (method) => {
-      const owner = await create();
-      await expect(
-        withTransaction(async () => {
-          const query = new AccountQuery(viewer, {
-            src: owner.id,
-            loadEntOptions: options,
-            groupCol: "id",
-            name: "generation-custom-edge",
-          });
-          await query[method]();
-          await edit(await load(owner.id), 80).saveX();
-          await query[method]();
-        }),
-      ).rejects.toThrow(expired);
-      expect((await load(owner.id)).data.balance).toBe(100);
-    },
-  );
+  ] as const)("custom edge query %s follows the same generation boundary", async (method) => {
+    const owner = await create();
+    await expect(
+      withTransaction(async () => {
+        const query = new AccountQuery(viewer, {
+          src: owner.id,
+          loadEntOptions: options,
+          groupCol: "id",
+          name: "generation-custom-edge",
+        });
+        await query[method]();
+        await edit(await load(owner.id), 80).saveX();
+        await query[method]();
+      }),
+    ).rejects.toThrow(expired);
+    expect((await load(owner.id)).data.balance).toBe(100);
+  });
 
   test.each([
     "queryEnts",
@@ -209,85 +204,82 @@ describe("transaction read generations", () => {
     "queryAllRawCount",
     "queryID2",
     "queryAllID2",
-  ] as const)(
-    "association query %s follows the same generation boundary",
-    async (method) => {
-      const owner = await create();
-      await expect(
-        withTransaction(async () => {
-          const query = new AccountEdges(
-            viewer,
-            owner.id,
-            countFactory,
-            edgeFactory,
-            options,
-          );
-          await query[method](owner.id);
-          await edit(await load(owner.id), 80).saveX();
-          await query[method](owner.id);
-        }),
-      ).rejects.toThrow(expired);
-    },
-  );
+  ] as const)("association query %s follows the same generation boundary", async (method) => {
+    const owner = await create();
+    await expect(
+      withTransaction(async () => {
+        const query = new AccountEdges(
+          viewer,
+          owner.id,
+          countFactory,
+          edgeFactory,
+          options,
+        );
+        await query[method](owner.id);
+        await edit(await load(owner.id), 80).saveX();
+        await query[method](owner.id);
+      }),
+    ).rejects.toThrow(expired);
+  });
 
-  describe.each(["raw rows", "Ent materialization"] as const)(
-    "pending query after %s",
-    (phase) => {
-      test.each(
-        phase === "Ent materialization"
-          ? (["queryEnts", "queryAllEnts"] as const)
-          : ([
-              "queryEnts",
-              "queryAllEnts",
-              "queryIDs",
-              "queryAllIDs",
-              "queryCount",
-              "queryAllCount",
-            ] as const),
-      )("%s cannot return an older generation", async (method) => {
-        const owner = await create();
-        const started = deferred();
-        const finish = deferred();
-        class PausedQuery extends CustomClauseQuery<GenerationAccount> {
-          protected async loadRawData(
-            infos: IDInfo[],
-            opts: EdgeQueryableDataOptions,
-          ) {
-            await super.loadRawData(infos, opts);
-            if (phase === "raw rows") {
-              started.resolve();
-              await finish.promise;
-            }
-          }
-          protected async loadEntsFromEdges(id: ID, rows: Data[]) {
-            if (phase === "Ent materialization") {
-              started.resolve();
-              await finish.promise;
-            }
-            return super.loadEntsFromEdges(id, rows);
+  describe.each([
+    "raw rows",
+    "Ent materialization",
+  ] as const)("pending query after %s", (phase) => {
+    test.each(
+      phase === "Ent materialization"
+        ? (["queryEnts", "queryAllEnts"] as const)
+        : ([
+            "queryEnts",
+            "queryAllEnts",
+            "queryIDs",
+            "queryAllIDs",
+            "queryCount",
+            "queryAllCount",
+          ] as const),
+    )("%s cannot return an older generation", async (method) => {
+      const owner = await create();
+      const started = deferred();
+      const finish = deferred();
+      class PausedQuery extends CustomClauseQuery<GenerationAccount> {
+        protected async loadRawData(
+          infos: IDInfo[],
+          opts: EdgeQueryableDataOptions,
+        ) {
+          await super.loadRawData(infos, opts);
+          if (phase === "raw rows") {
+            started.resolve();
+            await finish.promise;
           }
         }
-        await expect(
-          withTransaction(async () => {
-            const query = new PausedQuery(viewer, {
-              loadEntOptions: options,
-              clause: Eq("id", owner.id),
-              name: "paused-generation",
-            });
-            const pending = query[method]();
-            await started.promise;
-            try {
-              await edit(await load(owner.id), 80).saveX();
-            } finally {
-              finish.resolve();
-            }
-            await expect(pending).rejects.toThrow(expired);
-          }),
-        ).rejects.toThrow(expired);
-        expect((await load(owner.id)).data.balance).toBe(100);
-      });
-    },
-  );
+        protected async loadEntsFromEdges(id: ID, rows: Data[]) {
+          if (phase === "Ent materialization") {
+            started.resolve();
+            await finish.promise;
+          }
+          return super.loadEntsFromEdges(id, rows);
+        }
+      }
+      await expect(
+        withTransaction(async () => {
+          const query = new PausedQuery(viewer, {
+            loadEntOptions: options,
+            clause: Eq("id", owner.id),
+            name: "paused-generation",
+          });
+          const pending = query[method]();
+          await started.promise;
+          try {
+            await edit(await load(owner.id), 80).saveX();
+          } finally {
+            finish.resolve();
+          }
+          await expect(pending).rejects.toThrow(expired);
+        }),
+      ).rejects.toThrow(expired);
+      expect((await load(owner.id)).data.balance).toBe(100);
+    });
+  });
 
   const loaderKinds = [
     "object id",
@@ -361,49 +353,124 @@ describe("transaction read generations", () => {
     }
   };
   describe.each([true, false])("loaders with request context %s", (cached) => {
-    test.each(loaderKinds)(
-      "retained %s loader expires after a guarded save",
-      async (kind) => {
-        const owner = await create();
-        await expect(
-          withTransaction(async () => {
-            const read = reader(kind, owner.id, cached);
-            const first = await read();
-            expect(await read()).toEqual(first);
-            await edit(await load(owner.id), 80).saveX();
-            await read();
-          }),
-        ).rejects.toThrow(expired);
-        expect((await load(owner.id)).data.balance).toBe(100);
-      },
-    );
-  });
-
-  test.each(["load", "loadMany"] as const)(
-    "pending numeric DataLoader %s cannot cross a guarded write",
-    async (method) => {
+    test.each(
+      loaderKinds,
+    )("retained %s loader expires after a guarded save", async (kind) => {
       const owner = await create();
-      const started = deferred();
-      const finish = deferred();
       await expect(
         withTransaction(async () => {
-          const loader = new InstrumentedDataLoader<ID, number>(
-            "pending-balance",
-            async (ids) => {
-              const rows = await loadRows({
-                ...loaderOptions,
-                clause: Eq("id", owner.id),
-              });
+          const read = reader(kind, owner.id, cached);
+          const first = await read();
+          expect(await read()).toEqual(first);
+          await edit(await load(owner.id), 80).saveX();
+          await read();
+        }),
+      ).rejects.toThrow(expired);
+      expect((await load(owner.id)).data.balance).toBe(100);
+    });
+  });
+
+  test.each([
+    "load",
+    "loadMany",
+  ] as const)("pending numeric DataLoader %s cannot cross a guarded write", async (method) => {
+    const owner = await create();
+    const started = deferred();
+    const finish = deferred();
+    await expect(
+      withTransaction(async () => {
+        const loader = new InstrumentedDataLoader<ID, number>(
+          "pending-balance",
+          async (ids) => {
+            const rows = await loadRows({
+              ...loaderOptions,
+              clause: Eq("id", owner.id),
+            });
+            started.resolve();
+            await finish.promise;
+            return ids.map(() => rows[0].balance);
+          },
+          {},
+        );
+        const pending =
+          method === "load"
+            ? loader.load(owner.id)
+            : loader.loadMany([owner.id]);
+        await started.promise;
+        try {
+          await edit(await load(owner.id), 80).saveX();
+        } finally {
+          finish.resolve();
+        }
+        await expect(pending).rejects.toThrow(expired);
+      }),
+    ).rejects.toThrow(expired);
+    expect((await load(owner.id)).data.balance).toBe(100);
+  });
+
+  test.each([
+    true,
+    false,
+  ])("raw rows retain their original provenance when loaded inside scope %s", async (scoped) => {
+    const owner = await create();
+    const readRows = () =>
+      loadRows({ ...loaderOptions, clause: Eq("id", owner.id) });
+    const outside = scoped ? undefined : await readRows();
+    await expect(
+      withTransaction(async () => {
+        const rows = outside ?? (await readRows());
+        await edit(await load(owner.id), 80).saveX();
+        const stale = await applyPrivacyPolicyForRow(viewer, options, rows[0]);
+        expect(stale!.data.balance).toBe(100);
+        await edit(stale!, 70).saveX();
+      }),
+    ).rejects.toThrow("reload existingEnt");
+    expect((await load(owner.id)).data.balance).toBe(100);
+  });
+
+  test.each([
+    "row",
+    "rows",
+    "raw",
+  ] as const)("pending primitive %s reads reject before returning or priming stale data", async (kind) => {
+    const owner = await create();
+    const started = deferred();
+    const finish = deferred();
+    await expect(
+      withTransaction(async () => {
+        const pool =
+          kind === "raw"
+            ? DB.getInstance().getPool()
+            : getTransactionState()!.readQueryer;
+        const method = kind === "row" ? "query" : "queryAll";
+        const query = pool[method].bind(pool);
+        let paused = false;
+        const spy = jest
+          .spyOn(pool, method)
+          .mockImplementation(async (sql, values) => {
+            const result = await query(sql, values);
+            if (!paused) {
+              paused = true;
               started.resolve();
               await finish.promise;
-              return ids.map(() => rows[0].balance);
-            },
-            {},
-          );
+            }
+            return result;
+          });
+        try {
+          const opts = {
+            ...loaderOptions,
+            clause: Eq("id", owner.id),
+            context,
+          };
           const pending =
-            method === "load"
-              ? loader.load(owner.id)
-              : loader.loadMany([owner.id]);
+            kind === "row"
+              ? loadRow(opts)
+              : kind === "rows"
+                ? loadRows(opts)
+                : performRawQuery(
+                    "SELECT * FROM generation_accounts WHERE id = $1",
+                    [owner.id],
+                  );
           await started.promise;
           try {
             await edit(await load(owner.id), 80).saveX();
@@ -411,89 +478,13 @@ describe("transaction read generations", () => {
             finish.resolve();
           }
           await expect(pending).rejects.toThrow(expired);
-        }),
-      ).rejects.toThrow(expired);
-      expect((await load(owner.id)).data.balance).toBe(100);
-    },
-  );
-
-  test.each([true, false])(
-    "raw rows retain their original provenance when loaded inside scope %s",
-    async (scoped) => {
-      const owner = await create();
-      const readRows = () =>
-        loadRows({ ...loaderOptions, clause: Eq("id", owner.id) });
-      const outside = scoped ? undefined : await readRows();
-      await expect(
-        withTransaction(async () => {
-          const rows = outside ?? (await readRows());
-          await edit(await load(owner.id), 80).saveX();
-          const stale = await applyPrivacyPolicyForRow(
-            viewer,
-            options,
-            rows[0],
-          );
-          expect(stale!.data.balance).toBe(100);
-          await edit(stale!, 70).saveX();
-        }),
-      ).rejects.toThrow("reload existingEnt");
-      expect((await load(owner.id)).data.balance).toBe(100);
-    },
-  );
-
-  test.each(["row", "rows", "raw"] as const)(
-    "pending primitive %s reads reject before returning or priming stale data",
-    async (kind) => {
-      const owner = await create();
-      const started = deferred();
-      const finish = deferred();
-      await expect(
-        withTransaction(async () => {
-          const pool = DB.getInstance().getPool();
-          const method = kind === "row" ? "query" : "queryAll";
-          const query = pool[method].bind(pool);
-          let paused = false;
-          const spy = jest
-            .spyOn(pool, method)
-            .mockImplementation(async (sql, values) => {
-              const result = await query(sql, values);
-              if (!paused) {
-                paused = true;
-                started.resolve();
-                await finish.promise;
-              }
-              return result;
-            });
-          try {
-            const opts = {
-              ...loaderOptions,
-              clause: Eq("id", owner.id),
-              context,
-            };
-            const pending =
-              kind === "row"
-                ? loadRow(opts)
-                : kind === "rows"
-                ? loadRows(opts)
-                : performRawQuery(
-                    "SELECT * FROM generation_accounts WHERE id = $1",
-                    [owner.id],
-                  );
-            await started.promise;
-            try {
-              await edit(await load(owner.id), 80).saveX();
-            } finally {
-              finish.resolve();
-            }
-            await expect(pending).rejects.toThrow(expired);
-          } finally {
-            spy.mockRestore();
-          }
-        }),
-      ).rejects.toThrow(expired);
-      expect((await load(owner.id)).data.balance).toBe(100);
-    },
-  );
+        } finally {
+          spy.mockRestore();
+        }
+      }),
+    ).rejects.toThrow(expired);
+    expect((await load(owner.id)).data.balance).toBe(100);
+  });
 
   test("fresh association readers work after guarded saves retire metadata loaders", async () => {
     const owner = await create();

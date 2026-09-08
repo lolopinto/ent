@@ -454,10 +454,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     "paused field privacy cannot freshen stale %s reads",
     async (path) => {
       const owner = await create();
-      const expectedError =
-        path === "strict clause"
-          ? "reload existingEnt"
-          : "cannot cross transaction generations";
+      const expectedError = "cannot cross transaction generations";
       const started = deferred();
       const finish = deferred();
       const policy: PrivacyPolicy = {
@@ -484,17 +481,8 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
           } finally {
             finish.resolve();
           }
-          if (path !== "strict clause") {
-            // Cached readers now reject before returning or priming old Ents.
-            await expect(pending).rejects.toThrow(expectedError);
-            return;
-          }
-          const stale = await pending;
-          expect(stale!.data.admin).toBeNull();
-          expect(stale!.data.balance).toBe(100);
-          await expect(edit(stale!, 90).saveX()).rejects.toThrow(
-            "reload existingEnt",
-          );
+          // Every materialization path rejects before returning stale Ents.
+          await expect(pending).rejects.toThrow(expectedError);
         }),
       ).rejects.toThrow(expectedError);
       expect((await load(owner.id as string)).data.balance).toBe(100);
@@ -1788,7 +1776,6 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     async (method) => {
       const [owner, target] = await Promise.all([create(), create()]);
       const observe = jest.fn();
-      let retained!: Awaited<ReturnType<GuardedEdit["changeset"]>>;
       await withTransaction(async () => {
         const parent = independent(
           edit(await load(owner.id as string), 90),
@@ -1814,8 +1801,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
                     ).changeset(),
                 },
               ];
-              retained = await child.changeset();
-              return retained;
+              return child.changeset();
             },
           },
         ];
@@ -1825,9 +1811,6 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         );
         expect((await load(target.id as string)).data.balance).toBe(100);
         expect((await audits()).rowCount).toBe(0);
-        expect(() => retained.executor()).toThrow(
-          "prepared by public validation",
-        );
         await parent.saveX();
         expect((await audits()).rowCount).toBe(1);
         expect(observe).not.toHaveBeenCalled();

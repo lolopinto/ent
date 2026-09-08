@@ -30,5 +30,11 @@ export type {
 export { Transaction } from "./transaction";
 // Internal entry point for generated saves. Handle
 // load and construction failures.
-export { runActionExecution } from "../core/transaction_context";
+export {
+  runActionExecution,
+  runActionChangeset,
+} from "../core/transaction_context";
 export type { AssocEdgeOptions } from "./operations";
+
+export { withTransaction, getTransactionScope } from "../core/transaction";
+export type { TransactionOptions, TransactionScope } from "../core/transaction";

@@ -1,5 +1,6 @@
 import DB, { Dialect } from "./db";
 import { withTransaction } from "./transaction";
+import { runActionChangeset } from "../action";
 import { IntegerType } from "../schema";
 import {
   BaseEnt,
@@ -59,100 +60,198 @@ const edit = (ent: ExecutionAccount, balance: number) =>
 describe("transaction execution preparation generations", () => {
   setupPostgres(() => [getSchemaTable(schema, Dialect.Postgres)]);
   beforeEach(() => context.cache.reset());
+  test("caught changeset setup failure aborts earlier writes", async () => {
+    const owner = await create();
+    const failure = new Error("edge setup failed");
+    await expect(
+      withTransaction(async (tx) => {
+        await tx.exec(
+          "UPDATE execution_accounts SET balance = 80 WHERE id = $1",
+          [owner.id],
+        );
+        await expect(
+          runActionChangeset(async () => {
+            throw failure;
+          }),
+        ).rejects.toBe(failure);
+      }),
+    ).rejects.toBe(failure);
+    expect((await load(owner.id as string)).data.balance).toBe(100);
+  });
+
+  test("standalone validation can recover from child changeset validation errors", async () => {
+    const owner = await create();
+    const failure = new Error("correctable child validation failed");
+    await withTransaction(async () => {
+      const action = edit(await load(owner.id as string), 80);
+      action.getTriggers = () => [
+        {
+          changeset: () =>
+            runActionChangeset(async () => {
+              const child = edit(await load(owner.id as string), 70);
+              child.getValidators = () => [{ validate: () => failure }];
+              return child.changeset();
+            }),
+        },
+      ];
+      await expect(action.validX()).rejects.toBe(failure);
+      action.getTriggers = () => [];
+      await action.saveX();
+    });
+    expect((await load(owner.id as string)).data.balance).toBe(80);
+  });
+  test.each([
+    "valid",
+    "validX",
+    "validWithErrors",
+    "outside",
+    "previous",
+  ] as const)(
+    "caught executor assembly failure from %s preparation aborts earlier writes",
+    async (source) => {
+      const owner = await create();
+      const other = await create();
+      let captured!: Awaited<
+        ReturnType<SimpleAction<ExecutionAccount>["changeset"]>
+      >;
+      let failure: unknown;
+      const prepare = async () =>
+        edit(await load(other.id as string), 70).changeset();
+      if (source === "outside") {
+        captured = await prepare();
+      } else if (source === "previous") {
+        captured = await withTransaction(prepare);
+      }
+      const outcome = withTransaction(async () => {
+        if (source !== "outside" && source !== "previous") {
+          const probe = edit(await load(owner.id as string), 90);
+          probe.getTriggers = () => [
+            {
+              changeset: async () => {
+                captured = await prepare();
+                return captured;
+              },
+            },
+          ];
+          await probe[source]();
+        }
+        await edit(await load(owner.id as string), 80).saveX();
+        try {
+          captured.executor();
+        } catch (error) {
+          failure = error;
+        }
+        expect(failure).toBeInstanceOf(Error);
+        expect(failure).toMatchObject({
+          message: expect.stringContaining(
+            source === "outside" || source === "previous"
+              ? "loaders cannot cross transaction scopes"
+              : "changesets prepared by public validation cannot execute",
+          ),
+        });
+      });
+      const result = await outcome.then(
+        () => undefined,
+        (error: unknown) => error,
+      );
+      const balance = (await load(owner.id as string)).data.balance;
+      expect({ rejectedWithOriginalError: result === failure, balance }).toEqual({
+        rejectedWithOriginalError: true,
+        balance: 100,
+      });
+    },
+  );
   test.each([
     "changeset",
     "list executor",
     "complex executor",
     "executeOperations",
     "iterator",
-  ])(
-    "stale %s rejects before preFetch and rolls back even when caught",
-    async (mode) => {
-      const owner = await create(),
-        other = await create();
-      let prefetched = false;
-      await expect(
-        withTransaction(async () => {
-          const first = await load(owner.id as string);
-          const retained = edit(first, first.data.balance - 30);
-          if (mode === "complex executor") {
-            const second = await load(other.id as string);
-            retained.getTriggers = () => [
-              { changeset: () => edit(second, 70).changeset() },
-            ];
-          }
-          const changeset = await retained.changeset();
-          const executor =
-            mode === "changeset" ? undefined : changeset.executor();
-          if (executor) {
-            const before = executor.preFetch?.bind(executor);
-            executor.preFetch = async (...args) => {
-              prefetched = true;
-              return before?.(...args);
-            };
-          }
-          await new Guarded(
-            viewer,
-            schema,
-            new Map([["balance", 80]]),
-            WriteOperation.Edit,
-            first,
-          ).saveX();
-          const execute = async () => {
-            if (mode === "iterator") {
-              return executor!.next();
-            }
-            if (mode === "executeOperations") {
-              return executeOperations(executor!);
-            }
-            return (executor ?? changeset.executor()).execute();
+  ])("stale %s rejects before preFetch and rolls back even when caught", async (mode) => {
+    const owner = await create(),
+      other = await create();
+    let prefetched = false;
+    await expect(
+      withTransaction(async () => {
+        const first = await load(owner.id as string);
+        const retained = edit(first, first.data.balance - 30);
+        if (mode === "complex executor") {
+          const second = await load(other.id as string);
+          retained.getTriggers = () => [
+            { changeset: () => edit(second, 70).changeset() },
+          ];
+        }
+        const changeset = await retained.changeset();
+        const executor =
+          mode === "changeset" ? undefined : changeset.executor();
+        if (executor) {
+          const before = executor.preFetch?.bind(executor);
+          executor.preFetch = async (...args) => {
+            prefetched = true;
+            return before?.(...args);
           };
-          await expect(execute()).rejects.toThrow(
-            "cannot cross transaction generations",
-          );
-        }),
-      ).rejects.toThrow("cannot cross transaction generations");
-      expect(prefetched).toBe(false);
-      expect((await load(owner.id as string)).data.balance).toBe(100);
-      expect((await load(other.id as string)).data.balance).toBe(100);
-    },
-  );
-  test.each(["list", "complex", "Transaction"])(
-    "same-generation ordinary %s batch and postcommit results remain supported",
-    async (mode) => {
-      const owner = await create(),
-        other = await create();
-      let observations = 0;
-      const retained = await withTransaction(async () => {
-        const first = edit(await load(owner.id as string), 70);
-        const second = edit(await load(other.id as string), 60);
-        first.getObservers = () => [
-          {
-            observe: async () => {
-              observations++;
-              expect((await first.editedEntX()).data.balance).toBe(70);
-            },
+        }
+        await new Guarded(
+          viewer,
+          schema,
+          new Map([["balance", 80]]),
+          WriteOperation.Edit,
+          first,
+        ).saveX();
+        const execute = async () => {
+          if (mode === "iterator") {
+            return executor!.next();
+          }
+          if (mode === "executeOperations") {
+            return executeOperations(executor!);
+          }
+          return (executor ?? changeset.executor()).execute();
+        };
+        await expect(execute()).rejects.toThrow(
+          "cannot cross transaction generations",
+        );
+      }),
+    ).rejects.toThrow("cannot cross transaction generations");
+    expect(prefetched).toBe(false);
+    expect((await load(owner.id as string)).data.balance).toBe(100);
+    expect((await load(other.id as string)).data.balance).toBe(100);
+  });
+  test.each([
+    "list",
+    "complex",
+    "Transaction",
+  ])("same-generation ordinary %s batch and postcommit results remain supported", async (mode) => {
+    const owner = await create(),
+      other = await create();
+    let observations = 0;
+    const retained = await withTransaction(async () => {
+      const first = edit(await load(owner.id as string), 70);
+      const second = edit(await load(other.id as string), 60);
+      first.getObservers = () => [
+        {
+          observe: async () => {
+            observations++;
+            expect((await first.editedEntX()).data.balance).toBe(70);
           },
-        ];
-        if (mode === "Transaction") {
-          await new Transaction(viewer, [first, second]).run();
+        },
+      ];
+      if (mode === "Transaction") {
+        await new Transaction(viewer, [first, second]).run();
+      } else {
+        if (mode === "complex") {
+          first.getTriggers = () => [{ changeset: () => second.changeset() }];
         }
-        else {
-          if (mode === "complex") {
-            first.getTriggers = () => [{ changeset: () => second.changeset() }];
-          }
-          await (await first.changeset()).executor().execute();
-          if (mode === "list") {
-            await (await second.changeset()).executor().execute();
-          }
+        await (await first.changeset()).executor().execute();
+        if (mode === "list") {
+          await (await second.changeset()).executor().execute();
         }
-        return first;
-      });
-      expect((await retained.editedEntX()).data.balance).toBe(70);
-      expect(observations).toBe(1);
-      expect((await load(other.id as string)).data.balance).toBe(60);
-    },
-  );
+      }
+      return first;
+    });
+    expect((await retained.editedEntX()).data.balance).toBe(70);
+    expect(observations).toBe(1);
+    expect((await load(other.id as string)).data.balance).toBe(60);
+  });
   test("ordinary changeset preparation cannot finish after a guarded save", async () => {
     const owner = await create();
     let start!: () => void;

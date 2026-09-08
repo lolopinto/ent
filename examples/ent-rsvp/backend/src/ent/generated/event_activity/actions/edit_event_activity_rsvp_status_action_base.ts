@@ -10,7 +10,12 @@ import type {
   Validator,
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
-import { WriteOperation, setEdgeTypeInGroup } from "@snowtop/ent/action";
+import {
+  WriteOperation,
+  runActionChangeset,
+  runActionExecution,
+  setEdgeTypeInGroup,
+} from "@snowtop/ent/action";
 import { EventActivity } from "src/ent/";
 import { EventActivityBuilder } from "src/ent/generated/event_activity/actions/event_activity_builder";
 import { NodeType } from "src/ent/generated/types";
@@ -152,15 +157,19 @@ export class EditEventActivityRsvpStatusActionBase
   }
 
   async changeset(): Promise<Changeset> {
-    await this.setEdgeType();
-    return this.builder.build();
+    return runActionChangeset(async () => {
+      await this.setEdgeType();
+      return this.builder.build();
+    });
   }
 
   async changesetWithOptions_BETA(
     options: ChangesetOptions,
   ): Promise<Changeset> {
-    await this.setEdgeType();
-    return this.builder.buildWithOptions_BETA(options);
+    return runActionChangeset(async () => {
+      await this.setEdgeType();
+      return this.builder.buildWithOptions_BETA(options);
+    });
   }
 
   private async setEdgeType() {
@@ -185,15 +194,19 @@ export class EditEventActivityRsvpStatusActionBase
   }
 
   async save(): Promise<EventActivity | null> {
-    await this.setEdgeType();
-    await this.builder.save();
-    return this.builder.editedEnt();
+    return runActionExecution(async () => {
+      await this.setEdgeType();
+      await this.builder.save();
+      return this.builder.editedEnt();
+    });
   }
 
   async saveX(): Promise<EventActivity> {
-    await this.setEdgeType();
-    await this.builder.saveX();
-    return this.builder.editedEntX();
+    return runActionExecution(async () => {
+      await this.setEdgeType();
+      await this.builder.saveX();
+      return this.builder.editedEntX();
+    });
   }
 
   static create<T extends EditEventActivityRsvpStatusActionBase>(
@@ -219,7 +232,9 @@ export class EditEventActivityRsvpStatusActionBase
     id: ID,
     input: EditEventActivityRsvpStatusInput,
   ): Promise<EventActivity> {
-    const eventActivity = await EventActivity.loadX(viewer, id);
-    return new this(viewer, eventActivity, input).saveX();
+    return runActionExecution(async () => {
+      const eventActivity = await EventActivity.loadX(viewer, id);
+      return new this(viewer, eventActivity, input).saveX();
+    });
   }
 }

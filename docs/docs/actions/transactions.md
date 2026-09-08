@@ -4,14 +4,14 @@ sidebar_position: 16
 
 # Transactions
 
-Use `Transaction` when you need multiple actions' writes to succeed or fail together. By default, action preparation, validators, and [triggers](/docs/actions/triggers) run before the write transaction. The changesets that triggers return share that transaction's writes. To include reads and action preparation, use `withTransaction` on PostgreSQL.
+Use `Transaction` when you need multiple actions' writes to succeed or fail together. Before writing, Ent computes field defaults and transformations, checks privacy policies, runs [triggers](/docs/actions/triggers), and validates the resulting input. These steps prepare the action and its child changesets. By default, they run before the write transaction; the queued writes then commit or roll back together. To include these steps and the reads they use in one PostgreSQL transaction, use `withTransaction`.
 
 ## Transaction-scoped reads and actions
 
 `withTransaction` starts a transaction before calling its callback. Ent reads, privacy checks, validators, triggers, actions, edge writes, and audit changesets inside the callback use the same reserved connection. Other asynchronous requests use their own connections and caches. Outside this API, existing actions and `Transaction.run()` keep their default behavior.
 
 ```ts
-import { withTransaction } from "@snowtop/ent";
+import { withTransaction } from "@snowtop/ent/action";
 
 const result = await withTransaction(async () => {
   // Reload and reconstruct on every attempt, including the first.
@@ -22,7 +22,11 @@ const result = await withTransaction(async () => {
 }, { maxRetries: 3 });
 ```
 
-The default isolation level is `serializable`. PostgreSQL rejects conflicting transactions with SQLSTATE `40001` and reports deadlocks with `40P01`. `maxRetries` defaults to zero. If you set `maxRetries` above zero, these errors cause the whole callback to retry with a new connection reservation, snapshot, loaders, and actions.
+This new API defaults to `serializable` because actions often read a value or count, validate a decision, and then write a result. At PostgreSQL's usual `read committed` isolation level, two concurrent actions can both pass validation using the same old state. Serializable isolation lets PostgreSQL detect conflicting decisions and abort an attempt instead of committing an inconsistent result. This can produce more transaction failures, so callers can opt into whole-callback retries.
+
+This default applies only when you call `withTransaction`. Ordinary action saves and `Transaction.run()` outside a scope still use their existing write transactions and the connection's configured isolation level. The API doesn't change PostgreSQL's default or the behavior of existing callers. Set `isolationLevel: "read committed"` when you use a compatible locking protocol, as described in [Explicit locks and composition](#explicit-locks-and-composition).
+
+PostgreSQL rejects conflicting transactions with SQLSTATE `40001` and reports deadlocks with `40P01`. `maxRetries` defaults to zero. If you set `maxRetries` above zero, these errors cause the whole callback to retry with a new connection reservation, snapshot, loaders, and actions.
 
 Every operation that enforces the invariant must follow a compatible serializable or locking protocol. This API doesn't automatically protect unrelated writers that use read committed isolation. For details, see [PostgreSQL transaction isolation](https://www.postgresql.org/docs/current/transaction-iso.html).
 
@@ -49,7 +53,7 @@ Return `true` from `requiresTransaction()` to require either supported isolation
 
 Construct actions, builders, queries, and loaders inside the callback. Load `existingEnt` there too, and construct triggered changesets during that attempt. The runtime rejects builders, changesets, standard cached loaders, and preloaded Ents that don't belong to the current scope. Don't reuse a changeset or builder on another attempt.
 
-A GraphQL mutation wrapper must throw execution errors out of the callback. Returning an error-shaped result still counts as a successful return and requests a commit. An action save, executor assembly, or SQL failure marks the scope as failed even if you catch the error, so earlier writes roll back. Regenerated `saveXFromID` and `saveFromID` helpers include their initial load, construction, and edge setup in this failure boundary. A missing target returned by a nullable helper remains recoverable.
+A GraphQL mutation wrapper must throw execution errors out of the callback. Returning an error-shaped result still counts as a successful return and requests a commit. An action save, executor assembly, or SQL failure marks the scope as failed even if you catch the error, so earlier writes roll back. Regenerated `saveXFromID` and `saveFromID` helpers include their initial load, construction, and edge setup in this failure boundary. Generated edge-group instance saves and changesets also include edge setup. During standalone validation, a child changeset can still report a correctable validation error without failing the transaction; SQL errors always fail it. A missing target returned by a nullable helper remains recoverable.
 
 #### Prepare guarded root actions sequentially
 
@@ -108,7 +112,7 @@ await withTransaction(async (tx) => {
 
 The callback receives `query`, `queryAll`, `exec`, `attempt` (zero-based), and `isolationLevel`. Use PostgreSQL placeholders to parameterize SQL. Low-level SQL doesn't apply Ent privacy or create audit actions. Use it for locks, then use Ent actions for mutations. Don't send SQL that controls the transaction, use DB handles captured before the callback, or change global DB configuration while a scope is active.
 
-`withTransaction` rejects nested calls; it doesn't support savepoints or independent inner commits. Composed services can inspect `getTransactionScope()` (exported from `@snowtop/ent`), check its `isolationLevel`, and call their implementation directly if an appropriate scope already exists. `new Transaction(viewer, actions).run()` joins the current scope.
+`withTransaction` rejects nested calls; it doesn't support savepoints or independent inner commits. Composed services can inspect `getTransactionScope()` (exported from `@snowtop/ent/action`), check its `isolationLevel`, and call their implementation directly if an appropriate scope already exists. `new Transaction(viewer, actions).run()` joins the current scope.
 
 ### Caches, results, and observers
 
@@ -118,9 +122,9 @@ Cached queries and loaders belong to the guarded-action generation in which you 
 
 Converting previously read rows to Ents preserves their original transaction and generation, including rows returned by `tx.query`, `tx.queryAll`, and `tx.exec`. Supplied Ents and `sourceEnt()` results used by edge-query privacy must belong to the current generation.
 
-`loadDerivedEnt()` and `loadDerivedEntX()` also preserve the input row's transaction and generation before running privacy checks. If the data has no recorded transaction provenance, the resulting Ent remains unscoped and can't be used in a guarded save. Load a tracked row inside the callback instead of copying or reusing untracked data.
+`applyPrivacyPolicyForRow()`, `applyPrivacyPolicyForRows()`, `loadDerivedEnt()`, and `loadDerivedEntX()` preserve the input row's transaction and generation before running privacy checks. If the data has no recorded transaction provenance, the resulting Ent remains unscoped and can't be used in a guarded save. Load a tracked row inside the callback instead of copying or reusing untracked data.
 
-Standard Ent, object, count, query, and edge-metadata caches are isolated for each attempt. Transaction rows never populate request caches outside the scope. Commit invalidates participating request caches; rollback leaves them unchanged. SQL calls conservatively invalidate the attempt's caches, so raw writes and reads after acquiring locks see fresh data.
+Standard Ent, object, count, query, and edge-metadata caches are isolated for each attempt. Transaction rows never populate request caches outside the scope. Commit invalidates participating request caches; rollback leaves them unchanged. Framework reads preserve cached results from other reads in the attempt. Raw SQL calls, including those made through `tx.query`, `tx.queryAll`, `tx.exec`, `DB.getPool()`, and `performRawQuery()`, conservatively invalidate caches for every participating viewer. Framework writes also invalidate these caches, so reads after writes or explicit locks see fresh data.
 
 #### Results
 
@@ -130,7 +134,7 @@ Direct result-loading errors from getters used after their owning commit can't u
 
 Don't expose callback results until `withTransaction` resolves. After commit, returned Ent objects remain snapshots. Reload them inside a new scope to edit them again.
 
-Calling `editedEnt()` or `editedEntX()` again reads the action's retained result row and preserves that write's transaction and generation. Inspecting an old snapshot inside a later scope or after another guarded root saves doesn't make it a fresh mutation input. Immediate results of the latest completed action graph remain usable in that generation. After later guarded writes, reload from the database.
+Calling `editedEnt()` or `editedEntX()` again reads the action's retained result row and preserves that write's transaction and generation. Inspecting an old snapshot inside a later scope or after another guarded root saves doesn't make it a fresh mutation input. Immediate results of the latest completed action graph remain usable in that generation. Within a scope, standard actions reload their result rows after all graph writes and before result privacy checks. Results include changes made by other actions or raw changesets in that graph. The reload uses the stored row's primary key, including when an upsert matched an existing row. Edge-only actions and actions skipped by silent privacy checks also reload their result rows. After later guarded writes, reload from the database.
 
 #### Observers and asynchronous work
 

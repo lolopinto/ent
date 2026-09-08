@@ -22,7 +22,7 @@ import {
   loadEdgeData,
   loadEdgeForID2,
   loadTwoWayEdges,
-  performRawQuery,
+  performReadQuery,
 } from "../ent";
 import { stableStringify } from "../cache_utils";
 import { memoizeInTransaction as memoizeNoArgs } from "../memoize";
@@ -114,7 +114,7 @@ function createLoader<T extends AssocEdge>(
         clause: cls1,
       });
 
-      const rows = await performRawQuery(query, cls.values(), cls.logValues());
+      const rows = await performReadQuery(query, cls.values(), cls.logValues());
       for (const row of rows) {
         const srcID = row.id1;
         const idx = m.get(srcID);

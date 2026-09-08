@@ -1,30 +1,45 @@
 import { AsyncLocalStorage } from "async_hooks";
-import type { Context } from "./base";
+import type { Context, Data, Ent, Viewer } from "./base";
+import type { Builder, Executor } from "../action/action";
+import type { assocEdgeLoader } from "./ent";
 import type { Queryer } from "./db";
+
+type TransactionBuilderIdentity = Pick<Builder<Ent>, "placeholderID">;
+
+const transactionTokenBrand = Symbol("transaction token");
+
+export interface TransactionToken {
+  readonly [transactionTokenBrand]: true;
+}
+
+export function createTransactionToken(): TransactionToken {
+  return { [transactionTokenBrand]: true };
+}
 
 // Internal state only. Never replace DB.instance or a viewer's request context.
 export interface TransactionState {
-  token: object;
+  token: TransactionToken;
   isolationLevel: "serializable" | "read committed";
   attempt: number;
   queryer: Queryer;
+  readQueryer: Pick<Queryer, "query" | "queryAll">;
   active: boolean;
   failed: boolean;
   error?: unknown;
   pending: Set<Promise<unknown>>;
   caches: Map<NonNullable<Context["cache"]>, NonNullable<Context["cache"]>>;
-  resources: Map<object, unknown>;
+  edgeMetadataLoader?: typeof assocEdgeLoader;
   observers: (() => Promise<void>)[];
   receipts: (() => void)[];
-  guardedRoot?: object;
+  guardedRoot?: TransactionBuilderIdentity;
   generation: number;
   branchClaims: PreparationNode[];
 }
 
 interface PreparationNode {
-  builder: object;
-  root: object;
-  token: object;
+  builder: TransactionBuilderIdentity;
+  root: TransactionBuilderIdentity;
+  token: TransactionToken;
   resources?: readonly string[];
   resourcesPending?: boolean;
   validation?: { active: boolean };
@@ -32,14 +47,20 @@ interface PreparationNode {
 }
 
 interface EntTransaction {
-  readonly token: object;
+  readonly token: TransactionToken;
   readonly generation: number;
 }
 
 const preparationStorage = new AsyncLocalStorage<PreparationNode>();
-const executorBuilders = new WeakMap<object, readonly object[]>();
-const executorReads = new WeakMap<object, TransactionReadState | undefined>();
-const resultTransactions = new WeakMap<object, EntTransaction>();
+const executorBuilders = new WeakMap<
+  Executor,
+  readonly TransactionBuilderIdentity[]
+>();
+const executorReads = new WeakMap<Executor, TransactionReadState | undefined>();
+const resultTransactions = new WeakMap<
+  TransactionBuilderIdentity,
+  EntTransaction
+>();
 
 export function assertIndependentActionSave() {
   const state = getTransactionState();
@@ -51,7 +72,7 @@ export function assertIndependentActionSave() {
 }
 
 export function runInActionPreparation<T>(
-  builder: object,
+  builder: TransactionBuilderIdentity,
   prepare: () => Promise<T>,
   validationOnly = false,
 ): Promise<T> {
@@ -128,7 +149,9 @@ export function trackValidationRead<T>(read: Promise<T>): Promise<T> {
   return read;
 }
 
-export function isPreparingAction(builder: object): boolean {
+export function isPreparingAction(
+  builder: TransactionBuilderIdentity,
+): boolean {
   const state = getTransactionState();
   const node = preparationStorage.getStore();
   return !!state && node?.token === state.token && node.builder === builder;
@@ -231,33 +254,35 @@ export function claimGuardedPreparation(resources?: readonly string[]) {
 }
 
 export function setExecutorBuilders(
-  executor: object,
-  builders: readonly object[],
+  executor: Executor,
+  builders: readonly TransactionBuilderIdentity[],
 ) {
   executorBuilders.set(executor, builders);
   executorReads.set(executor, getTransactionReadState());
 }
 
-export function assertExecutorTransaction(executor: object) {
+export function assertExecutorTransaction(executor: Executor) {
   if (executorReads.has(executor)) {
     assertTransactionRead(executorReads.get(executor));
   }
 }
 
-export function getExecutorBuilders(executor: object): readonly object[] {
+export function getExecutorBuilders(
+  executor: Executor,
+): readonly TransactionBuilderIdentity[] {
   return executorBuilders.get(executor) ?? [];
 }
 
 export function completeGuardedPreparation(
   state: TransactionState,
-  executor: object,
+  executor: Executor,
 ) {
   const builders = getExecutorBuilders(executor);
   if (state.guardedRoot && builders.includes(state.guardedRoot)) {
     state.guardedRoot = undefined;
     state.branchClaims.length = 0;
     state.generation++;
-    state.resources.clear();
+    state.edgeMetadataLoader = undefined;
     for (const cache of state.caches.values()) {
       cache.clearCache();
     }
@@ -271,11 +296,11 @@ export function completeGuardedPreparation(
 }
 
 export const transactionStorage = new AsyncLocalStorage<TransactionState>();
-const entTransactions = new WeakMap<object, EntTransaction>();
-const rowTransactions = new WeakMap<object, EntTransaction | undefined>();
+const entTransactions = new WeakMap<Ent, EntTransaction>();
+const rowTransactions = new WeakMap<Data, EntTransaction>();
 
 export function recordPreparedEntTransaction(
-  ent: object,
+  ent: Ent,
   read: TransactionReadState | undefined,
 ) {
   if (read) {
@@ -288,7 +313,10 @@ export function recordPreparedEntTransaction(
   }
 }
 
-export function recordActionResultTransaction(ent: object, builder: object) {
+export function recordActionResultTransaction<
+  TEnt extends Ent<TViewer>,
+  TViewer extends Viewer,
+>(ent: TEnt, builder: Builder<TEnt, TViewer>) {
   const provenance = resultTransactions.get(builder);
   if (provenance) {
     entTransactions.set(ent, provenance);
@@ -298,11 +326,13 @@ export function recordActionResultTransaction(ent: object, builder: object) {
   }
 }
 
-export function hasActionResultTransaction(builder: object): boolean {
+export function hasActionResultTransaction(
+  builder: TransactionBuilderIdentity,
+): boolean {
   return resultTransactions.has(builder);
 }
 
-export function recordDerivedEntTransaction(ent: object, row: object) {
+export function recordEntTransaction(ent: Ent, row: Data) {
   // Copy only the row's recorded transaction and generation. Unknown data must
   // not inherit the current scope.
   const provenance = rowTransactions.get(row);
@@ -310,25 +340,6 @@ export function recordDerivedEntTransaction(ent: object, row: object) {
     entTransactions.set(ent, provenance);
   } else {
     entTransactions.delete(ent);
-  }
-}
-
-export function recordEntTransaction(ent: object, row?: object) {
-  if (row && rowTransactions.has(row)) {
-    const provenance = rowTransactions.get(row);
-    if (provenance) {
-      entTransactions.set(ent, provenance);
-    } else {
-      entTransactions.delete(ent);
-    }
-    return;
-  }
-  const state = getTransactionState();
-  if (state) {
-    entTransactions.set(ent, {
-      token: state.token,
-      generation: state.generation,
-    });
   }
 }
 
@@ -368,16 +379,20 @@ export async function runTransactionRead<T>(
 }
 
 export function recordRowTransaction(
-  row: object,
+  row: Data,
   read: TransactionReadState | undefined,
 ) {
-  rowTransactions.set(
-    row,
-    read && { token: read.transaction.token, generation: read.generation },
-  );
+  if (read) {
+    rowTransactions.set(row, {
+      token: read.transaction.token,
+      generation: read.generation,
+    });
+  } else {
+    rowTransactions.delete(row);
+  }
 }
 
-export function copyEntTransaction(source: object, target: object) {
+export function copyEntTransaction(source: Ent, target: Ent) {
   // Privacy checks can replace an Ent after an await. Preserve the original
   // transaction and generation, even if absent. Don't use the current scope.
   const provenance = entTransactions.get(source);
@@ -388,7 +403,7 @@ export function copyEntTransaction(source: object, target: object) {
   }
 }
 
-export function assertEntTransaction(ent: object) {
+export function assertEntTransaction(ent: Ent) {
   const state = getTransactionState();
   const loaded = entTransactions.get(ent);
   if (
@@ -445,6 +460,12 @@ export async function runActionExecution<T>(
     }
     throw error;
   }
+}
+
+// Let public validation classify a child's errors. Correctable validation
+// errors remain recoverable; SQL and composition errors still fail the scope.
+export function runActionChangeset<T>(prepare: () => Promise<T>): Promise<T> {
+  return isValidationPreparation() ? prepare() : runActionExecution(prepare);
 }
 
 // Captured loaders must not carry cached rows or pending batches across scopes.

@@ -17,7 +17,7 @@ import {
   buildGroupQuery,
   getDefaultLimit,
   loadRows,
-  performRawQuery,
+  performReadQuery,
 } from "../ent";
 import { stableStringify } from "../cache_utils";
 import { memoizeInTransaction as memoizeNoArgs } from "../memoize";
@@ -140,7 +140,7 @@ function createLoader<K extends any>(
         clause: extraClause,
       });
 
-      const rows = await performRawQuery(
+      const rows = await performReadQuery(
         query,
         cls2.values(),
         cls2.logValues(),

@@ -1,3 +1,4 @@
+import type { Builder } from "../action/action";
 import {
   Context,
   CreateRowOptions,
@@ -40,7 +41,6 @@ import {
   copyEntTransaction,
   getTransactionState,
   recordEntTransaction,
-  recordDerivedEntTransaction,
   recordActionResultTransaction,
   runTransactionRead,
   trackValidationRead,
@@ -333,7 +333,7 @@ async function applyPrivacyPolicyForRowAndStoreInEntLoader<
   // TODO hmm... we eventually need a custom data-loader for this too so that it's all done correctly if there's a complicated fetch deep down in graphql
   const result = loader.getMap().get(id);
   if (result !== undefined) {
-    return result;
+    return runTransactionRead(getTransactionReadState(), async () => result);
   }
 
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
@@ -748,7 +748,7 @@ export async function loadDerivedEnt<
 ): Promise<TEnt | null> {
   return runTransactionRead(getTransactionReadState(), async () => {
     const ent = new loader(viewer, data);
-    recordDerivedEntTransaction(ent, data);
+    recordEntTransaction(ent, data);
     const r = await applyPrivacyPolicyForEnt(viewer, ent, data, {
       ent: loader,
     });
@@ -767,7 +767,7 @@ export async function loadDerivedEntX<
 ): Promise<TEnt> {
   return runTransactionRead(getTransactionReadState(), async () => {
     const ent = new loader(viewer, data);
-    recordDerivedEntTransaction(ent, data);
+    recordEntTransaction(ent, data);
     return applyPrivacyPolicyForEntX(viewer, ent, data, { ent: loader });
   });
 }
@@ -904,7 +904,7 @@ export async function loadRow(options: LoadRowOptions): Promise<Data | null> {
 
   const queryData = buildQueryData(options);
   logQuery(queryData.query, queryData.logValues);
-  const pool = DB.getInstance().getPool();
+  const pool = getTransactionState()?.readQueryer ?? DB.getInstance().getPool();
 
   const res = await pool.query(queryData.query, queryData.values);
   assertTransactionRead(read);
@@ -938,9 +938,26 @@ export async function performRawQuery(
   values: any[],
   logValues?: any[],
 ): Promise<Data[]> {
-  const read = getTransactionReadState();
-  const pool = DB.getInstance().getPool();
+  return performQuery(DB.getInstance().getPool(), query, values, logValues);
+}
 
+/** @internal Execute SQL constructed by framework read loaders without evicting their caches. */
+export async function performReadQuery(
+  query: string,
+  values: Parameters<Queryer["queryAll"]>[1],
+  logValues?: Parameters<Queryer["queryAll"]>[1],
+): Promise<Data[]> {
+  const pool = getTransactionState()?.readQueryer ?? DB.getInstance().getPool();
+  return performQuery(pool, query, values, logValues);
+}
+
+async function performQuery(
+  pool: Pick<Queryer, "queryAll">,
+  query: string,
+  values: Parameters<Queryer["queryAll"]>[1],
+  logValues?: Parameters<Queryer["queryAll"]>[1],
+): Promise<Data[]> {
+  const read = getTransactionReadState();
   logQuery(query, logValues || []);
   try {
     const res = await pool.queryAll(query, values);
@@ -972,7 +989,7 @@ export async function loadRows(options: LoadRowsOptions): Promise<Data[]> {
   }
 
   const queryData = buildQueryData(options);
-  const r = await performRawQuery(
+  const r = await performReadQuery(
     queryData.query,
     queryData.values,
     queryData.logValues,
@@ -1416,9 +1433,7 @@ function getAssocEdgeConfigLoader() {
   if (!state) {
     return assocEdgeLoader;
   }
-  let loader = state.resources.get(assocEdgeLoader) as
-    | typeof assocEdgeLoader
-    | undefined;
+  let loader = state.edgeMetadataLoader;
   if (!loader) {
     loader = createAssocEdgeConfigLoader({
       tableName: "assoc_edge_config",
@@ -1426,7 +1441,7 @@ function getAssocEdgeConfigLoader() {
       key: "edge_type",
       keyType: "uuid",
     });
-    state.resources.set(assocEdgeLoader, loader);
+    state.edgeMetadataLoader = loader;
   }
   return loader;
 }
@@ -1755,7 +1770,7 @@ export async function applyPrivacyPolicyForActionResult<
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
   row: Data,
-  builder: object,
+  builder: Builder<TEnt, TViewer>,
 ): Promise<TEnt | null> {
   const r = await applyPrivacyPolicyForRowImpl(viewer, options, row, builder);
   return rowIsError(r) ? null : r;
@@ -1768,17 +1783,22 @@ async function applyPrivacyPolicyForRowImpl<
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
   row: Data,
-  resultBuilder?: object,
+  resultBuilder?: Builder<TEnt, TViewer>,
 ): Promise<TEnt | Error> {
-  const ent = new options.ent(viewer, row);
-  if (resultBuilder) {
-    recordActionResultTransaction(ent, resultBuilder);
-  } else {
-    recordEntTransaction(ent, row);
-  }
-  return trackValidationRead(
-    applyPrivacyPolicyForEnt(viewer, ent, row, options),
-  );
+  const materialize = async () => {
+    const ent = new options.ent(viewer, row);
+    if (resultBuilder) {
+      recordActionResultTransaction(ent, resultBuilder);
+    } else {
+      recordEntTransaction(ent, row);
+    }
+    return applyPrivacyPolicyForEnt(viewer, ent, row, options);
+  };
+  // Saved results retain their owning write's provenance, including when a
+  // caller inspects them after commit. Normal row conversions are scoped reads.
+  return resultBuilder
+    ? trackValidationRead(materialize())
+    : runTransactionRead(getTransactionReadState(), materialize);
 }
 
 async function applyPrivacyPolicyForRowX<
@@ -1789,11 +1809,11 @@ async function applyPrivacyPolicyForRowX<
   options: LoadEntOptions<TEnt, TViewer>,
   row: Data,
 ): Promise<TEnt> {
-  const ent = new options.ent(viewer, row);
-  recordEntTransaction(ent, row);
-  return trackValidationRead(
-    applyPrivacyPolicyForEntX(viewer, ent, row, options),
-  );
+  return runTransactionRead(getTransactionReadState(), async () => {
+    const ent = new options.ent(viewer, row);
+    recordEntTransaction(ent, row);
+    return applyPrivacyPolicyForEntX(viewer, ent, row, options);
+  });
 }
 
 // deprecated. doesn't use entcache

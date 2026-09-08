@@ -1687,17 +1687,19 @@ export class Orchestrator<
   }
 
   private async buildPlusChangeset(
-    conditionalBuilder: Builder<TEnt, TViewer>,
-    conditionalOverride: boolean,
+    options?: ChangesetOptions,
   ): Promise<EntChangeset<TEnt>> {
     return this.prepareAction(() => {
-      if (conditionalOverride) {
+      if (options) {
         this.dependencies.set(
-          conditionalBuilder.placeholderID,
-          conditionalBuilder,
+          options.conditionalBuilder.placeholderID,
+          options.conditionalBuilder,
         );
       }
-      return this.buildChangeset(conditionalBuilder, conditionalOverride);
+      return this.buildChangeset(
+        options?.conditionalBuilder ?? this.options.builder,
+        options !== undefined,
+      );
     });
   }
 
@@ -1714,7 +1716,11 @@ export class Orchestrator<
       const res = await this.valid();
       if (!res) {
         processOps = false;
-        const op = new NoOperation(this.options.builder, this.existingEnt);
+        const op = new NoOperation(this.options.builder, this.existingEnt, {
+          tableName: this.options.tableName,
+          key: this.options.key,
+          fields: this.options.loaderOptions.fields,
+        });
         this.mainOp = op;
         ops = [op];
 
@@ -1754,13 +1760,13 @@ export class Orchestrator<
   }
 
   async build(): Promise<EntChangeset<TEnt>> {
-    return this.buildPlusChangeset(this.options.builder, false);
+    return this.buildPlusChangeset();
   }
 
   async buildWithOptions_BETA(
     options: ChangesetOptions,
   ): Promise<EntChangeset<TEnt>> {
-    return this.buildPlusChangeset(options.conditionalBuilder, true);
+    return this.buildPlusChangeset(options);
   }
 
   private async viewerForEntLoad(data: Data) {
@@ -1987,44 +1993,52 @@ export class EntChangeset<
   }
 
   executor(): Executor {
-    assertTransactionRead(this.transactionRead);
-    if (this.validationOnly) {
-      throw new Error(
-        "changesets prepared by public validation cannot execute; rebuild them when saving",
-      );
-    }
-    if (this._executor) {
-      return this._executor;
-    }
+    const transaction = getTransactionState();
+    try {
+      assertTransactionRead(this.transactionRead);
+      if (this.validationOnly) {
+        throw new Error(
+          "changesets prepared by public validation cannot execute; rebuild them when saving",
+        );
+      }
+      if (this._executor) {
+        return this._executor;
+      }
 
-    if (!this.changesets?.length) {
-      // if we have dependencies but no changesets, we just need a simple
-      // executor and depend on something else in the stack to handle this correctly
-      // ComplexExecutor which could be a parent of this should make sure the dependency
-      // is resolved beforehand
-      return (this._executor = new ListBasedExecutor(
+      if (!this.changesets?.length) {
+        // if we have dependencies but no changesets, we just need a simple
+        // executor and depend on something else in the stack to handle this correctly
+        // ComplexExecutor which could be a parent of this should make sure the dependency
+        // is resolved beforehand
+        return (this._executor = new ListBasedExecutor(
+          this.viewer,
+          this.placeholderID,
+          this.operations,
+          this.options,
+          {
+            conditionalOverride: this.conditionalOverride,
+            builder: this.builder,
+          },
+        ));
+      }
+
+      return (this._executor = new ComplexExecutor(
         this.viewer,
         this.placeholderID,
         this.operations,
+        this.dependencies || new Map(),
+        this.changesets || [],
         this.options,
         {
           conditionalOverride: this.conditionalOverride,
           builder: this.builder,
         },
       ));
+    } catch (error) {
+      if (transaction) {
+        failTransaction(transaction, error);
+      }
+      throw error;
     }
-
-    return (this._executor = new ComplexExecutor(
-      this.viewer,
-      this.placeholderID,
-      this.operations,
-      this.dependencies || new Map(),
-      this.changesets || [],
-      this.options,
-      {
-        conditionalOverride: this.conditionalOverride,
-        builder: this.builder,
-      },
-    ));
   }
 }

@@ -1,7 +1,14 @@
-import { Allow, Data } from "./base";
-import { Dialect } from "./db";
+import { Allow, Data, ID, Viewer } from "./base";
+import DB, { Dialect } from "./db";
 import { Eq } from "./clause";
-import { loadDerivedEnt, loadDerivedEntX, loadEntX, loadRows } from "./ent";
+import {
+  applyPrivacyPolicyForRow,
+  applyPrivacyPolicyForRows,
+  loadDerivedEnt,
+  loadDerivedEntX,
+  loadEntX,
+  loadRows,
+} from "./ent";
 import { ObjectLoaderFactory } from "./loaders";
 import { withTransaction } from "./transaction";
 import {
@@ -38,7 +45,7 @@ const options = {
 };
 const context = new TestContext();
 const viewer = context.getViewer();
-const load = (id: any) => loadEntX(viewer, id, options);
+const load = (id: ID) => loadEntX(viewer, id, options);
 const create = () =>
   new SimpleAction(
     viewer,
@@ -66,7 +73,7 @@ class PrivacyAccount extends DerivedAccount {
     return {
       rules: [
         {
-          async apply(_viewer: any, ent: DerivedAccount) {
+          async apply(_viewer: Viewer, ent: DerivedAccount) {
             await privacy?.(ent);
             return Allow();
           },
@@ -94,11 +101,26 @@ beforeEach(() => {
 describe.each([
   "loadDerivedEnt",
   "loadDerivedEntX",
+  "applyPrivacyPolicyForRow",
+  "applyPrivacyPolicyForRows",
 ] as const)("%s transaction provenance", (method) => {
-  const derive = (row: Data, ctor = DerivedAccount) =>
-    method === "loadDerivedEnt"
-      ? loadDerivedEnt(viewer, row, ctor)
-      : loadDerivedEntX(viewer, row, ctor);
+  const derive = async (row: Data, ctor = DerivedAccount) => {
+    switch (method) {
+      case "loadDerivedEnt":
+        return loadDerivedEnt(viewer, row, ctor);
+      case "loadDerivedEntX":
+        return loadDerivedEntX(viewer, row, ctor);
+      case "applyPrivacyPolicyForRow":
+        return applyPrivacyPolicyForRow(viewer, { ...options, ent: ctor }, row);
+      case "applyPrivacyPolicyForRows":
+        return (
+          await applyPrivacyPolicyForRows(viewer, [row], {
+            ...options,
+            ent: ctor,
+          })
+        )[0];
+    }
+  };
 
   test.each([
     "query",
@@ -128,6 +150,7 @@ describe.each([
     "stale generation",
     "previous scope",
     "outside row",
+    "untracked driver row",
     "unknown outside row",
     "unknown current row",
   ])("%s cannot become a fresh mutation input", async (origin) => {
@@ -145,6 +168,12 @@ describe.each([
       row = (
         await loadRows({ ...loader, clause: Eq("id", account.id), context })
       )[0];
+    } else if (origin === "untracked driver row") {
+      row = (
+        await DB.getInstance()
+          .getPool()
+          .query("SELECT * FROM derived_accounts WHERE id = $1", [account.id])
+      ).rows[0];
     } else if (origin === "unknown outside row") {
       row = { ...account.data };
     }
@@ -180,6 +209,31 @@ describe.each([
     expect((await load(account.id)).data.balance).toBe(100);
   });
 
+  test("copied old data cannot overwrite a later committed balance", async () => {
+    const account = await create();
+    const copied = { ...account.data };
+    await withTransaction(async () => {
+      await edit(await load(account.id), 80).saveX();
+    });
+    await expect(
+      withTransaction(async () => {
+        const stale = await derive(copied);
+        await edit(stale!, stale!.data.balance - 30).saveX();
+      }),
+    ).rejects.toThrow("reload existingEnt");
+    expect((await load(account.id)).data.balance).toBe(80);
+    await withTransaction(async (tx) => {
+      const row = (
+        await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
+          account.id,
+        ])
+      ).rows[0];
+      const fresh = await derive(row);
+      await edit(fresh!, fresh!.data.balance - 30).saveX();
+    });
+    expect((await load(account.id)).data.balance).toBe(50);
+  });
+
   test("unknown data still supports derived reads outside a transaction", async () => {
     const account = await create();
     const derived = await derive({ ...account.data });
@@ -198,6 +252,7 @@ describe.each([
             account.id,
           ])
         ).rows[0];
+        const current = await loadDerivedEntX(viewer, row, DerivedAccount);
         privacy = async () => {
           started.resolve();
           await release.promise;
@@ -208,7 +263,7 @@ describe.each([
         );
         await started.promise;
         try {
-          await edit(await load(account.id), 80).saveX();
+          await edit(current, 80).saveX();
         } finally {
           release.resolve();
         }

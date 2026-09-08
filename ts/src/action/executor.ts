@@ -403,7 +403,7 @@ export async function executeOperations(
   const transaction = getTransactionState();
   if (transaction) {
     const operations: DataOperation<Ent>[] = [];
-    const writeTargets = new Map<string, object>();
+    const writeTargets = new Map<string, Builder<Ent>>();
     try {
       assertExecutorTransaction(executor);
       assertIndependentActionSave();

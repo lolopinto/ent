@@ -10,7 +10,12 @@ import type {
   Validator,
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
-import { WriteOperation, setEdgeTypeInGroup } from "@snowtop/ent/action";
+import {
+  WriteOperation,
+  runActionChangeset,
+  runActionExecution,
+  setEdgeTypeInGroup,
+} from "@snowtop/ent/action";
 import { Account } from "src/ent/";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
 import { NodeType } from "src/ent/generated/types";
@@ -148,15 +153,19 @@ export class EditAccountTodoStatusActionBase
   }
 
   async changeset(): Promise<Changeset> {
-    await this.setEdgeType();
-    return this.builder.build();
+    return runActionChangeset(async () => {
+      await this.setEdgeType();
+      return this.builder.build();
+    });
   }
 
   async changesetWithOptions_BETA(
     options: ChangesetOptions,
   ): Promise<Changeset> {
-    await this.setEdgeType();
-    return this.builder.buildWithOptions_BETA(options);
+    return runActionChangeset(async () => {
+      await this.setEdgeType();
+      return this.builder.buildWithOptions_BETA(options);
+    });
   }
 
   private async setEdgeType() {
@@ -181,15 +190,19 @@ export class EditAccountTodoStatusActionBase
   }
 
   async save(): Promise<Account | null> {
-    await this.setEdgeType();
-    await this.builder.save();
-    return this.builder.editedEnt();
+    return runActionExecution(async () => {
+      await this.setEdgeType();
+      await this.builder.save();
+      return this.builder.editedEnt();
+    });
   }
 
   async saveX(): Promise<Account> {
-    await this.setEdgeType();
-    await this.builder.saveX();
-    return this.builder.editedEntX();
+    return runActionExecution(async () => {
+      await this.setEdgeType();
+      await this.builder.saveX();
+      return this.builder.editedEntX();
+    });
   }
 
   static create<T extends EditAccountTodoStatusActionBase>(
@@ -215,7 +228,9 @@ export class EditAccountTodoStatusActionBase
     id: ID,
     input: EditAccountTodoStatusInput,
   ): Promise<Account> {
-    const account = await Account.loadX(viewer, id);
-    return new this(viewer, account, input).saveX();
+    return runActionExecution(async () => {
+      const account = await Account.loadX(viewer, id);
+      return new this(viewer, account, input).saveX();
+    });
   }
 }

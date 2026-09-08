@@ -5,14 +5,15 @@ const { randomUUID } = require("node:crypto");
 const { Client } = require("pg");
 const {
   DB,
-  withTransaction,
-  getTransactionScope,
   loadEntX,
   ObjectLoaderFactory,
   AlwaysAllowPrivacyPolicy,
   ContextCache,
   LoggedOutViewer,
 } = require("../index");
+const { withTransaction, getTransactionScope } = require("../action");
+assert.equal("withTransaction" in require("../index"), false);
+assert.equal("getTransactionScope" in require("../index"), false);
 
 async function main() {
   const admin = new Client({
@@ -112,6 +113,22 @@ async function main() {
       /abort/,
     );
     assert.equal((await load()).balance, 50);
+    await withTransaction(async (tx) => {
+      await tx.exec(
+        "UPDATE scope_accounts SET balance = 40; UPDATE scope_accounts SET balance = 30",
+      );
+      assert.equal((await load()).balance, 30);
+    });
+    await assert.rejects(
+      withTransaction(async (tx) => {
+        await tx.exec(
+          "UPDATE scope_accounts SET balance = 20; UPDATE scope_accounts SET balance = 10",
+        );
+        throw new Error("abort multiple commands");
+      }),
+      /abort multiple commands/,
+    );
+    assert.equal((await load()).balance, 30);
     assert.equal(getTransactionScope(), undefined);
     console.log(
       `transaction runtime passed: ${process.versions.bun ? "bun" : "node"}/${process.argv[2] || "pg"}`,
