@@ -22,4 +22,3 @@ def index_render_context(autogen_context):
     context.migration_context.impl = copy.copy(context.migration_context.impl)
     context.migration_context.impl.dialect = context.dialect
     return context
-
