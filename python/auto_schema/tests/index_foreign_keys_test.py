@@ -297,6 +297,55 @@ class TestPostgresIndexForeignKeys:
             r2.downgrade('-1', delete_files=False)
         assert _cascade_state(r2.engine) == state
 
+    @pytest.mark.parametrize('table_name,trigger_type', [('contacts', 9), ('children', 5)])
+    @pytest.mark.parametrize('mode', ['A', 'R', 'D'])
+    def test_custom_fk_trigger_mode_requires_explicit_migration(self, new_test_runner, table_name, trigger_type, mode):
+        def metadata(after):
+            result = _metadata_with_child(False)
+            next(iter(result.tables['contacts'].indexes)).kwargs['postgresql_with'] = {'fillfactor': 80 if after else 70}
+            next(iter(result.tables['children'].foreign_key_constraints)).ondelete = 'CASCADE'
+            return result
+
+        r = new_test_runner(metadata(False))
+        r.run()
+        connection = r.get_connection()
+        triggers_sql = sa.text("""
+            SELECT oid, tgrelid, tgname, tgtype, tgenabled FROM pg_trigger
+            WHERE tgconstraint = (SELECT oid FROM pg_constraint
+                WHERE conrelid = 'children'::regclass AND conname = 'children_owner_fk')
+            ORDER BY oid
+        """)
+        table_oid = connection.execute(sa.text('SELECT CAST(:name AS regclass)::oid'), {'name': table_name}).scalar_one()
+        trigger = next(row for row in connection.execute(triggers_sql) if row.tgrelid == table_oid and row.tgtype == trigger_type)
+        action = {'A': 'ENABLE ALWAYS', 'R': 'ENABLE REPLICA', 'D': 'DISABLE'}[mode]
+        trigger_name = connection.dialect.identifier_preparer.quote(trigger.tgname)
+        connection.exec_driver_sql(f'ALTER TABLE {table_name} {action} TRIGGER {trigger_name}')
+        connection.execute(sa.text('INSERT INTO contacts(id, owner_id) VALUES (1, 10)'))
+        connection.execute(sa.text('INSERT INTO children(id, owner_id) VALUES (1, 10)'))
+        original_triggers = connection.execute(triggers_sql).all()
+        connection.commit()
+        original_state = _cascade_state(r.engine)
+        r2 = new_test_runner(metadata(True), r)
+        files = set(Path(r2.get_schema_path()).rglob('*.py'))
+        with pytest.raises(ValueError, match='trigger modes.*explicit migration'):
+            r2.revision()
+        assert set(Path(r2.get_schema_path()).rglob('*.py')) == files
+        assert _cascade_state(r.engine) == original_state
+        with r.engine.connect() as writer:
+            assert writer.execute(triggers_sql).all() == original_triggers
+            if mode in ('A', 'R'):
+                writer.exec_driver_sql('SET LOCAL session_replication_role=replica')
+            if table_name == 'contacts':
+                writer.execute(sa.text('DELETE FROM contacts WHERE id=1'))
+                assert writer.execute(sa.text('SELECT count(*) FROM children')).scalar_one() == (1 if mode == 'D' else 0)
+            elif mode == 'D':
+                writer.execute(sa.text('INSERT INTO children VALUES (2, 999)'))
+            else:
+                with pytest.raises(sa.exc.IntegrityError):
+                    with writer.begin_nested():
+                        writer.execute(sa.text('INSERT INTO children VALUES (2, 999)'))
+            writer.rollback()
+
     @pytest.mark.parametrize('barrier', ['supporting', 'other_create', 'other_drop', 'full_text_create', 'full_text_drop'])
     def test_concurrent_rebinding_rejected_without_losing_cascade(self, new_test_runner, barrier):
         from auto_schema.schema_item import FullTextIndex

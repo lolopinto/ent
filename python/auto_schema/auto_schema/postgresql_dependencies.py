@@ -29,6 +29,8 @@ def collect_index_foreign_keys(context, upgrade_ops, schemas):
             to_jsonb(fk)->'confdelsetcols' AS delete_columns,
             to_jsonb(fk)->'conperiod' AS period,
             to_jsonb(fk)->'conenforced' AS enforced,
+            EXISTS (SELECT 1 FROM pg_catalog.pg_trigger trigger
+                WHERE trigger.tgconstraint = fk.oid AND trigger.tgenabled <> 'O') AS custom_trigger_modes,
             pg_catalog.obj_description(fk.oid, 'pg_constraint') AS comment,
             current_schema() AS default_schema,
             ARRAY(SELECT att.attname FROM unnest(fk.conkey) WITH ORDINALITY AS col(num, position)
@@ -102,6 +104,11 @@ def collect_index_foreign_keys(context, upgrade_ops, schemas):
             # Reject during generation rather than silently changing ownership or
             # losing a comment while replacing an otherwise unchanged constraint.
             _cannot_rebind(dependency, "the foreign key has attributes requiring an explicit migration")
+
+        if dependency["custom_trigger_modes"]:
+            # Dropping the constraint also drops its parent action and child
+            # validation triggers. Recreating it would reset their firing modes.
+            _cannot_rebind(dependency, "customized foreign-key trigger modes require an explicit migration")
 
         if concurrent_indexes:
             # Global ordering places all index DDL between FK removal and
