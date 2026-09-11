@@ -16,7 +16,7 @@ from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
 
 from auto_schema.clause_text import compile_index_predicate, literal_sql_dialect, normalize_clause_text
-from auto_schema.postgresql_parser import type_name_at_position
+from auto_schema.postgresql_parser import column_name_at_position, type_name_at_position
 from auto_schema.schema_item import FullTextIndex
 
 from . import ops
@@ -631,6 +631,10 @@ def _compare_indexes(autogen_context: AutogenContext,
         op.column_name for op in modify_table_ops.ops
         if isinstance(op, alembicops.AlterColumnOp) and op.modify_type is not None
     }
+    added_columns = {
+        op.column.name for op in modify_table_ops.ops
+        if isinstance(op, alembicops.AddColumnOp)
+    }
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
     all_conn_indexes = raw_db_indexes.get('all')
@@ -736,14 +740,16 @@ def _compare_indexes(autogen_context: AutogenContext,
             continue
 
         if is_full_text_index(index) and name in all_conn_indexes:
-            if _full_text_index_signatures_differ(
-                index,
-                conn_indexes.get(name),
-                all_conn_indexes.get(name, {}),
-            ) or _index_predicates_differ(
+            predicates_differ = _index_predicates_differ(
                 autogen_context, index, conn_indexes.get(name),
                 all_conn_indexes[name], conn_table,
                 changed_column_types=changed_column_types,
+                added_columns=added_columns,
+            )
+            if predicates_differ or _full_text_index_signatures_differ(
+                index,
+                conn_indexes.get(name),
+                all_conn_indexes.get(name, {}),
             ):
                 _remove_generic_index_ops(modify_table_ops, name)
 
@@ -781,11 +787,13 @@ def _compare_indexes(autogen_context: AutogenContext,
             meta_signature = _get_index_signature(index, all_conn_indexes.get(name, {}))
             conn_signature = _get_index_signature(conn_indexes[name], all_conn_indexes.get(name, {}))
 
-            if _index_signatures_differ(meta_signature, conn_signature) or _index_predicates_differ(
+            predicates_differ = _index_predicates_differ(
                 autogen_context, index, conn_indexes[name],
                 all_conn_indexes.get(name, {}), conn_table,
                 changed_column_types=changed_column_types,
-            ):
+                added_columns=added_columns,
+            )
+            if predicates_differ or _index_signatures_differ(meta_signature, conn_signature):
                 # Alembic may already have replaced this index for a column or
                 # uniqueness change. Emit a single replacement with all options.
                 _remove_generic_index_ops(modify_table_ops, name)
@@ -1220,7 +1228,7 @@ def _index_predicate(index: sa.Index | None, dialect, raw_index):
 
 
 def _index_predicates_differ(
-    autogen_context, meta_index, conn_index, raw_index, conn_table, *, changed_column_types,
+    autogen_context, meta_index, conn_index, raw_index, conn_table, *, changed_column_types, added_columns,
 ):
     connection = autogen_context.connection
     # These expressions are sent as SQL without DBAPI parameters. Avoid pyformat
@@ -1249,6 +1257,7 @@ def _index_predicates_differ(
     # The temporary view is confined to a savepoint that is always rolled back.
     view_name = f'ent_index_predicate_{uuid.uuid4().hex}'
     savepoint = connection.begin_nested()
+    checking_without_table = False
     try:
         definitions = []
         for predicate in (meta_predicate, conn_predicate):
@@ -1277,6 +1286,7 @@ def _index_predicates_differ(
         # constant. Parsing without a FROM proves independence for constants;
         # whole-row references fail and retain conservative recreation below.
         query = sa.select(sa.literal_column('1')).where(sa.literal_column(meta_predicate))
+        checking_without_table = True
         connection.exec_driver_sql(
             f'CREATE OR REPLACE TEMP VIEW {view_name} AS {query.compile(dialect=dialect)}',
             execution_options={'no_parameters': True},
@@ -1284,14 +1294,18 @@ def _index_predicates_differ(
         # Composite casts can depend on the table's row type even without FROM.
         return _predicate_column_dependencies(connection, view_name, conn_table, dialect) is None
     except sa.exc.ProgrammingError as error:
+        sqlstate = getattr(error.orig, 'pgcode', None)
+        if sqlstate == '42703' and not checking_without_table:
+            # A type change cannot excuse a missing column. Use actual AddColumn
+            # operations (after filters), and attribute the reported reference to
+            # this table instead of deferring because some column is being added.
+            savepoint.rollback()
+            if _pending_column_explains(error, connection, conn_table, added_columns):
+                return True
+            raise
         # Pending types or whole-row references can prevent comparison against
         # the old table context. Conservatively defer to index recreation.
         if changed_column_types:
-            return True
-        sqlstate = getattr(error.orig, 'pgcode', None)
-        # A changed predicate can reference a column added by this migration,
-        # which is not available in the reflected table yet.
-        if sqlstate == '42703':
             return True
         # A predicate can cast to a new enum declared on another table.
         if pending_enums.new_types and _pending_enum_type_explains(error, pending_enums):
@@ -1326,6 +1340,43 @@ def _postgres_error_signature(error):
         getattr(original, 'pgcode', None),
         getattr(diagnostic, 'source_function', None),
         getattr(diagnostic, 'message_primary', None),
+    )
+
+
+def _pending_column_explains(error, connection, table, added_columns):
+    if not added_columns:
+        return False
+    source = _postgres_error_signature(error)[1]
+    if source not in ('errorMissingColumn', 'unknown_attribute'):
+        return False
+    # PostgreSQL leaves diag.column_name empty for these parser errors. Decode
+    # the reference at its character position using the server's string settings;
+    # never extract a name from localized error text. Resolve the actual table
+    # namespace, including search paths where the table is not in current_schema.
+    settings = connection.execute(sa.text('''
+        SELECT namespace.nspname AS schema, current_database() AS database,
+            current_setting('standard_conforming_strings') AS standard_strings,
+            current_setting('backslash_quote') AS backslash_quote
+        FROM pg_catalog.pg_class relation
+        JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
+        WHERE relation.oid = pg_catalog.to_regclass(:table_name)
+    '''), {'table_name': literal_sql_dialect(connection.dialect).identifier_preparer.format_table(table)}).one()
+    names = column_name_at_position(
+        error.statement, error.orig.diag.statement_position,
+        indirect=source == 'unknown_attribute',
+        standard_conforming_strings=settings.standard_strings == 'on',
+        backslash_quote=settings.backslash_quote != 'off',
+    )
+    if not names or names[-1] not in added_columns:
+        return False
+    qualifiers = names[:-1]
+    if source == 'unknown_attribute' and qualifiers and qualifiers[0] in table.c:
+        # (column).field addresses an existing composite-valued column rather
+        # than the table's whole row, even if that column shares the table name.
+        return False
+    return qualifiers in (
+        (), (table.name,), (settings.schema, table.name),
+        (settings.database, settings.schema, table.name),
     )
 
 

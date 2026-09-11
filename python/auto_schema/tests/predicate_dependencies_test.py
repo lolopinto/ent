@@ -1,5 +1,7 @@
 import os
 import shutil
+from pathlib import Path
+from unittest.mock import patch
 
 import alembic.operations.ops as alembicops
 import pytest
@@ -7,10 +9,114 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 from auto_schema import ops
+from auto_schema.runner import Runner
 from .runner_test import _assert_no_predicate_views, _partial_index_metadata, _reflected_predicate
 
 
 class TestPostgresPredicateDependencies:
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("pending", ["none", "unrelated_column", "other_table", "excluded_column", "type_change", "index_options"])
+    def test_undeclared_missing_column_preserves_index(self, new_test_runner, full_text, pending):
+        def metadata(predicate):
+            result = _partial_index_metadata(predicate, full_text=full_text, unique=not full_text)
+            index = next(iter(result.tables["contacts"].indexes))
+            (index.info if full_text else index.kwargs)["postgresql_concurrently"] = True
+            return result
+
+        before = metadata("status = 'active'")
+        r = new_test_runner(before)
+        r.run()
+        connection = r.get_connection()
+        connection.execute(before.tables["contacts"].insert(), {"id": 1, "owner_id": 7, "status": "active"})
+        identity = sa.text("SELECT indexrelid, pg_get_indexdef(indexrelid), indisvalid FROM pg_index "
+                           "WHERE indexrelid = 'contacts_active_idx'::regclass")
+        original = connection.execute(identity).one()
+        version = connection.execute(sa.text("SELECT version_num FROM alembic_version")).scalar_one()
+        connection.commit()
+        after = metadata("statuz = 'active'")
+        table = after.tables["contacts"]
+        if pending in ("unrelated_column", "excluded_column"):
+            table.append_column(sa.Column("statuz" if pending == "excluded_column" else "new_column", sa.Text()))
+        elif pending == "other_table":
+            sa.Table("other", after, sa.Column("id", sa.Integer(), primary_key=True), sa.Column("statuz", sa.Text()))
+        elif pending == "type_change":
+            table.c.score.type = sa.BigInteger()
+        elif pending == "index_options":
+            index = next(iter(table.indexes))
+            if full_text:
+                index.info["postgresql_using"] = "gist"
+            else:
+                index.kwargs["postgresql_with"] = {"fillfactor": 80}
+        r2 = new_test_runner(after, r)
+        files = {path: path.read_bytes() for path in Path(r2.get_schema_path()).rglob("*.py")}
+        include_object = Runner.include_object
+
+        def objects(object_, name, type_, reflected, compare_to):
+            return False if pending == "excluded_column" and type_ == "column" and name == "statuz" else include_object(
+                object_, name, type_, reflected, compare_to,
+            )
+
+        with patch.object(Runner, "include_object", side_effect=objects):
+            with pytest.raises(sa.exc.ProgrammingError) as error:
+                r2.revision()
+        assert error.value.orig.pgcode == "42703"
+        assert connection.execute(identity).one() == original
+        assert connection.execute(sa.text("SELECT version_num FROM alembic_version")).scalar_one() == version
+        assert {path: path.read_bytes() for path in Path(r2.get_schema_path()).rglob("*.py")} == files
+        assert connection.execute(sa.text("SELECT id, owner_id FROM contacts")).all() == [(1, 7)]
+        connection.commit()
+        # A separate writer still sees the original uniqueness enforcement.
+        if not full_text:
+            with r2.engine.connect() as writer:
+                with pytest.raises(sa.exc.IntegrityError):
+                    writer.execute(sa.text("INSERT INTO contacts(id, owner_id, status) VALUES (2, 7, 'active')"))
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("spelling", ["plain", "table", "schema", "database", "quoted", "unicode", "nonstandard_strings", "whole_row"])
+    def test_declared_missing_column_migrates(self, new_test_runner, full_text, spelling):
+        before = _partial_index_metadata("status = 'active'", full_text=full_text)
+        index = next(iter(before.tables["contacts"].indexes))
+        (index.info if full_text else index.kwargs)["postgresql_concurrently"] = True
+        r = new_test_runner(before)
+        r.run()
+        name = "Archived 名" if spelling in ("quoted", "unicode") else "archived_at"
+        reference = {
+            "table": "contacts.archived_at", "schema": "public.contacts.archived_at",
+            "database": f"{r.engine.url.database}.public.contacts.archived_at",
+            "quoted": 'contacts."Archived 名"', "unicode": 'U&"Archived !540D" UESCAPE \'!\'',
+            "whole_row": "(contacts).archived_at",
+        }.get(spelling, "archived_at")
+        if spelling == "nonstandard_strings":
+            r.get_connection().exec_driver_sql("SET standard_conforming_strings = off")
+        predicate = f"status != '三🙂%' AND {reference} IS NULL"
+        if spelling == "nonstandard_strings":
+            predicate = "status != 'it\\\'s 三%' AND " + reference + " IS NULL"
+        after = _partial_index_metadata(predicate, full_text=full_text)
+        index = next(iter(after.tables["contacts"].indexes))
+        (index.info if full_text else index.kwargs)["postgresql_concurrently"] = True
+        after.tables["contacts"].append_column(sa.Column(name, sa.TIMESTAMP()))
+        r2 = new_test_runner(after, r)
+        if spelling == "nonstandard_strings":
+            # The revision executes on another connection with the database GUC.
+            database = r2.connection.dialect.identifier_preparer.quote(r2.engine.url.database)
+            r2.connection.exec_driver_sql(f"ALTER DATABASE {database} SET standard_conforming_strings = off")
+            r2.connection.exec_driver_sql("SET standard_conforming_strings = off")
+            r2.connection.commit()
+        original = _reflected_predicate(r2)
+        r2.run()
+        updated = _reflected_predicate(r2)
+        assert updated != original
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        replay = new_test_runner(after, restored)
+        replay.upgrade()
+        assert _reflected_predicate(replay) == updated
+        assert replay.compute_changes() == []
+
     @pytest.mark.parametrize("full_text", [False, True])
     @pytest.mark.parametrize("declaration", ["new_label", "new_table", "new_column"])
     @pytest.mark.parametrize("enum_name,enum_schema,sql_type", [
