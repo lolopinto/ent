@@ -9,6 +9,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- Add PostgreSQL `withTransactionScope` scopes for reads, action preparation, and
+  writes, with action-owned validation before commit, uncached final reads,
+  isolation requirements, retries, and observers that run after commit (#2035).
+
 ### Fixed
 
 - persist fields marked `disableUserEditable` when set by internal builder code

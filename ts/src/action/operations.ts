@@ -27,6 +27,7 @@ import {
 } from "../core/ent";
 import { __getGlobalSchema } from "../core/global_schema";
 import { ObjectLoader } from "../core/loaders";
+import { getTransactionState } from "../core/transaction_context";
 import { buildQuery } from "../core/query_impl";
 import {
   SQLStatementOperation,
@@ -66,6 +67,11 @@ export interface DataOperation<
   shortCircuit?(executor: Executor): boolean;
   updatedOperation?(): UpdatedOperation<TEnt, TViewer> | null;
   resolve?(executor: Executor): void; //throws?
+  // Check known row mutations after resolving placeholders and skipping
+  // writes that don't apply.
+  transactionWriteTarget?(): readonly [string, ID] | undefined;
+  // A skipped action must not register final validation through an operation wrapper.
+  readonly skipScopeValidation?: boolean;
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
@@ -81,6 +87,10 @@ export class DeleteNodeOperation<
     public readonly builder: Builder<TEnt, TViewer>,
     private options: DataOptions,
   ) {}
+
+  transactionWriteTarget(): readonly [string, ID] {
+    return [this.options.tableName, this.id];
+  }
 
   async performWrite(queryer: Queryer, context?: Context): Promise<void> {
     let options = {
@@ -113,10 +123,10 @@ export class RawQueryOperation<
     for (const q of this.queries) {
       if (typeof q === "string") {
         logQuery(q, []);
-        await queryer.query(q);
+        await queryer.exec(q);
       } else {
         logQuery(q.query, q.logValues || []);
-        await queryer.query(q.query, q.values);
+        await queryer.exec(q.query, q.values);
       }
     }
   }
@@ -145,21 +155,58 @@ export interface EditNodeOptions<
   builder: Builder<TEnt, TViewer>;
 }
 
+interface ResultRowOptions {
+  tableName: string;
+  key: string;
+  fields: LoadEntOptions<Ent>["fields"];
+}
+
+async function reloadScopedResult(
+  queryer: Queryer,
+  options: ResultRowOptions,
+  id: ID,
+): Promise<Data | null> {
+  const cls = clause.Eq(options.key, id);
+  const query = buildQuery({
+    tableName: options.tableName,
+    fields: options.fields.length ? options.fields : ["*"],
+    clause: cls,
+  });
+  logQuery(query, cls.logValues());
+  const result = await queryer.query(query, cls.values());
+  return result.rows[0] ?? null;
+}
+
 export class NoOperation<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
 > implements DataOperation<TEnt, TViewer>
 {
+  readonly skipScopeValidation = true;
   private row: Data | null = null;
+  private executed = false;
   constructor(
     public builder: Builder<TEnt, TViewer>,
-    existingEnt: Ent | null = null,
+    private existingEnt: Ent | null,
+    private resultOptions: ResultRowOptions,
   ) {
     // @ts-ignore
     this.row = existingEnt?.data;
   }
 
-  async performWrite(queryer: Queryer, context?: Context) {}
+  async performWrite(queryer: Queryer, context?: Context) {
+    this.executed = true;
+  }
+
+  async postFetch(queryer: Queryer) {
+    if (getTransactionState() && this.executed && this.existingEnt) {
+      this.row = await reloadScopedResult(
+        queryer,
+        this.resultOptions,
+        this.existingEnt.id,
+      );
+    }
+  }
 
   performWriteSync(queryer: SyncQueryer, context?: Context): void {}
 
@@ -223,6 +270,13 @@ export class EditNodeOperation<
     return false;
   }
 
+  transactionWriteTarget(): readonly [string, ID] | undefined {
+    if (this.existingEnt && this.hasData(this.options.fields)) {
+      return [this.options.tableName, this.existingEnt.id];
+    }
+    return undefined;
+  }
+
   private buildOnConflictQuery(options: EditNodeOptions<TEnt, TViewer>) {
     // assumes onConflict has been checked already...
     const clauses: clause.Clause[] = [];
@@ -277,6 +331,22 @@ export class EditNodeOperation<
           operation: WriteOperation.Edit,
         };
       }
+    }
+  }
+
+  async postFetch(queryer: Queryer) {
+    if (getTransactionState() && this.row) {
+      // Other graph operations can change fields after this operation returns.
+      // Use the stored row's key, including when an upsert found an existing row.
+      this.row = await reloadScopedResult(
+        queryer,
+        {
+          tableName: this.options.tableName,
+          key: this.options.key,
+          fields: this.options.loadEntOptions.fields,
+        },
+        this.row[this.options.key],
+      );
     }
   }
 
@@ -964,9 +1034,17 @@ export class ConditionalOperation<
     this.placeholderID = op.placeholderID;
   }
 
+  get skipScopeValidation(): boolean {
+    return this.op.skipScopeValidation === true;
+  }
+
   shortCircuit(executor: Executor): boolean {
     this.shortCircuited = executor.builderOpChanged(this.conditionalBuilder);
     return this.shortCircuited;
+  }
+
+  transactionWriteTarget(): readonly [string, ID] | undefined {
+    return this.op.transactionWriteTarget?.();
   }
 
   async preFetch(

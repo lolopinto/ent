@@ -13,7 +13,12 @@ import type {
   Validator,
 } from "@snowtop/ent/action";
 import type { ExampleViewer as ExampleViewerAlias } from "../../../../viewer/viewer";
-import { WriteOperation, setEdgeTypeInGroup } from "@snowtop/ent/action";
+import {
+  WriteOperation,
+  runActionChangeset,
+  runActionExecution,
+  setEdgeTypeInGroup,
+} from "@snowtop/ent/action";
 import { Event } from "../../..";
 import { EventBuilder } from "./event_builder";
 import { NodeType } from "../../types";
@@ -160,15 +165,19 @@ export class EditEventRsvpStatusActionBase
   }
 
   async changeset(): Promise<Changeset> {
-    await this.setEdgeType();
-    return this.builder.build();
+    return runActionChangeset(async () => {
+      await this.setEdgeType();
+      return this.builder.build();
+    });
   }
 
   async changesetWithOptions_BETA(
     options: ChangesetOptions,
   ): Promise<Changeset> {
-    await this.setEdgeType();
-    return this.builder.buildWithOptions_BETA(options);
+    return runActionChangeset(async () => {
+      await this.setEdgeType();
+      return this.builder.buildWithOptions_BETA(options);
+    });
   }
 
   private async setEdgeType() {
@@ -193,15 +202,19 @@ export class EditEventRsvpStatusActionBase
   }
 
   async save(): Promise<Event | null> {
-    await this.setEdgeType();
-    await this.builder.save();
-    return this.builder.editedEnt();
+    return runActionExecution(async () => {
+      await this.setEdgeType();
+      await this.builder.save();
+      return this.builder.editedEnt();
+    });
   }
 
   async saveX(): Promise<Event> {
-    await this.setEdgeType();
-    await this.builder.saveX();
-    return this.builder.editedEntX();
+    return runActionExecution(async () => {
+      await this.setEdgeType();
+      await this.builder.saveX();
+      return this.builder.editedEntX();
+    });
   }
 
   static create<T extends EditEventRsvpStatusActionBase>(
@@ -227,7 +240,9 @@ export class EditEventRsvpStatusActionBase
     id: ID,
     input: EditEventRsvpStatusInput,
   ): Promise<Event> {
-    const event = await Event.loadX(viewer, id);
-    return new this(viewer, event, input).saveX();
+    return runActionExecution(async () => {
+      const event = await Event.loadX(viewer, id);
+      return new this(viewer, event, input).saveX();
+    });
   }
 }

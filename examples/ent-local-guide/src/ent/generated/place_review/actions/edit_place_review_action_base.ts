@@ -15,6 +15,7 @@ import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
 import {
   WriteOperation,
   maybeConvertRelativeInputPlusExpressions,
+  runActionExecution,
 } from "@snowtop/ent/action";
 import { Place, PlaceReview, User } from "../../..";
 import { PlaceReviewBuilder } from "./place_review_builder";
@@ -180,7 +181,9 @@ export class EditPlaceReviewActionBase
     id: ID,
     input: PlaceReviewEditInput,
   ): Promise<PlaceReview> {
-    const placeReview = await PlaceReview.loadX(viewer, id);
-    return new this(viewer, placeReview, input).saveX();
+    return runActionExecution(async () => {
+      const placeReview = await PlaceReview.loadX(viewer, id);
+      return new this(viewer, placeReview, input).saveX();
+    });
   }
 }

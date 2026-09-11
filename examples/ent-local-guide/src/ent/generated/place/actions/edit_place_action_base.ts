@@ -12,7 +12,7 @@ import type {
   Validator,
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
-import { WriteOperation } from "@snowtop/ent/action";
+import { WriteOperation, runActionExecution } from "@snowtop/ent/action";
 import { Place, User } from "../../..";
 import { PlaceBuilder } from "./place_builder";
 import { PlaceCategory } from "../../types";
@@ -158,7 +158,9 @@ export class EditPlaceActionBase
     id: ID,
     input: PlaceEditInput,
   ): Promise<Place> {
-    const place = await Place.loadX(viewer, id);
-    return new this(viewer, place, input).saveX();
+    return runActionExecution(async () => {
+      const place = await Place.loadX(viewer, id);
+      return new this(viewer, place, input).saveX();
+    });
   }
 }

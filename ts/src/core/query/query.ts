@@ -1,3 +1,9 @@
+import {
+  assertEntTransaction,
+  assertTransactionRead,
+  getTransactionReadState,
+  runTransactionRead,
+} from "../transaction_context";
 import { isPromise } from "util/types";
 import {
   Data,
@@ -13,7 +19,7 @@ import {
 import * as clause from "../clause";
 import { decodeCursorPayload, getCursor, getDefaultLimit } from "../ent";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
-import { memoizeNoArgs } from "../memoize";
+import { memoizeInTransaction as memoizeNoArgs } from "../memoize";
 import { OrderBy, orderByHasExpressions, reverseOrderBy } from "../query_impl";
 
 export interface EdgeQuery<
@@ -379,14 +385,18 @@ export abstract class BaseEdgeQuery<
   TEdge extends Data,
 > implements EdgeQuery<TSource, TDest, TEdge>
 {
+  private transactionRead = getTransactionReadState();
+
+  protected readInTransaction<T>(read: () => Promise<T>): Promise<T> {
+    return runTransactionRead(this.transactionRead, read);
+  }
+
   private filters: EdgeQueryFilter<TEdge>[] = [];
   private queryDispatched: boolean;
   protected edges: Map<ID, TEdge[]> = new Map();
   private pagination: Map<ID, PaginationInfo> = new Map();
   private memoizedloadEdges: () => Promise<Map<ID, TEdge[]>>;
   protected genIDInfosToFetch: () => Promise<IDInfo[]>;
-  private idMap: Map<ID, TSource> = new Map();
-  private idsToFetch: ID[] = [];
 
   // if the column we're sorting by is not unique e.g. created_at, we add a secondary sort column which is used in the cursor
   // to break ties and ensure that we can paginate correctly
@@ -498,7 +508,9 @@ export abstract class BaseEdgeQuery<
 
   // this is basically just raw rows
   readonly queryEdges = async (): Promise<TEdge[]> => {
-    return this.querySingleEdge("queryEdges");
+    return this.readInTransaction(async () => {
+      return this.querySingleEdge("queryEdges");
+    });
   };
 
   abstract queryRawCount(): Promise<number>;
@@ -506,40 +518,50 @@ export abstract class BaseEdgeQuery<
   abstract queryAllRawCount(): Promise<Map<ID, number>>;
 
   readonly queryAllEdges = async (): Promise<Map<ID, TEdge[]>> => {
-    return this.memoizedloadEdges();
+    return this.readInTransaction(async () => {
+      return this.memoizedloadEdges();
+    });
   };
 
   abstract dataToID(edge: TEdge): ID;
 
   readonly queryIDs = async (): Promise<ID[]> => {
-    const edges = await this.querySingleEdge("queryIDs");
-    return edges.map((edge) => this.dataToID(edge));
+    return this.readInTransaction(async () => {
+      const edges = await this.querySingleEdge("queryIDs");
+      return edges.map((edge) => this.dataToID(edge));
+    });
   };
 
   readonly queryAllIDs = async (): Promise<Map<ID, ID[]>> => {
-    const edges = await this.memoizedloadEdges();
-    let results: Map<ID, ID[]> = new Map();
-    for (const [id, edge_data] of edges) {
-      results.set(
-        id,
-        edge_data.map((edge) => this.dataToID(edge)),
-      );
-    }
-    return results;
+    return this.readInTransaction(async () => {
+      const edges = await this.memoizedloadEdges();
+      let results: Map<ID, ID[]> = new Map();
+      for (const [id, edge_data] of edges) {
+        results.set(
+          id,
+          edge_data.map((edge) => this.dataToID(edge)),
+        );
+      }
+      return results;
+    });
   };
 
   readonly queryCount = async (): Promise<number> => {
-    const edges = await this.querySingleEdge("queryCount");
-    return edges.length;
+    return this.readInTransaction(async () => {
+      const edges = await this.querySingleEdge("queryCount");
+      return edges.length;
+    });
   };
 
   readonly queryAllCount = async (): Promise<Map<ID, number>> => {
-    let results: Map<ID, number> = new Map();
-    const edges = await this.memoizedloadEdges();
-    edges.forEach((list, id) => {
-      results.set(id, list.length);
+    return this.readInTransaction(async () => {
+      let results: Map<ID, number> = new Map();
+      const edges = await this.memoizedloadEdges();
+      edges.forEach((list, id) => {
+        results.set(id, list.length);
+      });
+      return results;
     });
-    return results;
   };
 
   protected abstract loadEntsFromEdges(
@@ -548,29 +570,34 @@ export abstract class BaseEdgeQuery<
   ): Promise<TDest[]>;
 
   readonly queryEnts = async (): Promise<TDest[]> => {
-    const edges = await this.querySingleEdge("queryEnts");
-    return this.loadEntsFromEdges("id", edges);
+    return this.readInTransaction(async () => {
+      const edges = await this.querySingleEdge("queryEnts");
+      return this.loadEntsFromEdges("id", edges);
+    });
   };
 
   readonly queryAllEnts = async (): Promise<Map<ID, TDest[]>> => {
-    // applies filters and then gets things after
-    const edges = await this.memoizedloadEdges();
-    let promises: Promise<void>[] = [];
-    const results: Map<ID, TDest[]> = new Map();
+    return this.readInTransaction(async () => {
+      // Apply edge filters before loading the corresponding Ents.
+      const edges = await this.memoizedloadEdges();
+      let promises: Promise<void>[] = [];
+      const results: Map<ID, TDest[]> = new Map();
 
-    const loadEntsForID = async (id: ID, edges: TEdge[]) => {
-      const ents = await this.loadEntsFromEdges(id, edges);
-      results.set(id, ents);
-    };
-    for (const [id, edgesList] of edges) {
-      promises.push(loadEntsForID(id, edgesList));
-    }
+      const loadEntsForID = async (id: ID, edges: TEdge[]) => {
+        const ents = await this.loadEntsFromEdges(id, edges);
+        results.set(id, ents);
+      };
+      for (const [id, edgesList] of edges) {
+        promises.push(loadEntsForID(id, edgesList));
+      }
 
-    await Promise.all(promises);
-    return results;
+      await Promise.all(promises);
+      return results;
+    });
   };
 
   paginationInfo(): Map<ID, PaginationInfo> {
+    assertTransactionRead(this.transactionRead);
     this.assertQueryDispatched("paginationInfo");
     return this.pagination;
   }
@@ -600,26 +627,23 @@ export abstract class BaseEdgeQuery<
     options: EdgeQueryableDataOptions,
   ): Promise<void>;
 
-  private addID(id: ID | TSource) {
-    if (typeof id === "object") {
-      this.idMap.set(id.id, id);
-      this.idsToFetch.push(id.id);
-    } else {
-      this.idsToFetch.push(id);
-    }
-  }
-
   abstract getTableName(): string | Promise<string>;
 
   protected async genIDInfosToFetchImpl() {
-    await this.loadRawIDs(this.addID.bind(this));
-
-    return applyPrivacyPolicyForEdgeQ(
-      this.viewer,
-      this,
-      this.idsToFetch,
-      this.idMap,
-    );
+    // Final validation can repeat this read without memoization. Keep source
+    // identifiers local so repeated and concurrent reads do not accumulate IDs.
+    const ids: ID[] = [];
+    const ents = new Map<ID, TSource>();
+    await this.loadRawIDs((source) => {
+      if (typeof source === "object") {
+        assertEntTransaction(source);
+        ents.set(source.id, source);
+        ids.push(source.id);
+      } else {
+        ids.push(source);
+      }
+    });
+    return applyPrivacyPolicyForEdgeQ(this.viewer, this, ids, ents);
   }
 
   private _defaultEdgeQueryableOptions: EdgeQueryableDataOptions | undefined;
@@ -743,6 +767,9 @@ async function applyPrivacyPolicyForEdgeQ<
       let ent: Ent | null | undefined = map.get(id);
       if (!ent) {
         ent = await edgeQ.sourceEnt(id);
+      }
+      if (ent) {
+        assertEntTransaction(ent);
       }
       const r = await applyPrivacyPolicy(
         viewer,

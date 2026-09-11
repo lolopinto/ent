@@ -3,6 +3,7 @@ import { load } from "js-yaml";
 import { DateTime } from "luxon";
 import pg, { Pool, PoolClient, PoolConfig } from "pg";
 import { log } from "./logger";
+import { getTransactionState } from "./transaction_context";
 import type {
   PostgresDriver,
   RuntimeDBExtension,
@@ -497,17 +498,27 @@ export default class DB {
   }
 
   getConnection(): Connection {
+    if (getTransactionState()) {
+      throw new Error(
+        "use getPool() inside withTransactionScope; raw connections cannot join the scope",
+      );
+    }
     return this.q;
   }
 
   // TODO rename all these...
   getPool(): Queryer {
-    return this.q.self();
+    return getTransactionState()?.queryer ?? this.q.self();
   }
 
   // TODO rename
   // expect to release client as needed
   async getNewClient(): Promise<Client> {
+    if (getTransactionState()) {
+      throw new Error(
+        "use getPool() inside withTransactionScope; a new client would escape the transaction",
+      );
+    }
     return this.q.newClient();
   }
 

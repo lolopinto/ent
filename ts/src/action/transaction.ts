@@ -2,6 +2,10 @@ import { Ent, Viewer, Data } from "../core/base";
 import { Action, Changeset } from "./action";
 import { ComplexExecutor } from "./executor";
 import { EntBuilder } from "./experimental_action";
+import {
+  assertIndependentActionSave,
+  runActionExecution,
+} from "../core/transaction_context";
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
@@ -27,21 +31,24 @@ export class Transaction<TViewer extends Viewer = Viewer> {
   ) {}
 
   async run() {
-    const changesets: Changeset[] = [];
-    await Promise.all(
-      this.actions.map(async (action) => {
-        const c = await action.changeset();
-        changesets.push(c);
-      }),
-    );
+    return runActionExecution(async () => {
+      assertIndependentActionSave();
+      const changesets: Changeset[] = [];
+      await Promise.all(
+        this.actions.map(async (action) => {
+          const c = await action.changeset();
+          changesets.push(c);
+        }),
+      );
 
-    const executor = new ComplexExecutor(
-      this.viewer,
-      "", // no placeholder, no opers
-      [],
-      new Map(),
-      changesets,
-    );
-    await executor.execute();
+      const executor = new ComplexExecutor(
+        this.viewer,
+        "", // No root placeholder or operations; execute the child changesets.
+        [],
+        new Map(),
+        changesets,
+      );
+      await executor.execute();
+    });
   }
 }

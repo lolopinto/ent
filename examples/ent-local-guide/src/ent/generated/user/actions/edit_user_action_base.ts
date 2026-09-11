@@ -10,7 +10,7 @@ import type {
   Validator,
 } from "@snowtop/ent/action";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
-import { WriteOperation } from "@snowtop/ent/action";
+import { WriteOperation, runActionExecution } from "@snowtop/ent/action";
 import { User } from "../../..";
 import { UserBuilder } from "./user_builder";
 
@@ -139,7 +139,9 @@ export class EditUserActionBase
     id: ID,
     input: UserEditInput,
   ): Promise<User> {
-    const user = await User.loadX(viewer, id);
-    return new this(viewer, user, input).saveX();
+    return runActionExecution(async () => {
+      const user = await User.loadX(viewer, id);
+      return new this(viewer, user, input).saveX();
+    });
   }
 }

@@ -96,35 +96,39 @@ export abstract class AssocEdgeQueryBase<
 
   // doesn't work with filters...
   async queryRawCount(): Promise<number> {
-    const info = await this.getSingleID();
-    if (info.invalidated) {
-      return 0;
-    }
+    return this.readInTransaction(async () => {
+      const info = await this.getSingleID();
+      if (info.invalidated) {
+        return 0;
+      }
 
-    return this.countLoaderFactory
-      .createConfigurableLoader(
-        this.getDefaultEdgeQueryOptions() ?? {},
-        this.viewer.context,
-      )
-      .load(info.id);
+      return this.countLoaderFactory
+        .createConfigurableLoader(
+          this.getDefaultEdgeQueryOptions() ?? {},
+          this.viewer.context,
+        )
+        .load(info.id);
+    });
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
-    let results: Map<ID, number> = new Map();
-    const infos = await this.genIDInfosToFetch();
+    return this.readInTransaction(async () => {
+      let results: Map<ID, number> = new Map();
+      const infos = await this.genIDInfosToFetch();
 
-    const loader = this.countLoaderFactory.createLoader(this.viewer.context);
-    await Promise.all(
-      infos.map(async (info) => {
-        if (info.invalidated) {
-          results.set(info.id, 0);
-          return;
-        }
-        const count = await loader.load(info.id);
-        results.set(info.id, count);
-      }),
-    );
-    return results;
+      const loader = this.countLoaderFactory.createLoader(this.viewer.context);
+      await Promise.all(
+        infos.map(async (info) => {
+          if (info.invalidated) {
+            results.set(info.id, 0);
+            return;
+          }
+          const count = await loader.load(info.id);
+          results.set(info.id, count);
+        }),
+      );
+      return results;
+    });
   }
 
   protected async loadEntsFromEdges(
@@ -214,33 +218,37 @@ export abstract class AssocEdgeQueryBase<
   }
 
   async queryID2(id2: ID): Promise<TEdge | undefined> {
-    const info = await this.getSingleID();
-    if (info.invalidated) {
-      return;
-    }
+    return this.readInTransaction(async () => {
+      const info = await this.getSingleID();
+      if (info.invalidated) {
+        return;
+      }
 
-    const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
-    return loader.loadEdgeForID2(info.id, id2);
+      const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
+      return loader.loadEdgeForID2(info.id, id2);
+    });
   }
 
   async queryAllID2(id2: ID): Promise<Map<ID, TEdge>> {
-    const infos = await this.genIDInfosToFetch();
+    return this.readInTransaction(async () => {
+      const infos = await this.genIDInfosToFetch();
 
-    const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
+      const loader = this.dataLoaderFactory.createLoader(this.viewer.context);
 
-    const m = new Map<ID, TEdge>();
-    await Promise.all(
-      infos.map(async (info) => {
-        if (info.invalidated) {
-          return;
-        }
-        const edge = await loader.loadEdgeForID2(info.id, id2);
-        if (edge) {
-          m.set(info.id, edge);
-        }
-      }),
-    );
-    return m;
+      const m = new Map<ID, TEdge>();
+      await Promise.all(
+        infos.map(async (info) => {
+          if (info.invalidated) {
+            return;
+          }
+          const edge = await loader.loadEdgeForID2(info.id, id2);
+          if (edge) {
+            m.set(info.id, edge);
+          }
+        }),
+      );
+      return m;
+    });
   }
 
   __beforeBETA(time: Date) {
@@ -310,10 +318,11 @@ export interface EdgeQueryCtr<
   TDest extends Ent,
   TEdge extends AssocEdge,
 > {
-  new (
-    viewer: Viewer,
-    src: EdgeQuerySource<TSource>,
-  ): EdgeQuery<TSource, TDest, TEdge>;
+  new (viewer: Viewer, src: EdgeQuerySource<TSource>): EdgeQuery<
+    TSource,
+    TDest,
+    TEdge
+  >;
 }
 
 class BeforeFilter implements EdgeQueryFilter<AssocEdge> {
@@ -341,10 +350,7 @@ class AfterFilter implements EdgeQueryFilter<AssocEdge> {
 }
 
 class WithinFilter implements EdgeQueryFilter<AssocEdge> {
-  constructor(
-    private start: Date,
-    private end: Date,
-  ) {}
+  constructor(private start: Date, private end: Date) {}
 
   query(options: EdgeQueryableDataOptions): EdgeQueryableDataOptions {
     const cls = clause.And(

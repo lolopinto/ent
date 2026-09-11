@@ -37,7 +37,9 @@ We'll dive into each of these in the following sections.
 
 ## Transactions
 
-If you need to coordinate multiple actions at the call site, use a [Transaction](/docs/actions/transactions) to run them together. For action-internal work, use [Triggers](/docs/actions/triggers) since they run inside the action's own transaction.
+Use [Transaction](/docs/actions/transactions) to commit or roll back multiple actions' writes together. Use [triggers](/docs/actions/triggers) to add child changesets whose writes share an action's transaction.
+
+Trigger callbacks run before the ordinary write transaction. To include their reads and decisions in the transaction, call the action inside [`withTransactionScope`](/docs/actions/transactions#transaction-scoped-reads-and-actions).
 
 ## Default Privacy Policy
 

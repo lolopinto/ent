@@ -1,3 +1,7 @@
+import {
+  getTransactionReadState,
+  runTransactionRead,
+} from "../transaction_context";
 import DataLoader from "dataloader";
 import {
   LoadRowOptions,
@@ -24,7 +28,7 @@ import {
   getCustomLoader,
   getLoaderMaxBatchSize,
 } from "./loader";
-import { memoizeNoArgs } from "../memoize";
+import { memoizeInTransaction as memoizeNoArgs } from "../memoize";
 
 const DEFAULT_CLAUSE_LOADER_CONCURRENCY = 10;
 let clauseLoaderConcurrency = DEFAULT_CLAUSE_LOADER_CONCURRENCY;
@@ -273,6 +277,7 @@ export class ObjectLoader<
     Loader<ID, TResultData | null>,
     Loader<clause.Clause<TQueryData, K>, TResultData[] | null>
 {
+  private transactionRead = getTransactionReadState();
   private idLoader: DataLoader<ID, TResultData> | undefined;
   private clauseLoader: DataLoader<
     clause.Clause<TQueryData, K>,
@@ -324,11 +329,13 @@ export class ObjectLoader<
   async load(
     key: clause.Clause<TQueryData, K> | ID,
   ): Promise<TResultData | TResultData[] | null> {
-    if (typeof key === "string" || typeof key === "number") {
-      return this.loadID(key);
-    }
+    return runTransactionRead(this.transactionRead, async () => {
+      if (typeof key === "string" || typeof key === "number") {
+        return this.loadID(key);
+      }
 
-    return this.loadClause(key);
+      return this.loadClause(key);
+    });
   }
 
   private async loadID(key: ID): Promise<TResultData | null> {
@@ -381,15 +388,17 @@ export class ObjectLoader<
   async loadMany(
     keys: ID[] | clause.Clause<TQueryData, K>[],
   ): Promise<Array<TResultData | TResultData[] | null>> {
-    if (!keys.length) {
-      return [];
-    }
+    return runTransactionRead(this.transactionRead, async () => {
+      if (!keys.length) {
+        return [];
+      }
 
-    if (typeof keys[0] === "string" || typeof keys[0] === "number") {
-      return this.loadIDMany(keys as ID[]);
-    }
+      if (typeof keys[0] === "string" || typeof keys[0] === "number") {
+        return this.loadIDMany(keys as ID[]);
+      }
 
-    return this.loadClauseMany(keys as clause.Clause<TQueryData, K>[]);
+      return this.loadClauseMany(keys as clause.Clause<TQueryData, K>[]);
+    });
   }
 
   private loadIDMany(keys: ID[]): Promise<Array<TResultData | null>> {
@@ -444,6 +453,7 @@ export class ObjectLoader<
 export class ObjectCountLoader<V extends Data = Data, K = keyof V>
   implements Loader<clause.Clause<V, K>, number>
 {
+  private transactionRead = getTransactionReadState();
   private loader: DataLoader<clause.Clause<V, K>, number> | null;
 
   constructor(
@@ -460,10 +470,12 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
   }
 
   async load(key: clause.Clause<V, K>): Promise<number> {
-    if (this.loader) {
-      return this.loader.load(key);
-    }
-    return loadCountForClauseLoader(this.options, key, this.context);
+    return runTransactionRead(this.transactionRead, async () => {
+      if (this.loader) {
+        return this.loader.load(key);
+      }
+      return loadCountForClauseLoader(this.options, key, this.context);
+    });
   }
 
   clearAll() {
@@ -471,16 +483,21 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
   }
 
   async loadMany(keys: clause.Clause<V, K>[]): Promise<Array<number>> {
-    if (!keys.length) {
-      return [];
-    }
-    if (this.loader) {
-      // @ts-expect-error
-      return this.loader.loadMany(keys);
-    }
+    return runTransactionRead(
+      this.transactionRead,
+      async (): Promise<number[]> => {
+        if (!keys.length) {
+          return [];
+        }
+        if (this.loader) {
+          // @ts-expect-error
+          return this.loader.loadMany(keys);
+        }
 
-    return mapWithConcurrency(keys, clauseLoaderConcurrency, (key) =>
-      loadCountForClauseLoader(this.options, key, this.context),
+        return mapWithConcurrency(keys, clauseLoaderConcurrency, (key) =>
+          loadCountForClauseLoader(this.options, key, this.context),
+        );
+      },
     );
   }
 }

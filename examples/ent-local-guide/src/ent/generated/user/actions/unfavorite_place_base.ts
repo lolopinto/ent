@@ -11,7 +11,7 @@ import type {
 } from "@snowtop/ent/action";
 import type { UserInput } from "./user_builder";
 import { AllowIfViewerHasIdentityPrivacyPolicy } from "@snowtop/ent";
-import { WriteOperation } from "@snowtop/ent/action";
+import { WriteOperation, runActionExecution } from "@snowtop/ent/action";
 import { Place, User } from "../../..";
 import { UserBuilder } from "./user_builder";
 
@@ -126,7 +126,11 @@ export class UnfavoritePlaceBase
     id: ID,
     favoritePlaceId: ID,
   ): Promise<User> {
-    const user = await User.loadX(viewer, id);
-    return new this(viewer, user).removeFavoritePlace(favoritePlaceId).saveX();
+    return runActionExecution(async () => {
+      const user = await User.loadX(viewer, id);
+      return new this(viewer, user)
+        .removeFavoritePlace(favoritePlaceId)
+        .saveX();
+    });
   }
 }

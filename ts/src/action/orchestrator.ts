@@ -10,7 +10,7 @@ import {
 } from "../core/base";
 import {
   loadEdgeDatas,
-  applyPrivacyPolicyForRow,
+  applyPrivacyPolicyForActionResult,
   parameterizedQueryOptions,
   loadEdgeData,
 } from "../core/ent";
@@ -53,8 +53,30 @@ import { Trigger } from "./action";
 import * as clause from "../core/clause";
 import { isPromise } from "util/types";
 import { RawQueryOperation } from "./operations";
+import {
+  awaitActionPreparations,
+  trackValidationRead,
+  assertEntTransaction,
+  assertLoaderTransaction,
+  assertTransactionRead,
+  failTransaction,
+  getTransactionReadState,
+  getTransactionState,
+  assertActionPreparationAllowed,
+  runInActionPreparation,
+  isPreparingAction,
+  isValidationPreparation,
+  recordActionResultTransaction,
+  hasActionResultTransaction,
+  recordPreparedEntTransaction,
+  TransactionReadState,
+} from "../core/transaction_context";
 
 type MaybeNull<T extends Ent> = T | null;
+// Expected validation and privacy failures in child builds remain recoverable
+// during standalone validation. SQL and composition failures still abort the
+// owning transaction.
+const validationFailures = new WeakSet<Error>();
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
 function invalidFieldError(fieldName: string, value: any): Error {
@@ -280,6 +302,13 @@ export class Orchestrator<
   private disableTransformations: boolean;
   private onConflict: CreateRowOptions["onConflict"] | undefined;
   private memoizedGetFields: () => Promise<fieldsInfo>;
+  private fieldPreparationRead?: TransactionReadState;
+  private transformedChangeset?: TransformedUpdateOperation<
+    TEnt,
+    TViewer
+  >["changeset"];
+  private transaction = getTransactionState();
+  private preparationInProgress = false;
 
   constructor(
     private options: OrchestratorOptions<TEnt, TInput, TViewer, TExistingEnt>,
@@ -287,7 +316,32 @@ export class Orchestrator<
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
-    this.memoizedGetFields = memoizeNoArgs(this.getFieldsInfo.bind(this));
+    let prepared = false;
+    const fields = memoizeNoArgs(() => {
+      prepared = true;
+      this.fieldPreparationRead = getTransactionReadState();
+      return this.getFieldsInfo();
+    });
+    this.memoizedGetFields = async () => {
+      // Defaults and transformations may depend on reads, even for inserts.
+      // Keep IDs stable within an attempt, but reject prepared values from an
+      // earlier generation. Committed actions can expose retained data outside a scope.
+      if (
+        getTransactionState() &&
+        prepared &&
+        !hasActionResultTransaction(this.options.builder)
+      ) {
+        assertTransactionRead(this.fieldPreparationRead);
+      }
+      const result = await fields();
+      if (
+        getTransactionState() &&
+        !hasActionResultTransaction(this.options.builder)
+      ) {
+        assertTransactionRead(this.fieldPreparationRead);
+      }
+      return result;
+    };
   }
 
   // don't type this because we don't care
@@ -781,6 +835,9 @@ export class Orchestrator<
     viewerToUse: TViewer,
     rowToUse?: Data,
   ): Promise<TEnt> {
+    if (getTransactionState()) {
+      assertTransactionRead(this.fieldPreparationRead);
+    }
     if (this.actualOperation !== WriteOperation.Insert) {
       return this.existingEnt!;
     }
@@ -793,7 +850,12 @@ export class Orchestrator<
     }
 
     // we create an unsafe ent to be used for privacy policies
-    return new this.options.builder.ent(viewerToUse, rowToUse);
+    if (getTransactionState()) {
+      assertTransactionRead(this.fieldPreparationRead);
+    }
+    const ent = new this.options.builder.ent(viewerToUse, rowToUse);
+    recordPreparedEntTransaction(ent, this.fieldPreparationRead);
+    return ent;
   }
 
   private getSQLStatementOperation(): SQLStatementOperation {
@@ -906,6 +968,35 @@ export class Orchestrator<
   }
 
   private async validate(): Promise<Error[]> {
+    if (!getTransactionState() || isPreparingAction(this.options.builder)) {
+      return this.validateImpl();
+    }
+    return this.prepareAction(() => this.validateImpl(), true);
+  }
+
+  private async prepareFields(): Promise<fieldsInfo> {
+    assertActionPreparationAllowed();
+    const requirement = this.options.action?.requiresTransactionScope?.();
+    if (
+      (requirement || this.options.action?.validateBeforeCommit) &&
+      !getTransactionState()
+    ) {
+      throw new Error(
+        "this action requires withTransactionScope; construct and save the action inside its callback",
+      );
+    }
+    if (
+      requirement === "serializable" &&
+      getTransactionState()?.isolationLevel !== "serializable"
+    ) {
+      throw new Error(
+        "this action requires a serializable withTransactionScope scope",
+      );
+    }
+    assertLoaderTransaction(this.transaction);
+    if (this.existingEnt) {
+      assertEntTransaction(this.existingEnt);
+    }
     // existing ent required for edit or delete operations
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -917,8 +1008,25 @@ export class Orchestrator<
         }
     }
 
+    const fields = await this.memoizedGetFields();
+    // A completed action can expose fields and IDs from its saved snapshot.
+    // Another save must not use those values as fresh preparation.
+    if (getTransactionState()) {
+      assertTransactionRead(this.fieldPreparationRead);
+    }
+    // A schema transform may replace the original mutation target.
+    if (this.existingEnt) {
+      assertEntTransaction(this.existingEnt);
+    }
+    return fields;
+  }
+
+  private async validateImpl(): Promise<Error[]> {
     const { schemaFields, editedData, userDefinedKeys, editPrivacyFields } =
-      await this.memoizedGetFields();
+      await this.prepareFields();
+    if (this.transformedChangeset) {
+      this.changesets.push(await this.transformedChangeset());
+    }
     const action = this.options.action;
     const builder = this.options.builder;
 
@@ -980,7 +1088,7 @@ export class Orchestrator<
           })(),
         );
       }
-      await Promise.all(promises);
+      await awaitActionPreparations(promises);
     }
 
     // privacy or field errors should return first so it's less confusing
@@ -1003,7 +1111,7 @@ export class Orchestrator<
     // not ideal we're calling this twice. fix...
     // needed for now. may need to rewrite some of this?
     const editedFields2 = await this.options.editedFields();
-    const [errs2, errs3] = await Promise.all([
+    const [errs2, errs3] = await awaitActionPreparations([
       this.formatAndValidateFields(schemaFields, editedFields2),
       this.validators(validators, action!, builder),
     ]);
@@ -1038,11 +1146,11 @@ export class Orchestrator<
     }
 
     for (const triggers of groups) {
-      await Promise.all(
+      await awaitActionPreparations(
         triggers.map(async (trigger) => {
           let ret = await trigger.changeset(builder, action.getInput());
           if (Array.isArray(ret)) {
-            ret = await Promise.all(ret);
+            ret = await awaitActionPreparations(ret);
           }
 
           if (Array.isArray(ret)) {
@@ -1065,7 +1173,7 @@ export class Orchestrator<
     builder: Builder<TEnt, TViewer>,
   ): Promise<Error[]> {
     const errors: Error[] = [];
-    await Promise.all(
+    await awaitActionPreparations(
       validators.map(async (v) => {
         try {
           const r = await v.validate(builder, action.getInput());
@@ -1165,8 +1273,14 @@ export class Orchestrator<
         }
       }
       if (transformed.changeset) {
-        const changeset = await transformed.changeset();
-        this.changesets.push(changeset);
+        if (this.transaction) {
+          // Preserve transformed fields and defaults. Rebuild the child graph
+          // for each preparation because standalone validation discards it.
+          this.transformedChangeset = transformed.changeset.bind(transformed);
+        } else {
+          const changeset = await transformed.changeset();
+          this.changesets.push(changeset);
+        }
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (transformed.existingEnt) {
@@ -1466,6 +1580,9 @@ export class Orchestrator<
   async validX(): Promise<void> {
     const errors = await this.validate();
     if (errors.length) {
+      if (isValidationPreparation() && errors[0] instanceof Error) {
+        validationFailures.add(errors[0]);
+      }
       // just throw the first one...
       // TODO we should ideally throw all of them
       throw errors[0];
@@ -1483,7 +1600,102 @@ export class Orchestrator<
     return this.validate();
   }
 
+  private snapshotPreparation(): () => void {
+    const saved = {
+      changesets: this.changesets,
+      dependencies: this.dependencies,
+      fieldsToResolve: this.fieldsToResolve,
+      mainOp: this.mainOp,
+      edges: this.edges,
+      conditionalEdges: this.conditionalEdges,
+      edgeSet: this.edgeSet,
+    };
+    const copyEdges = (edges: EdgeMap<TViewer>): EdgeMap<TViewer> =>
+      new Map(
+        [...edges].map(([type, operations]) => [
+          type,
+          new Map([...operations].map(([op, ids]) => [op, new Map(ids)])),
+        ]),
+      );
+    this.changesets = [...saved.changesets];
+    this.dependencies = new Map(saved.dependencies);
+    this.fieldsToResolve = [...saved.fieldsToResolve];
+    this.edges = copyEdges(saved.edges);
+    this.conditionalEdges = copyEdges(saved.conditionalEdges);
+    this.edgeSet = new Set(saved.edgeSet);
+    return () => {
+      Object.assign(this, saved);
+    };
+  }
+
+  private async prepareAction<T>(
+    prepare: () => Promise<T>,
+    validationOnly = false,
+  ): Promise<T> {
+    const state = getTransactionState();
+    if (state && this.preparationInProgress) {
+      const error = new Error(
+        "action preparation is already in progress; await validation before building or saving",
+      );
+      failTransaction(state, error);
+      throw error;
+    }
+    if (state) {
+      this.preparationInProgress = true;
+    }
+    // Standalone validation must discard each participant's child graph,
+    // including retained children that a later save rebuilds.
+    const probing = state && (validationOnly || isValidationPreparation());
+    let restore: (() => void) | undefined;
+    try {
+      return await runInActionPreparation(
+        this.options.builder,
+        async () => {
+          if (probing) {
+            // Memoize defaults and transformed inputs, including inverse edges
+            // set by updateInput. Snapshot those edges so validation preserves
+            // them without applying them twice.
+            await this.prepareFields();
+            restore = this.snapshotPreparation();
+          }
+          return prepare();
+        },
+        validationOnly,
+      );
+    } catch (error) {
+      if (
+        state &&
+        !(probing && error instanceof Error && validationFailures.has(error))
+      ) {
+        failTransaction(state, error);
+      }
+      throw error;
+    } finally {
+      if (state) {
+        this.preparationInProgress = false;
+      }
+      restore?.();
+    }
+  }
+
   private async buildPlusChangeset(
+    options?: ChangesetOptions,
+  ): Promise<EntChangeset<TEnt>> {
+    return this.prepareAction(() => {
+      if (options) {
+        this.dependencies.set(
+          options.conditionalBuilder.placeholderID,
+          options.conditionalBuilder,
+        );
+      }
+      return this.buildChangeset(
+        options?.conditionalBuilder ?? this.options.builder,
+        options !== undefined,
+      );
+    });
+  }
+
+  private async buildChangeset(
     conditionalBuilder: Builder<TEnt, TViewer>,
     conditionalOverride: boolean,
   ): Promise<EntChangeset<TEnt>> {
@@ -1496,7 +1708,11 @@ export class Orchestrator<
       const res = await this.valid();
       if (!res) {
         processOps = false;
-        const op = new NoOperation(this.options.builder, this.existingEnt);
+        const op = new NoOperation(this.options.builder, this.existingEnt, {
+          tableName: this.options.tableName,
+          key: this.options.key,
+          fields: this.options.loaderOptions.fields,
+        });
         this.mainOp = op;
         ops = [op];
 
@@ -1520,6 +1736,9 @@ export class Orchestrator<
     // TODO test actualOperation value
     // observers is fine since they're run after and we have the actualOperation value...
 
+    if (getTransactionState()) {
+      assertTransactionRead(this.fieldPreparationRead);
+    }
     return new EntChangeset(
       this.options.viewer,
       this.options.builder,
@@ -1533,18 +1752,13 @@ export class Orchestrator<
   }
 
   async build(): Promise<EntChangeset<TEnt>> {
-    return this.buildPlusChangeset(this.options.builder, false);
+    return this.buildPlusChangeset();
   }
 
   async buildWithOptions_BETA(
     options: ChangesetOptions,
   ): Promise<EntChangeset<TEnt>> {
-    // set as dependency so that we do the right order of operations
-    this.dependencies.set(
-      options.conditionalBuilder.placeholderID,
-      options.conditionalBuilder,
-    );
-    return this.buildPlusChangeset(options.conditionalBuilder, true);
+    return this.buildPlusChangeset(options);
   }
 
   private async viewerForEntLoad(data: Data) {
@@ -1562,35 +1776,75 @@ export class Orchestrator<
     return null;
   }
 
-  async editedEnt(): Promise<TEnt | null> {
-    const row = await this.returnedRow();
-    if (!row) {
-      return null;
+  private async loadResult<T extends TEnt | null>(
+    load: () => Promise<T>,
+  ): Promise<T> {
+    const transaction = getTransactionState();
+    let pending: Promise<T> | undefined;
+    try {
+      pending = trackValidationRead(load());
+      if (transaction === this.transaction) {
+        transaction?.pendingActions.add(pending);
+      }
+      const result = await pending;
+      if (result) {
+        recordActionResultTransaction(result, this.options.builder);
+      }
+      return result;
+    } catch (error) {
+      // Generated saves load their result after executeOperations returns.
+      // Result failures must roll back the active owning scope even if caught.
+      // Direct getter failures affect only the scope that created the result.
+      if (transaction?.active && transaction === this.transaction) {
+        failTransaction(transaction, error);
+      }
+      throw error;
+    } finally {
+      if (pending && transaction === this.transaction) {
+        transaction?.pendingActions.delete(pending);
+      }
     }
-    const viewer = await this.viewerForEntLoad(row);
-    return applyPrivacyPolicyForRow(viewer, this.options.loaderOptions, row);
+  }
+
+  async editedEnt(): Promise<TEnt | null> {
+    return this.loadResult(async () => {
+      const row = await this.returnedRow();
+      if (!row) {
+        return null;
+      }
+      const viewer = await this.viewerForEntLoad(row);
+      return applyPrivacyPolicyForActionResult(
+        viewer,
+        this.options.loaderOptions,
+        row,
+        this.options.builder,
+      );
+    });
   }
 
   async editedEntX(): Promise<TEnt> {
-    const row = await this.returnedRow();
-    if (!row) {
-      throw new Error(`ent was not created`);
-    }
-    const viewer = await this.viewerForEntLoad(row);
-    const ent = await applyPrivacyPolicyForRow(
-      viewer,
-      this.options.loaderOptions,
-      row,
-    );
-
-    if (!ent) {
-      if (this.actualOperation == WriteOperation.Insert) {
-        throw new Error(`was able to create ent but not load it`);
-      } else {
-        throw new Error(`was able to edit ent but not load it`);
+    return this.loadResult(async () => {
+      const row = await this.returnedRow();
+      if (!row) {
+        throw new Error(`ent was not created`);
       }
-    }
-    return ent;
+      const viewer = await this.viewerForEntLoad(row);
+      const ent = await applyPrivacyPolicyForActionResult(
+        viewer,
+        this.options.loaderOptions,
+        row,
+        this.options.builder,
+      );
+
+      if (!ent) {
+        if (this.actualOperation == WriteOperation.Insert) {
+          throw new Error(`was able to create ent but not load it`);
+        } else {
+          throw new Error(`was able to edit ent but not load it`);
+        }
+      }
+      return ent;
+    });
   }
 }
 
@@ -1608,6 +1862,8 @@ export class EntChangeset<
 > implements Changeset
 {
   private _executor: Executor | null;
+  private transactionRead = getTransactionReadState();
+  private validationOnly = isValidationPreparation();
   constructor(
     public viewer: Viewer,
     private builder: Builder<TEnt, TViewer>,
@@ -1653,7 +1909,9 @@ export class EntChangeset<
     op: EdgeOperation<TViewer>,
     edgeType: string,
   ) {
+    const read = getTransactionReadState();
     const edgeData = await loadEdgeData(edgeType);
+    assertTransactionRead(read);
     const ops: DataOperation<TEnt, TViewer>[] = [op];
     if (!edgeData) {
       throw new Error(`could not load edge data for '${edgeType}'`);
@@ -1736,38 +1994,50 @@ export class EntChangeset<
   }
 
   executor(): Executor {
-    if (this._executor) {
-      return this._executor;
-    }
+    const transaction = getTransactionState();
+    try {
+      assertTransactionRead(this.transactionRead);
+      if (this.validationOnly) {
+        throw new Error(
+          "changesets prepared by public validation cannot execute; rebuild them when saving",
+        );
+      }
+      if (this._executor) {
+        return this._executor;
+      }
 
-    if (!this.changesets?.length) {
-      // if we have dependencies but no changesets, we just need a simple
-      // executor and depend on something else in the stack to handle this correctly
-      // ComplexExecutor which could be a parent of this should make sure the dependency
-      // is resolved beforehand
-      return (this._executor = new ListBasedExecutor(
+      if (!this.changesets?.length) {
+        // Without child changesets, use a list executor. The parent complex
+        // executor resolves any dependencies before running these operations.
+        return (this._executor = new ListBasedExecutor(
+          this.viewer,
+          this.placeholderID,
+          this.operations,
+          this.options,
+          {
+            conditionalOverride: this.conditionalOverride,
+            builder: this.builder,
+          },
+        ));
+      }
+
+      return (this._executor = new ComplexExecutor(
         this.viewer,
         this.placeholderID,
         this.operations,
+        this.dependencies || new Map(),
+        this.changesets || [],
         this.options,
         {
           conditionalOverride: this.conditionalOverride,
           builder: this.builder,
         },
       ));
+    } catch (error) {
+      if (transaction) {
+        failTransaction(transaction, error);
+      }
+      throw error;
     }
-
-    return (this._executor = new ComplexExecutor(
-      this.viewer,
-      this.placeholderID,
-      this.operations,
-      this.dependencies || new Map(),
-      this.changesets || [],
-      this.options,
-      {
-        conditionalOverride: this.conditionalOverride,
-        builder: this.builder,
-      },
-    ));
   }
 }

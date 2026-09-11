@@ -1,3 +1,7 @@
+import {
+  getTransactionReadState,
+  runTransactionRead,
+} from "../transaction_context";
 import DataLoader from "dataloader";
 import {
   Context,
@@ -13,10 +17,10 @@ import {
   buildGroupQuery,
   getDefaultLimit,
   loadRows,
-  performRawQuery,
+  performReadQuery,
 } from "../ent";
 import { stableStringify } from "../cache_utils";
-import { memoizeNoArgs } from "../memoize";
+import { memoizeInTransaction as memoizeNoArgs } from "../memoize";
 import { getOrderByKey, OrderBy, orderByHasExpressions } from "../query_impl";
 import {
   createLoaderCacheMap,
@@ -81,8 +85,8 @@ function createLoader<K extends any>(
   const loaderName = options.groupCol
     ? `queryLoader:${options.tableName}:${options.groupCol}`
     : options.clause
-      ? `queryLoader:${options.tableName}:${options.clause.instanceKey()}`
-      : `queryLoader:${options.tableName}`;
+    ? `queryLoader:${options.tableName}:${options.clause.instanceKey()}`
+    : `queryLoader:${options.tableName}`;
   const loaderOptions: DataLoader.Options<K, Data[]> = {
     maxBatchSize: getLoaderMaxBatchSize(),
     cacheMap: createLoaderCacheMap(options),
@@ -136,7 +140,7 @@ function createLoader<K extends any>(
         clause: extraClause,
       });
 
-      const rows = await performRawQuery(
+      const rows = await performReadQuery(
         query,
         cls2.values(),
         cls2.logValues(),
@@ -160,6 +164,7 @@ function createLoader<K extends any>(
 }
 
 class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
+  private transactionRead = getTransactionReadState();
   private memoizedInitPrime: () => void;
   private primedLoaders:
     | Map<string, PrimableLoader<any, Data | null>>
@@ -188,26 +193,28 @@ class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
   }
 
   async load(id: K): Promise<Data[]> {
-    const rows = await simpleCase(
-      this.options,
-      id,
-      this.queryOptions,
-      this.context,
-    );
-    if (this.context) {
-      this.memoizedInitPrime();
-      if (this.primedLoaders) {
-        for (const row of rows) {
-          for (const [key, loader] of this.primedLoaders) {
-            const value = row[key];
-            if (value !== undefined) {
-              loader.prime(row);
+    return runTransactionRead(this.transactionRead, async () => {
+      const rows = await simpleCase(
+        this.options,
+        id,
+        this.queryOptions,
+        this.context,
+      );
+      if (this.context) {
+        this.memoizedInitPrime();
+        if (this.primedLoaders) {
+          for (const row of rows) {
+            for (const [key, loader] of this.primedLoaders) {
+              const value = row[key];
+              if (value !== undefined) {
+                loader.prime(row);
+              }
             }
           }
         }
       }
-    }
-    return rows;
+      return rows;
+    });
   }
 
   clearAll() {}
@@ -216,6 +223,7 @@ class QueryDirectLoader<K extends any> implements Loader<K, Data[]> {
 // note, you should never call this directly
 // there's scenarios where QueryDirectLoader is needed instead of this...
 class QueryLoader<K extends any> implements Loader<K, Data[]> {
+  private transactionRead = getTransactionReadState();
   private loader: DataLoader<K, Data[]> | undefined;
   private primedLoaders:
     | Map<string, PrimableLoader<any, Data | null>>
@@ -248,23 +256,25 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
   }
 
   async load(id: K): Promise<Data[]> {
-    if (this.loader) {
-      this.memoizedInitPrime();
-      const rows = await this.loader.load(id);
-      if (this.primedLoaders) {
-        for (const row of rows) {
-          for (const [key, loader] of this.primedLoaders) {
-            const value = row[key];
-            if (value !== undefined) {
-              loader.prime(row);
+    return runTransactionRead(this.transactionRead, async () => {
+      if (this.loader) {
+        this.memoizedInitPrime();
+        const rows = await this.loader.load(id);
+        if (this.primedLoaders) {
+          for (const row of rows) {
+            for (const [key, loader] of this.primedLoaders) {
+              const value = row[key];
+              if (value !== undefined) {
+                loader.prime(row);
+              }
             }
           }
         }
+        return rows;
       }
-      return rows;
-    }
 
-    return simpleCase(this.options, id, this.queryOptions, this.context);
+      return simpleCase(this.options, id, this.queryOptions, this.context);
+    });
   }
 
   clearAll() {

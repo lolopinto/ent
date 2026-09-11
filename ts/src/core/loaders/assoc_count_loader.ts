@@ -1,3 +1,7 @@
+import {
+  getTransactionReadState,
+  runTransactionRead,
+} from "../transaction_context";
 import DataLoader from "dataloader";
 import {
   ID,
@@ -14,9 +18,10 @@ import {
 import * as clause from "../clause";
 import { getCustomLoader, getLoader } from "./loader";
 import { createCountDataLoader } from "./raw_count_loader";
-import { memoizeNoArgs } from "../memoize";
+import { memoizeInTransaction as memoizeNoArgs } from "../memoize";
 
 export class AssocEdgeCountLoader implements Loader<ID, number> {
+  private transactionRead = getTransactionReadState();
   private loaderFn: () => Promise<DataLoader<ID, number>>;
   private loader: DataLoader<ID, number> | undefined;
 
@@ -54,15 +59,17 @@ export class AssocEdgeCountLoader implements Loader<ID, number> {
   }
 
   async load(id: ID): Promise<number> {
-    if (!this.loaderFn) {
-      return loadRawEdgeCountX({
-        id1: id,
-        edgeType: this.edgeType,
-        queryOptions: this.options,
-      });
-    }
-    const loader = await this.loaderFn();
-    return loader.load(id);
+    return runTransactionRead(this.transactionRead, async () => {
+      if (!this.loaderFn) {
+        return loadRawEdgeCountX({
+          id1: id,
+          edgeType: this.edgeType,
+          queryOptions: this.options,
+        });
+      }
+      const loader = await this.loaderFn();
+      return loader.load(id);
+    });
   }
 
   clearAll() {

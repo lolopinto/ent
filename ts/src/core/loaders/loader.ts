@@ -2,6 +2,13 @@ import DataLoader from "dataloader";
 import { Loader, LoaderFactory, Context, DataOptions } from "../base";
 import { log, logEnabled } from "../logger";
 import { getOnDataLoaderBatch, getOnDataLoaderCacheHit } from "../metrics";
+import { getContextCache } from "../context";
+import {
+  assertTransactionRead,
+  getTransactionReadState,
+  trackValidationRead,
+  isFinalScopeValidation,
+} from "../transaction_context";
 
 const DEFAULT_MAX_BATCH_SIZE = 1000;
 let loaderMaxBatchSize = DEFAULT_MAX_BATCH_SIZE;
@@ -48,13 +55,14 @@ export function getLoader<K, V>(
   context?: Context,
 ): Loader<K, V> {
   // just create a new one every time if no context cache
-  if (!context?.cache) {
+  const cache = getContextCache(context);
+  if (!cache) {
     log("debug", `new loader created for ${factory.name}`);
     return create();
   }
 
   // g|set from context cache
-  return context.cache.getLoader(factory.name, create);
+  return cache.getLoader(factory.name, create);
 }
 
 export function getCustomLoader<K, V>(
@@ -63,13 +71,14 @@ export function getCustomLoader<K, V>(
   context?: Context,
 ): Loader<K, V> {
   // just create a new one every time if no context cache
-  if (!context?.cache) {
+  const cache = getContextCache(context);
+  if (!cache) {
     log("debug", `new loader created for ${key}`);
     return create();
   }
 
   // g|set from context cache
-  return context.cache.getLoader(key, create);
+  return cache.getLoader(key, create);
 }
 
 export type CacheMapLike<K, V> = {
@@ -121,6 +130,41 @@ function instrumentCacheMap<K, V>(
 }
 
 export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
+  private transaction = getTransactionReadState();
+
+  load(key: K): Promise<V> {
+    assertTransactionRead(this.transaction);
+    const result = super.load(key);
+    if (!this.transaction) {
+      return result;
+    }
+    return trackValidationRead(
+      result.then((value) => {
+        assertTransactionRead(this.transaction);
+        return value;
+      }),
+    );
+  }
+
+  loadMany(keys: ArrayLike<K>): Promise<(V | Error)[]> {
+    assertTransactionRead(this.transaction);
+    const result = super.loadMany(keys);
+    if (!this.transaction) {
+      return result;
+    }
+    return trackValidationRead(
+      result.then((value) => {
+        assertTransactionRead(this.transaction);
+        return value;
+      }),
+    );
+  }
+
+  prime(key: K, value: V | PromiseLike<V> | Error): this {
+    assertTransactionRead(this.transaction);
+    return super.prime(key, value);
+  }
+
   constructor(
     loaderName: string,
     batchLoadFn: BatchLoadFn<K, V>,
@@ -148,7 +192,12 @@ export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
     );
     const loaderOptions =
       cacheMap === options.cacheMap ? options : { ...options, cacheMap };
-    super(wrappedBatchFn, loaderOptions);
+    super(
+      wrappedBatchFn,
+      isFinalScopeValidation()
+        ? { ...loaderOptions, cache: false }
+        : loaderOptions,
+    );
   }
 }
 

@@ -28,4 +28,17 @@ export type {
   RelativeNumberValue,
 } from "./relative_value";
 export { Transaction } from "./transaction";
+// Internal entry points that handle load, construction, and setup failures
+// in generated actions.
+export {
+  runActionExecution,
+  runActionChangeset,
+} from "../core/transaction_context";
 export type { AssocEdgeOptions } from "./operations";
+
+export { withTransactionScope, getTransactionScope } from "../core/transaction";
+export type {
+  TransactionOptions,
+  TransactionScope,
+  ScopeValidationContext,
+} from "../core/transaction";

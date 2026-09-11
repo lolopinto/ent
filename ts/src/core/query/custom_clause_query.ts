@@ -141,37 +141,39 @@ export class CustomClauseQuery<
   }
 
   async queryRawCount(): Promise<number> {
-    // sqlite needs as count otherwise it returns count(1)
-    let fields: SelectBaseDataOptions["fields"] = ["count(1) as count"];
-    if (this.options.joinBETA) {
-      const firstRequestedField = this.options.loadEntOptions.fields[0];
-      const alias =
-        this.options.loadEntOptions.fieldsAlias ??
-        this.options.loadEntOptions.alias;
-      const fieldString =
-        typeof firstRequestedField === "object"
-          ? "expression" in firstRequestedField
-            ? (() => {
-                throw new Error(
-                  "join-backed raw counts do not support computed select expressions",
-                );
-              })()
-            : `${firstRequestedField.alias}.${firstRequestedField.column}`
-          : alias
+    return this.readInTransaction(async () => {
+      // Alias the count column; SQLite otherwise names it count(1).
+      let fields: SelectBaseDataOptions["fields"] = ["count(1) as count"];
+      if (this.options.joinBETA) {
+        const firstRequestedField = this.options.loadEntOptions.fields[0];
+        const alias =
+          this.options.loadEntOptions.fieldsAlias ??
+          this.options.loadEntOptions.alias;
+        const fieldString =
+          typeof firstRequestedField === "object"
+            ? "expression" in firstRequestedField
+              ? (() => {
+                  throw new Error(
+                    "join-backed raw counts do not support computed select expressions",
+                  );
+                })()
+              : `${firstRequestedField.alias}.${firstRequestedField.column}`
+            : alias
             ? `${alias}.${firstRequestedField}`
             : firstRequestedField;
-      fields = [`count(distinct ${fieldString}) as count`];
-    }
-    const row = await loadRow({
-      ...this.options.loadEntOptions,
-      tableName: this.options.loadEntOptions.tableName,
-      fields,
-      clause: this.clause,
-      context: this.viewer.context,
-      join: this.options.joinBETA,
-      disableFieldsAlias: true,
+        fields = [`count(distinct ${fieldString}) as count`];
+      }
+      const row = await loadRow({
+        ...this.options.loadEntOptions,
+        tableName: this.options.loadEntOptions.tableName,
+        fields,
+        clause: this.clause,
+        context: this.viewer.context,
+        join: this.options.joinBETA,
+        disableFieldsAlias: true,
+      });
+      return parseInt(row?.count, 10) || 0;
     });
-    return parseInt(row?.count, 10) || 0;
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {

@@ -1,4 +1,14 @@
 contains:
+  - path: src/ent/generated/user/actions/edit_user_action_base.ts
+    text: "return runActionExecution(async () => {"
+  - path: src/ent/generated/user/actions/delete_user_action_base.ts
+    text: "return runActionExecution(async () => {"
+  - path: src/ent/generated/payment/actions/edit_payment_action_base.ts
+    text: "return runActionExecution(async () => {"
+  - path: src/ent/generated/payment/actions/add_payment_watcher_action_base.ts
+    text: "return runActionExecution(async () => {"
+  - path: src/ent/generated/payment/actions/touch_matrix_payment_action_base.ts
+    text: "return runActionExecution(async () => {"
   - path: src/ent/generated/payment/actions/payment_builder.ts
     text: 'addField("createdAtOverride", input.createdAtOverride)'
   - path: src/graphql/generated/resolvers/decorated_runtime_ready_query_type.ts

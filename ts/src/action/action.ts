@@ -12,8 +12,15 @@ import { loadEdgeForID2, AssocEdge } from "../core/ent";
 import { DataOperation, AssocEdgeInputOptions } from "./operations";
 import { Queryer } from "../core/db";
 import { log } from "../core/logger";
+import {
+  failTransaction,
+  getTransactionState,
+  assertIndependentActionSave,
+  runActionExecution,
+} from "../core/transaction_context";
 import { TransformedUpdateOperation, UpdateOperation } from "../schema";
 import { FieldInfoMap } from "../schema/schema";
+import type { ScopeValidationContext } from "../core/transaction";
 
 export { WriteOperation };
 
@@ -144,6 +151,18 @@ export interface Action<
   TExistingEnt extends TMaybleNullableEnt<TEnt> = MaybeNull<TEnt>,
 > {
   readonly viewer: Viewer;
+  /**
+   * Return `true` to require a transaction scope, or `"serializable"` to require
+   * serializable isolation. Ent checks this requirement before preparing the action.
+   */
+  requiresTransactionScope?(): boolean | "serializable";
+  /**
+   * Check the transaction's final state after all action writes and before commit.
+   * Declaring this hook requires a transaction scope. Read through the context or
+   * create fresh Ent queries in the hook; final validation bypasses result caches.
+   * Throw to roll back the scope. Actions cannot prepare or write in this phase.
+   */
+  validateBeforeCommit?(context: ScopeValidationContext): void | Promise<void>;
   changeset(): Promise<Changeset>;
   changesetWithOptions_BETA?(options: ChangesetOptions): Promise<Changeset>;
   builder: TBuilder;
@@ -221,28 +240,38 @@ async function saveBuilderImpl<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer,
 >(builder: Builder<TEnt, TViewer>, throwErr: boolean): Promise<void> {
-  let changeset: Changeset;
-  try {
-    changeset = await builder.build();
-  } catch (e) {
-    log("error", e);
-    if (throwErr) {
-      throw e;
-    } else {
-      // expected...
-      return;
-    }
-  }
-  const executor = changeset.executor();
-  if (throwErr) {
-    return executor.execute();
-  } else {
+  return runActionExecution(async () => {
+    let changeset: Changeset;
     try {
-      return executor.execute();
+      assertIndependentActionSave();
+      changeset = await builder.build();
     } catch (e) {
-      // it's already caught and logged upstream
+      const transaction = getTransactionState();
+      if (transaction) {
+        failTransaction(transaction, e);
+      }
+      log("error", e);
+      if (throwErr) {
+        throw e;
+      } else {
+        return;
+      }
     }
-  }
+    const executor = changeset.executor();
+    if (throwErr) {
+      return executor.execute();
+    } else {
+      try {
+        return executor.execute();
+      } catch (e) {
+        // Suppress synchronous errors for non-X saves, but fail the scope.
+        const transaction = getTransactionState();
+        if (transaction) {
+          failTransaction(transaction, e);
+        }
+      }
+    }
+  });
 }
 
 // Orchestrator in orchestrator.ts in generated Builders
