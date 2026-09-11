@@ -5,6 +5,8 @@ import alembic.operations.ops as alembicops
 from sqlalchemy.dialects import postgresql
 from . import ops
 from . import csv
+from .alembic_compat import index_render_context
+from .migration_ordering import index_requires_autocommit
 import sqlalchemy as sa
 # no need to put timestamps when rendering
 _IGNORED_KEYS = ['created_at', 'updated_at']
@@ -177,14 +179,6 @@ def _render_db_extension(extension: dict) -> str:
     return "{" + ", ".join(parts) + "}"
 
 
-def _get_index_kw(op) -> dict:
-    if hasattr(op, "kw") and (kw := op.kw) is not None:
-        return dict(kw)
-    if hasattr(op, "kwargs") and (kwargs := op.kwargs) is not None:
-        return dict(kwargs)
-    return {}
-
-
 def _render_index_kw(kw: dict) -> list[str]:
     items = []
     for key in sorted(kw.keys()):
@@ -202,8 +196,8 @@ _orig_render_drop_index = renderers._registry[(alembicops.DropIndexOp, "default"
 def _render_create_index_with_concurrently(
     autogen_context: AutogenContext, op
 ) -> str:
-    rendered = _orig_render_create_index(autogen_context, op)
-    if (kw := _get_index_kw(op)).get("postgresql_concurrently") is True:
+    rendered = _orig_render_create_index(index_render_context(autogen_context), op)
+    if index_requires_autocommit(op):
         return _wrap_autocommit(rendered)
     return rendered
 
@@ -211,8 +205,8 @@ def _render_create_index_with_concurrently(
 def _render_drop_index_with_concurrently(
     autogen_context: AutogenContext, op
 ) -> str:
-    rendered = _orig_render_drop_index(autogen_context, op)
-    if (kw := _get_index_kw(op)).get("postgresql_concurrently") is True:
+    rendered = _orig_render_drop_index(index_render_context(autogen_context), op)
+    if index_requires_autocommit(op):
         return _wrap_autocommit(rendered)
     return rendered
 
@@ -226,7 +220,7 @@ def render_full_text_index(autogen_context: AutogenContext, op: ops.CreateFullTe
         f"op.create_full_text_index('{op.index_name}', '{op.table_name}', "
         f"unique={op.unique or False!r}, {_render_kw_args(op.kw)})"
     )
-    if (info := op.kw.get("info", {})).get("postgresql_concurrently") is True:
+    if index_requires_autocommit(op):
         return _wrap_autocommit(op_text)
     return op_text
 
@@ -237,7 +231,7 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
         f"op.drop_full_text_index('{op.index_name}', '{op.table_name}', "
         f"{_render_kw_args(op.kw)})"
     )
-    if (info := op.kw.get("info", {})).get("postgresql_concurrently") is True:
+    if index_requires_autocommit(op):
         return _wrap_autocommit(op_text)
     return op_text
 

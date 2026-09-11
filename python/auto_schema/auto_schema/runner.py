@@ -34,6 +34,7 @@ from typing import Any
 from . import command
 from . import config
 from . import ops
+from . import migration_ordering
 from . import renderers
 from . import compare
 from . import ops_impl
@@ -108,8 +109,15 @@ class Runner(object):
                 "compare_server_default": Runner.compare_server_default,
                 "transaction_per_migration": True,
                 "render_item": Runner.render_item,
+                "process_revision_directives": Runner.process_revision_directives,
             }
         return opts
+
+    @staticmethod
+    def process_revision_directives(context, revision, directives):
+        for script in directives:
+            for downgrade in script.downgrade_ops_list:
+                migration_ordering.order_downgrade(downgrade)
 
     @staticmethod
     def _parse_bool(val):
@@ -755,6 +763,7 @@ class Runner(object):
             version_path=None,
             depends_on=None,
         )
+        Runner.process_revision_directives(mc, None, [migration_script])
         # set up autogenerate code so it renders the migrations
         opts=Runner.get_opts()
         opts['sqlalchemy_module_prefix'] = 'sa.'

@@ -904,6 +904,12 @@ features:
     mode: representative
     dialect_coverage: [sqlite, postgres]
     rationale: Partial index rendering.
+  - id: index.where_same_name_change
+    owns: []
+    mode: existing_test
+    test_refs:
+      - python/auto_schema/tests/runner_test.py
+    rationale: Runner tests cover same-name predicate changes, additions and removals with PostgreSQL and SQLite reflection, migration replay, and repeated no-change autogeneration.
   - id: index.ops
     owns: [input.Index.Ops]
     mode: representative

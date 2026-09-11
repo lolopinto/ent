@@ -2,15 +2,21 @@ from auto_schema.diff import Diff
 from auto_schema.change_type import ChangeType
 import pytest
 import os
+import shutil
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import postgresql
 import alembic.operations.ops as alembicops
+from alembic.autogenerate.api import AutogenContext
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 
 from . import conftest
 from . import testingutils
 from auto_schema import runner
 from auto_schema import ops
 from auto_schema import schema_item
+from auto_schema import compare
 
 from typing import Any, Callable
 
@@ -20,6 +26,101 @@ def _get_revision_file(r, rev="head"):
     assert revisions is not None
     assert len(revisions) == 1
     return testingutils.find_file_by_revision(r, revisions[0])
+
+
+def _partial_index_metadata(predicate, *, columns=("owner_id",), full_text=False, **kwargs):
+    metadata = sa.MetaData()
+    table = sa.Table(
+        "contacts", metadata,
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("owner_id", sa.Integer(), nullable=False),
+        sa.Column("deleted_at", sa.TIMESTAMP()),
+        sa.Column("status", sa.Text()),
+        sa.Column("score", sa.Integer()),
+    )
+    if full_text:
+        table.append_column(sa.Column("label", sa.Text()))
+        table.append_constraint(schema_item.FullTextIndex("contacts_active_idx", info={
+            "columns": ["label"],
+            "postgresql_using": "gin",
+            "postgresql_using_internals": "to_tsvector('english', label)",
+            "postgresql_where": predicate,
+        }))
+    else:
+        if predicate is not None:
+            kwargs.update(postgresql_where=sa.text(predicate), sqlite_where=sa.text(predicate))
+        sa.Index("contacts_active_idx", *(table.c[col] for col in columns), **kwargs)
+    return metadata
+
+
+def _enum_partial_index_metadata(values, predicate, full_text=False, *, schema=None, name="contact_status"):
+    metadata = _partial_index_metadata(predicate, full_text=full_text)
+    metadata.tables["contacts"].c.status.type = postgresql.ENUM(
+        *values, name=name, schema=schema, create_type=False,
+    )
+    return metadata
+
+
+def _reflected_partial_index(r):
+    r.get_connection().commit()
+    return next(
+        index for index in sa.inspect(r.engine).get_indexes("contacts")
+        if index["name"] == "contacts_active_idx"
+    )
+
+
+def _reflected_predicate(r):
+    index = _reflected_partial_index(r)
+    predicate = index.get("dialect_options", {}).get(
+        f"{r.get_connection().dialect.name}_where"
+    )
+    return str(predicate) if predicate is not None else None
+
+
+def _assert_no_predicate_views(r):
+    if r.get_connection().dialect.name == "postgresql":
+        assert r.get_connection().execute(sa.text(
+            "SELECT count(*) FROM pg_class WHERE relnamespace = pg_my_temp_schema() "
+            "AND relname LIKE 'ent_index_predicate_%'"
+        )).scalar_one() == 0
+
+
+def _assert_partial_index_change(new_test_runner, before, after):
+    r = new_test_runner(before)
+    r.run()
+    original_predicate = _reflected_predicate(r)
+    assert r.compute_changes() == []
+    _assert_no_predicate_views(r)
+
+    r2 = new_test_runner(after, r)
+    changes = r2.compute_changes()
+    assert len(changes) == 1
+    assert isinstance(changes[0], alembicops.ModifyTableOps)
+    assert [type(op) for op in changes[0].ops] == [
+        alembicops.DropIndexOp, alembicops.CreateIndexOp,
+    ]
+    r2.run()
+    updated_predicate = _reflected_predicate(r2)
+    assert original_predicate != updated_predicate
+    expected = next(iter(after.tables["contacts"].indexes))
+    assert bool(_reflected_partial_index(r2)["unique"]) == bool(expected.unique)
+    for _ in range(2):
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+        r2.run()
+        testingutils.assert_num_files(r2, 2)
+
+    # Execute the generated downgrade and replay the upgrade, including predicates
+    # reflected from PostgreSQL rather than copied from schema metadata.
+    r2.downgrade("-1", delete_files=False)
+    assert _reflected_predicate(r2) == original_predicate
+    restored = new_test_runner(before, r2)
+    assert restored.compute_changes() == []
+    r2 = new_test_runner(after, restored)
+    r2.upgrade()
+    assert _reflected_predicate(r2) == updated_predicate
+    assert r2.compute_changes() == []
+    return r2
 
 
 def test_normalize_generated_file_text_trims_trailing_whitespace():
@@ -62,6 +163,51 @@ def _db_extension_metadata(
 
 
 class BaseTestRunner(object):
+
+    @pytest.mark.parametrize("before,after", [
+        (None, "deleted_at IS NULL"),
+        ("deleted_at IS NULL", None),
+        ("deleted_at IS NULL", "deleted_at IS NOT NULL"),
+        ("deleted_at IS NULL", "deleted_at IS NULL AND status = 'active'"),
+        ("status = 'O''Brien  active'", "status = 'O''Brien active'"),
+        ("CAST(score AS TEXT) > '2'", "score > 2"),
+        ("status = '100%'", "status = '100%%'"),
+        ("status LIKE 'active%'", "status LIKE 'archived%'"),
+        (
+            "deleted_at IS NULL AND (status = 'active' OR score > 2)",
+            "(deleted_at IS NULL AND status = 'active') OR score > 2",
+        ),
+    ], ids=["added", "removed", "changed", "compound", "literal", "cast", "percent", "like", "precedence"])
+    def test_same_name_index_predicate_change(self, new_test_runner, before, after):
+        _assert_partial_index_change(
+            new_test_runner,
+            _partial_index_metadata(before, unique=True),
+            _partial_index_metadata(after, unique=True),
+        )
+
+    def test_index_predicate_and_columns_change(self, new_test_runner):
+        _assert_partial_index_change(
+            new_test_runner,
+            _partial_index_metadata("deleted_at IS NULL"),
+            _partial_index_metadata(
+                "deleted_at IS NOT NULL", columns=("owner_id", "status"), unique=True,
+            ),
+        )
+
+    @pytest.mark.parametrize("predicate", [
+        "deleted_at IS NULL",
+        "deleted_at IS NULL AND (status = 'active' OR score > 2)",
+        "status IN ('O''Brien  active', '100%')",
+        "CAST(score AS TEXT) > '2'",
+    ])
+    def test_partial_index_repeated_autogen_no_change(self, new_test_runner, predicate):
+        r = new_test_runner(_partial_index_metadata(predicate))
+        r.run()
+        for _ in range(2):
+            assert r.compute_changes() == []
+            _assert_no_predicate_views(r)
+            r.run()
+            testingutils.assert_num_files(r, 1)
 
     @pytest.mark.usefixtures("empty_metadata")
     def test_compute_changes_with_empty_metadata(self, new_test_runner, empty_metadata):
@@ -441,6 +587,39 @@ class BaseTestRunner(object):
             num_files=1,  # just the first file
             num_changes=0
         )
+
+    @pytest.mark.usefixtures("metadata_with_one_edge", "empty_metadata")
+    def test_remove_last_edge_before_dropping_assoc_edge_config(
+        self, new_test_runner, metadata_with_one_edge, empty_metadata
+    ):
+        r = new_test_runner(metadata_with_one_edge)
+        r.run()
+        edge_sql = sa.text("SELECT edge_name, edge_table, symmetric_edge FROM assoc_edge_config")
+        original_edges = r.get_connection().execute(edge_sql).all()
+        r.get_connection().commit()
+        r2 = new_test_runner(empty_metadata, r)
+        diff = r2.compute_changes()
+        remove_idx = next(idx for idx, op in enumerate(diff) if isinstance(op, ops.RemoveEdgesOp))
+        drop_idx = next(
+            idx for idx, op in enumerate(diff)
+            if isinstance(op, alembicops.DropTableOp) and op.table_name == "assoc_edge_config"
+        )
+        assert remove_idx < drop_idx
+        r2.get_connection().commit()
+        r2.revision(diff)
+        r2.upgrade()
+        assert not sa.inspect(r2.engine).has_table("assoc_edge_config")
+        assert r2.compute_changes() == []
+        r2.get_connection().commit()
+        r2.downgrade("-1", delete_files=False)
+        assert r2.get_connection().execute(edge_sql).all() == original_edges
+        r2.get_connection().commit()
+        restored = new_test_runner(metadata_with_one_edge, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(empty_metadata, restored)
+        r2.upgrade()
+        assert not sa.inspect(r2.engine).has_table("assoc_edge_config")
+        assert r2.compute_changes() == []
 
     @pytest.mark.usefixtures("metadata_with_one_edge", "metadata_with_assoc_edge_config")
     def test_one_new_edge(self, new_test_runner, metadata_with_one_edge, metadata_with_assoc_edge_config):
@@ -887,6 +1066,887 @@ class BaseTestRunner(object):
 
 
 class TestPostgresRunner(BaseTestRunner):
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("extension_name,predicate", [
+        ("pg_trgm", "similarity(status, 'active') > 0.5"),
+        ("citext", "status::citext = 'active'"),
+    ])
+    def test_partial_index_predicate_with_pending_extension(self, new_test_runner, full_text, extension_name, predicate):
+        before = _partial_index_metadata("status = 'active'", full_text=full_text)
+        r = new_test_runner(before)
+        r.run()
+        original_predicate = _reflected_predicate(r)
+        after = _partial_index_metadata(predicate, full_text=full_text)
+        after.info.update(_db_extension_metadata(name=extension_name).info)
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        assert [type(op) for op in changes] == [
+            ops.CreateExtensionOp, alembicops.ModifyTableOps,
+        ]
+        assert [type(op) for op in changes[1].ops] == (
+            [ops.DropFullTextIndexOp, ops.CreateFullTextIndexOp] if full_text else
+            [alembicops.DropIndexOp, alembicops.CreateIndexOp]
+        )
+        r2.revision()
+        # Autogeneration must leave extension installation to the migration.
+        assert r2.get_connection().execute(sa.text(
+            "SELECT count(*) FROM pg_extension WHERE extname = :name"
+        ), {"name": extension_name}).scalar_one() == 0
+        assert _reflected_predicate(r2) == original_predicate
+        _assert_no_predicate_views(r2)
+        r2.upgrade()
+        updated_predicate = _reflected_predicate(r2)
+        assert updated_predicate != original_predicate
+        for _ in range(2):
+            assert r2.compute_changes() == []
+            _assert_no_predicate_views(r2)
+            r2.run()
+            testingutils.assert_num_files(r2, 2)
+
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original_predicate
+        assert r2.get_connection().execute(sa.text(
+            "SELECT count(*) FROM pg_extension WHERE extname = :name"
+        ), {"name": extension_name}).scalar_one() == 0
+        r2.get_connection().commit()
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert _reflected_predicate(r2) == updated_predicate
+        assert r2.compute_changes() == []
+
+    def test_partial_index_predicate_with_pending_extension_update(self, new_test_runner):
+        before = _partial_index_metadata("status = 'active'")
+        before.info.update(_db_extension_metadata(name="pg_trgm", version="1.3").info)
+        r = new_test_runner(before)
+        r.run()
+        after = _partial_index_metadata("strict_word_similarity(status, 'active') > 0.5")
+        after.info.update(_db_extension_metadata(name="pg_trgm", version="1.4").info)
+        r2 = new_test_runner(after, r)
+        assert [type(op) for op in r2.compute_changes()] == [
+            ops.UpdateExtensionOp, alembicops.ModifyTableOps,
+        ]
+        r2.revision()
+        assert r2.get_connection().execute(sa.text(
+            "SELECT extversion FROM pg_extension WHERE extname = 'pg_trgm'"
+        )).scalar_one() == "1.3"
+        r2.get_connection().commit()
+        r2.upgrade()
+        assert "strict_word_similarity" in _reflected_predicate(r2)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+        # PostgreSQL provides an upgrade path but no reverse version script.
+        replay = new_test_runner(after, new_database=True)
+        shutil.copytree(
+            os.path.join(r2.get_schema_path(), "versions"),
+            os.path.join(replay.get_schema_path(), "versions"), dirs_exist_ok=True,
+        )
+        replay.upgrade()
+        assert replay.compute_changes() == []
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    def test_partial_index_predicate_with_pending_extension_schema_move(self, new_test_runner, full_text):
+        before = _partial_index_metadata("similarity(status, 'active') > 0.1", full_text=full_text)
+        before.info.update(_db_extension_metadata(name="pg_trgm", install_schema="public").info)
+        r = new_test_runner(before)
+        r.run()
+        original_predicate = _reflected_predicate(r)
+        r.get_connection().execute(sa.schema.CreateSchema("trigram_ext"))
+        r.get_connection().commit()
+        after = _partial_index_metadata(
+            "trigram_ext.similarity(status, 'active') > 0.5", full_text=full_text,
+        )
+        after.info.update(_db_extension_metadata(name="pg_trgm", install_schema="trigram_ext").info)
+        r2 = new_test_runner(after, r)
+        assert [type(op) for op in r2.compute_changes()] == [
+            ops.SetExtensionSchemaOp, alembicops.ModifyTableOps,
+        ]
+        r2.revision()
+        assert r2.get_connection().execute(sa.text(
+            "SELECT extnamespace::regnamespace::text FROM pg_extension WHERE extname = 'pg_trgm'"
+        )).scalar_one() == "public"
+        r2.get_connection().commit()
+        r2.upgrade()
+        updated_predicate = _reflected_predicate(r2)
+        assert updated_predicate != original_predicate
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original_predicate
+        assert r2.get_connection().execute(sa.text(
+            "SELECT extnamespace::regnamespace::text FROM pg_extension WHERE extname = 'pg_trgm'"
+        )).scalar_one() == "public"
+        r2.get_connection().commit()
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert _reflected_predicate(r2) == updated_predicate
+        assert r2.compute_changes() == []
+
+    def test_pending_extension_does_not_defer_syntax_errors(self, new_test_runner):
+        r = new_test_runner(_partial_index_metadata("status = 'active'"))
+        r.run()
+        after = _partial_index_metadata("status =")
+        after.info.update(_db_extension_metadata(name="pg_trgm").info)
+        r2 = new_test_runner(after, r)
+        with pytest.raises(sa.exc.ProgrammingError, match="syntax error"):
+            r2.compute_changes()
+        _assert_no_predicate_views(r2)
+
+    def test_pending_extension_leaves_unchanged_predicate_alone(self, new_test_runner):
+        r = new_test_runner(_partial_index_metadata("status = 'active'"))
+        r.run()
+        after = _partial_index_metadata("status = 'active'")
+        after.info.update(_db_extension_metadata(name="pg_trgm").info)
+        r2 = new_test_runner(after, r)
+        assert [type(op) for op in r2.compute_changes()] == [ops.CreateExtensionOp]
+        r2.run()
+        assert r2.compute_changes() == []
+
+    @pytest.mark.parametrize("installed", [False, True])
+    def test_missing_function_without_pending_extension_still_fails(self, new_test_runner, installed):
+        before = _partial_index_metadata("status = 'active'")
+        if installed:
+            before.info.update(_db_extension_metadata(name="pg_trgm").info)
+        r = new_test_runner(before)
+        r.run()
+        after = _partial_index_metadata("missing_similarity(status, 'active') > 0.5")
+        if installed:
+            after.info.update(_db_extension_metadata(name="pg_trgm").info)
+        r2 = new_test_runner(after, r)
+        with pytest.raises(sa.exc.ProgrammingError, match="function missing_similarity.*does not exist"):
+            r2.compute_changes()
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("predicate,reflected", [
+        ("NULL", "NULL::boolean"),
+        ("'false'", "false"),
+    ])
+    def test_partial_index_predicate_uses_where_context(self, new_test_runner, full_text, predicate, reflected):
+        r = new_test_runner(_partial_index_metadata(predicate, full_text=full_text))
+        r.run()
+        assert _reflected_predicate(r) == reflected
+        for _ in range(2):
+            assert r.compute_changes() == []
+            _assert_no_predicate_views(r)
+            r.run()
+            testingutils.assert_num_files(r, 1)
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("predicate", ["TRUE", "((TRUE::boolean))", "'yes'"])
+    def test_partial_index_where_true_matches_absent_predicate(self, new_test_runner, full_text, predicate):
+        r = new_test_runner(_partial_index_metadata(predicate, full_text=full_text))
+        r.run()
+        assert _reflected_predicate(r) is None
+        for _ in range(2):
+            assert r.compute_changes() == []
+            _assert_no_predicate_views(r)
+            r.run()
+            testingutils.assert_num_files(r, 1)
+        r2 = new_test_runner(_partial_index_metadata(None, full_text=full_text), r)
+        assert r2.compute_changes() == []
+
+    @pytest.mark.parametrize("before,after", [
+        ("TRUE", "NULL"),
+        ("'false'", "TRUE"),
+    ])
+    def test_partial_index_constant_predicate_change(self, new_test_runner, before, after):
+        _assert_partial_index_change(
+            new_test_runner, _partial_index_metadata(before), _partial_index_metadata(after),
+        )
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("predicate", [
+        None,
+        "score IS NOT NULL",
+        "(score - DATE '2020-01-01') > 1",
+    ], ids=["added", "either_type", "old_type_only"])
+    def test_partial_index_predicate_with_pending_column_type(self, new_test_runner, full_text, predicate):
+        before = _partial_index_metadata(predicate, full_text=full_text)
+        before.tables["contacts"].c.score.type = sa.Date()
+        r = new_test_runner(before)
+        r.run()
+        original_predicate = _reflected_predicate(r)
+        r.get_connection().execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, score) VALUES (1, 1, DATE '2020-01-03')"
+        ))
+        r.get_connection().commit()
+
+        after = _partial_index_metadata(
+            "(score - DATE '2020-01-01') > INTERVAL '1 day'", full_text=full_text,
+        )
+        after.tables["contacts"].c.score.type = sa.TIMESTAMP()
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        assert len(changes) == 1
+        assert [type(op) for op in changes[0].ops] == [
+            ops.DropFullTextIndexOp if full_text else alembicops.DropIndexOp,
+            alembicops.AlterColumnOp,
+            ops.CreateFullTextIndexOp if full_text else alembicops.CreateIndexOp,
+        ]
+        r2.revision()
+        # Comparison must use the pending operation without changing the live DB.
+        columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+        assert isinstance(columns["score"]["type"], sa.Date)
+        assert _reflected_predicate(r2) == original_predicate
+        _assert_no_predicate_views(r2)
+        r2.upgrade()
+        updated_predicate = _reflected_predicate(r2)
+        assert updated_predicate != original_predicate
+        columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+        assert isinstance(columns["score"]["type"], sa.TIMESTAMP)
+        assert r2.get_connection().execute(sa.text(
+            "SELECT count(*) FROM contacts WHERE score = TIMESTAMP '2020-01-03 00:00:00'"
+        )).scalar_one() == 1
+        r2.get_connection().commit()
+        for _ in range(2):
+            assert r2.compute_changes() == []
+            r2.run()
+            testingutils.assert_num_files(r2, 2)
+        _assert_no_predicate_views(r2)
+
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original_predicate
+        columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+        assert isinstance(columns["score"]["type"], sa.Date)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert _reflected_predicate(r2) == updated_predicate
+        assert r2.compute_changes() == []
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    def test_same_predicate_sql_with_changed_type_is_recreated(self, new_test_runner, full_text):
+        # The old DATE parser discards the time, making the predicates compare
+        # equal. The TIMESTAMP index must retain the original noon cutoff.
+        predicate = "score = '2020-01-03 12:00:00'"
+        before = _partial_index_metadata(predicate, full_text=full_text)
+        before.tables["contacts"].c.score.type = sa.Date()
+        r = new_test_runner(before)
+        r.run()
+        original_predicate = _reflected_predicate(r)
+        r.get_connection().execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, score) VALUES (1, 1, DATE '2020-01-03')"
+        ))
+        r.get_connection().commit()
+
+        after = _partial_index_metadata(predicate, full_text=full_text)
+        after.tables["contacts"].c.score.type = sa.TIMESTAMP()
+        r2 = new_test_runner(after, r)
+        r2.run()
+        updated_predicate = _reflected_predicate(r2)
+        assert "12:00:00" in updated_predicate
+        columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+        assert isinstance(columns["score"]["type"], sa.TIMESTAMP)
+        assert r2.get_connection().execute(sa.text(
+            "SELECT score::text FROM contacts"
+        )).scalar_one() == "2020-01-03 00:00:00"
+        r2.get_connection().commit()
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert _reflected_predicate(r2) == original_predicate
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert _reflected_predicate(r2) == updated_predicate
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("predicate", ["TRUE", "((TRUE::boolean))", "'yes'"])
+    def test_true_predicate_with_unrelated_type_change_preserves_index_and_fk(self, new_test_runner, predicate):
+        def metadata(score_type):
+            result = _partial_index_metadata(predicate, unique=True)
+            result.tables["contacts"].c.score.type = score_type
+            sa.Table(
+                "children", result,
+                sa.Column("id", sa.Integer(), primary_key=True),
+                sa.Column("owner_id", sa.Integer(), nullable=False),
+                sa.ForeignKeyConstraint(["owner_id"], ["contacts.owner_id"], name="children_contact_fk"),
+            )
+            return result
+
+        before = metadata(sa.Date())
+        r = new_test_runner(before)
+        r.run()
+        r.get_connection().execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, score) VALUES (1, 10, DATE '2020-01-03')"
+        ))
+        r.get_connection().execute(before.tables["children"].insert(), {"id": 1, "owner_id": 10})
+        identities_sql = sa.text(
+            "SELECT 'contacts_active_idx'::regclass::oid, oid FROM pg_constraint "
+            "WHERE conrelid = 'children'::regclass AND conname = 'children_contact_fk'"
+        )
+        identities = r.get_connection().execute(identities_sql).one()
+        r.get_connection().commit()
+        after = metadata(sa.TIMESTAMP())
+        r2 = new_test_runner(after, r)
+        r2.run()
+
+        def assert_state(score_type):
+            assert _reflected_predicate(r2) is None
+            assert _reflected_partial_index(r2)["unique"]
+            assert r2.get_connection().execute(identities_sql).one() == identities
+            columns = {column["name"]: column for column in sa.inspect(r2.engine).get_columns("contacts")}
+            assert isinstance(columns["score"]["type"], score_type)
+            assert r2.get_connection().execute(sa.text(
+                "SELECT contacts.id, score::date::text, children.owner_id "
+                "FROM contacts JOIN children USING (owner_id)"
+            )).all() == [(1, "2020-01-03", 10)]
+            r2.get_connection().commit()
+
+        assert_state(sa.TIMESTAMP)
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert_state(sa.Date)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_state(sa.TIMESTAMP)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("change_predicate", [False, True])
+    def test_foreign_key_action_changes_precede_seed_deletion(self, new_test_runner, change_predicate):
+        def metadata(after):
+            result = _partial_index_metadata(
+                "owner_id > 0" if after and change_predicate else None,
+                postgresql_with={"fillfactor": 80 if after else 70},
+            )
+            sa.Table("parents", result, sa.Column("id", sa.Integer(), primary_key=True))
+            sa.Table(
+                "children", result,
+                sa.Column("id", sa.Integer(), primary_key=True),
+                sa.Column("parent_id", sa.Integer(), nullable=False),
+                sa.ForeignKeyConstraint(
+                    ["parent_id"], ["parents.id"], name="children_parent_fk",
+                    ondelete="CASCADE" if after else "RESTRICT",
+                ),
+            )
+            result.info["data"] = {"public": {
+                "parents": {"pkeys": ["id"], "rows": [] if after else [{"id": 1}]},
+            }}
+            return result
+
+        before, after = metadata(False), metadata(True)
+        r = new_test_runner(before)
+        r.run()
+        r.get_connection().execute(sa.text("INSERT INTO children VALUES (1, 1)"))
+        r.get_connection().commit()
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        # Seed comparison reads rows on this connection; release those read
+        # locks before Alembic executes DDL on its migration connection.
+        r2.get_connection().commit()
+        r2.revision(changes)
+        r2.upgrade()
+
+        def assert_state(upgraded):
+            foreign_key = sa.inspect(r2.engine).get_foreign_keys("children")[0]
+            assert foreign_key["options"]["ondelete"] == ("CASCADE" if upgraded else "RESTRICT")
+            assert r2.get_connection().execute(sa.text("SELECT id FROM parents")).all() == (
+                [] if upgraded else [(1,)]
+            )
+            assert r2.get_connection().execute(sa.text("SELECT id FROM children")).all() == []
+            r2.get_connection().commit()
+
+        assert_state(True)
+        assert r2.compute_changes() == []
+        r2.get_connection().commit()
+        r2.downgrade("-1", delete_files=False)
+        assert_state(False)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        # Cascaded rows are application data, so reseed a child to exercise replay.
+        restored.get_connection().execute(sa.text("INSERT INTO children VALUES (2, 1)"))
+        restored.get_connection().commit()
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_state(True)
+        assert r2.compute_changes() == []
+
+    def test_index_type_change_preserves_foreign_key_dependencies(self, new_test_runner):
+        def metadata(score_type, fillfactor):
+            result = _partial_index_metadata(None, unique=True, postgresql_with={"fillfactor": fillfactor})
+            result.tables["contacts"].c.score.type = score_type
+            result.tables["contacts"].append_column(sa.Column("parent_owner", sa.Integer()))
+            return result
+
+        before = metadata(sa.Date(), 70)
+        r = new_test_runner(before)
+        r.run()
+        # The referenced UNIQUE index must exist before the FK is installed.
+        r.get_connection().execute(sa.text(
+            "ALTER TABLE contacts ADD CONSTRAINT contacts_parent_fk "
+            "FOREIGN KEY (parent_owner) REFERENCES contacts(owner_id)"
+        ))
+        r.get_connection().execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, parent_owner, score) "
+            "VALUES (1, 10, NULL, DATE '2020-01-03'), (2, 20, 10, DATE '2020-01-04')"
+        ))
+        r.get_connection().commit()
+        before.tables["contacts"].append_constraint(sa.ForeignKeyConstraint(
+            ["parent_owner"], ["contacts.owner_id"], name="contacts_parent_fk",
+        ))
+        assert r.compute_changes() == []
+
+        after = metadata(sa.TIMESTAMP(), 80)
+        r2 = new_test_runner(after, r)
+        r2.run()
+
+        def assert_state(r, score_type, fillfactor, has_foreign_key):
+            index = _reflected_partial_index(r)
+            assert index["unique"]
+            assert index["dialect_options"]["postgresql_with"] == {"fillfactor": str(fillfactor)}
+            inspector = sa.inspect(r.engine)
+            columns = {column["name"]: column for column in inspector.get_columns("contacts")}
+            assert isinstance(columns["score"]["type"], score_type)
+            foreign_keys = inspector.get_foreign_keys("contacts")
+            assert [fk["name"] for fk in foreign_keys] == (["contacts_parent_fk"] if has_foreign_key else [])
+            if has_foreign_key:
+                assert foreign_keys[0]["constrained_columns"] == ["parent_owner"]
+                assert foreign_keys[0]["referred_columns"] == ["owner_id"]
+            assert r.get_connection().execute(sa.text(
+                "SELECT id, owner_id, parent_owner, score::date::text FROM contacts ORDER BY id"
+            )).all() == [(1, 10, None, "2020-01-03"), (2, 20, 10, "2020-01-04")]
+            r.get_connection().commit()
+
+        assert_state(r2, sa.TIMESTAMP, 80, False)
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert_state(r2, sa.Date, 70, True)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_state(r2, sa.TIMESTAMP, 80, False)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("child_name", ["a_children", "z_children"])
+    @pytest.mark.parametrize("foreign_key_change", ["remove", "replace", "add"])
+    def test_partial_index_change_orders_cross_table_foreign_keys(self, new_test_runner, child_name, foreign_key_change):
+        def add_foreign_key(metadata, target_column):
+            constraint = sa.ForeignKeyConstraint(
+                ["owner_id"], [f"contacts.{target_column}"], name="children_contact_fk",
+            )
+            metadata.tables[child_name].append_constraint(constraint)
+            return constraint
+
+        def metadata(predicate, foreign_key=None):
+            result = _partial_index_metadata(predicate, unique=True)
+            sa.Table(
+                child_name, result,
+                sa.Column("id", sa.Integer(), primary_key=True),
+                sa.Column("owner_id", sa.Integer(), nullable=False),
+            )
+            if foreign_key is not None:
+                add_foreign_key(result, foreign_key)
+            return result
+
+        adding = foreign_key_change == "add"
+        before = metadata("owner_id > 0" if adding else None)
+        r = new_test_runner(before)
+        r.run()
+        if not adding:
+            # Install the FK only after its referenced unique index exists.
+            r.get_connection().execute(sa.schema.AddConstraint(add_foreign_key(before, "owner_id")))
+        r.get_connection().execute(before.tables["contacts"].insert(), {"id": 1, "owner_id": 1})
+        r.get_connection().execute(before.tables[child_name].insert(), {"id": 1, "owner_id": 1})
+        r.get_connection().commit()
+        assert r.compute_changes() == []
+        original_predicate = _reflected_predicate(r)
+
+        target = {"remove": None, "replace": "id", "add": "owner_id"}[foreign_key_change]
+        after = metadata(None if adding else "owner_id > 0", target)
+        r2 = new_test_runner(after, r)
+        r2.run()
+        updated_predicate = _reflected_predicate(r2)
+        assert updated_predicate != original_predicate
+
+        def assert_state(r, predicate, foreign_key):
+            assert _reflected_predicate(r) == predicate
+            assert _reflected_partial_index(r)["unique"]
+            foreign_keys = sa.inspect(r.engine).get_foreign_keys(child_name)
+            assert [fk["name"] for fk in foreign_keys] == (["children_contact_fk"] if foreign_key else [])
+            if foreign_key:
+                assert foreign_keys[0]["referred_table"] == "contacts"
+                assert foreign_keys[0]["referred_columns"] == [foreign_key]
+            assert r.get_connection().execute(sa.select(after.tables[child_name])).all() == [(1, 1)]
+            assert r.get_connection().execute(sa.select(after.tables["contacts"].c.owner_id)).all() == [(1,)]
+            r.get_connection().commit()
+
+        assert_state(r2, updated_predicate, target)
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert_state(r2, original_predicate, None if adding else "owner_id")
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_state(r2, updated_predicate, target)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("child_name", ["a_children", "z_children"])
+    @pytest.mark.parametrize("constraint_name", ["children_contact_fk", None])
+    def test_new_table_foreign_key_waits_for_full_unique_index(self, new_test_runner, child_name, constraint_name):
+        before = _partial_index_metadata("owner_id > 0", unique=True)
+        r = new_test_runner(before)
+        r.run()
+        r.get_connection().execute(before.tables["contacts"].insert(), {"id": 1, "owner_id": 1})
+        r.get_connection().commit()
+        original_predicate = _reflected_predicate(r)
+
+        after = _partial_index_metadata(None, unique=True)
+        child = sa.Table(
+            child_name, after,
+            sa.Column("id", sa.Integer(), primary_key=True),
+            sa.Column("owner_id", sa.Integer(), nullable=False),
+            sa.UniqueConstraint("owner_id", name="children_owner_unique"),
+            sa.ForeignKeyConstraint(
+                ["owner_id"], ["contacts.owner_id"], name=constraint_name,
+                ondelete="CASCADE", deferrable=True, initially="DEFERRED",
+            ),
+            comment="Child table metadata survives foreign key deferral",
+        )
+        r2 = new_test_runner(after, r)
+        r2.run()
+
+        def assert_child():
+            inspector = sa.inspect(r2.engine)
+            assert inspector.get_table_comment(child_name)["text"] == child.comment
+            assert [constraint["name"] for constraint in inspector.get_unique_constraints(child_name)] == ["children_owner_unique"]
+            foreign_keys = inspector.get_foreign_keys(child_name)
+            assert len(foreign_keys) == 1
+            if constraint_name is not None:
+                assert foreign_keys[0]["name"] == constraint_name
+            assert foreign_keys[0]["referred_columns"] == ["owner_id"]
+            assert foreign_keys[0]["options"] == {"ondelete": "CASCADE", "deferrable": True, "initially": "DEFERRED"}
+            assert _reflected_partial_index(r2)["unique"]
+            assert _reflected_predicate(r2) is None
+
+        assert_child()
+        r2.get_connection().execute(child.insert(), {"id": 1, "owner_id": 1})
+        r2.get_connection().commit()
+        assert r2.compute_changes() == []
+        r2.downgrade("-1", delete_files=False)
+        assert not sa.inspect(r2.engine).has_table(child_name)
+        assert _reflected_predicate(r2) == original_predicate
+        assert r2.get_connection().execute(sa.select(after.tables["contacts"].c.owner_id)).all() == [(1,)]
+        r2.get_connection().commit()
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        r2 = new_test_runner(after, restored)
+        r2.upgrade()
+        assert_child()
+        assert r2.get_connection().execute(sa.select(child)).all() == []
+        r2.get_connection().commit()
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    def test_invalid_operator_without_pending_column_type_still_fails(self, new_test_runner):
+        r = new_test_runner(_partial_index_metadata("score > 1"))
+        r.run()
+        r2 = new_test_runner(_partial_index_metadata("score > INTERVAL '1 day'"), r)
+        with pytest.raises(sa.exc.ProgrammingError, match="operator does not exist: integer > interval"):
+            r2.compute_changes()
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("full_text", [False, True])
+    @pytest.mark.parametrize("enum_schema", [None, "public"])
+    def test_partial_index_predicate_with_pending_enum_values(self, new_test_runner, full_text, enum_schema):
+        before = _enum_partial_index_metadata(
+            ["active", "deleted"], "status = 'active'", full_text, schema=enum_schema,
+        )
+        r = new_test_runner(before)
+        r.run()
+        after = _enum_partial_index_metadata(
+            ["active", "archived", "deleted", "purged"],
+            "status IN ('active', 'archived', 'purged')", full_text, schema=enum_schema,
+        )
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        assert [type(op) for op in changes] == [
+            ops.AlterEnumOp, ops.AlterEnumOp, alembicops.ModifyTableOps,
+        ]
+        assert [(op.value, op.before) for op in changes[:2]] == [
+            ("archived", "deleted"), ("purged", None),
+        ]
+        assert [type(op) for op in changes[2].ops] == (
+            [ops.DropFullTextIndexOp, ops.CreateFullTextIndexOp] if full_text else
+            [alembicops.DropIndexOp, alembicops.CreateIndexOp]
+        )
+        r2.revision()
+        # Generating a migration must not apply pending enum values to the DB.
+        assert sa.inspect(r2.engine).get_enums()[0]["labels"] == ["active", "deleted"]
+        _assert_no_predicate_views(r2)
+        r2.upgrade()
+        assert sa.inspect(r2.engine).get_enums()[0]["labels"] == [
+            "active", "archived", "deleted", "purged",
+        ]
+        for _ in range(2):
+            assert r2.compute_changes() == []
+            r2.run()
+            testingutils.assert_num_files(r2, 2)
+        _assert_no_predicate_views(r2)
+
+        # Enum additions are intentionally irreversible; replay both generated
+        # migrations from an empty DB instead of attempting to remove values.
+        replay = new_test_runner(after, new_database=True)
+        shutil.copytree(
+            os.path.join(r2.get_schema_path(), "versions"),
+            os.path.join(replay.get_schema_path(), "versions"), dirs_exist_ok=True,
+        )
+        replay.upgrade()
+        assert replay.compute_changes() == []
+
+    @pytest.mark.parametrize("enum_schema", ["Enum Types", "public"])
+    @pytest.mark.parametrize("enum_name", ["Contact Status", "Contact % Status"])
+    def test_pending_enum_predicate_resolves_search_path_identity(self, new_test_runner, enum_schema, enum_name):
+        r = new_test_runner(sa.MetaData())
+        connection = r.get_connection()
+        schema = "Enum Types"
+        connection.execute(sa.schema.CreateSchema(schema))
+        for type_schema in (schema, "public"):
+            postgresql.ENUM("active", name=enum_name, schema=type_schema).create(connection)
+        connection.exec_driver_sql(
+            f'SET LOCAL search_path TO {connection.dialect.identifier_preparer.quote_schema(schema)}, public'
+        )
+        before = _enum_partial_index_metadata(
+            ["active"], "status = 'active'", schema=schema, name=enum_name,
+        )
+        before.create_all(connection)
+        reflected = sa.Table("contacts", sa.MetaData(), autoload_with=connection)
+        assert reflected.c.status.type.schema is None
+        after = _enum_partial_index_metadata(
+            ["active", "archived"], "status = 'archived'", schema=enum_schema, name=enum_name,
+        )
+        context = AutogenContext(MigrationContext.configure(connection), metadata=after)
+        result = alembicops.ModifyTableOps("contacts", [])
+        if enum_schema == schema:
+            compare._compare_indexes(context, result, None, "contacts", reflected, after.tables["contacts"])
+            assert [type(op) for op in result.ops] == [alembicops.DropIndexOp, alembicops.CreateIndexOp]
+        else:
+            # A pending label on the shadowed public enum does not change the
+            # actual column's type, so this invalid predicate must still fail.
+            with pytest.raises(sa.exc.DataError, match="invalid input value for enum"):
+                compare._compare_indexes(context, result, None, "contacts", reflected, after.tables["contacts"])
+        _assert_no_predicate_views(r)
+
+    @pytest.mark.parametrize("index_change", ["predicate", "columns", "full_text"])
+    @pytest.mark.parametrize("command", ["downgrade", "squash"])
+    def test_irreversible_enum_downgrade_preserves_concurrent_index(self, new_test_runner, index_change, command):
+        full_text = index_change == "full_text"
+
+        def metadata(values, predicate, change_columns=False):
+            result = _enum_partial_index_metadata(values, predicate, full_text)
+            table = result.tables["contacts"]
+            if change_columns:
+                table.indexes.clear()
+                sa.Index("contacts_active_idx", table.c.owner_id, table.c.score, postgresql_where=sa.text(predicate))
+            index = next(iter(table.indexes))
+            if full_text:
+                index.info["postgresql_concurrently"] = True
+            else:
+                index.kwargs["postgresql_concurrently"] = True
+                index.unique = True
+            return result
+
+        r = new_test_runner(metadata(["active"], "status = 'active'"))
+        r.run()
+        predicate = "status = 'active'" if index_change == "columns" else "status IN ('active', 'archived')"
+        r2 = new_test_runner(metadata(["active", "archived"], predicate, index_change == "columns"), r)
+        r2.run()
+        connection = r2.get_connection()
+        connection.execute(sa.text(
+            "INSERT INTO contacts (id, owner_id, score, status) VALUES (1, 10, 1, 'active')"
+        ))
+
+        def index_state():
+            return connection.execute(sa.text(
+                "SELECT indexrelid::oid, pg_get_indexdef(indexrelid), indisvalid, indisunique "
+                "FROM pg_index WHERE indexrelid = to_regclass('contacts_active_idx')"
+            )).all()
+
+        original_index = index_state()
+        assert len(original_index) == 1 and original_index[0].indisvalid
+        revision = connection.execute(sa.text("SELECT version_num FROM alembic_version")).scalar_one()
+        connection.commit()
+        with pytest.raises(ValueError, match="operation is not reversible"):
+            if command == "downgrade":
+                r2.downgrade("-1", delete_files=False)
+            else:
+                r2.squash_n(2)
+
+        # Concurrent DDL commits independently: a later exception cannot restore
+        # a dropped index. Reject before touching its identity or uniqueness.
+        assert index_state() == original_index
+        assert connection.execute(sa.text("SELECT version_num FROM alembic_version")).scalar_one() == revision
+        assert connection.execute(sa.text("SELECT id, owner_id, score, status FROM contacts")).all() == [(1, 10, 1, "active")]
+        assert sa.inspect(r2.engine).get_enums()[0]["labels"] == ["active", "archived"]
+        if not full_text:
+            with pytest.raises(sa.exc.IntegrityError):
+                with connection.begin_nested():
+                    connection.execute(sa.text(
+                        "INSERT INTO contacts (id, owner_id, score, status) VALUES (2, 10, 1, 'active')"
+                    ))
+        connection.commit()
+        testingutils.assert_num_files(r2, 2)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    def test_pending_enum_values_leave_unchanged_predicate_alone(self, new_test_runner):
+        r = new_test_runner(_enum_partial_index_metadata(["active"], "status = 'active'"))
+        r.run()
+        r2 = new_test_runner(
+            _enum_partial_index_metadata(["active", "archived"], "status = 'active'"), r,
+        )
+        assert [type(op) for op in r2.compute_changes()] == [ops.AlterEnumOp]
+        r2.run()
+        assert r2.compute_changes() == []
+
+    @pytest.mark.parametrize("enum_schema", [None, "public"])
+    def test_invalid_enum_predicate_without_pending_type_change_still_fails(self, new_test_runner, enum_schema):
+        r = new_test_runner(_enum_partial_index_metadata(
+            ["active"], "status = 'active'", schema=enum_schema,
+        ))
+        r.run()
+        r2 = new_test_runner(
+            _enum_partial_index_metadata(["active"], "status = 'typo'", schema=enum_schema), r,
+        )
+        with pytest.raises(sa.exc.DataError, match="invalid input value for enum"):
+            r2.compute_changes()
+        _assert_no_predicate_views(r2)
+
+    def test_partial_index_predicate_preserves_percent_literals(self, new_test_runner):
+        metadata = _partial_index_metadata("status = '100%'")
+        r = new_test_runner(metadata)
+        r.run()
+        assert _reflected_predicate(r) == "(status = '100%'::text)"
+        assert r.compute_changes() == []
+        _assert_no_predicate_views(r)
+        r2 = new_test_runner(_partial_index_metadata("status = '100%%'"), r)
+        assert len(r2.compute_changes()) == 1
+        _assert_no_predicate_views(r2)
+
+    def test_schema_qualified_index_predicate_change(self, new_test_runner):
+        r = new_test_runner(sa.MetaData())
+        connection = r.get_connection()
+        schema = "Private Contacts"
+        connection.execute(sa.schema.CreateSchema(schema))
+
+        def table(predicate):
+            metadata = _partial_index_metadata(predicate, unique=True)
+            return metadata.tables["contacts"].to_metadata(sa.MetaData(), schema=schema)
+
+        before = table("deleted_at IS NULL")
+        before.create(connection)
+        after = table("deleted_at IS NOT NULL AND status = 'active'")
+        context = AutogenContext(MigrationContext.configure(connection))
+
+        def changes(metadata_table):
+            reflected = sa.Table("contacts", sa.MetaData(), schema=schema, autoload_with=connection)
+            result = alembicops.ModifyTableOps("contacts", [], schema=schema)
+            compare._compare_indexes(context, result, schema, "contacts", reflected, metadata_table)
+            return result.ops
+
+        replacement = changes(after)
+        assert [type(op) for op in replacement] == [alembicops.DropIndexOp, alembicops.CreateIndexOp]
+        assert all(op.schema == schema for op in replacement)
+        operations = Operations(context.migration_context)
+        for op in replacement:
+            operations.invoke(op)
+        assert changes(after) == []
+        for op in reversed(replacement):
+            operations.invoke(op.reverse())
+        assert changes(before) == []
+        _assert_no_predicate_views(r)
+
+    def test_partial_index_preserves_operator_class_and_storage(self, new_test_runner):
+        options = dict(
+            columns=("status",),
+            postgresql_ops={"status": "text_pattern_ops"},
+            postgresql_with={"fillfactor": 70},
+        )
+        r = _assert_partial_index_change(
+            new_test_runner,
+            _partial_index_metadata("deleted_at IS NULL", **options),
+            _partial_index_metadata("deleted_at IS NOT NULL", **options),
+        )
+        index = _reflected_partial_index(r)
+        assert index["dialect_options"]["postgresql_ops"] == {"status": "text_pattern_ops"}
+        assert index["dialect_options"]["postgresql_with"] == {"fillfactor": "70"}
+
+    def test_partial_index_predicate_references_new_column(self, new_test_runner):
+        r = new_test_runner(_partial_index_metadata("deleted_at IS NULL"))
+        r.run()
+        after = _partial_index_metadata("deleted_at IS NULL AND archived_at IS NULL")
+        after.tables["contacts"].append_column(sa.Column("archived_at", sa.TIMESTAMP()))
+        r2 = new_test_runner(after, r)
+        changes = r2.compute_changes()
+        assert len(changes) == 1
+        assert [type(op) for op in changes[0].ops] == [
+            alembicops.AddColumnOp, alembicops.DropIndexOp, alembicops.CreateIndexOp,
+        ]
+        _assert_no_predicate_views(r2)
+        r2.run()
+        assert "archived_at IS NULL" in _reflected_predicate(r2)
+        assert r2.compute_changes() == []
+        _assert_no_predicate_views(r2)
+
+    @pytest.mark.parametrize("before,after", [
+        (None, "bio IS NULL"),
+        ("bio IS NULL", None),
+        ("bio IS NULL", "bio IS NOT NULL AND first_name = '100%'"),
+        ("TRUE", "NULL"),
+        ("'false'", "TRUE"),
+    ])
+    def test_full_text_index_predicate_change(self, new_test_runner, before, after):
+        def metadata(predicate):
+            result = conftest.metadata_with_base_table_restored()
+            conftest.metadata_with_multicolumn_fulltext_search_index(result)
+            index = next(iter(result.tables["accounts"].indexes))
+            if predicate is not None:
+                index.info["postgresql_where"] = predicate
+            return result
+
+        def reflected_predicate(r):
+            r.get_connection().commit()
+            return r.get_connection().execute(sa.text(
+                "SELECT pg_get_expr(indpred, indrelid) FROM pg_index "
+                "WHERE indexrelid = 'accounts_full_text_idx'::regclass"
+            )).scalar_one()
+
+        r = new_test_runner(metadata(before))
+        r.run()
+        original = reflected_predicate(r)
+        assert r.compute_changes() == []
+        r2 = new_test_runner(metadata(after), r)
+        changes = r2.compute_changes()
+        assert len(changes) == 1
+        assert [type(op) for op in changes[0].ops] == [
+            ops.DropFullTextIndexOp, ops.CreateFullTextIndexOp,
+        ]
+        r2.run()
+        updated = reflected_predicate(r2)
+        assert updated != original
+        for _ in range(2):
+            assert r2.compute_changes() == []
+            _assert_no_predicate_views(r2)
+            r2.run()
+            testingutils.assert_num_files(r2, 2)
+        r2.downgrade("-1", delete_files=False)
+        assert reflected_predicate(r2) == original
+        r2.upgrade()
+        assert reflected_predicate(r2) == updated
+        assert r2.compute_changes() == []
 
     # only in postgres because modifying columns not supported by Sqlite
     @pytest.mark.usefixtures("metadata_with_table")
@@ -2013,30 +3073,6 @@ class TestPostgresRunner(BaseTestRunner):
 
 
 class TestSqliteRunner(BaseTestRunner):
-    @pytest.mark.usefixtures("metadata_with_one_edge", "empty_metadata")
-    def test_remove_last_edge_before_dropping_assoc_edge_config(
-        self, new_test_runner, metadata_with_one_edge, empty_metadata
-    ):
-        r = new_test_runner(metadata_with_one_edge)
-        r.run()
-
-        r2 = new_test_runner(empty_metadata, r)
-        diff = r2.compute_changes()
-        remove_idx = next(
-            idx for idx, op in enumerate(diff) if isinstance(op, ops.RemoveEdgesOp)
-        )
-        drop_idx = next(
-            idx
-            for idx, op in enumerate(diff)
-            if (
-                isinstance(op, alembicops.DropTableOp)
-                and op.table_name == "assoc_edge_config"
-            )
-        )
-        assert remove_idx < drop_idx
-
-        r2.run()
-
     @pytest.mark.usefixtures("metadata_with_one_edge")
     def test_all_sql_adds_edges_after_assoc_edge_config_table(
         self, new_test_runner, metadata_with_one_edge

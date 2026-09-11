@@ -26,6 +26,14 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
   leaves a database pool or another event-loop handle open (#2022).
 - update `uuid`, docs, test-helper, and standalone TypeScript package
   dependencies to patched versions (#2013).
+- generate reversible migrations when an existing index's partial predicate changes,
+  handle pending extension, enum, and column-type changes, restore extension schemas
+  before dependent indexes on downgrade, and preserve literal percent signs in
+  generated index migrations. Honor index exclusion filters and reject predicates
+  referencing undeclared missing columns before replacing indexes. Reject foreign-key
+  replacements across concurrent index operations and automatic rebinding of customized
+  FK trigger modes, preserving
+  constraint enforcement (#2028).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
   after repeated codegen runs (#2016).
 - when GraphQL ID encoding is enabled, infer GraphQL Node fields for struct

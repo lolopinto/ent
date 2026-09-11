@@ -1,9 +1,40 @@
 from sqlalchemy.sql.schema import DefaultClause
 from sqlalchemy.sql.elements import TextClause
+from sqlalchemy.sql import coercions, roles
+import copy
 import re
 import datetime
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+
+def literal_sql_dialect(dialect):
+    """Compile SQL source without DBAPI percent escaping or changing the live dialect."""
+    if dialect.paramstyle not in ('format', 'pyformat'):
+        return dialect
+    dialect = copy.copy(dialect)
+    dialect.paramstyle = 'named'
+    dialect.positional = False
+    dialect.identifier_preparer = dialect.preparer(dialect)
+    return dialect
+
+
+def compile_index_predicate(value, dialect):
+    """Render a predicate using the dialect's index-DDL input/coercion rules."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        # Reflected predicates and FullTextIndex metadata are already SQL text.
+        return value.strip()
+    if dialect.name == 'postgresql':
+        # PostgreSQL accepts Python booleans as DDL expressions.
+        # SQLite expects a SQL expression and does not accept native booleans.
+        value = coercions.expect(roles.DDLExpressionRole, value)
+    return str(value.compile(
+        dialect=literal_sql_dialect(dialect),
+        compile_kwargs={'literal_binds': True, 'include_table': False},
+    )).strip()
+
 
 clause_regex = re.compile("(.+)'::(.+)")
 date_regex = re.compile(

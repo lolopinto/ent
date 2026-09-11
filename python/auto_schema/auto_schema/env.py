@@ -107,6 +107,7 @@ def run_migrations_offline():
         include_name=runner.Runner.include_name,
         compare_server_default=runner.Runner.compare_server_default,
         render_item=runner.Runner.render_item,
+        process_revision_directives=runner.Runner.process_revision_directives,
         include_schemas=False,
         output_buffer=output_buffer,
         # transaction_per_migration doesn't seem to apply offline
@@ -151,6 +152,7 @@ def run_migrations_online():
             include_name=runner.Runner.include_name,
             compare_server_default=runner.Runner.compare_server_default,
             render_item=runner.Runner.render_item,
+            process_revision_directives=runner.Runner.process_revision_directives,
             include_schemas=False,
             transaction_per_migration=True,
         )

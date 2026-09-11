@@ -1,6 +1,8 @@
 import functools
 import pprint
 import re
+import uuid
+from dataclasses import dataclass, field
 from typing import Any
 
 import alembic.operations.ops as alembicops
@@ -13,10 +15,13 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine import reflection
 from sqlalchemy.sql.elements import TextClause
 
-from auto_schema.clause_text import normalize_clause_text
+from auto_schema.clause_text import compile_index_predicate, literal_sql_dialect, normalize_clause_text
+from auto_schema.postgresql_parser import column_name_at_position, type_name_at_position
 from auto_schema.schema_item import FullTextIndex
 
 from . import ops
+from . import migration_ordering
+from . import postgresql_dependencies
 
 
 def _normalize_db_extension(extension: dict[str, Any]) -> dict[str, Any]:
@@ -120,24 +125,69 @@ def _get_extension_ops(
     return extension_ops
 
 
-@comparators.dispatch_for("schema")
-def compare_extensions(autogen_context, upgrade_ops, schemas):
+@dataclass
+class _PendingEnumChanges:
+    new_types: set[tuple[str, str]] = field(default_factory=set)
+    search_path: tuple[str, ...] = ()
+    database_name: str | None = None
+    standard_conforming_strings: bool = True
+    backslash_quote: bool = True
+    new_values: dict[int, tuple[postgresql.ENUM, set[str]]] = field(default_factory=dict)
+    label_errors: set[tuple[str, str, str]] | None = None
+
+
+@dataclass
+class _PendingSchemaChanges:
+    extension_ops: list[ops.MigrateOpInterface] | None = None
+    enum_changes: _PendingEnumChanges | None = None
+    enum_schemas: tuple[str | None, ...] = (None,)
+
+
+def _pending_schema_changes(autogen_context):
+    # AutogenContext is created for each produce_migrations/revision comparison,
+    # even when a Runner, MigrationContext, or connection is reused after upgrade.
+    # Never store catalog state on those longer-lived objects or on metadata.
+    if not hasattr(autogen_context, '_ent_pending_schema_changes'):
+        autogen_context._ent_pending_schema_changes = _PendingSchemaChanges()
+    return autogen_context._ent_pending_schema_changes
+
+
+@comparators.dispatch_for('schema', priority=DispatchPriority.FIRST)
+def _record_enum_migration_schemas(autogen_context, upgrade_ops, schemas):
+    # Enum emission below targets each comparison schema, not enum.type.schema.
+    # Capture those actual targets before table/index predicate comparison runs.
+    _pending_schema_changes(autogen_context).enum_schemas = tuple(schemas)
+
+
+def _get_pending_extension_ops(autogen_context):
+    pending = _pending_schema_changes(autogen_context)
+    if pending.extension_ops is None:
+        pending.extension_ops = _plan_extension_ops(autogen_context)
+    return pending.extension_ops
+
+
+def _plan_extension_ops(autogen_context):
+    if autogen_context.metadata is None:
+        return []
     metadata_extensions = _get_metadata_extensions(autogen_context)
     if len(metadata_extensions) == 0:
-        return
+        return []
 
     dialect = _dialect_name(autogen_context)
     if dialect != "postgresql":
         raise ValueError("db extensions are only supported for postgres")
 
     db_extensions = _get_db_extensions(autogen_context)
-    extension_ops = _get_extension_ops(metadata_extensions, db_extensions)
+    return _get_extension_ops(metadata_extensions, db_extensions)
+
+
+@comparators.dispatch_for("schema")
+def compare_extensions(autogen_context, upgrade_ops, schemas):
+    extension_ops = _get_pending_extension_ops(autogen_context)
     if len(extension_ops) == 0:
         return
 
-    # create/update extension ops need to happen before any dependent
-    # tables, columns, or indexes are created.
-    upgrade_ops.ops[0:0] = extension_ops
+    upgrade_ops.ops.extend(extension_ops)
 
 
 @comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
@@ -182,7 +232,7 @@ def compare_edges(autogen_context, upgrade_ops, schemas):
         ops.RemoveEdgesOp,
     )
 
-    _add_edge_ops(upgrade_ops, edge_ops)
+    upgrade_ops.ops.extend(edge_ops)
 
 
 def _edges_equal(edge1, edge2):
@@ -232,24 +282,6 @@ def _process_edges(source_edges, compare_edges, edge_ops, upgrade_op, edge_misma
 
         # do any alter operation after the add/remove edge op
         [edge_ops.append(alter_op) for alter_op in alter_ops]
-
-
-def _add_edge_ops(upgrade_ops, edge_ops):
-    if len(edge_ops) == 0:
-        return
-
-    # compare_edges runs late so assoc_edge_config inserts are emitted after
-    # table creation. If this migration also drops assoc_edge_config, the edge
-    # cleanup still has to run before that drop.
-    for idx, op in enumerate(upgrade_ops.ops):
-        if (
-            isinstance(op, alembicops.DropTableOp)
-            and op.table_name == "assoc_edge_config"
-        ):
-            upgrade_ops.ops[idx:idx] = edge_ops
-            return
-
-    upgrade_ops.ops.extend(edge_ops)
 
 
 def _dialect_name(autogen_context: AutogenContext) -> str:
@@ -433,6 +465,13 @@ def compare_schema(autogen_context, upgrade_ops, schemas):
                 _check_new_table(metadata_tables[name], upgrade_ops, sch)
 
 
+@comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
+def _order_migration_operations(autogen_context, upgrade_ops, schemas):
+    if _dialect_name(autogen_context) == "postgresql":
+        postgresql_dependencies.collect_index_foreign_keys(autogen_context, upgrade_ops, schemas)
+    migration_ordering.order_upgrade(upgrade_ops, dialect_name=_dialect_name(autogen_context))
+
+
 def _check_removed_table(metadata_table, upgrade_ops, sch):
     for column in metadata_table.columns:
         _check_removed_column(column, upgrade_ops, sch)
@@ -515,11 +554,7 @@ def _check_new_column(metadata_column, upgrade_ops, sch):
     if not isinstance(metadata_type, postgresql.ENUM):
         return
 
-    # new column with enum type
-    # time to create the type
-    # adding a new type. just add to front of list
-    upgrade_ops.ops.insert(
-        0,
+    upgrade_ops.ops.append(
         ops.AddEnumOp(metadata_type.name, metadata_type.enums, schema=sch)
     )
 
@@ -559,6 +594,7 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
         if key not in metadata_enums:
             raise ValueError("postgres doesn't support enum removals")
 
+    enum_ops = []
     l = len(metadata_type.enums)
     for index, value in enumerate(metadata_type.enums):
         if value not in conn_enums:
@@ -570,14 +606,16 @@ def _check_if_enum_values_changed(upgrade_ops, conn_column, metadata_column, sch
             # ALTER TYPE enum_type ADD VALUE 'new_value' AFTER 'old_value';
             # only add before if previously existed
             if index != l - 1 and metadata_type.enums[index+1] in conn_enums:
-                upgrade_ops.ops.append(
+                enum_ops.append(
                     ops.AlterEnumOp(conn_type.name, value, schema=sch,
                                     before=metadata_type.enums[index + 1])
                 )
             else:
-                upgrade_ops.ops.append(
+                enum_ops.append(
                     ops.AlterEnumOp(conn_type.name, value, schema=sch)
                 )
+
+    upgrade_ops.ops.extend(enum_ops)
 
 
 @ comparators.dispatch_for("table", priority=DispatchPriority.LAST)
@@ -589,6 +627,14 @@ def _compare_indexes(autogen_context: AutogenContext,
                      metadata_table: sa.Table,
                      ):
 
+    changed_column_types = {
+        op.column_name for op in modify_table_ops.ops
+        if isinstance(op, alembicops.AlterColumnOp) and op.modify_type is not None
+    }
+    added_columns = {
+        op.column.name for op in modify_table_ops.ops
+        if isinstance(op, alembicops.AddColumnOp)
+    }
     raw_db_indexes = _get_raw_db_indexes(
         autogen_context, conn_table)
     all_conn_indexes = raw_db_indexes.get('all')
@@ -657,7 +703,7 @@ def _compare_indexes(autogen_context: AutogenContext,
                     }
                     for key in ('postgresql_concurrently', 'postgresql_where'):
                         value = _get_index_kwarg(conn_index, key)
-                        if value not in (None, False):
+                        if _index_option_is_set(key, value):
                             full_text_info[key] = value
 
                     modify_table_ops.ops[i] = ops.DropFullTextIndexOp(
@@ -686,9 +732,21 @@ def _compare_indexes(autogen_context: AutogenContext,
         )
 
     for name, index in meta_indexes.items():
+        # Match Alembic's changed-index filter contract before parsing predicates
+        # or emitting replacements, including indexes handled by the full-text path.
+        if not autogen_context.run_object_filters(
+            index, name, "index", False, conn_indexes.get(name),
+        ):
+            continue
 
         if is_full_text_index(index) and name in all_conn_indexes:
-            if _full_text_index_signatures_differ(
+            predicates_differ = _index_predicates_differ(
+                autogen_context, index, conn_indexes.get(name),
+                all_conn_indexes[name], conn_table,
+                changed_column_types=changed_column_types,
+                added_columns=added_columns,
+            )
+            if predicates_differ or _full_text_index_signatures_differ(
                 index,
                 conn_indexes.get(name),
                 all_conn_indexes.get(name, {}),
@@ -724,13 +782,21 @@ def _compare_indexes(autogen_context: AutogenContext,
                 )
             continue
 
-        # if index is there and postgresql_using changes, drop the index and add it again
-        # should hopefully be a one-time migration change...
+        # Alembic does not compare partial-index predicates or all dialect options.
         if name in conn_indexes and isinstance(index, sa.Index):
             meta_signature = _get_index_signature(index, all_conn_indexes.get(name, {}))
             conn_signature = _get_index_signature(conn_indexes[name], all_conn_indexes.get(name, {}))
 
-            if _index_signatures_differ(meta_signature, conn_signature):
+            predicates_differ = _index_predicates_differ(
+                autogen_context, index, conn_indexes[name],
+                all_conn_indexes.get(name, {}), conn_table,
+                changed_column_types=changed_column_types,
+                added_columns=added_columns,
+            )
+            if predicates_differ or _index_signatures_differ(meta_signature, conn_signature):
+                # Alembic may already have replaced this index for a column or
+                # uniqueness change. Emit a single replacement with all options.
+                _remove_generic_index_ops(modify_table_ops, name)
                 conn_index = conn_indexes[name]
                 if conn_signature.get('postgresql_using') is not None:
                     conn_index.kwargs['postgresql_using'] = conn_signature.get('postgresql_using')
@@ -742,13 +808,10 @@ def _compare_indexes(autogen_context: AutogenContext,
                 modify_table_ops.ops.append(
                     alembicops.DropIndexOp.from_index(conn_index))
 
-                modify_table_ops.ops.append(
-                    alembicops.CreateIndexOp(
-                        name,
-                        index.table.name,
-                        index.columns,
-                        **_get_create_index_kwargs(index, meta_signature),
-                    ))
+                create_op = alembicops.CreateIndexOp.from_index(index)
+                create_op.kw.update(_get_create_index_kwargs(index, meta_signature))
+                modify_table_ops.ops.append(create_op)
+
 # this handles computed columns changing and so drops and re-creates the column.
 
 
@@ -856,6 +919,7 @@ def _get_raw_db_indexes(autogen_context: AutogenContext, conn_table: sa.Table | 
             name,
             {
                 'postgresql_using': row_dict['access_method'],
+                'postgresql_where': row_dict['predicate'],
                 'postgresql_using_internals': None,
                 'postgresql_ops': {},
                 'postgresql_with': {},
@@ -906,6 +970,7 @@ def _get_db_index_key_rows(
             SELECT
                 idx.relname AS index_name,
                 am.amname AS access_method,
+                pg_get_expr(i.indpred, i.indrelid) AS predicate,
                 key_parts.ord AS key_position,
                 pg_get_indexdef(i.indexrelid, key_parts.ord::int, false) AS key_definition,
                 attr.attname AS column_name,
@@ -1031,12 +1096,15 @@ def _get_full_text_index_info(
         info['postgresql_using_internals'] = internals
 
     for key in ('postgresql_concurrently', 'postgresql_where'):
-        if info.get(key) not in (None, False):
+        if _index_option_is_set(key, info.get(key)):
+            continue
+        if raw_index.get(key) is not None:
+            info[key] = raw_index[key]
             continue
         if index is None:
             continue
         value = _get_index_kwarg(index, key)
-        if value not in (None, False):
+        if _index_option_is_set(key, value):
             info[key] = value
 
     return info
@@ -1115,15 +1183,20 @@ def _normalize_index_map(value) -> dict[str, str]:
     }
 
 
+def _index_option_is_set(key, value):
+    # SQL expressions cannot be truth-tested, and a FALSE predicate is present.
+    return value is not None and (key.endswith('_where') or value is not False)
+
+
 def _get_index_kwarg(index: sa.Index, key: str):
     value = index.kwargs.get(key)
-    if value not in (None, False):
+    if _index_option_is_set(key, value):
         return value
 
     postgres_options = index.dialect_options.get('postgresql')
     if postgres_options is not None:
         value = postgres_options.get(key.removeprefix('postgresql_'))
-        if value not in (None, False, [], {}):
+        if _index_option_is_set(key, value):
             return value
     return None
 
@@ -1142,6 +1215,319 @@ def _get_index_signature(index: sa.Index, raw_index: dict[str, Any]) -> dict[str
     }
 
 
+def _index_predicate(index: sa.Index | None, dialect, raw_index):
+    key = f'{dialect.name}_where'
+    value = None
+    if index is not None:
+        value = index.info.get(key) if isinstance(index, FullTextIndex) else None
+        if value is None:
+            value = index.kwargs.get(key)
+    if value is None:
+        value = raw_index.get(key)
+    return compile_index_predicate(value, dialect)
+
+
+def _index_predicates_differ(
+    autogen_context, meta_index, conn_index, raw_index, conn_table, *, changed_column_types, added_columns,
+):
+    connection = autogen_context.connection
+    # These expressions are sent as SQL without DBAPI parameters. Avoid pyformat
+    # escaping percent signs inside literals when compiling them for comparison.
+    dialect = literal_sql_dialect(connection.dialect)
+    meta_predicate = _index_predicate(meta_index, dialect, {})
+    conn_predicate = _index_predicate(conn_index, dialect, raw_index)
+    if meta_predicate == conn_predicate:
+        return False
+    if dialect.name != 'postgresql':
+        return True
+    # Extension comparison runs after table comparison. Use the same planner to
+    # identify create/update/schema-move operations before a failed parse could
+    # abort the savepoint and prevent querying the extension catalog.
+    has_extension_changes = bool(_get_pending_extension_ops(autogen_context))
+    # Enum reflection can omit a schema visible through the search path. Resolve
+    # type identities while catalog queries can still run, before parsing SQL.
+    pending_enums = _get_pending_enum_changes(autogen_context)
+
+    # PostgreSQL deparses predicates with extra parentheses, implicit casts, and
+    # rewrites such as IN -> ANY. Ask its parser to render both expressions in the
+    # same WHERE context, without executing them or stripping meaningful SQL.
+    # This applies boolean coercion to unknown literals such as NULL or 'false'.
+    # PostgreSQL omits a constant TRUE index predicate, so an absent predicate
+    # must compare as TRUE rather than immediately count as an addition/removal.
+    # The temporary view is confined to a savepoint that is always rolled back.
+    view_name = f'ent_index_predicate_{uuid.uuid4().hex}'
+    savepoint = connection.begin_nested()
+    checking_without_table = False
+    try:
+        definitions = []
+        for predicate in (meta_predicate, conn_predicate):
+            query = sa.select(sa.literal_column('1')).select_from(conn_table).where(
+                sa.literal_column(predicate if predicate is not None else 'TRUE'),
+            )
+            connection.exec_driver_sql(
+                f'CREATE OR REPLACE TEMP VIEW {view_name} AS {query.compile(dialect=dialect)}',
+                execution_options={'no_parameters': True},
+            )
+            definitions.append(connection.execute(
+                sa.text('SELECT pg_get_viewdef(to_regclass(:view_name), false)'),
+                {'view_name': f'pg_temp.{view_name}'},
+            ).scalar_one())
+        if definitions[0] != definitions[1]:
+            return True
+        # Equality to an absent predicate proves constant TRUE independently of
+        # column types. Otherwise inspect resolved dependencies before accepting
+        # equality under the old types: a DATE parser can discard timestamp time.
+        if not changed_column_types or meta_predicate is None or conn_predicate is None:
+            return False
+        columns = _predicate_column_dependencies(connection, view_name, conn_table, dialect)
+        if columns is not None:
+            return not changed_column_types.isdisjoint(columns)
+        # Relation-level dependencies can mean a whole-row predicate or a
+        # constant. Parsing without a FROM proves independence for constants;
+        # whole-row references fail and retain conservative recreation below.
+        query = sa.select(sa.literal_column('1')).where(sa.literal_column(meta_predicate))
+        checking_without_table = True
+        connection.exec_driver_sql(
+            f'CREATE OR REPLACE TEMP VIEW {view_name} AS {query.compile(dialect=dialect)}',
+            execution_options={'no_parameters': True},
+        )
+        # Composite casts can depend on the table's row type even without FROM.
+        return _predicate_column_dependencies(connection, view_name, conn_table, dialect) is None
+    except sa.exc.ProgrammingError as error:
+        sqlstate = getattr(error.orig, 'pgcode', None)
+        if sqlstate == '42703' and not checking_without_table:
+            # A type change cannot excuse a missing column. Use actual AddColumn
+            # operations (after filters), and attribute the reported reference to
+            # this table instead of deferring because some column is being added.
+            savepoint.rollback()
+            if _pending_column_explains(error, connection, conn_table, added_columns):
+                return True
+            raise
+        # Pending types or whole-row references can prevent comparison against
+        # the old table context. Conservatively defer to index recreation.
+        if changed_column_types:
+            return True
+        # A predicate can cast to a new enum declared on another table.
+        if pending_enums.new_types and _pending_enum_type_explains(error, pending_enums):
+            return True
+        # A pending extension can supply missing functions/operators (42883),
+        # types (42704), or schemas (3F000). Valid predicates still normalize as
+        # usual; declarations for already installed extensions do not defer SQL.
+        if has_extension_changes and sqlstate in ('42883', '42704', '3F000'):
+            return True
+        raise
+    except sa.exc.DataError as error:
+        if changed_column_types:
+            return True
+        if _postgres_error_signature(error)[:2] == ('22P02', 'enum_in'):
+            # Attribute the observed error to a specific declared enum addition.
+            # Another enum's pending label cannot make this predicate valid.
+            # Roll back before the read-only CAST probes need this connection.
+            savepoint.rollback()
+            if _postgres_error_signature(error) in _pending_enum_label_errors(connection, pending_enums):
+                return True
+            raise
+        raise
+    finally:
+        if savepoint.is_active:
+            savepoint.rollback()
+
+
+def _postgres_error_signature(error):
+    original = error.orig
+    diagnostic = getattr(original, 'diag', None)
+    return (
+        getattr(original, 'pgcode', None),
+        getattr(diagnostic, 'source_function', None),
+        getattr(diagnostic, 'message_primary', None),
+    )
+
+
+def _pending_column_explains(error, connection, table, added_columns):
+    if not added_columns:
+        return False
+    source = _postgres_error_signature(error)[1]
+    if source not in ('errorMissingColumn', 'unknown_attribute'):
+        return False
+    # PostgreSQL leaves diag.column_name empty for these parser errors. Decode
+    # the reference at its character position using the server's string settings;
+    # never extract a name from localized error text. Resolve the actual table
+    # namespace, including search paths where the table is not in current_schema.
+    settings = connection.execute(sa.text('''
+        SELECT namespace.nspname AS schema, current_database() AS database,
+            current_setting('standard_conforming_strings') AS standard_strings,
+            current_setting('backslash_quote') AS backslash_quote
+        FROM pg_catalog.pg_class relation
+        JOIN pg_catalog.pg_namespace namespace ON namespace.oid = relation.relnamespace
+        WHERE relation.oid = pg_catalog.to_regclass(:table_name)
+    '''), {'table_name': literal_sql_dialect(connection.dialect).identifier_preparer.format_table(table)}).one()
+    names = column_name_at_position(
+        error.statement, error.orig.diag.statement_position,
+        indirect=source == 'unknown_attribute',
+        standard_conforming_strings=settings.standard_strings == 'on',
+        backslash_quote=settings.backslash_quote != 'off',
+    )
+    if not names or names[-1] not in added_columns:
+        return False
+    qualifiers = names[:-1]
+    if source == 'unknown_attribute' and qualifiers and qualifiers[0] in table.c:
+        # (column).field addresses an existing composite-valued column rather
+        # than the table's whole row, even if that column shares the table name.
+        return False
+    return qualifiers in (
+        (), (table.name,), (settings.schema, table.name),
+        (settings.database, settings.schema, table.name),
+    )
+
+
+def _pending_enum_type_explains(error, pending_enums):
+    if _postgres_error_signature(error)[:2] != ('42704', 'typenameType'):
+        return False
+    names = type_name_at_position(
+        error.statement, error.orig.diag.statement_position,
+        standard_conforming_strings=pending_enums.standard_conforming_strings,
+        backslash_quote=pending_enums.backslash_quote,
+    )
+    if not names:
+        return False
+    if len(names) == 3 and names[0] == pending_enums.database_name:
+        names = names[1:]
+    if len(names) == 2:
+        return names in pending_enums.new_types
+    if len(names) == 1:
+        return any((schema, names[0]) in pending_enums.new_types for schema in pending_enums.search_path)
+    return False
+
+
+def _pending_enum_label_errors(connection, pending_enums):
+    if pending_enums.label_errors is not None:
+        return pending_enums.label_errors
+    errors = set()
+    for enum_type, labels in pending_enums.new_values.values():
+        for label in labels:
+            savepoint = connection.begin_nested()
+            try:
+                connection.execute(sa.select(sa.cast(sa.bindparam('enum_label', label), enum_type)))
+            except sa.exc.DataError as error:
+                signature = _postgres_error_signature(error)
+                if signature[:2] != ('22P02', 'enum_in'):
+                    raise
+                # PostgreSQL supplies the localized message and quotes the
+                # resolved type name. Compare exact errors from the same server;
+                # do not extract names or values from English error text.
+                errors.add(signature)
+            finally:
+                savepoint.rollback()
+    pending_enums.label_errors = errors
+    return errors
+
+
+def _predicate_column_dependencies(connection, view_name, table, dialect):
+    """Return resolved predicate columns, or None for whole-row dependencies."""
+    rows = connection.execute(sa.text('''
+        WITH RECURSIVE dependencies AS (
+            SELECT dependency.refclassid, dependency.refobjid, dependency.refobjsubid
+            FROM pg_rewrite AS rewrite
+            JOIN pg_depend AS dependency
+              ON dependency.classid = 'pg_rewrite'::regclass AND dependency.objid = rewrite.oid
+            WHERE rewrite.ev_class = to_regclass(:view_name)
+        ), dependency_types AS (
+            SELECT type.oid, type.typrelid, type.typelem, type.typbasetype
+            FROM dependencies JOIN pg_type AS type
+              ON dependencies.refclassid = 'pg_type'::regclass AND type.oid = dependencies.refobjid
+            UNION
+            SELECT base.oid, base.typrelid, base.typelem, base.typbasetype
+            FROM dependency_types JOIN pg_type AS base
+              ON base.oid IN (dependency_types.typelem, dependency_types.typbasetype)
+        )
+        SELECT dependency.refobjsubid, attribute.attname, false AS composite_type
+        FROM dependencies AS dependency
+        LEFT JOIN pg_attribute AS attribute
+          ON attribute.attrelid = dependency.refobjid AND attribute.attnum = dependency.refobjsubid
+        WHERE dependency.refclassid = 'pg_class'::regclass
+          AND dependency.refobjid = to_regclass(:table_name)
+        UNION ALL
+        SELECT 0, NULL, true FROM dependency_types WHERE typrelid <> 0
+    '''), {
+        'view_name': f'pg_temp.{view_name}',
+        'table_name': dialect.identifier_preparer.format_table(table),
+    }).mappings().all()
+    # Composite casts may depend on the table's row shape even when a named
+    # column suppresses its relation-level dependency. Follow array/domain links;
+    # other composite types remain conservative because they can nest row types.
+    if any(row['composite_type'] or row['refobjsubid'] == 0 or row['attname'] is None for row in rows):
+        return None
+    return {row['attname'] for row in rows}
+
+
+def _get_pending_enum_changes(autogen_context):
+    pending = _pending_schema_changes(autogen_context)
+    if pending.enum_changes is None:
+        pending.enum_changes = _plan_enum_changes(autogen_context)
+    return pending.enum_changes
+
+
+def _plan_enum_changes(autogen_context):
+    # Predicates can cast to enums declared on any table. Read their identities
+    # and labels together, once per comparison, before a parse aborts a savepoint.
+    if autogen_context.metadata is None:
+        return _PendingEnumChanges()
+    connection = autogen_context.connection
+    # These identifiers are bound values, so do not apply DBAPI percent escaping.
+    preparer = literal_sql_dialect(connection.dialect).identifier_preparer
+    columns = [
+        column for table in autogen_context.metadata.tables.values()
+        for column in table.columns if isinstance(column.type, postgresql.ENUM)
+    ]
+    changes = _PendingEnumChanges()
+    if not columns:
+        return changes
+    rows = connection.execute(sa.text('''
+        SELECT declared_enum.position,
+            pg_catalog.to_regtype(declared_enum.type_name)::oid AS metadata_oid,
+            pg_catalog.parse_ident(declared_enum.type_name)::name[] AS identifiers,
+            current_schema() AS default_schema, current_schemas(true) AS search_path,
+            current_database() AS database_name,
+            current_setting('standard_conforming_strings') AS standard_conforming_strings,
+            current_setting('backslash_quote') AS backslash_quote,
+            attribute.atttypid AS column_oid,
+            actual_type.typtype AS column_kind,
+            ARRAY(SELECT enumlabel FROM pg_catalog.pg_enum
+                  WHERE enumtypid = attribute.atttypid) AS labels
+        FROM unnest(CAST(:tables AS text[]), CAST(:columns AS text[]), CAST(:types AS text[]))
+            WITH ORDINALITY AS declared_enum(table_name, column_name, type_name, position)
+        LEFT JOIN pg_catalog.pg_attribute AS attribute
+            ON attribute.attrelid = pg_catalog.to_regclass(declared_enum.table_name)
+            AND attribute.attname = declared_enum.column_name
+            AND attribute.attnum > 0 AND NOT attribute.attisdropped
+        LEFT JOIN pg_catalog.pg_type AS actual_type ON actual_type.oid = attribute.atttypid
+    '''), {
+        'tables': [preparer.format_table(column.table) for column in columns],
+        'columns': [column.name for column in columns],
+        'types': [preparer.format_type(column.type) for column in columns],
+    })
+    for row in rows:
+        changes.search_path = tuple(row.search_path)
+        changes.database_name = row.database_name
+        changes.standard_conforming_strings = row.standard_conforming_strings == 'on'
+        changes.backslash_quote = row.backslash_quote != 'off'
+        if row.column_oid is None and row.metadata_oid is None:
+            # New columns/tables emit AddEnumOp. A type change on an existing
+            # column does not by itself declare a new enum migration.
+            names = tuple(row.identifiers)
+            for schema in _pending_schema_changes(autogen_context).enum_schemas:
+                changes.new_types.add((schema or row.default_schema, names[-1]))
+        elif row.metadata_oid == row.column_oid and row.column_kind == 'e':
+            # Match actual OIDs, including explicit public schemas and quoted
+            # names, without conflating a shadowed type with the column's enum.
+            enum_type = columns[row.position - 1].type
+            labels = set(enum_type.enums) - set(row.labels)
+            if labels:
+                entry = changes.new_values.setdefault(row.metadata_oid, (enum_type, set()))
+                entry[1].update(labels)
+    return changes
+
+
 def _get_create_index_kwargs(
     index: sa.Index, signature: dict[str, Any] | None = None
 ) -> dict[str, Any]:
@@ -1153,7 +1539,7 @@ def _get_create_index_kwargs(
         'sqlite_where',
     ):
         value = index.kwargs.get(key)
-        if value not in (None, False):
+        if _index_option_is_set(key, value):
             kwargs[key] = value
 
     if signature is not None:
