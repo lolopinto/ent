@@ -23,6 +23,20 @@ _TABLE_DDL = (alembicops.ModifyTableOps, alembicops.CreateTableOp, alembicops.Dr
 _EDGE_OPERATIONS = (ops.AddEdgesOp, ops.RemoveEdgesOp, ops.ModifyEdgeOp)
 
 
+def index_requires_autocommit(operation):
+    # Share this decision with the renderer: even unrelated concurrent index
+    # work commits every preceding DDL operation in the migration.
+    if isinstance(operation, (alembicops.CreateIndexOp, alembicops.DropIndexOp)):
+        options = getattr(operation, "kw", None)
+        if options is None:
+            options = getattr(operation, "kwargs", {})
+    elif isinstance(operation, (ops.CreateFullTextIndexOp, ops.DropFullTextIndexOp)):
+        options = operation.kw.get("info", {})
+    else:
+        return False
+    return options.get("postgresql_concurrently") is True
+
+
 def order_upgrade(upgrade_ops, *, dialect_name):
     # Comparators only collect operations. Resolve ordering once, after every
     # table is known and before Alembic constructs the inverse migration.

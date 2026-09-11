@@ -16,7 +16,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - generate reversible migrations when an existing index's partial predicate changes,
   handle pending extension, enum, and column-type changes, restore extension schemas
   before dependent indexes on downgrade, and preserve literal percent signs in
-  generated index migrations (#2028).
+  generated index migrations. Reject automatic foreign-key rebinding across concurrent
+  index operations so migrations cannot temporarily disable unchanged constraints (#2028).
 - avoid whitespace-only churn in generated `schema.py` and `schema.sql` files
   after repeated codegen runs (#2016).
 

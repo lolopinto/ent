@@ -103,6 +103,13 @@ class TestPostgresIndexForeignKeys:
             assert c.execute(sa.text("SELECT to_regclass('contacts_owner_key')")).scalar_one() is None
             c.commit()
             return
+        if concurrently:
+            with pytest.raises(ValueError, match='autocommit.*explicit migration'):
+                r2.revision()
+            assert foreign_keys() == initial
+            assert c.execute(sa.text("SELECT to_regclass('contacts_owner_key')")).scalar_one() is None
+            c.commit()
+            return
         r2.revision()
         assert foreign_keys() == initial
         revision = Path(_get_revision_file(r2)).read_text()
@@ -235,7 +242,8 @@ class TestPostgresIndexForeignKeys:
         connection.execute(sa.text('CREATE UNIQUE INDEX unrelated_idx ON contacts(owner_id)'))
         connection.commit()
         after = _metadata_with_child(False)
-        sa.Index('unrelated_idx', after.tables['contacts'].c.owner_id, unique=True, postgresql_where=sa.text('owner_id > 0'))
+        sa.Index('unrelated_idx', after.tables['contacts'].c.owner_id, unique=True,
+                 postgresql_where=sa.text('owner_id > 0'), postgresql_concurrently=True)
         fk_sql = sa.text("SELECT oid, conindid FROM pg_constraint WHERE conname='children_owner_fk'")
         before_fk = connection.execute(fk_sql).one()
         connection.commit()
@@ -264,6 +272,100 @@ class TestPostgresIndexForeignKeys:
         with pytest.raises(ValueError, match='attributes requiring an explicit migration'):
             r2.revision()
         assert connection.execute(definition).one() == original
+
+    def test_enum_commit_before_rebinding_remains_supported(self, new_test_runner):
+        from sqlalchemy.dialects import postgresql
+
+        def metadata(after):
+            result = _metadata_with_child(False)
+            next(iter(result.tables['contacts'].indexes)).kwargs['postgresql_with'] = {'fillfactor': 80 if after else 70}
+            labels = ['active', 'archived'] if after else ['active']
+            sa.Table('other', result, sa.Column('id', sa.Integer(), primary_key=True),
+                     sa.Column('state', postgresql.ENUM(*labels, name='other_state', create_type=False)))
+            return result
+
+        r = new_test_runner(metadata(False))
+        r.run()
+        r2 = new_test_runner(metadata(True), r)
+        r2.run()
+        assert r2.compute_changes() == []
+        r2.get_connection().commit()
+        state = _cascade_state(r2.engine)
+        # Enum-label commits precede removal in upgrade. The irreversible
+        # downgrade guard also runs before FK or index changes.
+        with pytest.raises(ValueError, match='not reversible'):
+            r2.downgrade('-1', delete_files=False)
+        assert _cascade_state(r2.engine) == state
+
+    @pytest.mark.parametrize('barrier', ['supporting', 'other_create', 'other_drop', 'full_text_create', 'full_text_drop'])
+    def test_concurrent_rebinding_rejected_without_losing_cascade(self, new_test_runner, barrier):
+        from auto_schema.schema_item import FullTextIndex
+
+        def metadata(after):
+            result = _metadata_with_child(False)
+            index = next(iter(result.tables['contacts'].indexes))
+            index.kwargs['postgresql_with'] = {'fillfactor': 80 if after else 70}
+            index.kwargs['postgresql_concurrently'] = barrier == 'supporting'
+            next(iter(result.tables['children'].foreign_key_constraints)).ondelete = 'CASCADE'
+            other = sa.Table('unrelated', result, sa.Column('id', sa.Integer(), primary_key=True), sa.Column('label', sa.Text()))
+            if barrier != 'supporting' and after == barrier.endswith('create'):
+                if barrier.startswith('full_text'):
+                    other.append_constraint(FullTextIndex('unrelated_idx', info={
+                        'columns': ['label'], 'postgresql_using': 'gin',
+                        'postgresql_using_internals': "to_tsvector('english', label)",
+                        'postgresql_concurrently': True,
+                    }))
+                else:
+                    sa.Index('unrelated_idx', other.c.label, postgresql_concurrently=True)
+            return result
+
+        r = new_test_runner(metadata(False))
+        r.run()
+        connection = r.get_connection()
+        connection.execute(sa.text('INSERT INTO contacts(id, owner_id) VALUES (1, 10)'))
+        connection.execute(sa.text('INSERT INTO children(id, owner_id) VALUES (1, 10)'))
+        connection.commit()
+        before = _cascade_state(r.engine)
+        r2 = new_test_runner(metadata(True), r)
+        files = set(Path(r2.get_schema_path()).rglob('*.py'))
+        # PostgreSQL does not reflect CONCURRENTLY, so model a drop request via
+        # the collected operation. This also covers the concurrent CREATE that
+        # reversing that drop emits during downgrade.
+        if barrier.endswith('drop'):
+            from auto_schema import postgresql_dependencies
+            collect = postgresql_dependencies.collect_index_foreign_keys
+
+            def concurrent_drop(context, upgrade, schemas):
+                for table_ops in upgrade.ops:
+                    for operation in getattr(table_ops, 'ops', []):
+                        if getattr(operation, 'index_name', None) == 'unrelated_idx':
+                            options = operation.kw.setdefault('info', {}) if barrier.startswith('full_text') else operation.kw
+                            options['postgresql_concurrently'] = True
+                return collect(context, upgrade, schemas)
+
+            with patch.object(postgresql_dependencies, 'collect_index_foreign_keys', side_effect=concurrent_drop):
+                with pytest.raises(ValueError, match='autocommit.*explicit migration'):
+                    r2.revision()
+        else:
+            with pytest.raises(ValueError, match='autocommit.*explicit migration'):
+                r2.revision()
+        assert _cascade_state(r.engine) == before
+        assert set(Path(r2.get_schema_path()).rglob('*.py')) == files
+        # A normal write on another connection still sees the unchanged CASCADE.
+        with r.engine.begin() as writer:
+            writer.execute(sa.text('DELETE FROM contacts WHERE id=1'))
+            assert writer.execute(sa.text('SELECT count(*) FROM children')).scalar_one() == 0
+
+
+def _cascade_state(engine):
+    with engine.connect() as connection:
+        return (
+            connection.execute(sa.text("SELECT indexrelid, pg_get_indexdef(indexrelid), indisvalid FROM pg_index WHERE indexrelid='contacts_active_idx'::regclass")).one(),
+            connection.execute(sa.text("SELECT oid, conindid, pg_get_constraintdef(oid) FROM pg_constraint WHERE conname='children_owner_fk'")).one(),
+            connection.execute(sa.text('SELECT version_num FROM alembic_version')).scalar_one(),
+            connection.execute(sa.text('SELECT id, owner_id FROM contacts ORDER BY id')).all(),
+            connection.execute(sa.text('SELECT * FROM children ORDER BY id')).all(),
+        )
 
 
 def _metadata_with_child(after, *, concurrently=False):

@@ -4,6 +4,7 @@ import alembic.operations.ops as alembicops
 import sqlalchemy as sa
 
 from . import ops
+from .migration_ordering import index_requires_autocommit
 
 
 def collect_index_foreign_keys(context, upgrade_ops, schemas):
@@ -65,6 +66,7 @@ def collect_index_foreign_keys(context, upgrade_ops, schemas):
         for table in context.table_key_to_table.values()
     }
     reflected = sa.MetaData()
+    concurrent_indexes = _contains_concurrent_index(upgrade_ops)
     for dependency in dependencies:
         schema, table_name, name = (dependency[key] for key in ("source_schema", "source_table", "conname"))
         table_key = (schema, table_name)
@@ -101,8 +103,22 @@ def collect_index_foreign_keys(context, upgrade_ops, schemas):
             # losing a comment while replacing an otherwise unchanged constraint.
             _cannot_rebind(dependency, "the foreign key has attributes requiring an explicit migration")
 
+        if concurrent_indexes:
+            # Global ordering places all index DDL between FK removal and
+            # recreation. CONCURRENTLY would commit the removal, exposing a
+            # window without enforcement or cascading actions to other writers.
+            # The inverse index operations retain the same autocommit flags.
+            # Enum-label commits run before FK removal and do not create this gap.
+            _cannot_rebind(dependency, "automatic rebinding would cross an autocommit boundary; use an explicit migration strategy")
+
         create = _foreign_key_operation(dependency)
         upgrade_ops.ops.append(alembicops.ModifyTableOps(table_name, [create.reverse(), create], schema=schema))
+
+
+def _contains_concurrent_index(operation):
+    if isinstance(operation, alembicops.OpContainer):
+        return any(_contains_concurrent_index(child) for child in operation.ops)
+    return index_requires_autocommit(operation)
 
 
 def _cannot_rebind(dependency, reason):
