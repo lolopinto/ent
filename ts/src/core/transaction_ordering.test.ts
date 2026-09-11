@@ -1,5 +1,5 @@
 import DB, { Dialect } from "./db";
-import { withTransaction } from "./transaction";
+import { withTransactionScope } from "./transaction";
 import { loadRows } from "./ent";
 import { Eq } from "./clause";
 import { WriteOperation } from "../action/action";
@@ -13,27 +13,27 @@ import {
 } from "../testutils/builder";
 import { TestContext } from "../testutils/context/test_context";
 
-class ResourceReservation extends BaseEnt {
-  nodeType = "ResourceReservation";
+class ScopeReservation extends BaseEnt {
+  nodeType = "ScopeReservation";
 }
 const schema = getBuilderSchemaFromFields(
   { amount: IntegerType() },
-  ResourceReservation,
+  ScopeReservation,
 );
 const context = new TestContext();
 const viewer = context.getViewer();
 const options = {
-  tableName: "resource_reservations",
+  tableName: "scope_reservations",
   fields: getDbFields(schema),
   context,
 };
-class Guarded extends SimpleAction<ResourceReservation> {
-  requiresTransaction() {
+class Scoped extends SimpleAction<ScopeReservation> {
+  requiresTransactionScope() {
     return true;
   }
 }
 const create = (amount = 1) =>
-  new Guarded(
+  new Scoped(
     viewer,
     schema,
     new Map([["amount", amount]]),
@@ -48,7 +48,7 @@ function deferred() {
   return { promise, resolve };
 }
 const rows = () =>
-  DB.getInstance().getPool().query("SELECT amount FROM resource_reservations");
+  DB.getInstance().getPool().query("SELECT amount FROM scope_reservations");
 
 setupPostgres(() => [getSchemaTable(schema, Dialect.Postgres)]);
 beforeEach(() => context.cache.reset());
@@ -60,50 +60,44 @@ describe.each([
   "valid",
   "validX",
   "validWithErrors",
-] as const)("%s reserves roots before asynchronous resource resolution", (entry) => {
+] as const)("%s reserves roots before asynchronous preparation", (entry) => {
   test.each([
     "delay only",
     "invariant read",
     "nested validation",
-  ])("%s cannot overlap a second guarded root even when caught", async (mode) => {
+  ])("%s cannot overlap a second root even when caught", async (mode) => {
     const started = deferred();
     const release = deferred();
     const hooks: string[] = [];
     let caught: unknown;
     let outer: unknown;
     try {
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const make = (delay: boolean) => {
           let count = 0;
           const action = create();
-          Object.assign(action, {
-            getTransactionResources: async () => {
-              hooks.push(delay ? "slow" : "fast");
-              if (mode !== "delay only") {
-                count = (
-                  await loadRows({ ...options, clause: Eq("amount", 1) })
-                ).length;
-              }
-              if (mode === "nested validation") {
-                const nested = new SimpleAction(
-                  viewer,
-                  schema,
-                  new Map([["amount", 2]]),
-                  WriteOperation.Insert,
-                  null,
-                );
-                await nested.validX();
-              }
-              if (delay) {
-                started.resolve();
-                await release.promise;
-              }
-              return ["single-reservation"];
-            },
-          });
-          action.getValidators = () => [
+          action.getTriggers = () => [
             {
-              validate: async () => {
+              changeset: async () => {
+                hooks.push(delay ? "slow" : "fast");
+                if (mode !== "delay only") {
+                  count = (
+                    await loadRows({ ...options, clause: Eq("amount", 1) })
+                  ).length;
+                }
+                if (mode === "nested validation") {
+                  await new SimpleAction(
+                    viewer,
+                    schema,
+                    new Map([["amount", 2]]),
+                    WriteOperation.Insert,
+                    null,
+                  ).validX();
+                }
+                if (delay) {
+                  started.resolve();
+                  await release.promise;
+                }
                 if (count >= 1) {
                   throw new Error("already reserved");
                 }
@@ -138,27 +132,29 @@ describe.each([
     }
     expect(caught).toBeInstanceOf(Error);
     expect((caught as Error).message).toMatch(
-      "guarded root actions must be prepared and saved sequentially",
+      "root actions must be prepared and saved sequentially",
     );
     expect(outer).toBe(caught);
     expect(hooks).toEqual(["slow"]);
     expect((await rows()).rows).toEqual([]);
   });
 
-  test("a caught delayed resource failure aborts earlier writes", async () => {
+  test("a caught delayed preparation failure aborts earlier writes", async () => {
     const started = deferred();
     const release = deferred();
-    const failure = new Error("resource resolution failed");
-    const transaction = withTransaction(async () => {
+    const failure = new Error("preparation failed");
+    const transaction = withTransactionScope(async () => {
       await create().saveX();
       const action = create();
-      Object.assign(action, {
-        getTransactionResources: async () => {
-          started.resolve();
-          await release.promise;
-          throw failure;
+      action.getTriggers = () => [
+        {
+          changeset: async () => {
+            started.resolve();
+            await release.promise;
+            throw failure;
+          },
         },
-      });
+      ];
       await expect(
         entry === "builder.saveX" ? action.builder.saveX() : action[entry](),
       ).rejects.toBe(failure);
@@ -179,40 +175,30 @@ describe.each([
   });
 });
 
-test.each([
-  false,
-  true,
-])("parallel child resource hooks preserve overlap checks (shared keys: %s)", async (shared) => {
+test("child preparation can run in parallel under one root", async () => {
   const bothStarted = deferred();
   let arrivals = 0;
-  const transaction = withTransaction(async () => {
-    const parent = Object.assign(create(1), {
-      getTransactionResources: () => ["parent"],
-    });
-    const children = [2, 3].map((amount) =>
-      Object.assign(create(amount), {
-        getTransactionResources: async () => {
-          if (++arrivals === 2) {
-            bothStarted.resolve();
-          }
-          await bothStarted.promise;
-          return [shared ? "child" : `child:${amount}`];
+  await withTransactionScope(async () => {
+    const parent = create(1);
+    const children = [2, 3].map((amount) => {
+      const child = create(amount);
+      child.getTriggers = () => [
+        {
+          changeset: async () => {
+            if (++arrivals === 2) {
+              bothStarted.resolve();
+            }
+            await bothStarted.promise;
+          },
         },
-      }),
-    );
+      ];
+      return child;
+    });
     parent.getTriggers = () =>
       children.map((child) => ({ changeset: () => child.changeset() }));
     await parent.saveX();
   });
-  if (shared) {
-    await expect(transaction).rejects.toThrow(
-      "overlapping guarded action preparation branches",
-    );
-    expect((await rows()).rows).toEqual([]);
-  } else {
-    await transaction;
-    expect((await rows()).rows.map((row) => row.amount).sort()).toEqual([
-      1, 2, 3,
-    ]);
-  }
+  expect((await rows()).rows.map((row) => row.amount).sort()).toEqual([
+    1, 2, 3,
+  ]);
 });

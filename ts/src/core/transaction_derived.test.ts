@@ -10,7 +10,7 @@ import {
   loadRows,
 } from "./ent";
 import { ObjectLoaderFactory } from "./loaders";
-import { withTransaction } from "./transaction";
+import { withTransactionScope } from "./transaction";
 import {
   assertEntTransaction,
   getTransactionState,
@@ -55,7 +55,7 @@ const create = () =>
     null,
   ).saveX();
 class GuardedEdit extends SimpleAction<DerivedAccount> {
-  requiresTransaction() {
+  requiresTransactionScope() {
     return true;
   }
 }
@@ -89,9 +89,6 @@ function deferred() {
   });
   return { promise, resolve };
 }
-const independent = (action: GuardedEdit, key: string) =>
-  Object.assign(action, { getTransactionResources: () => [key] });
-
 setupPostgres(() => [getSchemaTable(schema, Dialect.Postgres)]);
 beforeEach(() => {
   context.cache.reset();
@@ -126,10 +123,10 @@ describe.each([
     "query",
     "queryAll",
     "exec",
-  ] as const)("%s rows retain their provenance before privacy and support guarded saves", async (queryMethod) => {
+  ] as const)("%s rows retain their provenance before privacy and support scoped saves", async (queryMethod) => {
     const account = await create();
     let checks = 0;
-    await withTransaction(async (tx) => {
+    await withTransactionScope(async (tx) => {
       const row = (
         await tx[queryMethod]("SELECT * FROM derived_accounts WHERE id = $1", [
           account.id,
@@ -157,7 +154,7 @@ describe.each([
     const account = await create();
     let row: Data;
     if (origin === "previous scope") {
-      row = await withTransaction(async (tx) => {
+      row = await withTransactionScope(async (tx) => {
         return (
           await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
             account.id,
@@ -180,7 +177,7 @@ describe.each([
     let caught: unknown;
     let outer: unknown;
     try {
-      await withTransaction(async (tx) => {
+      await withTransactionScope(async (tx) => {
         if (origin === "stale generation" || origin === "unknown current row") {
           row = (
             await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
@@ -212,17 +209,17 @@ describe.each([
   test("copied old data cannot overwrite a later committed balance", async () => {
     const account = await create();
     const copied = { ...account.data };
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       await edit(await load(account.id), 80).saveX();
     });
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const stale = await derive(copied);
         await edit(stale!, stale!.data.balance - 30).saveX();
       }),
     ).rejects.toThrow("reload existingEnt");
     expect((await load(account.id)).data.balance).toBe(80);
-    await withTransaction(async (tx) => {
+    await withTransactionScope(async (tx) => {
       const row = (
         await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
           account.id,
@@ -241,12 +238,12 @@ describe.each([
     expect(derived!.data.balance).toBe(100);
   });
 
-  test("pending derived privacy cannot cross a guarded save", async () => {
+  test("pending derived privacy cannot cross a scoped save", async () => {
     const account = await create();
     const started = deferred();
     const release = deferred();
     await expect(
-      withTransaction(async (tx) => {
+      withTransactionScope(async (tx) => {
         const row = (
           await tx.query("SELECT * FROM derived_accounts WHERE id = $1", [
             account.id,
@@ -287,12 +284,9 @@ describe.each([
     let settled = false;
     let settledBeforeRelease = false;
     let prepared = 0;
-    const transaction = withTransaction(async (tx) => {
-      const parent = independent(
-        edit(await load(accounts[0].id), 90),
-        "parent",
-      );
-      const bad = independent(edit(await load(accounts[1].id), 80), "bad");
+    const transaction = withTransactionScope(async (tx) => {
+      const parent = edit(await load(accounts[0].id), 90);
+      const bad = edit(await load(accounts[1].id), 80);
       bad.getValidators = () => [
         { validate: async () => (invalid ? failure : undefined) },
       ];
@@ -311,10 +305,7 @@ describe.each([
           changeset: () => {
             const setup = (async () => {
               const derived = await derive(row, PrivacyAccount);
-              const changeset = await independent(
-                edit(derived!, 70),
-                "slow",
-              ).changeset();
+              const changeset = await edit(derived!, 70).changeset();
               prepared++;
               return changeset;
             })();

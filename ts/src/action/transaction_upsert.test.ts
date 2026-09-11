@@ -3,7 +3,7 @@ import { Allow, Deny, ID } from "../core/base";
 import { Dialect } from "../core/db";
 import { loadEnt, loadEntX } from "../core/ent";
 import { ObjectLoaderFactory } from "../core/loaders";
-import { withTransaction } from "../core/transaction";
+import { withTransactionScope } from "../core/transaction";
 import { BooleanType, IntegerType, StringType } from "../schema";
 import {
   BaseEnt,
@@ -55,7 +55,7 @@ const context = new TestContext();
 const viewer = context.getViewer();
 const load = (id: ID) => loadEntX(viewer, id, options);
 class Guarded extends SimpleAction<UpsertAccount> {
-  requiresTransaction() {
+  requiresTransactionScope() {
     return true;
   }
 }
@@ -85,20 +85,17 @@ function conflict(
   update = false,
 ) {
   const attemptedID = key === "id" ? owner.id : randomUUID();
-  const action = Object.assign(
-    new Guarded(
-      viewer,
-      schema,
-      new Map<string, unknown>([
-        ["id", attemptedID],
-        ["accountKey", owner.data.account_key],
-        ["balance", 100],
-        ["admin", true],
-      ]),
-      WriteOperation.Insert,
-      null,
-    ),
-    { getTransactionResources: () => ["identity"] },
+  const action = new Guarded(
+    viewer,
+    schema,
+    new Map<string, unknown>([
+      ["id", attemptedID],
+      ["accountKey", owner.data.account_key],
+      ["balance", 100],
+      ["admin", true],
+    ]),
+    WriteOperation.Insert,
+    null,
   );
   action.builder.orchestrator.setOnConflictOptions({
     onConflictCols: [key],
@@ -128,12 +125,10 @@ describe.each([
     ["account_key", true],
   ] as const)("conflict on %s with result privacy %s sees final graph writes", async (key, privacy) => {
     const owner = await create();
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const current = await load(owner.id);
       const { action: upsert, attemptedID } = conflict(current, key, update);
-      const writer = Object.assign(edit(current, 80), {
-        getTransactionResources: () => ["balance"],
-      });
+      const writer = edit(current, 80);
       const parent = position === "root" ? upsert : writer;
       const child = position === "root" ? writer : upsert;
       parent.getTriggers = () => [{ changeset: () => child.changeset() }];
@@ -159,7 +154,7 @@ test.each([
 ])("conflict result deleted later in the graph, strict getter %s", async (strict) => {
   const owner = await create();
   let resultFailure: unknown;
-  const transaction = withTransaction(async () => {
+  const transaction = withTransactionScope(async () => {
     const current = await load(owner.id);
     const { action: upsert } = conflict(current, "account_key");
     const parent = new SimpleAction(
@@ -197,7 +192,7 @@ test.each([
   true,
 ])("new row result includes later graph writes, upsert %s", async (upsert) => {
   const id = randomUUID();
-  await withTransaction(async () => {
+  await withTransactionScope(async () => {
     const action = new Guarded(
       viewer,
       schema,
@@ -240,21 +235,14 @@ test.each([
 ])("ordinary child result reflects a later raw sibling write, privacy %s", async (privacy) => {
   const parentOwner = await create();
   const childOwner = await create();
-  await withTransaction(async () => {
-    const parent = Object.assign(edit(await load(parentOwner.id), 80), {
-      getTransactionResources: () => ["parent", "balance"],
-    });
-    const child = Object.assign(
-      new Guarded(
-        viewer,
-        schema,
-        new Map([["admin", true]]),
-        WriteOperation.Edit,
-        await load(childOwner.id),
-      ),
-      {
-        getTransactionResources: () => ["identity"],
-      },
+  await withTransactionScope(async () => {
+    const parent = edit(await load(parentOwner.id), 80);
+    const child = new Guarded(
+      viewer,
+      schema,
+      new Map([["admin", true]]),
+      WriteOperation.Edit,
+      await load(childOwner.id),
     );
     parent.getTriggers = () => [
       {

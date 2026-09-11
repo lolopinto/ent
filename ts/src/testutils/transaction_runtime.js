@@ -11,8 +11,8 @@ const {
   ContextCache,
   LoggedOutViewer,
 } = require("../index");
-const { withTransaction, getTransactionScope } = require("../action");
-assert.equal("withTransaction" in require("../index"), false);
+const { withTransactionScope, getTransactionScope } = require("../action");
+assert.equal("withTransactionScope" in require("../index"), false);
 assert.equal("getTransactionScope" in require("../index"), false);
 
 async function main() {
@@ -83,7 +83,7 @@ async function main() {
     let arrivals = 0;
     const attempts = [];
     const sell = (amount) =>
-      withTransaction(
+      withTransactionScope(
         async (tx) => {
           attempts.push(tx.attempt);
           assert.equal(getTransactionScope().isolationLevel, "serializable");
@@ -106,21 +106,21 @@ async function main() {
     assert.equal((await load()).balance, 50);
     assert.ok(attempts.includes(1));
     await assert.rejects(
-      withTransaction(async (tx) => {
+      withTransactionScope(async (tx) => {
         await tx.exec("UPDATE scope_accounts SET balance = 0");
         throw new Error("abort");
       }),
       /abort/,
     );
     assert.equal((await load()).balance, 50);
-    await withTransaction(async (tx) => {
+    await withTransactionScope(async (tx) => {
       await tx.exec(
         "UPDATE scope_accounts SET balance = 40; UPDATE scope_accounts SET balance = 30",
       );
       assert.equal((await load()).balance, 30);
     });
     await assert.rejects(
-      withTransaction(async (tx) => {
+      withTransactionScope(async (tx) => {
         await tx.exec(
           "UPDATE scope_accounts SET balance = 20; UPDATE scope_accounts SET balance = 10",
         );
@@ -129,6 +129,42 @@ async function main() {
       /abort multiple commands/,
     );
     assert.equal((await load()).balance, 30);
+    const { ListBasedExecutor } = require("../action/executor");
+    const validate = async (amount, check) =>
+      withTransactionScope(async () => {
+        const builder = { placeholderID: randomUUID() };
+        const action = { validateBeforeCommit: check };
+        const operation = {
+          builder,
+          performWrite: (queryer) =>
+            queryer.query("UPDATE scope_accounts SET balance = $1", [amount]),
+        };
+        await new ListBasedExecutor(
+          viewer,
+          builder.placeholderID,
+          [operation],
+          { builder, action },
+        ).execute();
+      });
+    let finalBalance;
+    await validate(25, async (context) => {
+      finalBalance = (await context.query("SELECT balance FROM scope_accounts"))
+        .rows[0].balance;
+      assert.equal((await load()).balance, 25);
+    });
+    assert.equal(finalBalance, 25);
+    await assert.rejects(
+      validate(0, async () => {
+        throw new Error("final rule failed");
+      }),
+      /final rule failed/,
+    );
+    assert.equal((await load()).balance, 25);
+    await assert.rejects(
+      validate(0, (context) => context.query("SELECT 1; COMMIT")),
+      /single read query/,
+    );
+    assert.equal((await load()).balance, 25);
     assert.equal(getTransactionScope(), undefined);
     console.log(
       `transaction runtime passed: ${process.versions.bun ? "bun" : "node"}/${process.argv[2] || "pg"}`,

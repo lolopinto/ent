@@ -2,6 +2,7 @@ import { isPromise } from "util/types";
 import {
   assertTransactionRead,
   getTransactionReadState,
+  isFinalScopeValidation,
 } from "./transaction_context";
 
 export function memoizeNoArgs<T>(fn: () => T): () => T {
@@ -25,7 +26,7 @@ export function memoizeInTransaction<T>(fn: () => T): () => T {
   const memoized = memoizeNoArgs(fn);
   return () => {
     assertTransactionRead(transaction);
-    const result = memoized();
+    const result = isFinalScopeValidation() ? fn() : memoized();
     if (transaction && isPromise(result)) {
       return result.then((value) => {
         assertTransactionRead(transaction);

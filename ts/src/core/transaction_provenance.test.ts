@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import DB, { Dialect } from "./db";
-import { withTransaction } from "./transaction";
+import { withTransactionScope } from "./transaction";
 import { Allow, Deny } from "./base";
 import { AlwaysDenyPrivacyPolicy } from "./privacy";
 import { applyPrivacyPolicyForRow, loadEntX } from "./ent";
@@ -41,7 +41,7 @@ const options = {
 const context = new TestContext();
 const viewer = context.getViewer();
 class GuardedEdit extends SimpleAction<ConsumerAccount> {
-  requiresTransaction() {
+  requiresTransactionScope() {
     return true;
   }
 }
@@ -103,15 +103,12 @@ describe("safe consumer provenance outcomes", () => {
     "privacy-skipped child",
   ] as const)("%s result without row writes", (position) => {
     const graph = (current: ConsumerAccount) => {
-      const noWrite = Object.assign(
-        new GuardedEdit(
-          viewer,
-          schema,
-          new Map(),
-          WriteOperation.Edit,
-          current,
-        ),
-        { getTransactionResources: () => ["unrelated-edges"] },
+      const noWrite = new GuardedEdit(
+        viewer,
+        schema,
+        new Map(),
+        WriteOperation.Edit,
+        current,
       );
       if (position === "privacy-skipped child") {
         Object.assign(noWrite, {
@@ -119,9 +116,7 @@ describe("safe consumer provenance outcomes", () => {
           __failPrivacySilently: () => true,
         });
       }
-      const writer = Object.assign(edit(current, 80), {
-        getTransactionResources: () => ["balance"],
-      });
+      const writer = edit(current, 80);
       const parent = position === "root" ? noWrite : writer;
       const child = position === "root" ? writer : noWrite;
       parent.getTriggers = () => [{ changeset: () => child.changeset() }];
@@ -130,7 +125,7 @@ describe("safe consumer provenance outcomes", () => {
 
     test("result reloads after graph writes before it becomes a fresh input", async () => {
       const owner = await create();
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const { parent, noWrite } = graph(await load(owner.id));
         const result = await parent.saveX();
         const snapshot =
@@ -143,7 +138,7 @@ describe("safe consumer provenance outcomes", () => {
 
     test("composition remains valid when the next action reloads", async () => {
       const owner = await create();
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const { parent } = graph(await load(owner.id));
         await parent.saveX();
         const fresh = await load(owner.id);
@@ -161,12 +156,12 @@ describe("safe consumer provenance outcomes", () => {
       "query",
       "queryAll",
       "exec",
-    ] as const)("%s stale rows cannot feed later guarded writes", async (method) => {
+    ] as const)("%s stale rows cannot feed later scoped writes", async (method) => {
       const owner = await create();
       let caught: unknown;
       let outer: unknown;
       try {
-        await withTransaction(async (tx) => {
+        await withTransactionScope(async (tx) => {
           const oldRow = (await tx[method](sql, [owner.id])).rows[0];
           await edit(await load(owner.id), 80).saveX();
           try {
@@ -192,9 +187,9 @@ describe("safe consumer provenance outcomes", () => {
     "query",
     "queryAll",
     "exec",
-  ] as const)("%s fresh rows materialize and support sequential guarded saves", async (method) => {
+  ] as const)("%s fresh rows materialize and support sequential scoped saves", async (method) => {
     const owner = await create();
-    await withTransaction(async (tx) => {
+    await withTransactionScope(async (tx) => {
       const firstRow = (
         await tx[method]("SELECT * FROM consumer_accounts WHERE id = $1", [
           owner.id,
@@ -220,7 +215,7 @@ describe("safe consumer provenance outcomes", () => {
     let caught: unknown;
     let outer: unknown;
     try {
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const stale = await load(owner.id);
         await edit(stale, 80).saveX();
         try {
@@ -240,9 +235,9 @@ describe("safe consumer provenance outcomes", () => {
     expect(outer).toBe(caught);
     expect((await load(owner.id)).data.balance).toBe(100);
   });
-  test("fresh Ent and ID query sources keep correct privacy behavior after a guarded save", async () => {
+  test("fresh Ent and ID query sources keep correct privacy behavior after a scoped save", async () => {
     const owner = await create();
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const first = await load(owner.id);
       expect(await accountQuery(first).queryRawCount()).toBe(1);
       await edit(first, 80).saveX();
@@ -270,7 +265,7 @@ describe("safe consumer provenance outcomes", () => {
         );
     }
     try {
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const existing = await load(owner.id);
         ConsumerAccount.prototype.getPrivacyPolicy = function () {
           return {
@@ -302,15 +297,10 @@ describe("safe consumer provenance outcomes", () => {
           );
         }
         if (mode.endsWith("writing child")) {
-          Object.assign(action, {
-            getTransactionResources: () => ["unrelated-edges"],
-          });
+          action;
           action.getTriggers = () => [
             {
-              changeset: () =>
-                Object.assign(edit(existing, 80), {
-                  getTransactionResources: () => ["balance"],
-                }).changeset(),
+              changeset: () => edit(existing, 80).changeset(),
             },
           ];
         }
@@ -352,7 +342,7 @@ describe("safe consumer provenance outcomes", () => {
       },
       ConsumerAccount,
     );
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const action = new GuardedEdit(
         viewer,
         insertSchema,
@@ -375,10 +365,10 @@ describe("safe consumer provenance outcomes", () => {
       expect(calls).toBe(1);
     }
   });
-  test("retained proposed Ent cannot authorize a query after another guarded save", async () => {
+  test("retained proposed Ent cannot authorize a query after another scoped save", async () => {
     const owner = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const action = new GuardedEdit(
           viewer,
           schema,
@@ -402,7 +392,7 @@ describe("safe consumer provenance outcomes", () => {
     "exec",
   ] as const)("%s retained rows cannot cross scopes", async (method) => {
     const owner = await create();
-    const row = await withTransaction(
+    const row = await withTransactionScope(
       async (tx) =>
         (
           await tx[method]("SELECT * FROM consumer_accounts WHERE id=$1", [
@@ -411,7 +401,7 @@ describe("safe consumer provenance outcomes", () => {
         ).rows[0],
     );
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const old = await applyPrivacyPolicyForRow(viewer, options, row);
         await expect(edit(old!, 70).saveX()).rejects.toThrow(
           "reload existingEnt",
@@ -454,7 +444,7 @@ describe("safe consumer provenance outcomes", () => {
       });
     try {
       await expect(
-        withTransaction(async (tx) => {
+        withTransactionScope(async (tx) => {
           const pending = tx[method](
             "SELECT * FROM consumer_accounts WHERE id=$1 /* paused_provenance */",
             [owner.id],

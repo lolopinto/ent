@@ -20,6 +20,7 @@ import {
 } from "../core/transaction_context";
 import { TransformedUpdateOperation, UpdateOperation } from "../schema";
 import { FieldInfoMap } from "../schema/schema";
+import type { ScopeValidationContext } from "../core/transaction";
 
 export { WriteOperation };
 
@@ -154,16 +155,14 @@ export interface Action<
    * Return `true` to require a transaction scope, or `"serializable"` to require
    * serializable isolation. Ent checks this requirement before preparing the action.
    */
-  requiresTransaction?(): boolean | "serializable";
+  requiresTransactionScope?(): boolean | "serializable";
   /**
-   * Declare the invariant keys this action depends on. Guarded actions in the
-   * same graph must have disjoint keys, including parents and children.
-   * Prepare and save guarded root actions sequentially.
+   * Check the transaction's final state after all action writes and before commit.
+   * Declaring this hook requires a transaction scope. Read through the context or
+   * create fresh Ent queries in the hook; final validation bypasses result caches.
+   * Throw to roll back the scope. Actions cannot prepare or write in this phase.
    */
-  getTransactionResources?():
-    | readonly string[]
-    | undefined
-    | Promise<readonly string[] | undefined>;
+  validateBeforeCommit?(context: ScopeValidationContext): void | Promise<void>;
   changeset(): Promise<Changeset>;
   changesetWithOptions_BETA?(options: ChangesetOptions): Promise<Changeset>;
   builder: TBuilder;

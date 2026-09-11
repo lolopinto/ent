@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
 import { DB, IDViewer } from "@snowtop/ent";
-import { withTransaction } from "@snowtop/ent/action";
+import { ScopeValidationContext, withTransactionScope } from "@snowtop/ent/action";
 import { User } from "src/ent";
 import { CreateUserActionBase } from "../../generated/user/actions/create_user_action_base";
 import DeleteUserAction from "./delete_user_action";
@@ -21,8 +21,8 @@ class BrokenFavorite extends FavoritePlace {
   }
 }
 
-class GuardedCreate extends CreateUserActionBase {
-  requiresTransaction() {
+class ScopedCreate extends CreateUserActionBase {
+  requiresTransactionScope() {
     return true;
   }
   async viewerForEntLoad() {
@@ -69,7 +69,7 @@ describe("generated save helpers in a scoped transaction", () => {
       let caught: unknown;
       let outer: unknown;
       try {
-        await withTransaction(async (tx) => {
+        await withTransactionScope(async (tx) => {
           await tx.exec(
             "UPDATE users SET name = 'Earlier write' WHERE id = $1",
             [id],
@@ -91,7 +91,7 @@ describe("generated save helpers in a scoped transaction", () => {
   dbTest(
     "successful generated edit commits and returns the saved Ent",
     async () => {
-      const result = await withTransaction(() =>
+      const result = await withTransactionScope(() =>
         EditUserAction.saveXFromID(viewer, id, { name: "After" }),
       );
       expect(result.name).toBe("After");
@@ -111,10 +111,10 @@ describe("generated save helpers in a scoped transaction", () => {
     },
   );
   dbTest(
-    "generated guarded create exposes its ID during and after result loading",
+    "generated scoped create exposes its ID during and after result loading",
     async () => {
-      await withTransaction(async () => {
-        const action = new GuardedCreate(viewer, {
+      await withTransactionScope(async () => {
+        const action = new ScopedCreate(viewer, {
           name: "Created",
           slug: createdSlug,
         });
@@ -128,19 +128,14 @@ describe("generated save helpers in a scoped transaction", () => {
   dbTest.each(["root", "child"] as const)(
     "generated %s without row writes returns fields updated by its graph",
     async (position) => {
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const owner = await User.loadX(viewer, id);
         const noWrite = Object.assign(FavoritePlace.create(viewer, owner), {
-          requiresTransaction: () => true,
-          getTransactionResources: () => ["favorite-places"],
-        });
+          requiresTransactionScope: () => true});
         const writer = Object.assign(
           EditUserAction.create(viewer, owner, { name: "After" }),
           {
-            requiresTransaction: () => true,
-            getTransactionResources: () => ["user-name"],
-          },
-        );
+            requiresTransactionScope: () => true});
         const parent = position === "root" ? noWrite : writer;
         const child = position === "root" ? writer : noWrite;
         parent.getTriggers = () => [{ changeset: () => child.changeset() }];
@@ -153,11 +148,33 @@ describe("generated save helpers in a scoped transaction", () => {
             name: `${refreshed.name} again`,
           }),
           {
-            requiresTransaction: () => true,
+            requiresTransactionScope: () => true,
           },
         ).saveX();
       });
       expect(await name()).toBe("After again");
     },
   );
+});
+class CheckedEdit extends EditUserAction {
+  async validateBeforeCommit(context: ScopeValidationContext) {
+    const result = await context.query("SELECT name FROM users WHERE id = $1", [this.builder.existingEnt.id]);
+    if (result.rows[0]?.name === "Invalid") {
+      throw new Error("invalid final user name");
+    }
+  }
+}
+
+dbTest("generated saveXFromID registers final validation without caller setup", async () => {
+  const id = randomUUID();
+  const viewer = new IDViewer(id);
+  await DB.getInstance().getPool().query("INSERT INTO users (id, created_at, updated_at, name, slug) VALUES ($1, now(), now(), 'Before', $2)", [id, `final-validation-${id}`]);
+  try {
+    await expect(withTransactionScope(() => CheckedEdit.saveXFromID(viewer, id, { name: "Invalid" }))).rejects.toThrow("invalid final user name");
+    expect((await User.loadX(viewer, id)).name).toBe("Before");
+    await withTransactionScope(() => CheckedEdit.saveXFromID(viewer, id, { name: "Valid" }));
+    expect((await User.loadX(viewer, id)).name).toBe("Valid");
+  } finally {
+    await DB.getInstance().getPool().query("DELETE FROM users WHERE id = $1", [id]);
+  }
 });

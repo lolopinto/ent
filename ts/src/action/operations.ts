@@ -70,6 +70,8 @@ export interface DataOperation<
   // Check known row mutations after resolving placeholders and skipping
   // writes that don't apply.
   transactionWriteTarget?(): readonly [string, ID] | undefined;
+  // A skipped action must not register final validation through an operation wrapper.
+  readonly skipScopeValidation?: boolean;
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
@@ -180,6 +182,7 @@ export class NoOperation<
   TViewer extends Viewer = Viewer,
 > implements DataOperation<TEnt, TViewer>
 {
+  readonly skipScopeValidation = true;
   private row: Data | null = null;
   private executed = false;
   constructor(
@@ -197,7 +200,11 @@ export class NoOperation<
 
   async postFetch(queryer: Queryer) {
     if (getTransactionState() && this.executed && this.existingEnt) {
-      this.row = await reloadScopedResult(queryer, this.resultOptions, this.existingEnt.id);
+      this.row = await reloadScopedResult(
+        queryer,
+        this.resultOptions,
+        this.existingEnt.id,
+      );
     }
   }
 
@@ -331,11 +338,15 @@ export class EditNodeOperation<
     if (getTransactionState() && this.row) {
       // Other graph operations can change fields after this operation returns.
       // Use the stored row's key, including when an upsert found an existing row.
-      this.row = await reloadScopedResult(queryer, {
-        tableName: this.options.tableName,
-        key: this.options.key,
-        fields: this.options.loadEntOptions.fields,
-      }, this.row[this.options.key]);
+      this.row = await reloadScopedResult(
+        queryer,
+        {
+          tableName: this.options.tableName,
+          key: this.options.key,
+          fields: this.options.loadEntOptions.fields,
+        },
+        this.row[this.options.key],
+      );
     }
   }
 
@@ -1021,6 +1032,10 @@ export class ConditionalOperation<
   ) {
     this.builder = op.builder;
     this.placeholderID = op.placeholderID;
+  }
+
+  get skipScopeValidation(): boolean {
+    return this.op.skipScopeValidation === true;
   }
 
   shortCircuit(executor: Executor): boolean {

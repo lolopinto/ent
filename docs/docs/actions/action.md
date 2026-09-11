@@ -39,7 +39,7 @@ We'll dive into each of these in the following sections.
 
 Use [Transaction](/docs/actions/transactions) to commit or roll back multiple actions' writes together. Use [triggers](/docs/actions/triggers) to add child changesets whose writes share an action's transaction.
 
-Trigger callbacks run before the ordinary write transaction. To include their reads and decisions in the transaction, call the action inside [`withTransaction`](/docs/actions/transactions#transaction-scoped-reads-and-actions).
+Trigger callbacks run before the ordinary write transaction. To include their reads and decisions in the transaction, call the action inside [`withTransactionScope`](/docs/actions/transactions#transaction-scoped-reads-and-actions).
 
 ## Default Privacy Policy
 

@@ -1,5 +1,5 @@
 import DB, { Client, Dialect } from "./db";
-import { withTransaction, getTransactionScope } from "./transaction";
+import { withTransactionScope, getTransactionScope } from "./transaction";
 import { getTransactionState } from "./transaction_context";
 
 describe("scoped transaction lifecycle", () => {
@@ -41,7 +41,7 @@ describe("scoped transaction lifecycle", () => {
       }
     };
     const callback = jest.fn();
-    await expect(withTransaction(callback)).rejects.toBe(error);
+    await expect(withTransactionScope(callback)).rejects.toBe(error);
     expect(callback).not.toHaveBeenCalled();
     expect(queries).toEqual(["BEGIN ISOLATION LEVEL SERIALIZABLE", "ROLLBACK"]);
     expect(clients[0].release).toHaveBeenCalledTimes(1);
@@ -55,7 +55,7 @@ describe("scoped transaction lifecycle", () => {
       }
     };
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         throw error;
       }),
     ).rejects.toBe(error);
@@ -75,7 +75,7 @@ describe("scoped transaction lifecycle", () => {
       getTransactionState()!.receipts.push(receipt);
       getTransactionState()!.observers.push(observer);
     });
-    await expect(withTransaction(callback, { maxRetries: 3 })).rejects.toBe(
+    await expect(withTransactionScope(callback, { maxRetries: 3 })).rejects.toBe(
       error,
     );
     expect(callback).toHaveBeenCalledTimes(1);
@@ -95,7 +95,7 @@ describe("scoped transaction lifecycle", () => {
       expect(getTransactionScope()?.isolationLevel).toBe("serializable");
       throw error;
     });
-    await expect(withTransaction(callback, { maxRetries: 2 })).rejects.toBe(
+    await expect(withTransactionScope(callback, { maxRetries: 2 })).rejects.toBe(
       error,
     );
     expect(callback).toHaveBeenCalledTimes(3);
@@ -121,7 +121,7 @@ describe("scoped transaction lifecycle", () => {
       );
       return 42;
     });
-    await expect(withTransaction(callback, { maxRetries: 3 })).resolves.toBe(
+    await expect(withTransactionScope(callback, { maxRetries: 3 })).resolves.toBe(
       42,
     );
     expect(callback).toHaveBeenCalledTimes(1);
@@ -142,7 +142,7 @@ describe("scoped transaction lifecycle", () => {
         throw new Error("wrapped query");
       });
     });
-    await withTransaction(callback, { maxRetries: 1 });
+    await withTransactionScope(callback, { maxRetries: 1 });
     expect(callback).toHaveBeenCalledTimes(2);
   });
 
@@ -157,7 +157,7 @@ describe("scoped transaction lifecycle", () => {
       }
       return { rows: [], rowCount: 0 };
     };
-    const transaction = withTransaction(async (tx) => {
+    const transaction = withTransactionScope(async (tx) => {
       void tx.query("SELECT slow");
     });
     await new Promise((r) => setImmediate(r));
@@ -174,17 +174,17 @@ describe("scoped transaction lifecycle", () => {
 
   test("unsupported dialects and options reject before acquiring resources", async () => {
     DB.instance.db.dialect = Dialect.SQLite;
-    await expect(withTransaction(async () => {})).rejects.toThrow(
+    await expect(withTransactionScope(async () => {})).rejects.toThrow(
       "SQLite is not supported",
     );
     DB.instance.db.dialect = Dialect.Postgres;
     await expect(
-      withTransaction(async () => {}, {
+      withTransactionScope(async () => {}, {
         isolationLevel: "repeatable read" as any,
       }),
     ).rejects.toThrow("unsupported");
     await expect(
-      withTransaction(async () => {}, { maxRetries: -1 }),
+      withTransactionScope(async () => {}, { maxRetries: -1 }),
     ).rejects.toThrow("maxRetries");
     expect(clients).toHaveLength(0);
   });

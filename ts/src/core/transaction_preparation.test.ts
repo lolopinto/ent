@@ -1,5 +1,5 @@
 import DB, { Dialect } from "./db";
-import { withTransaction } from "./transaction";
+import { withTransactionScope } from "./transaction";
 import { loadRows } from "./ent";
 import { Eq } from "./clause";
 import { WriteOperation } from "../action/action";
@@ -27,7 +27,7 @@ const options = {
 const context = new TestContext();
 const viewer = context.getViewer();
 class GuardedInsert extends SimpleAction<PreparedAccount> {
-  requiresTransaction() {
+  requiresTransactionScope() {
     return true;
   }
 }
@@ -96,7 +96,7 @@ describe("transaction field preparation generations", () => {
         (await loadRows({ ...options, clause: Eq("admin", true), context }))
           .length + 1;
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           const retained = make(source, next);
           if (entry === "validX") {
             await retained.validX();
@@ -123,7 +123,7 @@ describe("transaction field preparation generations", () => {
     "same-generation %s preserves stable ID and one preparation",
     async (source) => {
       let calls = 0;
-      const action = await withTransaction(async () => {
+      const action = await withTransactionScope(async () => {
         const action = make(source, () => {
           calls++;
           return 42;
@@ -153,12 +153,12 @@ describe("transaction field preparation generations", () => {
     },
   );
   test.each(sources)(
-    "pending %s preparation cannot finish after another guarded save",
+    "pending %s preparation cannot finish after another scoped save",
     async (source) => {
       const started = deferred();
       const release = deferred();
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           const action = make(source, async () => {
             const n =
               (

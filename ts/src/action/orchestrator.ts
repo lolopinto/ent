@@ -55,14 +55,14 @@ import { isPromise } from "util/types";
 import { RawQueryOperation } from "./operations";
 import {
   awaitActionPreparations,
+  trackValidationRead,
   assertEntTransaction,
   assertLoaderTransaction,
   assertTransactionRead,
   failTransaction,
   getTransactionReadState,
   getTransactionState,
-  claimGuardedPreparation,
-  reserveGuardedPreparation,
+  assertActionPreparationAllowed,
   runInActionPreparation,
   isPreparingAction,
   isValidationPreparation,
@@ -975,10 +975,14 @@ export class Orchestrator<
   }
 
   private async prepareFields(): Promise<fieldsInfo> {
-    const requirement = this.options.action?.requiresTransaction?.();
-    if (requirement && !getTransactionState()) {
+    assertActionPreparationAllowed();
+    const requirement = this.options.action?.requiresTransactionScope?.();
+    if (
+      (requirement || this.options.action?.validateBeforeCommit) &&
+      !getTransactionState()
+    ) {
       throw new Error(
-        "this action requires withTransaction; construct and save the action inside its callback",
+        "this action requires withTransactionScope; construct and save the action inside its callback",
       );
     }
     if (
@@ -986,7 +990,7 @@ export class Orchestrator<
       getTransactionState()?.isolationLevel !== "serializable"
     ) {
       throw new Error(
-        "this action requires a serializable withTransaction scope",
+        "this action requires a serializable withTransactionScope scope",
       );
     }
     assertLoaderTransaction(this.transaction);
@@ -1647,15 +1651,6 @@ export class Orchestrator<
       return await runInActionPreparation(
         this.options.builder,
         async () => {
-          const action = this.options.action;
-          if (action?.getTransactionResources) {
-            const resourceRead = reserveGuardedPreparation();
-            const resources = await action.getTransactionResources();
-            assertTransactionRead(resourceRead);
-            claimGuardedPreparation(resources);
-          } else if (action?.requiresTransaction?.() && getTransactionState()) {
-            claimGuardedPreparation();
-          }
           if (probing) {
             // Memoize defaults and transformed inputs, including inverse edges
             // set by updateInput. Snapshot those edges so validation preserves
@@ -1785,8 +1780,13 @@ export class Orchestrator<
     load: () => Promise<T>,
   ): Promise<T> {
     const transaction = getTransactionState();
+    let pending: Promise<T> | undefined;
     try {
-      const result = await load();
+      pending = trackValidationRead(load());
+      if (transaction === this.transaction) {
+        transaction?.pendingActions.add(pending);
+      }
+      const result = await pending;
       if (result) {
         recordActionResultTransaction(result, this.options.builder);
       }
@@ -1799,6 +1799,10 @@ export class Orchestrator<
         failTransaction(transaction, error);
       }
       throw error;
+    } finally {
+      if (pending && transaction === this.transaction) {
+        transaction?.pendingActions.delete(pending);
+      }
     }
   }
 

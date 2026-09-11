@@ -3,6 +3,7 @@ import type { Context, Data, Ent, Viewer } from "./base";
 import type { Builder, Executor } from "../action/action";
 import type { assocEdgeLoader } from "./ent";
 import type { Queryer } from "./db";
+import type { ScopeValidationContext } from "./transaction";
 
 type TransactionBuilderIdentity = Pick<Builder<Ent>, "placeholderID">;
 
@@ -31,17 +32,36 @@ export interface TransactionState {
   edgeMetadataLoader?: typeof assocEdgeLoader;
   observers: (() => Promise<void>)[];
   receipts: (() => void)[];
-  guardedRoot?: TransactionBuilderIdentity;
+  preparingRoot?: TransactionBuilderIdentity;
+  preparingValidation?: { active: boolean };
   generation: number;
-  branchClaims: PreparationNode[];
+  validating: boolean;
+  pendingActions: Set<Promise<unknown>>;
+  pendingPreparations: Set<Promise<unknown>>;
+  validators: Map<TransactionBuilderIdentity, ScopeValidator>;
 }
+
+export type ScopeValidator = (
+  context: ScopeValidationContext,
+) => void | Promise<void>;
+
+interface ActionScopeValidator {
+  builder: TransactionBuilderIdentity;
+  validate: ScopeValidator;
+}
+
+interface FinalValidation {
+  transaction: TransactionState;
+  active: boolean;
+  pending: Set<Promise<unknown>>;
+}
+
+const finalValidationStorage = new AsyncLocalStorage<FinalValidation>();
 
 interface PreparationNode {
   builder: TransactionBuilderIdentity;
   root: TransactionBuilderIdentity;
   token: TransactionToken;
-  resources?: readonly string[];
-  resourcesPending?: boolean;
   validation?: { active: boolean };
   pending?: Set<Promise<unknown>>;
 }
@@ -57,6 +77,10 @@ const executorBuilders = new WeakMap<
   readonly TransactionBuilderIdentity[]
 >();
 const executorReads = new WeakMap<Executor, TransactionReadState | undefined>();
+const executorValidators = new WeakMap<
+  Executor,
+  readonly ActionScopeValidator[]
+>();
 const resultTransactions = new WeakMap<
   TransactionBuilderIdentity,
   EntTransaction
@@ -64,11 +88,55 @@ const resultTransactions = new WeakMap<
 
 export function assertIndependentActionSave() {
   const state = getTransactionState();
+  assertActionPreparationAllowed();
   if (state && preparationStorage.getStore()?.token === state.token) {
     throw new Error(
       "return child changesets from triggers; nested action saves during transaction preparation are not supported",
     );
   }
+}
+
+export function assertActionPreparationAllowed() {
+  const state = getTransactionState();
+  if (state?.validating) {
+    const error = new Error(
+      "actions cannot prepare or save during scope validation",
+    );
+    failTransaction(state, error);
+    throw error;
+  }
+}
+
+export function isFinalScopeValidation(): boolean {
+  return getTransactionState()?.validating === true;
+}
+
+export async function runFinalScopeValidation<T>(
+  transaction: TransactionState,
+  validate: () => Promise<T>,
+): Promise<T> {
+  const validation: FinalValidation = {
+    transaction,
+    active: true,
+    pending: new Set(),
+  };
+  return finalValidationStorage.run(validation, async () => {
+    try {
+      return await validate();
+    } catch (error) {
+      failTransaction(transaction, error);
+      throw error;
+    } finally {
+      validation.active = false;
+      if (validation.pending.size) {
+        failTransaction(
+          transaction,
+          new Error("await all reads during scope validation"),
+        );
+        await Promise.allSettled([...validation.pending]);
+      }
+    }
+  });
 }
 
 export function runInActionPreparation<T>(
@@ -80,11 +148,23 @@ export function runInActionPreparation<T>(
   if (!state) {
     return prepare();
   }
+  assertActionPreparationAllowed();
   const parent = preparationStorage.getStore();
   const scopedParent = parent?.token === state.token ? parent : undefined;
   const root = scopedParent?.root ?? builder;
   const validation =
     scopedParent?.validation ?? (validationOnly ? { active: true } : undefined);
+  if (state.preparingRoot && state.preparingRoot !== root) {
+    const error = new Error(
+      "root actions must be prepared and saved sequentially; await each save and reload before preparing the next action",
+    );
+    failTransaction(state, error);
+    throw error;
+  }
+  if (!state.preparingRoot) {
+    state.preparingRoot = root;
+    state.preparingValidation = validation;
+  }
   const node: PreparationNode = {
     builder,
     root,
@@ -110,13 +190,18 @@ export function runInActionPreparation<T>(
       }
       if (validation && validation !== scopedParent?.validation) {
         validation.active = false;
-        state.branchClaims = state.branchClaims.filter(
-          (claim) => claim.validation !== validation,
-        );
-        state.guardedRoot = state.branchClaims[0]?.root;
+        if (state.preparingValidation === validation) {
+          state.preparingRoot = undefined;
+          state.preparingValidation = undefined;
+        }
       }
     }
   });
+  state.pendingPreparations.add(prepared);
+  void prepared.then(
+    () => state.pendingPreparations.delete(prepared),
+    () => state.pendingPreparations.delete(prepared),
+  );
   if (scopedParent?.pending) {
     scopedParent.pending.add(prepared);
     void prepared.then(
@@ -132,6 +217,14 @@ export function trackValidationRead<T>(read: Promise<T>): Promise<T> {
   // Track the returned promise without throwing and leaving it unhandled.
   // The read reports an error if its scope has closed.
   const state = transactionStorage.getStore();
+  const final = finalValidationStorage.getStore();
+  if (state?.active && final?.active && final.transaction === state) {
+    final.pending.add(read);
+    void read.then(
+      () => final.pending.delete(read),
+      () => final.pending.delete(read),
+    );
+  }
   if (
     state?.active &&
     node?.token === state.token &&
@@ -166,14 +259,24 @@ export function isValidationPreparation(): boolean {
 export async function awaitActionPreparations<T>(
   work: Iterable<T | PromiseLike<T>>,
 ): Promise<Awaited<T>[]> {
-  if (!isValidationPreparation()) {
-    return Promise.all(work);
+  // Attach rejection handlers even if this scope closed while work was starting.
+  // The supplied promises already exist and must not become unhandled rejections.
+  const promises = Array.from(work, (pending) => Promise.resolve(pending));
+  let validation: boolean;
+  try {
+    validation = isValidationPreparation();
+  } catch (error) {
+    await Promise.allSettled(promises);
+    throw error;
+  }
+  if (!validation) {
+    return Promise.all(promises);
   }
   let failed = false;
   let failure: unknown;
   const results = await Promise.all(
-    Array.from(work, (pending) =>
-      Promise.resolve(pending).catch((error) => {
+    promises.map((pending) =>
+      pending.catch((error) => {
         if (!failed) {
           failed = true;
           failure = error;
@@ -187,76 +290,23 @@ export async function awaitActionPreparations<T>(
   return results as Awaited<T>[];
 }
 
-function getGuardedPreparation() {
-  const state = getTransactionState();
-  const node = preparationStorage.getStore();
-  if (!state || !node || node.token !== state.token) {
-    throw new Error("guarded actions require withTransaction");
-  }
-  if (state.guardedRoot && state.guardedRoot !== node.root) {
-    throw new Error(
-      "guarded root actions must be prepared and saved sequentially; await each save and reload before preparing the next action",
-    );
-  }
-  return { state, node };
-}
-
-export function reserveGuardedPreparation(): TransactionReadState {
-  const { state, node } = getGuardedPreparation();
-  // Reserve the root before awaiting application code. Retain the pending claim
-  // through nested validation cleanup, then check the resolved resource keys.
-  node.resourcesPending = true;
-  if (!state.branchClaims.includes(node)) {
-    state.branchClaims.push(node);
-  }
-  state.guardedRoot = node.root;
-  return { transaction: state, generation: state.generation };
-}
-
-export function claimGuardedPreparation(resources?: readonly string[]) {
-  const { state, node } = getGuardedPreparation();
-  if (
-    resources !== undefined &&
-    (!Array.isArray(resources) ||
-      !resources.length ||
-      resources.some((key) => typeof key !== "string" || !key.length))
-  ) {
-    throw new Error(
-      "getTransactionResources must return a non-empty array of non-empty strings",
-    );
-  }
-  for (const owner of state.branchClaims) {
-    // An action can validate during its own preparation. Other actions must
-    // declare disjoint resources, including children created by its triggers.
-    // Check resolved claims when each hook finishes so independent siblings can
-    // resolve their keys concurrently.
-    if (owner.builder === node.builder || owner.resourcesPending) {
-      continue;
-    }
-    if (
-      !owner.resources ||
-      !resources ||
-      resources.some((key) => owner.resources!.includes(key))
-    ) {
-      throw new Error(
-        "overlapping guarded action preparation branches; consolidate dependent child changesets or declare independent child transaction resources",
-      );
-    }
-  }
-  node.resources = resources && [...resources];
-  node.resourcesPending = false;
-  if (!state.branchClaims.includes(node)) {
-    state.branchClaims.push(node);
-  }
-  state.guardedRoot = node.root;
-}
-
 export function setExecutorBuilders(
   executor: Executor,
   builders: readonly TransactionBuilderIdentity[],
 ) {
   executorBuilders.set(executor, builders);
   executorReads.set(executor, getTransactionReadState());
+}
+
+export function setExecutorScopeValidators(
+  executor: Executor,
+  validators: readonly ActionScopeValidator[],
+) {
+  executorValidators.set(executor, validators);
+}
+
+export function getExecutorScopeValidators(executor: Executor) {
+  return executorValidators.get(executor) ?? [];
 }
 
 export function assertExecutorTransaction(executor: Executor) {
@@ -271,19 +321,17 @@ export function getExecutorBuilders(
   return executorBuilders.get(executor) ?? [];
 }
 
-export function completeGuardedPreparation(
+export function completeActionPreparation(
   state: TransactionState,
   executor: Executor,
 ) {
   const builders = getExecutorBuilders(executor);
-  if (state.guardedRoot && builders.includes(state.guardedRoot)) {
-    state.guardedRoot = undefined;
-    state.branchClaims.length = 0;
-    state.generation++;
-    state.edgeMetadataLoader = undefined;
-    for (const cache of state.caches.values()) {
-      cache.clearCache();
-    }
+  state.preparingRoot = undefined;
+  state.preparingValidation = undefined;
+  state.generation++;
+  state.edgeMetadataLoader = undefined;
+  for (const cache of state.caches.values()) {
+    cache.clearCache();
   }
   // A result getter reconstructs a snapshot without reading the database again.
   // Record the completed write's transaction and generation for every builder.
@@ -355,7 +403,7 @@ export function assertTransactionRead(read: TransactionReadState | undefined) {
   assertLoaderTransaction(read?.transaction);
   if (read && read.generation !== read.transaction.generation) {
     const error = new Error(
-      "recreate queries and loaders after each guarded save; a read cannot cross transaction generations",
+      "recreate queries and loaders after each save; a read cannot cross transaction generations",
     );
     failTransaction(read.transaction, error);
     throw error;
@@ -409,7 +457,7 @@ export function assertEntTransaction(ent: Ent) {
     (loaded?.token !== state.token || loaded?.generation !== state.generation)
   ) {
     const error = new Error(
-      "reload existingEnt inside the withTransaction callback on every attempt",
+      "reload existingEnt inside the withTransactionScope callback on every attempt",
     );
     failTransaction(state, error);
     throw error;
@@ -420,8 +468,18 @@ export function getTransactionState(): TransactionState | undefined {
   const state = transactionStorage.getStore();
   if (state && !state.active) {
     throw new Error(
-      "transaction scope is closed; await all work inside withTransaction",
+      "transaction scope is closed; await all work inside withTransactionScope",
     );
+  }
+  if (state?.validating) {
+    const validation = finalValidationStorage.getStore();
+    if (validation?.transaction !== state || !validation.active) {
+      const error = new Error(
+        "transaction callback is closed; await all work before scope validation",
+      );
+      failTransaction(state, error);
+      throw error;
+    }
   }
   const preparation = preparationStorage.getStore();
   if (
@@ -445,18 +503,26 @@ export function failTransaction(state: TransactionState, error: unknown) {
 
 // Save entry points include preparation, executor assembly, and execution
 // setup. An error in any of these stages must abort the owning scope, even if a
-// caller catches it before the withTransaction callback returns.
+// caller catches it before the withTransactionScope callback returns.
 export async function runActionExecution<T>(
   execute: () => Promise<T>,
 ): Promise<T> {
   const state = getTransactionState();
+  let pending: Promise<T> | undefined;
   try {
-    return await execute();
+    assertActionPreparationAllowed();
+    pending = execute();
+    state?.pendingActions.add(pending);
+    return await pending;
   } catch (error) {
     if (state) {
       failTransaction(state, error);
     }
     throw error;
+  } finally {
+    if (pending) {
+      state?.pendingActions.delete(pending);
+    }
   }
 }
 
@@ -470,7 +536,7 @@ export function runActionChangeset<T>(prepare: () => Promise<T>): Promise<T> {
 export function assertLoaderTransaction(owner: TransactionState | undefined) {
   if (getTransactionState() !== owner) {
     throw new Error(
-      "create loaders and queries inside the withTransaction callback; loaders cannot cross transaction scopes",
+      "create loaders and queries inside the withTransactionScope callback; loaders cannot cross transaction scopes",
     );
   }
 }

@@ -11,8 +11,9 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Added
 
-- Add PostgreSQL `withTransaction` scopes for reads, action preparation, and
-  writes, with isolation requirements, retries, and observers that run after commit (#2035).
+- Add PostgreSQL `withTransactionScope` scopes for reads, action preparation, and
+  writes, with action-owned validation before commit, uncached final reads,
+  isolation requirements, retries, and observers that run after commit (#2035).
 
 ### Fixed
 

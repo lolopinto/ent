@@ -500,7 +500,7 @@ export default class DB {
   getConnection(): Connection {
     if (getTransactionState()) {
       throw new Error(
-        "use getPool() inside withTransaction; raw connections cannot join the scope",
+        "use getPool() inside withTransactionScope; raw connections cannot join the scope",
       );
     }
     return this.q;
@@ -516,7 +516,7 @@ export default class DB {
   async getNewClient(): Promise<Client> {
     if (getTransactionState()) {
       throw new Error(
-        "use getPool() inside withTransaction; a new client would escape the transaction",
+        "use getPool() inside withTransactionScope; a new client would escape the transaction",
       );
     }
     return this.q.newClient();

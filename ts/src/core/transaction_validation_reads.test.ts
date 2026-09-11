@@ -1,5 +1,5 @@
 import DB, { Dialect } from "./db";
-import { withTransaction } from "./transaction";
+import { withTransactionScope } from "./transaction";
 import { getTransactionState } from "./transaction_context";
 import {
   applyPrivacyPolicyForRows,
@@ -58,16 +58,9 @@ function deferred() {
   return { promise, resolve };
 }
 class GuardedEdit extends SimpleAction<ScopedAccount> {
-  requiresTransaction() {
+  requiresTransactionScope() {
     return true;
   }
-}
-
-function independent<T extends SimpleAction<ScopedAccount>>(
-  action: T,
-  resource: string,
-): T {
-  return Object.assign(action, { getTransactionResources: () => [resource] });
 }
 
 describe.each([
@@ -121,7 +114,7 @@ describe.each([
     let validationError: unknown;
     let priorFailure: unknown;
     let setupFailure: unknown;
-    const transaction = withTransaction(async (tx) => {
+    const transaction = withTransactionScope(async (tx) => {
       const earlier = edit(await load(records[3].id as string), 60);
       earlier.getObservers = () => [
         {
@@ -136,14 +129,8 @@ describe.each([
           records[2].id,
         ])
       ).rows[0];
-      const parent = independent(
-        edit(await load(records[0].id as string), 90),
-        "parent",
-      );
-      const bad = independent(
-        edit(await load(records[1].id as string), 80),
-        "bad",
-      );
+      const parent = edit(await load(records[0].id as string), 90);
+      const bad = edit(await load(records[1].id as string), 80);
       bad.getValidators = () => [
         { validate: () => (invalid ? ordinary : undefined) },
       ];
@@ -227,7 +214,7 @@ describe.each([
         if (invalid) {
           expect(ent).toBe(await priorRead);
         }
-        const changeset = await independent(edit(ent, 70), "slow").changeset();
+        const changeset = await edit(ent, 70).changeset();
         setupCompletions++;
         return changeset;
       };
@@ -336,7 +323,7 @@ describe.each([
     let setupError: any;
     let validationError: any;
     const observations: string[] = [];
-    const transaction = withTransaction(async (tx) => {
+    const transaction = withTransactionScope(async (tx) => {
       // Keep the earlier write after correcting validation errors. Roll it
       // back if a later SQL operation fails.
       const earlier = edit(await load(records[3].id as string), 60);
@@ -348,14 +335,8 @@ describe.each([
         },
       ];
       await earlier.saveX();
-      const parent = independent(
-        edit(await load(records[0].id as string), 90),
-        "parent",
-      );
-      const bad = independent(
-        edit(await load(records[1].id as string), 80),
-        "bad",
-      );
+      const parent = edit(await load(records[0].id as string), 90);
+      const bad = edit(await load(records[1].id as string), 80);
       bad.getValidators = () => [
         {
           validate: async () => {
@@ -426,7 +407,7 @@ describe.each([
         } else {
           ent = await load(records[2].id as string);
         }
-        const changeset = await independent(edit(ent, 70), "slow").changeset();
+        const changeset = await edit(ent, 70).changeset();
         setupCompletions++;
         return changeset;
       };
@@ -442,18 +423,15 @@ describe.each([
         },
       };
       if (mode === "nested grandchild Ent setup") {
-        const intermediate = independent(
-          new GuardedEdit(
-            viewer,
-            accountSchema,
-            new Map<string, any>([
-              ["balance", 50],
-              ["admin", true],
-            ]),
-            WriteOperation.Insert,
-            null,
-          ),
-          "intermediate",
+        const intermediate = new GuardedEdit(
+          viewer,
+          accountSchema,
+          new Map<string, any>([
+            ["balance", 50],
+            ["admin", true],
+          ]),
+          WriteOperation.Insert,
+          null,
         );
         intermediate.getTriggers = () => [trigger];
         parent.getTriggers = () => [
@@ -476,7 +454,7 @@ describe.each([
       const outcome = await setupOutcome!;
       setupError = outcome?.error;
       if (mode === "late SQL failure") {
-        // Catch both errors to verify that withTransaction still rolls back.
+        // Catch both errors to verify that withTransactionScope still rolls back.
         return;
       }
       expect(validationError).toBe(ordinary);

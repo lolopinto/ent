@@ -397,8 +397,6 @@ export abstract class BaseEdgeQuery<
   private pagination: Map<ID, PaginationInfo> = new Map();
   private memoizedloadEdges: () => Promise<Map<ID, TEdge[]>>;
   protected genIDInfosToFetch: () => Promise<IDInfo[]>;
-  private idMap: Map<ID, TSource> = new Map();
-  private idsToFetch: ID[] = [];
 
   // if the column we're sorting by is not unique e.g. created_at, we add a secondary sort column which is used in the cursor
   // to break ties and ensure that we can paginate correctly
@@ -407,7 +405,10 @@ export abstract class BaseEdgeQuery<
   private limitAdded = false;
   private cursorKeys: string[] = [];
 
-  constructor(public viewer: Viewer, options: EdgeQueryOptions) {
+  constructor(
+    public viewer: Viewer,
+    options: EdgeQueryOptions,
+  ) {
     // we also sort cursor col in same direction. (direction doesn't matter)
     const orderBy = [...options.orderby];
     if (
@@ -423,7 +424,7 @@ export abstract class BaseEdgeQuery<
         o.alias ??
         (options.fieldOptions?.disableFieldsAlias
           ? undefined
-          : options.fieldOptions?.fieldsAlias ?? options.fieldOptions?.alias);
+          : (options.fieldOptions?.fieldsAlias ?? options.fieldOptions?.alias));
     });
     this.edgeQueryOptions = { ...options, orderby: orderBy };
     this.cursorCol = options.cursorCol;
@@ -626,27 +627,23 @@ export abstract class BaseEdgeQuery<
     options: EdgeQueryableDataOptions,
   ): Promise<void>;
 
-  private addID(id: ID | TSource) {
-    if (typeof id === "object") {
-      assertEntTransaction(id);
-      this.idMap.set(id.id, id);
-      this.idsToFetch.push(id.id);
-    } else {
-      this.idsToFetch.push(id);
-    }
-  }
-
   abstract getTableName(): string | Promise<string>;
 
   protected async genIDInfosToFetchImpl() {
-    await this.loadRawIDs(this.addID.bind(this));
-
-    return applyPrivacyPolicyForEdgeQ(
-      this.viewer,
-      this,
-      this.idsToFetch,
-      this.idMap,
-    );
+    // Final validation can repeat this read without memoization. Keep source
+    // identifiers local so repeated and concurrent reads do not accumulate IDs.
+    const ids: ID[] = [];
+    const ents = new Map<ID, TSource>();
+    await this.loadRawIDs((source) => {
+      if (typeof source === "object") {
+        assertEntTransaction(source);
+        ents.set(source.id, source);
+        ids.push(source.id);
+      } else {
+        ids.push(source);
+      }
+    });
+    return applyPrivacyPolicyForEdgeQ(this.viewer, this, ids, ents);
   }
 
   private _defaultEdgeQueryableOptions: EdgeQueryableDataOptions | undefined;

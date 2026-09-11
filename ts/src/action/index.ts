@@ -36,5 +36,9 @@ export {
 } from "../core/transaction_context";
 export type { AssocEdgeOptions } from "./operations";
 
-export { withTransaction, getTransactionScope } from "../core/transaction";
-export type { TransactionOptions, TransactionScope } from "../core/transaction";
+export { withTransactionScope, getTransactionScope } from "../core/transaction";
+export type {
+  TransactionOptions,
+  TransactionScope,
+  ScopeValidationContext,
+} from "../core/transaction";

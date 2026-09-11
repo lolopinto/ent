@@ -7,6 +7,7 @@ import {
   assertTransactionRead,
   getTransactionReadState,
   trackValidationRead,
+  isFinalScopeValidation,
 } from "../transaction_context";
 
 const DEFAULT_MAX_BATCH_SIZE = 1000;
@@ -191,7 +192,12 @@ export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
     );
     const loaderOptions =
       cacheMap === options.cacheMap ? options : { ...options, cacheMap };
-    super(wrappedBatchFn, loaderOptions);
+    super(
+      wrappedBatchFn,
+      isFinalScopeValidation()
+        ? { ...loaderOptions, cache: false }
+        : loaderOptions,
+    );
   }
 }
 

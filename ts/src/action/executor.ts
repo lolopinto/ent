@@ -13,7 +13,9 @@ import {
   getTransactionState,
   getExecutorBuilders,
   setExecutorBuilders,
-  completeGuardedPreparation,
+  completeActionPreparation,
+  getExecutorScopeValidators,
+  setExecutorScopeValidators,
   assertIndependentActionSave,
   runActionExecution,
 } from "../core/transaction_context";
@@ -38,6 +40,15 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   ) {
     this.builder = options?.builder;
     setExecutorBuilders(this, this.builder ? [this.builder] : []);
+    const action = options?.action;
+    if (options && action?.validateBeforeCommit) {
+      setExecutorScopeValidators(this, [
+        {
+          builder: options.builder,
+          validate: (context) => action.validateBeforeCommit!(context),
+        },
+      ]);
+    }
   }
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
@@ -274,6 +285,12 @@ export class ComplexExecutor<T extends Ent> implements Executor {
           ...getExecutorBuilders(executor),
         ]),
       );
+      setExecutorScopeValidators(
+        this,
+        this.executors.flatMap((executor) => [
+          ...getExecutorScopeValidators(executor),
+        ]),
+      );
     } catch (error) {
       if (this.transaction) {
         failTransaction(this.transaction, error);
@@ -400,9 +417,18 @@ export async function executeOperations(
   if (transaction) {
     const operations: DataOperation<Ent>[] = [];
     const writeTargets = new Map<string, Builder<Ent>>();
+    const executedBuilders = new Set<Builder<Ent>>();
     try {
       assertExecutorTransaction(executor);
       assertIndependentActionSave();
+      if (
+        transaction.preparingRoot &&
+        !getExecutorBuilders(executor).includes(transaction.preparingRoot)
+      ) {
+        throw new Error(
+          "execute the complete prepared root action before starting another save",
+        );
+      }
       if (executor.preFetch) {
         await executor.preFetch(transaction.queryer, context);
       }
@@ -414,23 +440,32 @@ export async function executeOperations(
           operations.push(operation);
         }
         operation.resolve?.(executor);
-        const target =
-          transaction.guardedRoot && operation.transactionWriteTarget?.();
+        const target = operation.transactionWriteTarget?.();
         if (target) {
           const key = JSON.stringify(target);
           const previous = writeTargets.get(key);
           if (previous && previous !== operation.builder) {
             throw new Error(
-              "guarded changesets cannot mutate the same Ent through multiple builders; consolidate dependent writes into one action",
+              "scoped changesets cannot mutate the same Ent through multiple builders; consolidate dependent writes into one action",
             );
           }
           writeTargets.set(key, operation.builder);
         }
         await operation.performWrite(transaction.queryer, context);
+        if (!operation.skipScopeValidation) {
+          executedBuilders.add(operation.builder);
+        }
       }
       // Load results before commit so a failure can roll back the owning scope.
       await executor.postFetch?.(transaction.queryer, context);
-      completeGuardedPreparation(transaction, executor);
+      completeActionPreparation(transaction, executor);
+      for (const { builder, validate } of getExecutorScopeValidators(
+        executor,
+      )) {
+        if (executedBuilders.has(builder as Builder<Ent>)) {
+          transaction.validators.set(builder, validate);
+        }
+      }
       transaction.receipts.push(() => {
         (
           executor as Executor & { transactionCommitted?(): void }

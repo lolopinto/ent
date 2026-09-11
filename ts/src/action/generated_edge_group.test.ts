@@ -4,7 +4,7 @@ import vm from "vm";
 import ts from "typescript";
 import DB from "../core/db";
 import * as actionRuntime from "./index";
-import { withTransaction } from "./index";
+import { withTransactionScope } from "./index";
 import {
   setupPostgres,
   assoc_edge_config_table,
@@ -91,7 +91,7 @@ test.each([
 ] as const)("caught generated %s edge setup failure rolls back earlier writes", async (method) => {
   let caught: unknown;
   await expect(
-    withTransaction(async (tx) => {
+    withTransactionScope(async (tx) => {
       await tx.exec("INSERT INTO generated_setup_marker VALUES (1)");
       try {
         await action()[method]();
@@ -109,7 +109,7 @@ test.each([
   "valid",
   "validX",
 ] as const)("generated %s setup failure keeps standalone validation recoverable", async (method) => {
-  await withTransaction(async (tx) => {
+  await withTransactionScope(async (tx) => {
     await tx.exec("INSERT INTO generated_setup_marker VALUES (1)");
     await expect(action()[method]()).rejects.toThrow("error loading edge data");
   });

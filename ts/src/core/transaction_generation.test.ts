@@ -1,5 +1,5 @@
 import DB, { Dialect } from "./db";
-import { withTransaction } from "./transaction";
+import { withTransactionScope } from "./transaction";
 import { getTransactionState } from "./transaction_context";
 import { Allow, Data, EdgeQueryableDataOptions, ID } from "./base";
 import { Eq } from "./clause";
@@ -67,7 +67,7 @@ const expired = "cannot cross transaction generations";
 const load = (id: ID) => loadEntX(viewer, id, options);
 
 class GuardedEdit extends SimpleAction<GenerationAccount> {
-  requiresTransaction() {
+  requiresTransactionScope() {
     return true;
   }
 }
@@ -147,10 +147,10 @@ describe("transaction read generations", () => {
     "queryCount",
     "queryAllCount",
     "queryRawCount",
-  ] as const)("retained clause query %s expires after a guarded save", async (method) => {
+  ] as const)("retained clause query %s expires after a scoped save", async (method) => {
     const owner = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const query = makeQuery(owner.id);
         const first = await query[method]();
         expect(await query[method]()).toEqual(first);
@@ -163,7 +163,7 @@ describe("transaction read generations", () => {
 
   test("rebuilding the query after each save computes 100 minus 20 minus 30 as 50", async () => {
     const owner = await create();
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const first = (await makeQuery(owner.id).queryEnts())[0];
       await edit(first, first.data.balance - 20).saveX();
       const second = (await makeQuery(owner.id).queryEnts())[0];
@@ -182,7 +182,7 @@ describe("transaction read generations", () => {
   ] as const)("custom edge query %s follows the same generation boundary", async (method) => {
     const owner = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const query = new AccountQuery(viewer, {
           src: owner.id,
           loadEntOptions: options,
@@ -207,7 +207,7 @@ describe("transaction read generations", () => {
   ] as const)("association query %s follows the same generation boundary", async (method) => {
     const owner = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const query = new AccountEdges(
           viewer,
           owner.id,
@@ -261,7 +261,7 @@ describe("transaction read generations", () => {
         }
       }
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           const query = new PausedQuery(viewer, {
             loadEntOptions: options,
             clause: Eq("id", owner.id),
@@ -355,10 +355,10 @@ describe("transaction read generations", () => {
   describe.each([true, false])("loaders with request context %s", (cached) => {
     test.each(
       loaderKinds,
-    )("retained %s loader expires after a guarded save", async (kind) => {
+    )("retained %s loader expires after a scoped save", async (kind) => {
       const owner = await create();
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           const read = reader(kind, owner.id, cached);
           const first = await read();
           expect(await read()).toEqual(first);
@@ -373,12 +373,12 @@ describe("transaction read generations", () => {
   test.each([
     "load",
     "loadMany",
-  ] as const)("pending numeric DataLoader %s cannot cross a guarded write", async (method) => {
+  ] as const)("pending numeric DataLoader %s cannot cross a scoped write", async (method) => {
     const owner = await create();
     const started = deferred();
     const finish = deferred();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const loader = new InstrumentedDataLoader<ID, number>(
           "pending-balance",
           async (ids) => {
@@ -417,7 +417,7 @@ describe("transaction read generations", () => {
       loadRows({ ...loaderOptions, clause: Eq("id", owner.id) });
     const outside = scoped ? undefined : await readRows();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const rows = outside ?? (await readRows());
         await edit(await load(owner.id), 80).saveX();
         const stale = await applyPrivacyPolicyForRow(viewer, options, rows[0]);
@@ -437,7 +437,7 @@ describe("transaction read generations", () => {
     const started = deferred();
     const finish = deferred();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const pool =
           kind === "raw"
             ? DB.getInstance().getPool()
@@ -486,9 +486,9 @@ describe("transaction read generations", () => {
     expect((await load(owner.id)).data.balance).toBe(100);
   });
 
-  test("fresh association readers work after guarded saves retire metadata loaders", async () => {
+  test("fresh association readers work after scoped saves retire metadata loaders", async () => {
     const owner = await create();
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       expect(await countFactory.createLoader(context).load(owner.id)).toBe(0);
       await edit(await load(owner.id), 80).saveX();
       expect(await countFactory.createLoader(context).load(owner.id)).toBe(0);
@@ -544,7 +544,7 @@ describe("transaction read generations", () => {
     }
     try {
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           const pending = loadEnts(
             new TestContext().getViewer(),
             { ...options, ent: PausedAccount },

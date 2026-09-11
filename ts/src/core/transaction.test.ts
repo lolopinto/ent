@@ -1,5 +1,5 @@
 import DB, { Dialect } from "./db";
-import { withTransaction, TransactionScope } from "./transaction";
+import { withTransactionScope, TransactionScope } from "./transaction";
 import { getTransactionState } from "./transaction_context";
 import {
   loadEnt,
@@ -92,16 +92,9 @@ function barrier(n: number) {
 }
 
 class GuardedEdit extends SimpleAction<ScopedAccount> {
-  requiresTransaction() {
+  requiresTransactionScope() {
     return true;
   }
-}
-
-function independent<T extends SimpleAction<ScopedAccount>>(
-  action: T,
-  resource: string,
-): T {
-  return Object.assign(action, { getTransactionResources: () => [resource] });
 }
 
 describe("transaction-scoped actions (disposable Postgres database)", () => {
@@ -190,7 +183,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       const owner = await create();
       const observe = jest.fn();
       let caught: unknown;
-      const outcome = withTransaction(async () => {
+      const outcome = withTransactionScope(async () => {
         const first = edit(await load(owner.id as string), 75);
         first.getObservers = () => [{ observe }];
         await first.saveX();
@@ -271,7 +264,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
           const failure = new Error(stage);
           const observe = jest.fn();
           await expect(
-            withTransaction(async () => {
+            withTransactionScope(async () => {
               const first = edit(await load(owner.id as string), 75);
               first.getObservers = () => [{ observe }];
               await first.saveX();
@@ -320,7 +313,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       const failure = new Error("custom changeset preparation");
       const observe = jest.fn();
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           const first = edit(await load(owner.id as string), 75);
           first.getObservers = () => [{ observe }];
           await first.saveX();
@@ -344,7 +337,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       const failure = new Error("execution context unavailable");
       const observe = jest.fn();
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           const first = edit(await load(owner.id as string), 75);
           first.getObservers = () => [{ observe }];
           await first.saveX();
@@ -435,10 +428,10 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   };
 
   test.each(privacyReadPaths)(
-    "fresh field-redacted %s reads remain valid guarded action inputs",
+    "fresh field-redacted %s reads remain valid scoped action inputs",
     async (path) => {
       const owner = await create();
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const redacted = await loadWithFieldPrivacy(path, owner.id as string);
         expect(redacted!.data.admin).toBeNull();
         await edit(redacted!, 75).saveX();
@@ -468,7 +461,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         ],
       };
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           const pending = loadWithFieldPrivacy(
             path,
             owner.id as string,
@@ -505,7 +498,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     });
     await started.promise;
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         try {
           await edit(await load(owner.id as string), 75).saveX();
         } finally {
@@ -536,7 +529,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         });
       let caught: unknown;
       try {
-        const failure = await withTransaction(async () => {
+        const failure = await withTransactionScope(async () => {
           for (const [account, balance] of [
             [earlier, 75],
             [target, 12],
@@ -626,7 +619,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
           });
         try {
           await expect(
-            withTransaction(async () => {
+            withTransactionScope(async () => {
               const action = edit(await load(owner.id as string), 12);
               if (source === "viewer throw") {
                 action.viewerForEntLoad = () => {
@@ -660,7 +653,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
           : original.call(this);
       });
     try {
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const action = edit(await load(owner.id as string), 12);
         action.getObservers = () => [{ observe }];
         action.getTriggers = () => [
@@ -694,7 +687,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     async (method) => {
       const owner = await create();
       let caught: unknown;
-      const failure = await withTransaction(async () => {
+      const failure = await withTransactionScope(async () => {
         await edit(await load(owner.id as string), 75).saveX();
         const candidate = edit(await load(owner.id as string), 12);
         try {
@@ -766,7 +759,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     async (method) => {
       const owner = await create();
       let previous!: GuardedEdit;
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         previous = edit(await load(owner.id as string), 75);
         await previous.saveX();
       });
@@ -775,7 +768,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         throw error;
       };
       await expect(previous[method]()).rejects.toBe(error);
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         await edit(await load(owner.id as string), 50).saveX();
         await expect(previous[method]()).rejects.toBe(error);
       });
@@ -791,7 +784,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     ["unscoped", "editedEnt"],
     ["unscoped", "editedEntX"],
   ] as const)(
-    "%s %s snapshots cannot become fresh inputs to a guarded mutation",
+    "%s %s snapshots cannot become fresh inputs to a scoped mutation",
     async (origin, method) => {
       const owner = await create();
       let previous!: SimpleAction<ScopedAccount>;
@@ -800,7 +793,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         await previous.saveX();
       };
       if (origin === "previous scope") {
-        await withTransaction(savePrevious);
+        await withTransactionScope(savePrevious);
       } else if (origin === "unscoped") {
         previous = new SimpleAction(
           viewer,
@@ -812,7 +805,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         await previous.saveX();
       }
       await expect(
-        withTransaction(async () => {
+        withTransactionScope(async () => {
           if (origin === "same scope") {
             await savePrevious();
           }
@@ -836,7 +829,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     "fresh %s results retain the completed write's current provenance",
     async (source) => {
       const [owner, target] = await Promise.all([create(), create()]);
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const parent = edit(await load(owner.id as string), 90);
         let child!: SimpleAction<ScopedAccount>;
         parent.getTriggers = () => [
@@ -871,7 +864,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     const account = await create();
     const observed: number[] = [];
     let scopedPid = 0;
-    await withTransaction(async (tx) => {
+    await withTransactionScope(async (tx) => {
       scopedPid = (await tx.query("SELECT pg_backend_pid() AS pid")).rows[0]
         .pid;
       const action = edit(await load(account.id as string), 75);
@@ -933,7 +926,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     const outside = await load(account.id as string);
     const observe = jest.fn();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const action = edit(await load(account.id as string), 30);
         action.getTriggers = () => [
           {
@@ -961,7 +954,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   test("observers and callers can read committed builder IDs without rerunning preparation", async () => {
     const effects: string[] = [];
     let action!: SimpleAction<ScopedAccount>;
-    const result = await withTransaction(async () => {
+    const result = await withTransactionScope(async () => {
       action = new SimpleAction(
         viewer,
         accountSchema,
@@ -995,7 +988,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     const account = await create();
     const written = deferred();
     const release = deferred();
-    const worker = withTransaction(async () => {
+    const worker = withTransactionScope(async () => {
       await edit(await load(account.id as string), 9).saveX();
       written.resolve();
       await release.promise;
@@ -1004,7 +997,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     await written.promise;
     try {
       expect((await load(account.id as string)).data.balance).toBe(100);
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         expect((await load(account.id as string)).data.balance).toBe(100);
       });
     } finally {
@@ -1020,7 +1013,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     const attempts: number[] = [];
     let observers = 0;
     const sell = (amount: number) =>
-      withTransaction(
+      withTransactionScope(
         async (tx) => {
           attempts.push(tx.attempt);
           const current = await load(account.id as string);
@@ -1062,7 +1055,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     const accounts = await Promise.all([create(), create()]);
     const meet = barrier(2);
     const removeAdmin = (account: ScopedAccount) =>
-      withTransaction(
+      withTransactionScope(
         async (tx) => {
           const current = await load(account.id as string);
           const action = new GuardedEdit(
@@ -1122,7 +1115,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     const account = await create();
     const locked = deferred();
     const release = deferred();
-    const first = withTransaction(
+    const first = withTransactionScope(
       async (tx) => {
         await tx.query(
           "SELECT id FROM scoped_accounts WHERE id = $1 FOR UPDATE",
@@ -1137,7 +1130,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     );
     await locked.promise;
     const secondStarted = deferred();
-    const second = withTransaction(
+    const second = withTransactionScope(
       async (tx) => {
         // This cached value must be invalidated by the explicit lock query.
         expect((await load(account.id as string)).data.balance).toBe(100);
@@ -1159,26 +1152,26 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     expect((await load(account.id as string)).data.balance).toBe(50);
   });
 
-  test("guarded direct saves/builders/changesets fail closed and stale Ents cannot cross scopes", async () => {
+  test("scoped direct saves/builders/changesets fail closed and stale Ents cannot cross scopes", async () => {
     const account = await create();
     await expect(edit(account, 1).saveX()).rejects.toThrow(
-      "requires withTransaction",
+      "requires withTransactionScope",
     );
     await expect(edit(account, 1).builder.saveX()).rejects.toThrow(
-      "requires withTransaction",
+      "requires withTransactionScope",
     );
     await expect(edit(account, 1).changeset()).rejects.toThrow(
-      "requires withTransaction",
+      "requires withTransactionScope",
     );
     await expect(
-      withTransaction(async () => edit(account, 1).saveX()),
+      withTransactionScope(async () => edit(account, 1).saveX()),
     ).rejects.toThrow("reload existingEnt");
     const oldAction = edit(account, 1);
     await expect(
-      withTransaction(async () => oldAction.saveX()),
+      withTransactionScope(async () => oldAction.saveX()),
     ).rejects.toThrow("cannot cross transaction scopes");
     let oldChangeset: Awaited<ReturnType<GuardedEdit["changeset"]>>;
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       oldChangeset = await edit(
         await load(account.id as string),
         1,
@@ -1191,7 +1184,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   test("privacy denial rolls back earlier actions; legacy action Transaction groups join outer scope", async () => {
     const account = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         await new Transaction(viewer, [
           edit(await load(account.id as string), 50),
         ]).run();
@@ -1206,7 +1199,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   test("caught SQL errors still abort and borrowed clients/nested scopes are rejected", async () => {
     const account = await create();
     await expect(
-      withTransaction(async (tx) => {
+      withTransactionScope(async (tx) => {
         await edit(await load(account.id as string), 1).saveX();
         await tx
           .query("SELECT no_such_column FROM scoped_accounts")
@@ -1214,8 +1207,8 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       }),
     ).rejects.toThrow("no_such_column");
     expect((await load(account.id as string)).data.balance).toBe(100);
-    await withTransaction(async () => {
-      await expect(withTransaction(async () => {})).rejects.toThrow("nested");
+    await withTransactionScope(async () => {
+      await expect(withTransactionScope(async () => {})).rejects.toThrow("nested");
       await expect(DB.getInstance().getNewClient()).rejects.toThrow("escape");
       expect(() => DB.getInstance().getConnection()).toThrow("raw connections");
     });
@@ -1225,10 +1218,10 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     const account = await create();
     const trigger = jest.fn();
     await expect(
-      withTransaction(
+      withTransactionScope(
         async () => {
           const action = edit(await load(account.id as string), 0);
-          Object.assign(action, { requiresTransaction: () => "serializable" });
+          Object.assign(action, { requiresTransactionScope: () => "serializable" });
           action.getTriggers = () => [{ changeset: trigger }];
           await action.saveX();
         },
@@ -1241,7 +1234,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   test("a swallowed non-X validation failure still rolls back earlier writes", async () => {
     const account = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         await edit(await load(account.id as string), 50).saveX();
         const invalid = edit(await load(account.id as string), 0);
         invalid.getValidators = () => [
@@ -1260,7 +1253,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   test("caught changeset preparation failure still aborts the owning scope", async () => {
     const account = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         await edit(await load(account.id as string), 50).saveX();
         const invalid = edit(await load(account.id as string), 0);
         invalid.getValidators = () => [
@@ -1284,7 +1277,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     let closedQuery!: () => Promise<unknown>;
     const gate = deferred();
     let detached!: Promise<unknown>;
-    await withTransaction(async (tx) => {
+    await withTransactionScope(async (tx) => {
       scope = tx;
       await expect(outsideLoader.load(account.id)).rejects.toThrow(
         "cannot cross transaction scopes",
@@ -1305,7 +1298,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   test("raw writes invalidate all transaction viewers' caches", async () => {
     const account = await create();
     const other = new TestContext();
-    await withTransaction(async (tx) => {
+    await withTransactionScope(async (tx) => {
       expect((await load(account.id as string)).data.balance).toBe(100);
       expect(
         (await loadEntX(other.getViewer(), account.id, options)).data.balance,
@@ -1330,7 +1323,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       );
     const [owner, target] = await Promise.all([create(), create()]);
     const readEdges = () => loadEdges({ id1: owner.id, edgeType, context });
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const action = edit(await load(owner.id as string), 100);
       action.builder.orchestrator.addOutboundEdge(
         target.id,
@@ -1340,7 +1333,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       await action.saveX();
     });
     expect((await readEdges()).length).toBe(1);
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       expect((await readEdges()).length).toBe(1);
       const action = edit(await load(owner.id as string), 100);
       action.builder.orchestrator.removeOutboundEdge(target.id, edgeType);
@@ -1350,24 +1343,24 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     expect(await readEdges()).toEqual([]);
   });
 
-  test("prebuilt guarded sale roots in one Transaction fail before losing an absolute balance update", async () => {
+  test("prebuilt scoped sale roots in one Transaction fail before losing an absolute balance update", async () => {
     const account = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const current = await load(account.id as string);
         await new Transaction(viewer, [
           edit(current, 80),
           edit(current, 70),
         ]).run();
       }),
-    ).rejects.toThrow("guarded root actions");
+    ).rejects.toThrow("root actions");
     expect((await load(account.id as string)).data.balance).toBe(100);
   });
 
-  test("prebuilt guarded admin roots cannot both validate against the old count", async () => {
+  test("prebuilt scoped admin roots cannot both validate against the old count", async () => {
     const accounts = await Promise.all([create(), create()]);
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const actions = await Promise.all(
           accounts.map(async (account) => {
             const action = new GuardedEdit(
@@ -1396,26 +1389,26 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         );
         await new Transaction(viewer, actions).run();
       }),
-    ).rejects.toThrow("guarded root actions");
+    ).rejects.toThrow("root actions");
     expect(
       (await loadRows({ ...options, clause: Eq("admin", true), context }))
         .length,
     ).toBe(2);
   });
 
-  test("parallel guarded root saves roll back, while sequential saves reload fresh state", async () => {
+  test("parallel scoped root saves roll back, while sequential saves reload fresh state", async () => {
     const account = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const current = await load(account.id as string);
         await Promise.all([
           edit(current, 80).saveX(),
           edit(current, 70).saveX(),
         ]);
       }),
-    ).rejects.toThrow("guarded root actions");
+    ).rejects.toThrow("root actions");
     expect((await load(account.id as string)).data.balance).toBe(100);
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       await edit(await load(account.id as string), 80).saveX();
       const fresh = await load(account.id as string);
       await edit(fresh, fresh.data.balance - 30).saveX();
@@ -1423,10 +1416,10 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     expect((await load(account.id as string)).data.balance).toBe(50);
   });
 
-  test("an Ent loaded before a previous guarded save cannot feed the next root", async () => {
+  test("an Ent loaded before a previous scoped save cannot feed the next root", async () => {
     const account = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const old = await load(account.id as string);
         await edit(old, 80).saveX();
         await edit(old, 70).saveX();
@@ -1435,27 +1428,18 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     expect((await load(account.id as string)).data.balance).toBe(100);
   });
 
-  test("guarded root permits distinct trigger child changesets and releases the complete tree", async () => {
+  test("scoped root permits distinct trigger child changesets and releases the complete tree", async () => {
     const accounts = await Promise.all([create(), create(), create()]);
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const current = await Promise.all(
         accounts.map((account) => load(account.id as string)),
       );
-      const parent = independent(
-        edit(current[0], 90),
-        `account:${current[0].id}`,
-      );
+      const parent = edit(current[0], 90);
       parent.getTriggers = () => [
         {
           changeset: async () => [
-            await independent(
-              edit(current[1], 80),
-              `account:${current[1].id}`,
-            ).changeset(),
-            await independent(
-              edit(current[2], 70),
-              `account:${current[2].id}`,
-            ).changeset(),
+            await edit(current[1], 80).changeset(),
+            await edit(current[2], 70).changeset(),
           ],
         },
       ];
@@ -1472,7 +1456,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   test("nested trigger saves and sibling child writes to one Ent fail closed", async () => {
     const [owner, target] = await Promise.all([create(), create()]);
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const parent = edit(await load(owner.id as string), 90);
         parent.getTriggers = () => [
           {
@@ -1489,8 +1473,8 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       }),
     ).rejects.toThrow("nested action saves");
     await expect(
-      withTransaction(async () => {
-        // An unguarded wrapper must not let guarded sibling children bypass checks.
+      withTransactionScope(async () => {
+        // An ordinary wrapper must not let scoped sibling children bypass checks.
         const parent = new SimpleAction(
           viewer,
           accountSchema,
@@ -1503,9 +1487,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
             async changeset() {
               const current = await load(target.id as string);
               return [
-                // Reject known duplicate row writes even with incorrect resource keys.
-                await independent(edit(current, 80), "first").changeset(),
-                await independent(edit(current, 70), "second").changeset(),
+                // Reject writes to the same row through different builders.
+                await edit(current, 80).changeset(),
+                await edit(current, 70).changeset(),
               ];
             },
           },
@@ -1530,17 +1514,14 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       create(),
       create(),
     ]);
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const current = await load(owner.id as string);
-      const parent = independent(
-        new GuardedEdit(
-          viewer,
-          accountSchema,
-          new Map(),
-          WriteOperation.Edit,
-          current,
-        ),
-        `edge:${owner.id}:${first.id}`,
+      const parent = new GuardedEdit(
+        viewer,
+        accountSchema,
+        new Map(),
+        WriteOperation.Edit,
+        current,
       );
       parent.builder.orchestrator.addOutboundEdge(
         first.id,
@@ -1550,15 +1531,12 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       parent.getTriggers = () => [
         {
           async changeset() {
-            const child = independent(
-              new GuardedEdit(
-                viewer,
-                accountSchema,
-                new Map(),
-                WriteOperation.Edit,
-                current,
-              ),
-              `edge:${owner.id}:${second.id}`,
+            const child = new GuardedEdit(
+              viewer,
+              accountSchema,
+              new Map(),
+              WriteOperation.Edit,
+              current,
             );
             child.builder.orchestrator.addOutboundEdge(
               second.id,
@@ -1580,7 +1558,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
 
   test("skipped child writes do not conflict and distinct nested deletions remain supported", async () => {
     const accounts = await Promise.all([create(), create(), create()]);
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const current = await load(accounts[0].id as string);
       const parent = edit(current, 80);
       parent.getTriggers = () => [
@@ -1602,19 +1580,16 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       await parent.saveX();
     });
     expect((await load(accounts[0].id as string)).data.balance).toBe(80);
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const current = await Promise.all(
         accounts.map((account) => load(account.id as string)),
       );
-      const parent = independent(
-        new GuardedEdit(
-          viewer,
-          accountSchema,
-          new Map(),
-          WriteOperation.Delete,
-          current[0],
-        ),
-        `account:${current[0].id}`,
+      const parent = new GuardedEdit(
+        viewer,
+        accountSchema,
+        new Map(),
+        WriteOperation.Delete,
+        current[0],
       );
       parent.getTriggers = () => [
         {
@@ -1623,15 +1598,12 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
               current
                 .slice(1)
                 .map((account) =>
-                  independent(
-                    new GuardedEdit(
-                      viewer,
-                      accountSchema,
-                      new Map(),
-                      WriteOperation.Delete,
-                      account,
-                    ),
-                    `account:${account.id}`,
+                  new GuardedEdit(
+                    viewer,
+                    accountSchema,
+                    new Map(),
+                    WriteOperation.Delete,
+                    account,
                   ).changeset(),
                 ),
             ),
@@ -1645,10 +1617,10 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     ).toBe(0);
   });
 
-  test("unguarded wrapper cannot combine guarded last-admin removals of distinct rows", async () => {
+  test("a wrapper checks the final state after removing administrators in child actions", async () => {
     const accounts = await Promise.all([create(), create()]);
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const parent = new SimpleAction(
           viewer,
           auditSchema,
@@ -1668,6 +1640,21 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
                     WriteOperation.Edit,
                     await load(account.id as string),
                   );
+                  Object.assign(child, {
+                    validateBeforeCommit: async () => {
+                      if (
+                        !(
+                          await loadRows({
+                            ...options,
+                            clause: Eq("admin", true),
+                            context,
+                          })
+                        ).length
+                      ) {
+                        throw new Error("last admin");
+                      }
+                    },
+                  });
                   child.getValidators = () => [
                     {
                       async validate() {
@@ -1690,7 +1677,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         ];
         await parent.saveX();
       }),
-    ).rejects.toThrow("overlapping guarded action preparation branches");
+    ).rejects.toThrow("last admin");
     expect(
       (await loadRows({ ...options, clause: Eq("admin", true), context }))
         .length,
@@ -1699,170 +1686,154 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
   });
 
   test.each([
-    [undefined, undefined, false],
-    ["admins", "admins", false],
-    [undefined, "admins", false],
-    ["admins", undefined, false],
-    [undefined, undefined, true],
-  ] as const)(
-    "ancestor and descendant cannot independently decide the last-admin invariant (%s, %s, wrapper=%s)",
-    async (parentKey, childKey, wrapper) => {
-      const accounts = await Promise.all([create(), create()]);
-      const remove = async (id: string, key: string | undefined) => {
-        const action = new GuardedEdit(
-          viewer,
-          accountSchema,
-          new Map([["admin", false]]),
-          WriteOperation.Edit,
-          await load(id),
-        );
-        if (key) {
-          independent(action, key);
-        }
-        action.getValidators = () => [
-          {
-            async validate() {
-              const rows = await loadRows({
-                ...options,
-                clause: Eq("admin", true),
-                context,
-              });
-              if (rows.length <= 1) {
-                throw new Error("last admin");
-              }
-            },
+    false,
+    true,
+  ])("final validation checks ancestor and descendant administrator removals (wrapper=%s)", async (wrapper) => {
+    const accounts = await Promise.all([create(), create()]);
+    const remove = async (id: string) => {
+      const action = new GuardedEdit(
+        viewer,
+        accountSchema,
+        new Map([["admin", false]]),
+        WriteOperation.Edit,
+        await load(id),
+      );
+      Object.assign(action, {
+        validateBeforeCommit: async () => {
+          if (
+            !(
+              await loadRows({ ...options, clause: Eq("admin", true), context })
+            ).length
+          ) {
+            throw new Error("last admin");
+          }
+        },
+      });
+      action.getValidators = () => [
+        {
+          async validate() {
+            const rows = await loadRows({
+              ...options,
+              clause: Eq("admin", true),
+              context,
+            });
+            if (rows.length <= 1) {
+              throw new Error("last admin");
+            }
           },
-        ];
-        return action;
-      };
-      await expect(
-        withTransaction(async () => {
-          const parent = await remove(accounts[0].id as string, parentKey);
-          const child = async () =>
-            (await remove(accounts[1].id as string, childKey)).changeset();
-          parent.getTriggers = () => [
-            {
-              async changeset() {
-                if (!wrapper) {
-                  return child();
-                }
-                const intermediate = new SimpleAction(
-                  viewer,
-                  auditSchema,
-                  new Map([["message", "remove admins"]]),
-                  WriteOperation.Insert,
-                  null,
-                );
-                intermediate.getTriggers = () => [{ changeset: child }];
-                return intermediate.changeset();
-              },
-            },
-          ];
-          await parent.saveX();
-        }),
-      ).rejects.toThrow("overlapping guarded action preparation branches");
-      expect(
-        (await loadRows({ ...options, clause: Eq("admin", true), context }))
-          .length,
-      ).toBe(2);
-      expect((await audits()).rowCount).toBe(0);
-    },
-  );
-
-  test.each(["valid", "validX", "validWithErrors"] as const)(
-    "%s then save rebuilds independent child changesets and writes each once",
-    async (method) => {
-      const [owner, target] = await Promise.all([create(), create()]);
-      const observe = jest.fn();
-      await withTransaction(async () => {
-        const parent = independent(
-          edit(await load(owner.id as string), 90),
-          `account:${owner.id}`,
-        );
+        },
+      ];
+      return action;
+    };
+    await expect(
+      withTransactionScope(async () => {
+        const parent = await remove(accounts[0].id as string);
+        const child = async () =>
+          (await remove(accounts[1].id as string)).changeset();
         parent.getTriggers = () => [
           {
             async changeset() {
-              const child = independent(
-                edit(await load(target.id as string), 80),
-                `account:${target.id}`,
+              if (!wrapper) {
+                return child();
+              }
+              const intermediate = new SimpleAction(
+                viewer,
+                auditSchema,
+                new Map([["message", "remove admins"]]),
+                WriteOperation.Insert,
+                null,
               );
-              child.getObservers = () => [{ observe }];
-              child.getTriggers = () => [
-                {
-                  changeset: () =>
-                    new SimpleAction(
-                      viewer,
-                      auditSchema,
-                      new Map([["message", "child write"]]),
-                      WriteOperation.Insert,
-                      null,
-                    ).changeset(),
-                },
-              ];
-              return child.changeset();
+              intermediate.getTriggers = () => [{ changeset: child }];
+              return intermediate.changeset();
             },
           },
         ];
-        const result = await parent[method]();
-        expect(result).toEqual(
-          method === "valid" ? true : method === "validX" ? undefined : [],
-        );
-        expect((await load(target.id as string)).data.balance).toBe(100);
-        expect((await audits()).rowCount).toBe(0);
         await parent.saveX();
-        expect((await audits()).rowCount).toBe(1);
-        expect(observe).not.toHaveBeenCalled();
-      });
-      expect((await load(owner.id as string)).data.balance).toBe(90);
-      expect((await load(target.id as string)).data.balance).toBe(80);
-      expect(observe).toHaveBeenCalledTimes(1);
-    },
-  );
+      }),
+    ).rejects.toThrow("last admin");
+    expect(
+      (await loadRows({ ...options, clause: Eq("admin", true), context }))
+        .length,
+    ).toBe(2);
+    expect((await audits()).rowCount).toBe(0);
+  });
 
-  test.each(["valid", "validX", "validWithErrors"] as const)(
-    "failed %s discards its child graph before a corrected save",
-    async (method) => {
-      const [owner, oldTarget, newTarget] = await Promise.all([
-        create(),
-        create(),
-        create(),
-      ]);
-      await withTransaction(async () => {
-        const parent = independent(
-          edit(await load(owner.id as string), 90),
-          `account:${owner.id}`,
-        );
-        let target = oldTarget;
-        let invalid = true;
-        const error = new Error("invalid candidate");
-        parent.getValidators = () => [
-          { validate: async () => (invalid ? error : undefined) },
-        ];
-        parent.getTriggers = () => [
-          {
-            changeset: async () =>
-              independent(
-                edit(await load(target.id as string), 80),
-                `account:${target.id}`,
-              ).changeset(),
+  test.each(["valid", "validX", "validWithErrors"] as const)("%s then save rebuilds independent child changesets and writes each once", async (method) => {
+    const [owner, target] = await Promise.all([create(), create()]);
+    const observe = jest.fn();
+    await withTransactionScope(async () => {
+      const parent = edit(await load(owner.id as string), 90);
+      parent.getTriggers = () => [
+        {
+          async changeset() {
+            const child = edit(await load(target.id as string), 80);
+            child.getObservers = () => [{ observe }];
+            child.getTriggers = () => [
+              {
+                changeset: () =>
+                  new SimpleAction(
+                    viewer,
+                    auditSchema,
+                    new Map([["message", "child write"]]),
+                    WriteOperation.Insert,
+                    null,
+                  ).changeset(),
+              },
+            ];
+            return child.changeset();
           },
-        ];
-        if (method === "validX") {
-          await expect(parent.validX()).rejects.toBe(error);
-        } else {
-          expect(await parent[method]()).toEqual(
-            method === "valid" ? false : [error],
-          );
-        }
-        target = newTarget;
-        invalid = false;
-        await parent.saveX();
-      });
-      expect((await load(owner.id as string)).data.balance).toBe(90);
-      expect((await load(oldTarget.id as string)).data.balance).toBe(100);
-      expect((await load(newTarget.id as string)).data.balance).toBe(80);
-    },
-  );
+        },
+      ];
+      const result = await parent[method]();
+      expect(result).toEqual(
+        method === "valid" ? true : method === "validX" ? undefined : [],
+      );
+      expect((await load(target.id as string)).data.balance).toBe(100);
+      expect((await audits()).rowCount).toBe(0);
+      await parent.saveX();
+      expect((await audits()).rowCount).toBe(1);
+      expect(observe).not.toHaveBeenCalled();
+    });
+    expect((await load(owner.id as string)).data.balance).toBe(90);
+    expect((await load(target.id as string)).data.balance).toBe(80);
+    expect(observe).toHaveBeenCalledTimes(1);
+  });
+
+  test.each(["valid", "validX", "validWithErrors"] as const)("failed %s discards its child graph before a corrected save", async (method) => {
+    const [owner, oldTarget, newTarget] = await Promise.all([
+      create(),
+      create(),
+      create(),
+    ]);
+    await withTransactionScope(async () => {
+      const parent = edit(await load(owner.id as string), 90);
+      let target = oldTarget;
+      let invalid = true;
+      const error = new Error("invalid candidate");
+      parent.getValidators = () => [
+        { validate: async () => (invalid ? error : undefined) },
+      ];
+      parent.getTriggers = () => [
+        {
+          changeset: async () =>
+            edit(await load(target.id as string), 80).changeset(),
+        },
+      ];
+      if (method === "validX") {
+        await expect(parent.validX()).rejects.toBe(error);
+      } else {
+        expect(await parent[method]()).toEqual(
+          method === "valid" ? false : [error],
+        );
+      }
+      target = newTarget;
+      invalid = false;
+      await parent.saveX();
+    });
+    expect((await load(owner.id as string)).data.balance).toBe(90);
+    expect((await load(oldTarget.id as string)).data.balance).toBe(100);
+    expect((await load(newTarget.id as string)).data.balance).toBe(80);
+  });
 
   describe.each([
     "siblings",
@@ -1871,185 +1842,160 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     "user Promise.all",
   ] as const)("parallel validation with %s", (shape) => {
     describe.each([false, true])("nested grandchildren %s", (nested) => {
-      test.each(["valid", "validX", "validWithErrors"] as const)(
-        "%s drains children before reporting a recoverable error and supports a corrected save",
-        async (method) => {
-          const accounts = await Promise.all(
-            Array.from({ length: 5 }, () => create()),
+      test.each(["valid", "validX", "validWithErrors"] as const)("%s drains children before reporting a recoverable error and supports a corrected save", async (method) => {
+        const accounts = await Promise.all(
+          Array.from({ length: 5 }, () => create()),
+        );
+        const observe = jest.fn();
+        await withTransactionScope(async () => {
+          const actions = await Promise.all(
+            accounts.map(async (account, index) =>
+              edit(await load(account.id as string), 90 - index * 10),
+            ),
           );
-          const observe = jest.fn();
-          await withTransaction(async () => {
-            const actions = await Promise.all(
-              accounts.map(async (account, index) =>
-                independent(
-                  edit(await load(account.id as string), 90 - index * 10),
-                  `account:${account.id}`,
-                ),
-              ),
-            );
-            const [parent, invalidChild, slowChild, fastBranch, slowBranch] =
-              actions;
-            let invalid = true;
-            const error = new Error("first invalid child");
-            invalidChild.getValidators = () => [
-              { validate: async () => (invalid ? error : undefined) },
-            ];
-            const started = deferred();
-            const finish = deferred();
-            slowChild.getObservers = () => [{ observe }];
-            slowChild.getTriggers = () => [
-              {
-                changeset: async () => {
-                  started.resolve();
-                  await finish.promise;
-                  return new SimpleAction(
-                    viewer,
-                    auditSchema,
-                    new Map([["message", "drained child"]]),
-                    WriteOperation.Insert,
-                    null,
-                  ).changeset();
-                },
-              },
-            ];
-            fastBranch.getTriggers = () => [
-              { changeset: () => invalidChild.changeset() },
-            ];
-            slowBranch.getTriggers = () => [
-              { changeset: () => slowChild.changeset() },
-            ];
-            const fast = nested ? fastBranch : invalidChild;
-            const slow = nested ? slowBranch : slowChild;
-            let pendingSlow!: Promise<unknown>;
-            const prepareSlow = () => {
-              const pending = slow.changeset();
-              pendingSlow = pending;
-              return pending;
-            };
-            if (shape === "siblings") {
-              parent.getTriggers = () => [
-                { changeset: () => fast.changeset() },
-                { changeset: prepareSlow },
-              ];
-            } else if (shape === "trigger group") {
-              parent.getTriggers = () => [
-                [
-                  { changeset: () => fast.changeset() },
-                  { changeset: prepareSlow },
-                ],
-              ];
-            } else if (shape === "child array") {
-              parent.getTriggers = () => [
-                { changeset: () => [fast.changeset(), prepareSlow()] },
-              ];
-            } else {
-              parent.getTriggers = () => [
-                {
-                  changeset: () =>
-                    Promise.all([fast.changeset(), prepareSlow()]),
-                },
-              ];
-            }
-            let settled = false;
-            const validation = parent[method]().then(
-              (value) => {
-                settled = true;
-                return { value };
-              },
-              (error) => {
-                settled = true;
-                return { error };
-              },
-            );
-            await started.promise;
-            // Release independently of validation so the test completes whether
-            // validation rejects early or waits for pending work.
-            await new Promise((resolve) => setImmediate(resolve));
-            const settledBeforeRelease = settled;
-            finish.resolve();
-            expect(await validation).toEqual({ error });
-            await expect(pendingSlow).resolves.toBeDefined();
-            expect(settledBeforeRelease).toBe(false);
-            expect(getTransactionState()!.failed).toBe(false);
-            expect((await audits()).rowCount).toBe(0);
-            invalid = false;
-            await parent.saveX();
-            expect((await audits()).rowCount).toBe(1);
-            expect(observe).not.toHaveBeenCalled();
-          });
-          expect((await load(accounts[0].id as string)).data.balance).toBe(90);
-          expect((await load(accounts[1].id as string)).data.balance).toBe(80);
-          expect((await load(accounts[2].id as string)).data.balance).toBe(70);
-          expect((await audits()).rowCount).toBe(1);
-          expect(observe).toHaveBeenCalledTimes(1);
-        },
-      );
-    });
-  });
-
-  test.each(["sql", "composition"] as const)(
-    "late %s failures remain fatal while parallel validation preserves its first normal error",
-    async (failure) => {
-      const [owner, one, two] = await Promise.all([
-        create(),
-        create(),
-        create(),
-      ]);
-      const firstError = new Error("first ordinary validation error");
-      const started = deferred();
-      const finish = deferred();
-      await expect(
-        withTransaction(async () => {
-          await edit(await load(owner.id as string), 75).saveX();
-          const parent = independent(
-            edit(await load(owner.id as string), 90),
-            `account:${owner.id}`,
-          );
-          const invalid = independent(
-            edit(await load(one.id as string), 80),
-            `account:${one.id}`,
-          );
-          invalid.getValidators = () => [{ validate: async () => firstError }];
-          const slow = independent(
-            edit(await load(two.id as string), 70),
-            `account:${two.id}`,
-          );
-          slow.getTriggers = () => [
+          const [parent, invalidChild, slowChild, fastBranch, slowBranch] =
+            actions;
+          let invalid = true;
+          const error = new Error("first invalid child");
+          invalidChild.getValidators = () => [
+            { validate: async () => (invalid ? error : undefined) },
+          ];
+          const started = deferred();
+          const finish = deferred();
+          slowChild.getObservers = () => [{ observe }];
+          slowChild.getTriggers = () => [
             {
               changeset: async () => {
                 started.resolve();
                 await finish.promise;
-                if (failure === "sql") {
-                  await DB.getInstance()
-                    .getPool()
-                    .query("SELECT * FROM missing_parallel_validation_table");
-                } else {
-                  return independent(
-                    edit(await load(owner.id as string), 60),
-                    `account:${owner.id}`,
-                  ).changeset();
-                }
+                return new SimpleAction(
+                  viewer,
+                  auditSchema,
+                  new Map([["message", "drained child"]]),
+                  WriteOperation.Insert,
+                  null,
+                ).changeset();
               },
             },
           ];
-          parent.getTriggers = () => [
-            { changeset: () => invalid.changeset() },
-            { changeset: () => slow.changeset() },
+          fastBranch.getTriggers = () => [
+            { changeset: () => invalidChild.changeset() },
           ];
-          const validation = expect(parent.validX()).rejects.toBe(firstError);
+          slowBranch.getTriggers = () => [
+            { changeset: () => slowChild.changeset() },
+          ];
+          const fast = nested ? fastBranch : invalidChild;
+          const slow = nested ? slowBranch : slowChild;
+          let pendingSlow!: Promise<unknown>;
+          const prepareSlow = () => {
+            const pending = slow.changeset();
+            pendingSlow = pending;
+            return pending;
+          };
+          if (shape === "siblings") {
+            parent.getTriggers = () => [
+              { changeset: () => fast.changeset() },
+              { changeset: prepareSlow },
+            ];
+          } else if (shape === "trigger group") {
+            parent.getTriggers = () => [
+              [
+                { changeset: () => fast.changeset() },
+                { changeset: prepareSlow },
+              ],
+            ];
+          } else if (shape === "child array") {
+            parent.getTriggers = () => [
+              { changeset: () => [fast.changeset(), prepareSlow()] },
+            ];
+          } else {
+            parent.getTriggers = () => [
+              {
+                changeset: () => Promise.all([fast.changeset(), prepareSlow()]),
+              },
+            ];
+          }
+          let settled = false;
+          const validation = parent[method]().then(
+            (value) => {
+              settled = true;
+              return { value };
+            },
+            (error) => {
+              settled = true;
+              return { error };
+            },
+          );
           await started.promise;
+          // Release independently of validation so the test completes whether
+          // validation rejects early or waits for pending work.
           await new Promise((resolve) => setImmediate(resolve));
+          const settledBeforeRelease = settled;
           finish.resolve();
-          await validation;
-        }),
-      ).rejects.toThrow(
-        failure === "sql"
-          ? "missing_parallel_validation_table"
-          : "overlapping guarded action preparation branches",
-      );
-      expect((await load(owner.id as string)).data.balance).toBe(100);
-    },
-  );
+          expect(await validation).toEqual({ error });
+          await expect(pendingSlow).resolves.toBeDefined();
+          expect(settledBeforeRelease).toBe(false);
+          expect(getTransactionState()!.failed).toBe(false);
+          expect((await audits()).rowCount).toBe(0);
+          invalid = false;
+          await parent.saveX();
+          expect((await audits()).rowCount).toBe(1);
+          expect(observe).not.toHaveBeenCalled();
+        });
+        expect((await load(accounts[0].id as string)).data.balance).toBe(90);
+        expect((await load(accounts[1].id as string)).data.balance).toBe(80);
+        expect((await load(accounts[2].id as string)).data.balance).toBe(70);
+        expect((await audits()).rowCount).toBe(1);
+        expect(observe).toHaveBeenCalledTimes(1);
+      });
+    });
+  });
+
+  test.each(["sql", "composition"] as const)("late %s failures remain fatal while parallel validation preserves its first normal error", async (failure) => {
+    const [owner, one, two] = await Promise.all([create(), create(), create()]);
+    const firstError = new Error("first ordinary validation error");
+    const started = deferred();
+    const finish = deferred();
+    await expect(
+      withTransactionScope(async () => {
+        await edit(await load(owner.id as string), 75).saveX();
+        const parent = edit(await load(owner.id as string), 90);
+        const invalid = edit(await load(one.id as string), 80);
+        invalid.getValidators = () => [{ validate: async () => firstError }];
+        const slow = edit(await load(two.id as string), 70);
+        slow.getTriggers = () => [
+          {
+            changeset: async () => {
+              started.resolve();
+              await finish.promise;
+              if (failure === "sql") {
+                await DB.getInstance()
+                  .getPool()
+                  .query("SELECT * FROM missing_parallel_validation_table");
+              } else {
+                await edit(await load(owner.id as string), 60).saveX();
+                return;
+              }
+            },
+          },
+        ];
+        parent.getTriggers = () => [
+          { changeset: () => invalid.changeset() },
+          { changeset: () => slow.changeset() },
+        ];
+        const validation = expect(parent.validX()).rejects.toBe(firstError);
+        await started.promise;
+        await new Promise((resolve) => setImmediate(resolve));
+        finish.resolve();
+        await validation;
+      }),
+    ).rejects.toThrow(
+      failure === "sql"
+        ? "missing_parallel_validation_table"
+        : "nested action saves",
+    );
+    expect((await load(owner.id as string)).data.balance).toBe(100);
+  });
 
   test("outside a transaction parallel child validation retains fail-fast behavior", async () => {
     const [owner, one, two] = await Promise.all([create(), create(), create()]);
@@ -2101,135 +2047,108 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     expect(settledBeforeRelease).toBe(true);
   });
 
-  test.each(["valid", "validX", "validWithErrors"] as const)(
-    "%s releases successful and failed validation reservations for another root",
-    async (method) => {
-      const [owner, target] = await Promise.all([create(), create()]);
-      await withTransaction(async () => {
-        const parent = independent(
-          edit(await load(owner.id as string), 90),
-          `account:${owner.id}`,
-        );
-        parent.getTriggers = () => [
-          {
-            changeset: async () =>
-              independent(
-                edit(await load(target.id as string), 80),
-                `account:${target.id}`,
-              ).changeset(),
-          },
-        ];
-        await parent[method]();
-        const candidate = edit(await load(owner.id as string), 50);
-        const error = new Error("invalid candidate");
-        candidate.getValidators = () => [{ validate: async () => error }];
-        if (method === "validX") {
-          await expect(candidate.validX()).rejects.toBe(error);
-        } else {
-          await candidate[method]();
-        }
-        await edit(await load(target.id as string), 60).saveX();
-      });
-      expect((await load(owner.id as string)).data.balance).toBe(100);
-      expect((await load(target.id as string)).data.balance).toBe(60);
-    },
-  );
+  test.each(["valid", "validX", "validWithErrors"] as const)("%s releases successful and failed validation reservations for another root", async (method) => {
+    const [owner, target] = await Promise.all([create(), create()]);
+    await withTransactionScope(async () => {
+      const parent = edit(await load(owner.id as string), 90);
+      parent.getTriggers = () => [
+        {
+          changeset: async () =>
+            edit(await load(target.id as string), 80).changeset(),
+        },
+      ];
+      await parent[method]();
+      const candidate = edit(await load(owner.id as string), 50);
+      const error = new Error("invalid candidate");
+      candidate.getValidators = () => [{ validate: async () => error }];
+      if (method === "validX") {
+        await expect(candidate.validX()).rejects.toBe(error);
+      } else {
+        await candidate[method]();
+      }
+      await edit(await load(target.id as string), 60).saveX();
+    });
+    expect((await load(owner.id as string)).data.balance).toBe(100);
+    expect((await load(target.id as string)).data.balance).toBe(60);
+  });
 
-  test.each(["valid", "validX", "validWithErrors"] as const)(
-    "%s discards probe graphs from retained children and their grandchildren",
-    async (method) => {
-      const [owner, childTarget, grandchildTarget] = await Promise.all([
-        create(),
-        create(),
-        create(),
-      ]);
-      const observe = jest.fn();
-      await withTransaction(async () => {
-        const parent = independent(
-          edit(await load(owner.id as string), 90),
-          `account:${owner.id}`,
-        );
-        const child = independent(
-          edit(await load(childTarget.id as string), 80),
-          `account:${childTarget.id}`,
-        );
-        child.getTriggers = () => [
-          {
-            async changeset() {
-              const grandchild = independent(
-                edit(await load(grandchildTarget.id as string), 70),
-                `account:${grandchildTarget.id}`,
-              );
-              grandchild.getObservers = () => [{ observe }];
-              grandchild.getTriggers = () => [
-                {
-                  changeset: () =>
-                    new SimpleAction(
-                      viewer,
-                      auditSchema,
-                      new Map([["message", "grandchild write"]]),
-                      WriteOperation.Insert,
-                      null,
-                    ).changeset(),
-                },
-              ];
-              return grandchild.changeset();
-            },
+  test.each(["valid", "validX", "validWithErrors"] as const)("%s discards probe graphs from retained children and their grandchildren", async (method) => {
+    const [owner, childTarget, grandchildTarget] = await Promise.all([
+      create(),
+      create(),
+      create(),
+    ]);
+    const observe = jest.fn();
+    await withTransactionScope(async () => {
+      const parent = edit(await load(owner.id as string), 90);
+      const child = edit(await load(childTarget.id as string), 80);
+      child.getTriggers = () => [
+        {
+          async changeset() {
+            const grandchild = edit(
+              await load(grandchildTarget.id as string),
+              70,
+            );
+            grandchild.getObservers = () => [{ observe }];
+            grandchild.getTriggers = () => [
+              {
+                changeset: () =>
+                  new SimpleAction(
+                    viewer,
+                    auditSchema,
+                    new Map([["message", "grandchild write"]]),
+                    WriteOperation.Insert,
+                    null,
+                  ).changeset(),
+              },
+            ];
+            return grandchild.changeset();
           },
-        ];
-        parent.getTriggers = () => [{ changeset: () => child.changeset() }];
-        let invalid = true;
-        const error = new Error("invalid parent");
-        parent.getValidators = () => [
-          { validate: async () => (invalid ? error : undefined) },
-        ];
-        if (method === "validX") {
-          await expect(parent.validX()).rejects.toBe(error);
-        } else {
-          expect(await parent[method]()).toEqual(
-            method === "valid" ? false : [error],
-          );
-        }
-        invalid = false;
-        await parent[method]();
-        await parent.saveX();
-      });
-      expect((await load(owner.id as string)).data.balance).toBe(90);
-      expect((await load(childTarget.id as string)).data.balance).toBe(80);
-      expect((await load(grandchildTarget.id as string)).data.balance).toBe(70);
-      expect((await audits()).rowCount).toBe(1);
-      expect(observe).toHaveBeenCalledTimes(1);
-    },
-  );
+        },
+      ];
+      parent.getTriggers = () => [{ changeset: () => child.changeset() }];
+      let invalid = true;
+      const error = new Error("invalid parent");
+      parent.getValidators = () => [
+        { validate: async () => (invalid ? error : undefined) },
+      ];
+      if (method === "validX") {
+        await expect(parent.validX()).rejects.toBe(error);
+      } else {
+        expect(await parent[method]()).toEqual(
+          method === "valid" ? false : [error],
+        );
+      }
+      invalid = false;
+      await parent[method]();
+      await parent.saveX();
+    });
+    expect((await load(owner.id as string)).data.balance).toBe(90);
+    expect((await load(childTarget.id as string)).data.balance).toBe(80);
+    expect((await load(grandchildTarget.id as string)).data.balance).toBe(70);
+    expect((await audits()).rowCount).toBe(1);
+    expect(observe).toHaveBeenCalledTimes(1);
+  });
 
-  test.each(["valid", "validX", "validWithErrors"] as const)(
-    "%s permits correcting an invalid retained child before saving",
-    async (method) => {
-      const [owner, target] = await Promise.all([create(), create()]);
-      await withTransaction(async () => {
-        const parent = independent(
-          edit(await load(owner.id as string), 90),
-          `account:${owner.id}`,
-        );
-        const child = independent(
-          edit(await load(target.id as string), 80),
-          `account:${target.id}`,
-        );
-        let invalid = true;
-        const error = new Error("invalid child");
-        child.getValidators = () => [
-          { validate: async () => (invalid ? error : undefined) },
-        ];
-        parent.getTriggers = () => [{ changeset: () => child.changeset() }];
-        // Trigger changeset failures propagate from valid and validWithErrors too.
-        await expect(parent[method]()).rejects.toBe(error);
-        invalid = false;
-        await parent.saveX();
-      });
-      expect((await load(owner.id as string)).data.balance).toBe(90);
-      expect((await load(target.id as string)).data.balance).toBe(80);
-    },
-  );
+  test.each(["valid", "validX", "validWithErrors"] as const)("%s permits correcting an invalid retained child before saving", async (method) => {
+    const [owner, target] = await Promise.all([create(), create()]);
+    await withTransactionScope(async () => {
+      const parent = edit(await load(owner.id as string), 90);
+      const child = edit(await load(target.id as string), 80);
+      let invalid = true;
+      const error = new Error("invalid child");
+      child.getValidators = () => [
+        { validate: async () => (invalid ? error : undefined) },
+      ];
+      parent.getTriggers = () => [{ changeset: () => child.changeset() }];
+      // Trigger changeset failures propagate from valid and validWithErrors too.
+      await expect(parent[method]()).rejects.toBe(error);
+      invalid = false;
+      await parent.saveX();
+    });
+    expect((await load(owner.id as string)).data.balance).toBe(90);
+    expect((await load(target.id as string)).data.balance).toBe(80);
+  });
 
   test.each([
     ["action", "valid"],
@@ -2242,7 +2161,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     "%s transform children survive failed and repeated %s probes",
     async (source, method) => {
       const owner = await create();
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         let message = "probe";
         const transform = ({ op }: { op: SQLStatementOperation }) => {
           if (op !== SQLStatementOperation.Delete) {
@@ -2317,7 +2236,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
 
   test("public validation restores an insert transformed into an existing target update", async () => {
     const owner = await create();
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const parent = new GuardedEdit(
         viewer,
         accountSchema,
@@ -2368,7 +2287,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         "INSERT INTO assoc_edge_config (edge_type, edge_name, edge_table, symmetric_edge, inverse_edge_type, created_at, updated_at) VALUES ($1, 'probe child', 'scoped_account_edges', false, NULL, now(), now())",
         [edgeType],
       );
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const parent = edit(await load(owner.id as string), 90);
       parent.getTriggers = () => [
         {
@@ -2409,7 +2328,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     "%s does not transform already-transformed action input twice",
     async (method) => {
       const owner = await create();
-      await withTransaction(async () => {
+      await withTransactionScope(async () => {
         const parent = edit(await load(owner.id as string), 90);
         Object.assign(parent, {
           transformWrite: ({
@@ -2445,7 +2364,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
       },
       ScopedAccount,
     );
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const action = new GuardedEdit(
         viewer,
         schema,
@@ -2473,7 +2392,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
         [edgeType],
       );
     let owner!: ScopedAccount;
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const schema = getBuilderSchemaFromFields(
         {
           balance: IntegerType({ defaultValueOnCreate: () => 42 }),
@@ -2509,7 +2428,7 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
 
   test("scoped transform factories preserve their receiver and synchronous changesets", async () => {
     const owner = await create();
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const parent = edit(await load(owner.id as string), 90);
       Object.assign(parent, {
         transformWrite: ({ op }: { op: SQLStatementOperation }) => ({
@@ -2534,9 +2453,9 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     ]);
   });
 
-  test("public validation preserves an unguarded parent's ancestry", async () => {
+  test("public validation preserves an ordinary parent's ancestry", async () => {
     const [owner, target] = await Promise.all([create(), create()]);
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const parent = new SimpleAction(
         viewer,
         accountSchema,
@@ -2557,33 +2476,27 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     expect((await load(target.id as string)).data.balance).toBe(80);
   });
 
-  test.each(["valid", "validX", "validWithErrors"] as const)(
-    "%s applies the ancestor conflict guard before preparing overlapping children",
-    async (method) => {
-      const [owner, target] = await Promise.all([create(), create()]);
-      await expect(
-        withTransaction(async () => {
-          const parent = edit(await load(owner.id as string), 90);
-          parent.getTriggers = () => [
-            {
-              changeset: async () =>
-                edit(await load(target.id as string), 80).changeset(),
-            },
-          ];
-          await expect(parent[method]()).rejects.toThrow(
-            "overlapping guarded action preparation branches",
-          );
-        }),
-      ).rejects.toThrow("overlapping guarded action preparation branches");
-      expect((await load(owner.id as string)).data.balance).toBe(100);
-      expect((await load(target.id as string)).data.balance).toBe(100);
-    },
-  );
+  test.each(["valid", "validX", "validWithErrors"] as const)("%s prepares descendants and allows saving them afterward", async (method) => {
+    const [owner, target] = await Promise.all([create(), create()]);
+    await withTransactionScope(async () => {
+      const parent = edit(await load(owner.id as string), 90);
+      parent.getTriggers = () => [
+        {
+          changeset: async () =>
+            edit(await load(target.id as string), 80).changeset(),
+        },
+      ];
+      await parent[method]();
+      await parent.saveX();
+    });
+    expect((await load(owner.id as string)).data.balance).toBe(90);
+    expect((await load(target.id as string)).data.balance).toBe(80);
+  });
 
   test("saving while public validation is pending fails closed", async () => {
     const owner = await create();
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const parent = edit(await load(owner.id as string), 90);
         const started = deferred();
         const finish = deferred();
@@ -2610,43 +2523,35 @@ describe("transaction-scoped actions (disposable Postgres database)", () => {
     expect((await load(owner.id as string)).data.balance).toBe(100);
   });
 
-  test.each([true, false])(
-    "default wildcard conflicts with keyed sibling regardless preparation order (%s)",
-    async (keyedFirst) => {
-      const accounts = await Promise.all([create(), create(), create()]);
-      await expect(
-        withTransaction(async () => {
-          const current = await Promise.all(
-            accounts.map((account) => load(account.id as string)),
-          );
-          const parent = new SimpleAction(
-            viewer,
-            accountSchema,
-            new Map([["balance", 90]]),
-            WriteOperation.Edit,
-            current[0],
-          );
-          parent.getTriggers = () => [
-            {
-              async changeset() {
-                const keyed = independent(
-                  edit(current[1], 80),
-                  `account:${current[1].id}`,
-                );
-                const wildcard = edit(current[2], 70);
-                const children = keyedFirst
-                  ? [keyed, wildcard]
-                  : [wildcard, keyed];
-                return [
-                  await children[0].changeset(),
-                  await children[1].changeset(),
-                ];
-              },
-            },
-          ];
-          await parent.saveX();
-        }),
-      ).rejects.toThrow("overlapping guarded action preparation branches");
-    },
-  );
+  test.each([true, false])("children can prepare in either order (forward=%s)", async (forward) => {
+    const accounts = await Promise.all([create(), create(), create()]);
+    await withTransactionScope(async () => {
+      const current = await Promise.all(
+        accounts.map((account) => load(account.id as string)),
+      );
+      const parent = edit(current[0], 90);
+      parent.getTriggers = () => [
+        {
+          changeset: async () => {
+            const children = [edit(current[1], 80), edit(current[2], 70)];
+            if (!forward) {
+              children.reverse();
+            }
+            return [
+              await children[0].changeset(),
+              await children[1].changeset(),
+            ];
+          },
+        },
+      ];
+      await parent.saveX();
+    });
+    expect(
+      await Promise.all(
+        accounts.map(
+          async (account) => (await load(account.id as string)).data.balance,
+        ),
+      ),
+    ).toEqual([90, 80, 70]);
+  });
 });

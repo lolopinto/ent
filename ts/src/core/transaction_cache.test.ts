@@ -13,7 +13,7 @@ import {
 import { ObjectLoaderFactory } from "./loaders";
 import { QueryLoaderFactory } from "./loaders/query_loader";
 import { AssocEdgeLoaderFactory } from "./loaders/assoc_edge_loader";
-import { withTransaction } from "../action";
+import { withTransactionScope } from "../action";
 import { WriteOperation } from "../action/action";
 import { EntChangeset } from "../action/orchestrator";
 import { IntegerType } from "../schema";
@@ -82,7 +82,7 @@ describe.each([
     const account = await create();
     const otherViewer = new TestContext().getViewer();
     const abort = new Error("abort after SQL commands");
-    const transaction = withTransaction(async (tx) => {
+    const transaction = withTransactionScope(async (tx) => {
       expect((await load(account.id)).data.balance).toBe(100);
       expect(
         (await loadEntX(otherViewer, account.id, options)).data.balance,
@@ -147,12 +147,12 @@ test("pending multi-command exec prevents commit", async () => {
   const account = await create();
   let pending: Promise<unknown> | undefined;
   await expect(
-    withTransaction(async (tx) => {
+    withTransactionScope(async (tx) => {
       pending = tx
         .exec("SELECT pg_sleep(0.02); UPDATE cached_accounts SET balance = 70")
         .catch(() => undefined);
     }),
-  ).rejects.toThrow("await all queries inside withTransaction");
+  ).rejects.toThrow("await all queries inside withTransactionScope");
   await pending;
   expect((await load(account.id)).data.balance).toBe(100);
 });
@@ -164,7 +164,7 @@ test.each([
   ["queryAll", 1],
 ] as const)("%s result set %s retains row provenance", async (method, index) => {
   const account = await create();
-  await withTransaction(async (tx) => {
+  await withTransactionScope(async (tx) => {
     const results = await tx[method](
       "SELECT * FROM cached_accounts; SELECT * FROM cached_accounts",
     );
@@ -185,7 +185,7 @@ test.each([
         WriteOperation.Edit,
         ent,
       ),
-      { requiresTransaction: () => true },
+      { requiresTransactionScope: () => true },
     );
     await action.saveX();
   });
@@ -234,7 +234,7 @@ test.each([
     }
   };
   const sql = await captureSQL(() =>
-    withTransaction(async () => {
+    withTransactionScope(async () => {
       for (let i = 0; i < 3; i++) {
         await read(accounts[0].id);
         await read(accounts[1].id);
@@ -247,7 +247,7 @@ test.each([
 test("grouped query reads preserve existing Ent and query caches", async () => {
   const accounts = await Promise.all([create(), create()]);
   const sql = await captureSQL(() =>
-    withTransaction(async () => {
+    withTransactionScope(async () => {
       await load(accounts[0].id);
       const grouped = new QueryLoaderFactory({
         ...loader,
@@ -276,7 +276,7 @@ test("grouped edge reads preserve Ent, edge, and metadata caches", async () => {
       [edgeType],
     );
   const sql = await captureSQL(() =>
-    withTransaction(async () => {
+    withTransactionScope(async () => {
       await load(accounts[0].id);
       const grouped = new AssocEdgeLoaderFactory(
         edgeType,
@@ -305,7 +305,7 @@ test.each([
 ] as const)("%s SQL invalidates cached reads even for SELECT", async (method) => {
   const accounts = await Promise.all([create(), create()]);
   const sql = await captureSQL(() =>
-    withTransaction(async (tx) => {
+    withTransactionScope(async (tx) => {
       await load(accounts[0].id);
       await load(accounts[1].id);
       if (method === "pool") {
@@ -325,7 +325,7 @@ test.each([
 test("ordinary action writes invalidate every viewer's scoped cache", async () => {
   const account = await create();
   const otherViewer = new TestContext().getViewer();
-  await withTransaction(async () => {
+  await withTransactionScope(async () => {
     const current = await load(account.id);
     expect(
       (await loadEntX(otherViewer, account.id, options)).data.balance,

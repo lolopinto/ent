@@ -1,5 +1,5 @@
 import DB, { Dialect } from "./db";
-import { withTransaction } from "./transaction";
+import { withTransactionScope } from "./transaction";
 import { runActionChangeset } from "../action";
 import { IntegerType } from "../schema";
 import {
@@ -36,7 +36,7 @@ const context = new TestContext();
 const viewer = context.getViewer();
 const load = (id: string) => loadEntX(viewer, id, options);
 class Guarded extends SimpleAction<ExecutionAccount> {
-  requiresTransaction() {
+  requiresTransactionScope() {
     return true;
   }
 }
@@ -64,7 +64,7 @@ describe("transaction execution preparation generations", () => {
     const owner = await create();
     const failure = new Error("edge setup failed");
     await expect(
-      withTransaction(async (tx) => {
+      withTransactionScope(async (tx) => {
         await tx.exec(
           "UPDATE execution_accounts SET balance = 80 WHERE id = $1",
           [owner.id],
@@ -82,7 +82,7 @@ describe("transaction execution preparation generations", () => {
   test("standalone validation can recover from child changeset validation errors", async () => {
     const owner = await create();
     const failure = new Error("correctable child validation failed");
-    await withTransaction(async () => {
+    await withTransactionScope(async () => {
       const action = edit(await load(owner.id as string), 80);
       action.getTriggers = () => [
         {
@@ -120,9 +120,9 @@ describe("transaction execution preparation generations", () => {
       if (source === "outside") {
         captured = await prepare();
       } else if (source === "previous") {
-        captured = await withTransaction(prepare);
+        captured = await withTransactionScope(prepare);
       }
-      const outcome = withTransaction(async () => {
+      const outcome = withTransactionScope(async () => {
         if (source !== "outside" && source !== "previous") {
           const probe = edit(await load(owner.id as string), 90);
           probe.getTriggers = () => [
@@ -172,7 +172,7 @@ describe("transaction execution preparation generations", () => {
       other = await create();
     let prefetched = false;
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const first = await load(owner.id as string);
         const retained = edit(first, first.data.balance - 30);
         if (mode === "complex executor") {
@@ -184,6 +184,7 @@ describe("transaction execution preparation generations", () => {
         const changeset = await retained.changeset();
         const executor =
           mode === "changeset" ? undefined : changeset.executor();
+        await (executor ?? changeset.executor()).execute();
         if (executor) {
           const before = executor.preFetch?.bind(executor);
           executor.preFetch = async (...args) => {
@@ -191,13 +192,6 @@ describe("transaction execution preparation generations", () => {
             return before?.(...args);
           };
         }
-        await new Guarded(
-          viewer,
-          schema,
-          new Map([["balance", 80]]),
-          WriteOperation.Edit,
-          first,
-        ).saveX();
         const execute = async () => {
           if (mode === "iterator") {
             return executor!.next();
@@ -219,14 +213,12 @@ describe("transaction execution preparation generations", () => {
   test.each([
     "list",
     "complex",
-    "Transaction",
-  ])("same-generation ordinary %s batch and postcommit results remain supported", async (mode) => {
+  ])("ordinary %s saves and postcommit results remain supported", async (mode) => {
     const owner = await create(),
       other = await create();
     let observations = 0;
-    const retained = await withTransaction(async () => {
+    const retained = await withTransactionScope(async () => {
       const first = edit(await load(owner.id as string), 70);
-      const second = edit(await load(other.id as string), 60);
       first.getObservers = () => [
         {
           observe: async () => {
@@ -235,16 +227,19 @@ describe("transaction execution preparation generations", () => {
           },
         },
       ];
-      if (mode === "Transaction") {
-        await new Transaction(viewer, [first, second]).run();
-      } else {
-        if (mode === "complex") {
-          first.getTriggers = () => [{ changeset: () => second.changeset() }];
-        }
-        await (await first.changeset()).executor().execute();
-        if (mode === "list") {
-          await (await second.changeset()).executor().execute();
-        }
+      if (mode === "complex") {
+        first.getTriggers = () => [
+          {
+            changeset: async () =>
+              edit(await load(other.id as string), 60).changeset(),
+          },
+        ];
+      }
+      await (await first.changeset()).executor().execute();
+      if (mode === "list") {
+        await (await edit(await load(other.id as string), 60).changeset())
+          .executor()
+          .execute();
       }
       return first;
     });
@@ -252,7 +247,22 @@ describe("transaction execution preparation generations", () => {
     expect(observations).toBe(1);
     expect((await load(other.id as string)).data.balance).toBe(60);
   });
-  test("ordinary changeset preparation cannot finish after a guarded save", async () => {
+  test("Transaction groups cannot prepare multiple roots in a scope", async () => {
+    const owner = await create();
+    const other = await create();
+    await expect(
+      withTransactionScope(async () => {
+        await new Transaction(viewer, [
+          edit(await load(owner.id as string), 70),
+          edit(await load(other.id as string), 60),
+        ]).run();
+      }),
+    ).rejects.toThrow("root actions must be prepared and saved sequentially");
+    expect((await load(owner.id as string)).data.balance).toBe(100);
+    expect((await load(other.id as string)).data.balance).toBe(100);
+  });
+
+  test("ordinary preparation reserves the root before another action requires a scope", async () => {
     const owner = await create();
     let start!: () => void;
     let release!: () => void;
@@ -263,7 +273,7 @@ describe("transaction execution preparation generations", () => {
       release = resolve;
     });
     await expect(
-      withTransaction(async () => {
+      withTransactionScope(async () => {
         const first = await load(owner.id as string);
         const action = edit(first, 70);
         action.getValidators = () => [
@@ -274,9 +284,9 @@ describe("transaction execution preparation generations", () => {
             },
           },
         ];
-        const prepared = action.changeset();
-        const checked = expect(prepared).rejects.toThrow(
-          "cannot cross transaction generations",
+        const prepared = action.changeset().then(
+          (value) => ({ value }),
+          (error) => ({ error }),
         );
         await started;
         try {
@@ -289,10 +299,10 @@ describe("transaction execution preparation generations", () => {
           ).saveX();
         } finally {
           release();
+          await prepared;
         }
-        await checked;
       }),
-    ).rejects.toThrow("cannot cross transaction generations");
+    ).rejects.toThrow("root actions must be prepared and saved sequentially");
     expect((await load(owner.id as string)).data.balance).toBe(100);
   });
 });

@@ -20,7 +20,9 @@ export function getContextCache(context?: Context): Context["cache"] {
     scoped = new ContextCache();
     state.caches.set(cache, scoped);
   }
-  return scoped;
+  // Retain cache participation for invalidation after commit, even when final
+  // validation is the first phase to read through this request context.
+  return state.validating ? undefined : scoped;
 }
 
 const DEFAULT_MAX_DISCARDED_LOADERS = 1000;
