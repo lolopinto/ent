@@ -297,6 +297,76 @@ class TestPostgresIndexForeignKeys:
             r2.downgrade('-1', delete_files=False)
         assert _cascade_state(r2.engine) == state
 
+    def test_deliberate_fk_removal_with_concurrent_index_remains_reversible(self, new_test_runner):
+        def metadata(after):
+            result = _metadata_with_child(False, concurrently=True)
+            next(iter(result.tables['contacts'].indexes)).kwargs['postgresql_with'] = {'fillfactor': 80 if after else 70}
+            if after:
+                child = result.tables['children']
+                child.constraints.remove(next(iter(child.foreign_key_constraints)))
+            return result
+
+        before = metadata(False)
+        r = new_test_runner(before)
+        r.run()
+        r2 = new_test_runner(metadata(True), r)
+        r2.run()
+        assert r2.compute_changes() == []
+        assert sa.inspect(r2.engine).get_foreign_keys('children') == []
+        r2.downgrade('-1', delete_files=False)
+        restored = new_test_runner(before, r2)
+        assert restored.compute_changes() == []
+        assert [fk['name'] for fk in sa.inspect(restored.engine).get_foreign_keys('children')] == ['children_owner_fk']
+        replay = new_test_runner(metadata(True), restored)
+        replay.upgrade()
+        assert replay.compute_changes() == []
+
+    @pytest.mark.parametrize('full_text', [False, True])
+    @pytest.mark.parametrize('rename', [False, True])
+    def test_requested_fk_replacement_cannot_cross_unrelated_index_commit(self, new_test_runner, full_text, rename):
+        from auto_schema.schema_item import FullTextIndex
+
+        def metadata(after):
+            result = _metadata_with_child(False)
+            constraint = next(iter(result.tables['children'].foreign_key_constraints))
+            constraint.ondelete = 'CASCADE'
+            if after:
+                constraint.onupdate = 'CASCADE'
+                if rename:
+                    constraint.name = 'children_replaced_fk'
+            table = sa.Table('a_other', result, sa.Column('id', sa.Integer(), primary_key=True), sa.Column('label', sa.Text()))
+            if full_text:
+                table.append_constraint(FullTextIndex('other_idx', info={
+                    'columns': ['label'], 'postgresql_using': 'gin',
+                    'postgresql_using_internals': "to_tsvector('english', label)",
+                    'postgresql_where': 'label IS NULL' if after else 'label IS NOT NULL',
+                    'postgresql_concurrently': True,
+                }))
+            else:
+                sa.Index('other_idx', table.c.label, postgresql_concurrently=True,
+                         postgresql_with={'fillfactor': 80 if after else 70})
+            return result
+
+        r = new_test_runner(metadata(False))
+        r.run()
+        connection = r.get_connection()
+        connection.execute(sa.text('INSERT INTO contacts(id, owner_id) VALUES (1, 10)'))
+        connection.execute(sa.text('INSERT INTO children(id, owner_id) VALUES (1, 10)'))
+        connection.commit()
+        before = _cascade_state(r.engine)
+        other_index = connection.execute(sa.text("SELECT 'other_idx'::regclass::oid")).scalar_one()
+        connection.commit()
+        r2 = new_test_runner(metadata(True), r)
+        files = set(Path(r2.get_schema_path()).rglob('*.py'))
+        with pytest.raises(ValueError, match='foreign keys.*autocommit.*explicit migration'):
+            r2.revision()
+        assert _cascade_state(r.engine) == before
+        assert set(Path(r2.get_schema_path()).rglob('*.py')) == files
+        with r.engine.begin() as writer:
+            assert writer.execute(sa.text("SELECT 'other_idx'::regclass::oid")).scalar_one() == other_index
+            writer.execute(sa.text('DELETE FROM contacts WHERE id=1'))
+            assert writer.execute(sa.text('SELECT count(*) FROM children')).scalar_one() == 0
+
     @pytest.mark.parametrize('table_name,trigger_type', [('contacts', 9), ('children', 5)])
     @pytest.mark.parametrize('mode', ['A', 'R', 'D'])
     def test_custom_fk_trigger_mode_requires_explicit_migration(self, new_test_runner, table_name, trigger_type, mode):

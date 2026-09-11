@@ -37,6 +37,12 @@ def index_requires_autocommit(operation):
     return options.get("postgresql_concurrently") is True
 
 
+def contains_concurrent_index(operation):
+    if isinstance(operation, alembicops.OpContainer):
+        return any(contains_concurrent_index(child) for child in operation.ops)
+    return index_requires_autocommit(operation)
+
+
 def order_upgrade(upgrade_ops, *, dialect_name):
     # Comparators only collect operations. Resolve ordering once, after every
     # table is known and before Alembic constructs the inverse migration.
@@ -130,6 +136,22 @@ def _order_foreign_keys_for_index_changes(upgrade_ops):
         if other:
             table_ops.ops[:] = other
             remaining.append(table_ops)
+
+    if any(contains_concurrent_index(operation) for operation in remaining):
+        created_tables = {(table.schema, table.table_name) for table in foreign_key_creates}
+        for table in foreign_key_drops:
+            if (table.schema, table.table_name) in created_tables:
+                # This transformation also moves explicitly requested FK edits.
+                # Even an unrelated concurrent index would commit their removal
+                # before recreation, unlike the original table-local sequence.
+                # Match tables rather than names so renaming an FK cannot bypass
+                # the guard. Drop-only tables have no enforcement to restore.
+                # Reversing the phases exposes the same gap on downgrade.
+                name = f"{table.schema}.{table.table_name}" if table.schema else table.table_name
+                raise ValueError(
+                    f"cannot remove and recreate foreign keys on {name} across an autocommit boundary; "
+                    "use an explicit migration strategy"
+                )
 
     # Keep extension/enum setup ahead of table DDL. Preserve every table/schema
     # attribute on the moved operations.

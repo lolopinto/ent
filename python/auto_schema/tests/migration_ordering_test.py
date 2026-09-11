@@ -5,13 +5,13 @@ import sqlalchemy as sa
 from auto_schema import migration_ordering, ops
 
 
-def _index_changes():
+def _index_changes(*, concurrently=True):
     table = sa.Table(
         "parent", sa.MetaData(),
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("score", sa.Date()), schema="tenant",
     )
-    old_index = sa.Index("parent_idx", table.c.id, unique=True, postgresql_concurrently=True)
+    old_index = sa.Index("parent_idx", table.c.id, unique=True, postgresql_concurrently=concurrently)
     new_index = sa.Index("parent_idx", table.c.id, unique=True, postgresql_where=sa.text("id > 0"))
     return alembicops.ModifyTableOps("parent", [
         alembicops.AlterColumnOp(
@@ -31,7 +31,8 @@ def _flatten(container):
 
 
 @pytest.mark.parametrize("child_first", [False, True])
-def test_cross_table_dependencies_reverse_with_type_changes(child_first):
+@pytest.mark.parametrize("concurrently", [False, True])
+def test_cross_table_dependencies_reverse_with_type_changes(child_first, concurrently):
     old_fk = alembicops.CreateForeignKeyOp(
         "old_fk", "child", "parent", ["owner_id"], ["id"],
         source_schema="tenant", referent_schema="tenant", ondelete="CASCADE",
@@ -40,12 +41,16 @@ def test_cross_table_dependencies_reverse_with_type_changes(child_first):
         "new_fk", "child", "other_parent", ["owner_id"], ["id"],
         source_schema="tenant", referent_schema="tenant", deferrable=True,
     )
-    parent = _index_changes()
+    parent = _index_changes(concurrently=concurrently)
     child = alembicops.ModifyTableOps("child", [old_fk.reverse(), new_fk], schema="tenant")
     upgrade = alembicops.UpgradeOps([child, parent] if child_first else [parent, child])
     # Data comparison can run before another schema comparator appends table DDL.
     removed_rows = ops.RemoveRowsOp("parent", ["id"], [{"id": 1}])
     upgrade.ops.insert(1, removed_rows)
+    if concurrently:
+        with pytest.raises(ValueError, match='foreign keys.*autocommit.*explicit migration'):
+            migration_ordering.order_upgrade(upgrade, dialect_name="postgresql")
+        return
     migration_ordering.order_upgrade(upgrade, dialect_name="postgresql")
     expected = [
         alembicops.DropConstraintOp, alembicops.DropIndexOp, alembicops.AlterColumnOp,

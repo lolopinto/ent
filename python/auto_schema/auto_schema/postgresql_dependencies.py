@@ -4,7 +4,7 @@ import alembic.operations.ops as alembicops
 import sqlalchemy as sa
 
 from . import ops
-from .migration_ordering import index_requires_autocommit
+from .migration_ordering import contains_concurrent_index
 
 
 def collect_index_foreign_keys(context, upgrade_ops, schemas):
@@ -68,7 +68,7 @@ def collect_index_foreign_keys(context, upgrade_ops, schemas):
         for table in context.table_key_to_table.values()
     }
     reflected = sa.MetaData()
-    concurrent_indexes = _contains_concurrent_index(upgrade_ops)
+    concurrent_indexes = contains_concurrent_index(upgrade_ops)
     for dependency in dependencies:
         schema, table_name, name = (dependency[key] for key in ("source_schema", "source_table", "conname"))
         table_key = (schema, table_name)
@@ -120,12 +120,6 @@ def collect_index_foreign_keys(context, upgrade_ops, schemas):
 
         create = _foreign_key_operation(dependency)
         upgrade_ops.ops.append(alembicops.ModifyTableOps(table_name, [create.reverse(), create], schema=schema))
-
-
-def _contains_concurrent_index(operation):
-    if isinstance(operation, alembicops.OpContainer):
-        return any(_contains_concurrent_index(child) for child in operation.ops)
-    return index_requires_autocommit(operation)
 
 
 def _cannot_rebind(dependency, reason):
