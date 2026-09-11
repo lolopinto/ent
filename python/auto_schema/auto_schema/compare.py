@@ -728,6 +728,12 @@ def _compare_indexes(autogen_context: AutogenContext,
         )
 
     for name, index in meta_indexes.items():
+        # Match Alembic's changed-index filter contract before parsing predicates
+        # or emitting replacements, including indexes handled by the full-text path.
+        if not autogen_context.run_object_filters(
+            index, name, "index", False, conn_indexes.get(name),
+        ):
+            continue
 
         if is_full_text_index(index) and name in all_conn_indexes:
             if _full_text_index_signatures_differ(
