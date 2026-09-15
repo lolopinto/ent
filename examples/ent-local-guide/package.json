@@ -27,7 +27,7 @@
     "tsconfig-paths": "4.2.0"
   },
   "dependencies": {
-    "@snowtop/ent": "0.2.13",
+    "@snowtop/ent": "0.2.14",
     "@snowtop/ent-postgis": "file:../../ts/packages/ent-postgis",
     "express": "4.22.2",
     "graphql": "16.12.0",
