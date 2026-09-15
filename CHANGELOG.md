@@ -9,6 +9,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Changed
+
+- update `@snowtop/ent` to 0.2.14 and `auto_schema` to 0.0.41.
+
 ### Fixed
 
 - persist fields marked `disableUserEditable` when set by internal builder code
