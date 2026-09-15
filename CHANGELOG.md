@@ -11,7 +11,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
-- update `@snowtop/ent` to 0.2.14 and `auto_schema` to 0.0.41.
+- update `@snowtop/ent` to 0.2.14 and `auto_schema` to 0.0.41 (#2036).
 
 ### Fixed
 
