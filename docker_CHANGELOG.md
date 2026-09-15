@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Changelog for the npm version are [here](/CHANGELOG.md).
 
+## [Unreleased]
+
+### Changed
+
+- release Docker image v0.3.9 with auto_schema 0.0.41 and tsent v0.3.8.
+
+### Fixed
+
+- generate reversible partial-index migrations and preserve PostgreSQL index,
+  foreign-key, enum, extension, and column-type dependency ordering (#2028).
+- infer GraphQL Node fields for matching struct UUID fields (#2021).
+- apply creation defaults for immutable fields and persist internally derived
+  fields in generated builders (#2026, #2032).
+- open the codegen database pool on demand and close it when commands finish
+  (#2024).
+
 ## [0.3.8]
 
 ### Changed
