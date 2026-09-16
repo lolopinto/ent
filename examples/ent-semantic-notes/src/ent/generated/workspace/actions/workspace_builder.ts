@@ -20,6 +20,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/workspace_schema";
 
 export interface WorkspaceInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name?: string;
   slug?: string;
   description?: string | null;
@@ -46,6 +49,8 @@ export class WorkspaceBuilder<
   readonly ent = Workspace;
   readonly nodeType = NodeType.Workspace;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -65,8 +70,20 @@ export class WorkspaceBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Workspace`;
     this.input = action.getInput();
-    const updateInput = (d: WorkspaceInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: WorkspaceInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -95,6 +112,14 @@ export class WorkspaceBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: WorkspaceInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -104,10 +129,12 @@ export class WorkspaceBuilder<
 
   // override immutable field `creatorId`
   overrideCreatorId(val: ID | Builder<User, Viewer>) {
+    this.defaultInput.delete("creatorId");
     this.input.creatorId = val;
   }
 
   deleteInputKey(key: keyof WorkspaceInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -338,38 +365,38 @@ export class WorkspaceBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("name", input.name);
-    addField("slug", input.slug);
-    addField("description", input.description);
-    addField("creatorID", input.creatorId);
-    if (
-      input.creatorId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.creatorId) {
-        this.orchestrator.addInboundEdge(
-          input.creatorId,
-          EdgeType.UserToCreatedWorkspaces,
-          NodeType.User,
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("name", "name", input.name);
+    addField("slug", "slug", input.slug);
+    addField("description", "description", input.description);
+    addField("creatorID", "creatorId", input.creatorId);
+    addField("embeddingModel", "embeddingModel", input.embeddingModel);
+    {
+      const value = result.get("creatorID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.creatorId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.creatorId &&
-        this.existingEnt.creatorId !== input.creatorId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.creatorId,
-          EdgeType.UserToCreatedWorkspaces,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "creatorID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.UserToCreatedWorkspaces,
+        NodeType.User,
+        { existingIDs },
+      );
     }
-    addField("embeddingModel", input.embeddingModel);
     return result;
   }
 

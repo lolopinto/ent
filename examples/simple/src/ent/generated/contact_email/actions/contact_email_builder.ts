@@ -26,6 +26,9 @@ import { ContactLabel, EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/contact_email_schema";
 
 export interface ContactEmailInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   extra?: ContactInfoExtra | null;
   contactId?: ID | Builder<Contact, ExampleViewerAlias>;
   ownerId?: ID | Builder<User, ExampleViewerAlias>;
@@ -72,6 +75,8 @@ export class ContactEmailBuilder<
   readonly ent = ContactEmail;
   readonly nodeType = NodeType.ContactEmail;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -97,8 +102,20 @@ export class ContactEmailBuilder<
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactEmail`;
     this.input = action.getInput();
-    const updateInput = (d: ContactEmailInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: ContactEmailInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -133,6 +150,14 @@ export class ContactEmailBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: ContactEmailInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -142,15 +167,18 @@ export class ContactEmailBuilder<
 
   // override immutable field `contactId`
   overrideContactId(val: ID | Builder<Contact, ExampleViewerAlias>) {
+    this.defaultInput.delete("contactId");
     this.input.contactId = val;
   }
 
   // override immutable field `ownerId`
   overrideOwnerId(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.defaultInput.delete("ownerId");
     this.input.ownerId = val;
   }
 
   deleteInputKey(key: keyof ContactEmailInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -269,16 +297,23 @@ export class ContactEmailBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("extra", input.extra);
-    addField("contactID", input.contactId);
-    addField("ownerID", input.ownerId);
-    addField("emailAddress", input.emailAddress);
-    addField("label", input.label);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("extra", "extra", input.extra);
+    addField("contactID", "contactId", input.contactId);
+    addField("ownerID", "ownerId", input.ownerId);
+    addField("emailAddress", "emailAddress", input.emailAddress);
+    addField("label", "label", input.label);
     return result;
   }
 

@@ -20,6 +20,9 @@ import { NodeType } from "src/ent/generated/types";
 import schema from "src/schema/auth_code_schema";
 
 export interface AuthCodeInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   code?: string;
   guestId?: ID | Builder<Guest, Viewer>;
   emailAddress?: string;
@@ -45,6 +48,8 @@ export class AuthCodeBuilder<
   readonly ent = AuthCode;
   readonly nodeType = NodeType.AuthCode;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -62,7 +67,16 @@ export class AuthCodeBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;
     this.input = action.getInput();
-    const updateInput = (d: AuthCodeInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: AuthCodeInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -85,6 +99,9 @@ export class AuthCodeBuilder<
   }
 
   updateInput(input: AuthCodeInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -93,6 +110,7 @@ export class AuthCodeBuilder<
   }
 
   deleteInputKey(key: keyof AuthCodeInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -157,15 +175,22 @@ export class AuthCodeBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("code", input.code);
-    addField("guestID", input.guestId);
-    addField("emailAddress", input.emailAddress);
-    addField("sentCode", input.sentCode);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("code", "code", input.code);
+    addField("guestID", "guestId", input.guestId);
+    addField("emailAddress", "emailAddress", input.emailAddress);
+    addField("sentCode", "sentCode", input.sentCode);
     return result;
   }
 

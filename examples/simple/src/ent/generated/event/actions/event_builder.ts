@@ -25,6 +25,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/event_schema";
 
 export interface EventInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name?: string;
   creatorId?: ID;
   startTime?: Date;
@@ -55,6 +58,8 @@ export class EventBuilder<
   readonly ent = Event;
   readonly nodeType = NodeType.Event;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -74,7 +79,20 @@ export class EventBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Event`;
     this.input = action.getInput();
-    const updateInput = (d: EventInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: EventInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -103,6 +121,14 @@ export class EventBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: EventInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -112,10 +138,12 @@ export class EventBuilder<
 
   // override immutable field `creatorId`
   overrideCreatorId(val: ID) {
+    this.defaultInput.delete("creatorId");
     this.input.creatorId = val;
   }
 
   deleteInputKey(key: keyof EventInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -377,71 +405,62 @@ export class EventBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("name", input.name);
-    addField("creatorID", input.creatorId);
-    if (
-      input.creatorId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.creatorId) {
-        this.orchestrator.addInboundEdge(
-          input.creatorId,
-          EdgeType.UserToCreatedEvents,
-          NodeType.User,
-        );
-      }
-      if (
-        this.existingEnt &&
-        this.existingEnt.creatorId &&
-        this.existingEnt.creatorId !== input.creatorId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.creatorId,
-          EdgeType.UserToCreatedEvents,
-        );
-      }
-    }
-    addField("start_time", input.startTime);
-    addField("end_time", input.endTime);
-    addField("location", input.location);
-    addField("addressId", input.addressId);
-    if (
-      input.addressId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.addressId) {
-        this.orchestrator.addInboundEdge(
-          input.addressId,
-          EdgeType.AddressToHostedEvents,
-          NodeType.Address,
-        );
-      }
-      // can't have this be dependent on privacy so need to fetch the raw data...
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("name", "name", input.name);
+    addField("creatorID", "creatorId", input.creatorId);
+    addField("start_time", "startTime", input.startTime);
+    addField("end_time", "endTime", input.endTime);
+    addField("location", "location", input.location);
+    addField("addressId", "addressId", input.addressId);
+    addField("cover_photo", "coverPhoto", input.coverPhoto);
+    addField("cover_photo2", "coverPhoto2", input.coverPhoto2);
+    addField("attachments", "attachments", input.attachments);
+    {
+      const value = result.get("creatorID");
+      let existingIDs: ID[] = [];
       if (this.existingEnt) {
+        const stored = this.existingEnt.creatorId;
+        existingIDs = stored == null ? [] : [stored];
+      }
+      this.orchestrator.__setFieldEdges(
+        "creatorID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.UserToCreatedEvents,
+        NodeType.User,
+        { existingIDs },
+      );
+    }
+    {
+      const value = result.get("addressId");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        // Load stored IDs for inverse edges even when field privacy hides the values.
         const rawData = await Event.loadRawData(
           this.existingEnt.id,
           this.viewer.context,
         );
-        if (
-          rawData &&
-          rawData.address_id !== null &&
-          rawData.address_id !== undefined
-        ) {
-          this.orchestrator.removeInboundEdge(
-            rawData.address_id,
-            EdgeType.AddressToHostedEvents,
-          );
-        }
+        const stored = rawData?.address_id;
+        existingIDs = stored == null ? [] : [stored];
       }
+      this.orchestrator.__setFieldEdges(
+        "addressId",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.AddressToHostedEvents,
+        NodeType.Address,
+        { existingIDs },
+      );
     }
-    addField("cover_photo", input.coverPhoto);
-    addField("cover_photo2", input.coverPhoto2);
-    addField("attachments", input.attachments);
     return result;
   }
 

@@ -24,6 +24,9 @@ import { DayOfWeek, DayOfWeekAlt, NodeType } from "../../types";
 import schema from "../../../../schema/hours_of_operation_schema";
 
 export interface HoursOfOperationInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   dayOfWeek?: DayOfWeek;
   dayOfWeekAlt?: DayOfWeekAlt | null;
   open?: string;
@@ -55,6 +58,8 @@ export class HoursOfOperationBuilder<
   readonly ent = HoursOfOperation;
   readonly nodeType = NodeType.HoursOfOperation;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -79,8 +84,16 @@ export class HoursOfOperationBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-HoursOfOperation`;
     this.input = action.getInput();
-    const updateInput = (d: HoursOfOperationInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: HoursOfOperationInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -103,6 +116,9 @@ export class HoursOfOperationBuilder<
   }
 
   updateInput(input: HoursOfOperationInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -111,6 +127,7 @@ export class HoursOfOperationBuilder<
   }
 
   deleteInputKey(key: keyof HoursOfOperationInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -175,15 +192,22 @@ export class HoursOfOperationBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("dayOfWeek", input.dayOfWeek);
-    addField("dayOfWeekAlt", input.dayOfWeekAlt);
-    addField("open", input.open);
-    addField("close", input.close);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("dayOfWeek", "dayOfWeek", input.dayOfWeek);
+    addField("dayOfWeekAlt", "dayOfWeekAlt", input.dayOfWeekAlt);
+    addField("open", "open", input.open);
+    addField("close", "close", input.close);
     return result;
   }
 

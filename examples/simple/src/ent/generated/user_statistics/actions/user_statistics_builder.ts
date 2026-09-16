@@ -24,6 +24,9 @@ import { NodeType } from "../../types";
 import schema from "../../../../schema/user_statistics_schema";
 
 export interface UserStatisticsInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   userId?: ID;
   authCodeEmailsSent?: number;
   // allow other properties. useful for action-only fields
@@ -53,6 +56,8 @@ export class UserStatisticsBuilder<
   readonly ent = UserStatistics;
   readonly nodeType = NodeType.UserStatistics;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -77,8 +82,20 @@ export class UserStatisticsBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-UserStatistics`;
     this.input = action.getInput();
-    const updateInput = (d: UserStatisticsInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: UserStatisticsInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -107,6 +124,14 @@ export class UserStatisticsBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: UserStatisticsInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -116,10 +141,12 @@ export class UserStatisticsBuilder<
 
   // override immutable field `userId`
   overrideUserId(val: ID) {
+    this.defaultInput.delete("userId");
     this.input.userId = val;
   }
 
   deleteInputKey(key: keyof UserStatisticsInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -184,13 +211,24 @@ export class UserStatisticsBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("userID", input.userId);
-    addField("authCodeEmailsSent", input.authCodeEmailsSent);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("userID", "userId", input.userId);
+    addField(
+      "authCodeEmailsSent",
+      "authCodeEmailsSent",
+      input.authCodeEmailsSent,
+    );
     return result;
   }
 

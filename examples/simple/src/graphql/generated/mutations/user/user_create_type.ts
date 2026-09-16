@@ -160,21 +160,23 @@ export const UserCreateType: GraphQLFieldConfig<
       funUuids: input.funUuids
         ? input.funUuids.map((i: any) => mustDecodeIDFromGQLID(i.toString()))
         : undefined,
-      prefsList: input.prefsList?.map((item: any) => ({
-        ...item,
-        homeAddressId: item.homeAddressId
-          ? mustDecodeNullableIDFromGQLID(
-              item.homeAddressId?.toString() ?? item.homeAddressId,
-            )
-          : undefined,
-        allAddressIds: item.allAddressIds
-          ? item.allAddressIds
-            ? item.allAddressIds.map((i: any) =>
-                mustDecodeIDFromGQLID(i.toString()),
-              )
-            : undefined
-          : undefined,
-      })),
+      prefsList: input.prefsList
+        ? input.prefsList.map((item: any) => ({
+            ...item,
+            homeAddressId: item.homeAddressId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.homeAddressId?.toString() ?? item.homeAddressId,
+                )
+              : undefined,
+            allAddressIds: item.allAddressIds
+              ? item.allAddressIds
+                ? item.allAddressIds.map((i: any) =>
+                    mustDecodeIDFromGQLID(i.toString()),
+                  )
+                : undefined
+              : undefined,
+          }))
+        : input.prefsList,
       superNestedObject: input.superNestedObject,
       nestedList: input.nestedList,
       intEnum: input.intEnum,

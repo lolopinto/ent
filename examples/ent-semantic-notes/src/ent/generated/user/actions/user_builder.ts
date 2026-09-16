@@ -20,6 +20,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/user_schema";
 
 export interface UserInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name?: string;
   emailAddress?: string;
   bio?: string | null;
@@ -44,6 +47,8 @@ export class UserBuilder<
   readonly ent = User;
   readonly nodeType = NodeType.User;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -61,7 +66,16 @@ export class UserBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;
     this.input = action.getInput();
-    const updateInput = (d: UserInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: UserInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -84,6 +98,9 @@ export class UserBuilder<
   }
 
   updateInput(input: UserInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -92,6 +109,7 @@ export class UserBuilder<
   }
 
   deleteInputKey(key: keyof UserInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -333,14 +351,21 @@ export class UserBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("name", input.name);
-    addField("emailAddress", input.emailAddress);
-    addField("bio", input.bio);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("name", "name", input.name);
+    addField("emailAddress", "emailAddress", input.emailAddress);
+    addField("bio", "bio", input.bio);
     return result;
   }
 

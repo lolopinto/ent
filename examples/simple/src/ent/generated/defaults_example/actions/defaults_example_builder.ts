@@ -25,6 +25,9 @@ import { NodeType } from "../../types";
 import schema from "../../../../schema/defaults_example_schema";
 
 export interface DefaultsExampleInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   creatorId?: ID;
   name?: string;
   perHour?: number;
@@ -57,6 +60,8 @@ export class DefaultsExampleBuilder<
   readonly ent = DefaultsExample;
   readonly nodeType = NodeType.DefaultsExample;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -81,8 +86,16 @@ export class DefaultsExampleBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-DefaultsExample`;
     this.input = action.getInput();
-    const updateInput = (d: DefaultsExampleInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: DefaultsExampleInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -105,6 +118,9 @@ export class DefaultsExampleBuilder<
   }
 
   updateInput(input: DefaultsExampleInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -113,6 +129,7 @@ export class DefaultsExampleBuilder<
   }
 
   deleteInputKey(key: keyof DefaultsExampleInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -177,16 +194,23 @@ export class DefaultsExampleBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("creatorId", input.creatorId);
-    addField("name", input.name);
-    addField("perHour", input.perHour);
-    addField("hourlyLimit", input.hourlyLimit);
-    addField("payloads", input.payloads);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("creatorId", "creatorId", input.creatorId);
+    addField("name", "name", input.name);
+    addField("perHour", "perHour", input.perHour);
+    addField("hourlyLimit", "hourlyLimit", input.hourlyLimit);
+    addField("payloads", "payloads", input.payloads);
     return result;
   }
 

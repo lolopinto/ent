@@ -27,6 +27,8 @@ export interface WorkspaceInput {
   updatedAt?: Date;
   deletedAt?: Date | null;
   name?: string;
+  creatorId?: ID | Builder<Account, Viewer>;
+  viewerCreatorId?: ID | Builder<Account, Viewer>;
   slug?: string;
   // allow other properties. useful for action-only fields
   [x: string]: any;
@@ -64,6 +66,8 @@ export class WorkspaceBuilder<
   readonly ent = Workspace;
   readonly nodeType = NodeType.Workspace;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -84,8 +88,16 @@ export class WorkspaceBuilder<
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Workspace`;
     this.input = action.getInput();
-    const updateInput = (d: WorkspaceInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: WorkspaceInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -108,28 +120,18 @@ export class WorkspaceBuilder<
   }
 
   updateInput(input: WorkspaceInput) {
-    // input.viewerCreatorId default value is being set, also set inverseEdge
-    if (
-      input.viewerCreatorId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.viewerCreatorId) {
-        this.orchestrator.addInboundEdge(
-          input.viewerCreatorId,
-          EdgeType.AccountToCreatedWorkspaces,
-          NodeType.Account,
-        );
-      }
-      if (
-        this.existingEnt &&
-        this.existingEnt.viewerCreatorId &&
-        this.existingEnt.viewerCreatorId !== input.viewerCreatorId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.viewerCreatorId,
-          EdgeType.AccountToCreatedWorkspaces,
-        );
-      }
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
+    if (input.viewerCreatorId !== undefined) {
+      const value = input.viewerCreatorId;
+      this.orchestrator.__setFieldEdges(
+        "viewerCreatorID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.AccountToCreatedWorkspaces,
+        NodeType.Account,
+        {},
+      );
     }
     // override input
     this.input = {
@@ -139,6 +141,7 @@ export class WorkspaceBuilder<
   }
 
   deleteInputKey(key: keyof WorkspaceInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -257,17 +260,38 @@ export class WorkspaceBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("id", input.id);
-    addField("createdAt", input.createdAt);
-    addField("updatedAt", input.updatedAt);
-    addField("deleted_at", input.deletedAt);
-    addField("name", input.name);
-    addField("slug", input.slug);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("deleted_at", "deletedAt", input.deletedAt);
+    addField("name", "name", input.name);
+    addField("creatorID", "creatorId", input.creatorId);
+    addField("viewerCreatorID", "viewerCreatorId", input.viewerCreatorId);
+    addField("slug", "slug", input.slug);
+    {
+      const value = result.get("viewerCreatorID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.viewerCreatorId;
+        existingIDs = stored == null ? [] : [stored];
+      }
+      this.orchestrator.__setFieldEdges(
+        "viewerCreatorID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.AccountToCreatedWorkspaces,
+        NodeType.Account,
+        { existingIDs },
+      );
+    }
     return result;
   }
 

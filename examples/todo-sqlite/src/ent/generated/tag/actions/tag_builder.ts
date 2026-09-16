@@ -50,6 +50,8 @@ export class TagBuilder<
   readonly ent = Tag;
   readonly nodeType = NodeType.Tag;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -67,7 +69,16 @@ export class TagBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Tag`;
     this.input = action.getInput();
-    const updateInput = (d: TagInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: TagInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -90,6 +101,9 @@ export class TagBuilder<
   }
 
   updateInput(input: TagInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -98,6 +112,7 @@ export class TagBuilder<
   }
 
   deleteInputKey(key: keyof TagInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -213,19 +228,23 @@ export class TagBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("id", input.id);
-    addField("createdAt", input.createdAt);
-    addField("updatedAt", input.updatedAt);
-    addField("deleted_at", input.deletedAt);
-    addField("DisplayName", input.displayName);
-    addField("canonicalName", input.canonicalName);
-    addField("ownerID", input.ownerId);
-    addField("relatedTagIds", input.relatedTagIds);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("deleted_at", "deletedAt", input.deletedAt);
+    addField("DisplayName", "displayName", input.displayName);
+    addField("canonicalName", "canonicalName", input.canonicalName);
+    addField("ownerID", "ownerId", input.ownerId);
+    addField("relatedTagIds", "relatedTagIds", input.relatedTagIds);
     return result;
   }
 

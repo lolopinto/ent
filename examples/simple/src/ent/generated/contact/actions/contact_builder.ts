@@ -26,6 +26,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/contact_schema";
 
 export interface ContactInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   emailIds?: ID[];
   phoneNumberIds?: ID[];
   firstName?: string;
@@ -69,6 +72,8 @@ export class ContactBuilder<
   readonly ent = Contact;
   readonly nodeType = NodeType.Contact;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -89,7 +94,20 @@ export class ContactBuilder<
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Contact`;
     this.input = action.getInput();
-    const updateInput = (d: ContactInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: ContactInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -118,6 +136,14 @@ export class ContactBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: ContactInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -127,10 +153,12 @@ export class ContactBuilder<
 
   // override immutable field `userId`
   overrideUserId(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.defaultInput.delete("userId");
     this.input.userId = val;
   }
 
   deleteInputKey(key: keyof ContactInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -247,43 +275,40 @@ export class ContactBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("email_ids", input.emailIds);
-    if (
-      input.emailIds !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      const inputemailIds = input.emailIds;
-      if (inputemailIds) {
-        inputemailIds.forEach((id) =>
-          this.orchestrator.addInboundEdge(
-            id,
-            EdgeType.ContactEmailToEmailsForContacts,
-            NodeType.ContactEmail,
-          ),
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("email_ids", "emailIds", input.emailIds);
+    addField("phone_number_ids", "phoneNumberIds", input.phoneNumberIds);
+    addField("firstName", "firstName", input.firstName);
+    addField("lastName", "lastName", input.lastName);
+    addField("userID", "userId", input.userId);
+    addField("importantDates", "importantDates", input.importantDates);
+    addField("attachments", "attachments", input.attachments);
+    {
+      const value = result.get("email_ids");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.emailIds;
+        existingIDs = stored ?? [];
       }
-      if (this.existingEnt && this.existingEnt.emailIds) {
-        this.existingEnt.emailIds.forEach((id) => {
-          if (!inputemailIds || !inputemailIds.includes(id)) {
-            this.orchestrator.removeInboundEdge(
-              id,
-              EdgeType.ContactEmailToEmailsForContacts,
-            );
-          }
-        });
-      }
+      this.orchestrator.__setFieldEdges(
+        "email_ids",
+        value === undefined ? undefined : (value ?? []),
+        EdgeType.ContactEmailToEmailsForContacts,
+        NodeType.ContactEmail,
+        { existingIDs },
+      );
     }
-    addField("phone_number_ids", input.phoneNumberIds);
-    addField("firstName", input.firstName);
-    addField("lastName", input.lastName);
-    addField("userID", input.userId);
-    addField("importantDates", input.importantDates);
-    addField("attachments", input.attachments);
     return result;
   }
 

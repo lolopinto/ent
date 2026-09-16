@@ -54,6 +54,8 @@ export class TodoBuilder<
   readonly ent = Todo;
   readonly nodeType = NodeType.Todo;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -71,7 +73,16 @@ export class TodoBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Todo`;
     this.input = action.getInput();
-    const updateInput = (d: TodoInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: TodoInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -94,6 +105,9 @@ export class TodoBuilder<
   }
 
   updateInput(input: TodoInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -102,6 +116,7 @@ export class TodoBuilder<
   }
 
   deleteInputKey(key: keyof TodoInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -264,23 +279,27 @@ export class TodoBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("id", input.id);
-    addField("createdAt", input.createdAt);
-    addField("updatedAt", input.updatedAt);
-    addField("deleted_at", input.deletedAt);
-    addField("Text", input.text);
-    addField("Completed", input.completed);
-    addField("creatorID", input.creatorId);
-    addField("completedDate", input.completedDate);
-    addField("assigneeID", input.assigneeId);
-    addField("scopeID", input.scopeId);
-    addField("scopeType", input.scopeType);
-    addField("bounty", input.bounty);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("deleted_at", "deletedAt", input.deletedAt);
+    addField("Text", "text", input.text);
+    addField("Completed", "completed", input.completed);
+    addField("creatorID", "creatorId", input.creatorId);
+    addField("completedDate", "completedDate", input.completedDate);
+    addField("assigneeID", "assigneeId", input.assigneeId);
+    addField("scopeID", "scopeId", input.scopeId);
+    addField("scopeType", "scopeType", input.scopeType);
+    addField("bounty", "bounty", input.bounty);
     return result;
   }
 

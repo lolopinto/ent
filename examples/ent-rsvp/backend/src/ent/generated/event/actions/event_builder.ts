@@ -20,6 +20,9 @@ import { NodeType } from "src/ent/generated/types";
 import schema from "src/schema/event_schema";
 
 export interface EventInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name?: string;
   slug?: string | null;
   creatorId?: ID | Builder<User, Viewer>;
@@ -44,6 +47,8 @@ export class EventBuilder<
   readonly ent = Event;
   readonly nodeType = NodeType.Event;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -61,7 +66,16 @@ export class EventBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Event`;
     this.input = action.getInput();
-    const updateInput = (d: EventInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: EventInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -84,6 +98,9 @@ export class EventBuilder<
   }
 
   updateInput(input: EventInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -92,6 +109,7 @@ export class EventBuilder<
   }
 
   deleteInputKey(key: keyof EventInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -156,14 +174,21 @@ export class EventBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("Name", input.name);
-    addField("Slug", input.slug);
-    addField("creatorID", input.creatorId);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("Name", "name", input.name);
+    addField("Slug", "slug", input.slug);
+    addField("creatorID", "creatorId", input.creatorId);
     return result;
   }
 

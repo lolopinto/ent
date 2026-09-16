@@ -24,6 +24,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/address";
 
 export interface AddressInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   streetName?: string;
   city?: string;
   state?: string;
@@ -51,6 +54,8 @@ export class AddressBuilder<
   readonly ent = Address;
   readonly nodeType = NodeType.Address;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -70,7 +75,16 @@ export class AddressBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Address`;
     this.input = action.getInput();
-    const updateInput = (d: AddressInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: AddressInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -93,6 +107,9 @@ export class AddressBuilder<
   }
 
   updateInput(input: AddressInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -101,6 +118,7 @@ export class AddressBuilder<
   }
 
   deleteInputKey(key: keyof AddressInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -217,17 +235,24 @@ export class AddressBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("street_name", input.streetName);
-    addField("city", input.city);
-    addField("state", input.state);
-    addField("zip", input.zip);
-    addField("apartment", input.apartment);
-    addField("country", input.country);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("street_name", "streetName", input.streetName);
+    addField("city", "city", input.city);
+    addField("state", "state", input.state);
+    addField("zip", "zip", input.zip);
+    addField("apartment", "apartment", input.apartment);
+    addField("country", "country", input.country);
     return result;
   }
 

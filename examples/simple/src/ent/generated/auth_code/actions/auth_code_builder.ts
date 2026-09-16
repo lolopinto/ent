@@ -24,6 +24,9 @@ import { NodeType } from "../../types";
 import schema from "../../../../schema/auth_code_schema";
 
 export interface AuthCodeInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   code?: string;
   userId?: ID;
   emailAddress?: string | null;
@@ -54,6 +57,8 @@ export class AuthCodeBuilder<
   readonly ent = AuthCode;
   readonly nodeType = NodeType.AuthCode;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -73,7 +78,20 @@ export class AuthCodeBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-AuthCode`;
     this.input = action.getInput();
-    const updateInput = (d: AuthCodeInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: AuthCodeInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -102,6 +120,14 @@ export class AuthCodeBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: AuthCodeInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -111,10 +137,12 @@ export class AuthCodeBuilder<
 
   // override immutable field `userId`
   overrideUserId(val: ID) {
+    this.defaultInput.delete("userId");
     this.input.userId = val;
   }
 
   deleteInputKey(key: keyof AuthCodeInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -179,15 +207,22 @@ export class AuthCodeBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("code", input.code);
-    addField("userID", input.userId);
-    addField("emailAddress", input.emailAddress);
-    addField("phoneNumber", input.phoneNumber);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("code", "code", input.code);
+    addField("userID", "userId", input.userId);
+    addField("emailAddress", "emailAddress", input.emailAddress);
+    addField("phoneNumber", "phoneNumber", input.phoneNumber);
     return result;
   }
 

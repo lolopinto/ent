@@ -20,6 +20,9 @@ import { EdgeType, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/event_activity_schema";
 
 export interface EventActivityInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   addressId?: ID | null | Builder<Address, Viewer>;
   name?: string;
   eventId?: ID | Builder<Event, Viewer>;
@@ -49,6 +52,8 @@ export class EventActivityBuilder<
   readonly ent = EventActivity;
   readonly nodeType = NodeType.EventActivity;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -68,8 +73,16 @@ export class EventActivityBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-EventActivity`;
     this.input = action.getInput();
-    const updateInput = (d: EventActivityInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: EventActivityInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -92,6 +105,9 @@ export class EventActivityBuilder<
   }
 
   updateInput(input: EventActivityInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -100,6 +116,7 @@ export class EventActivityBuilder<
   }
 
   deleteInputKey(key: keyof EventActivityInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -302,41 +319,41 @@ export class EventActivityBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("address_id", input.addressId);
-    if (
-      input.addressId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.addressId) {
-        this.orchestrator.addInboundEdge(
-          input.addressId,
-          EdgeType.AddressToLocatedAt,
-          NodeType.Address,
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("address_id", "addressId", input.addressId);
+    addField("Name", "name", input.name);
+    addField("eventID", "eventId", input.eventId);
+    addField("StartTime", "startTime", input.startTime);
+    addField("EndTime", "endTime", input.endTime);
+    addField("Location", "location", input.location);
+    addField("Description", "description", input.description);
+    addField("InviteAllGuests", "inviteAllGuests", input.inviteAllGuests);
+    {
+      const value = result.get("address_id");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.addressId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.addressId &&
-        this.existingEnt.addressId !== input.addressId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.addressId,
-          EdgeType.AddressToLocatedAt,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "address_id",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.AddressToLocatedAt,
+        NodeType.Address,
+        { existingIDs },
+      );
     }
-    addField("Name", input.name);
-    addField("eventID", input.eventId);
-    addField("StartTime", input.startTime);
-    addField("EndTime", input.endTime);
-    addField("Location", input.location);
-    addField("Description", input.description);
-    addField("InviteAllGuests", input.inviteAllGuests);
     return result;
   }
 

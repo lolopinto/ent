@@ -24,6 +24,9 @@ import { DayOfWeek, DayOfWeekAlt, NodeType } from "../../types";
 import schema from "../../../../schema/holiday_schema";
 
 export interface HolidayInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   dayOfWeek?: DayOfWeek;
   dayOfWeekAlt?: DayOfWeekAlt;
   label?: string;
@@ -49,6 +52,8 @@ export class HolidayBuilder<
   readonly ent = Holiday;
   readonly nodeType = NodeType.Holiday;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -68,7 +73,16 @@ export class HolidayBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Holiday`;
     this.input = action.getInput();
-    const updateInput = (d: HolidayInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: HolidayInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -91,6 +105,9 @@ export class HolidayBuilder<
   }
 
   updateInput(input: HolidayInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -99,6 +116,7 @@ export class HolidayBuilder<
   }
 
   deleteInputKey(key: keyof HolidayInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -163,15 +181,22 @@ export class HolidayBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("dayOfWeek", input.dayOfWeek);
-    addField("dayOfWeekAlt", input.dayOfWeekAlt);
-    addField("label", input.label);
-    addField("date", input.date);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("dayOfWeek", "dayOfWeek", input.dayOfWeek);
+    addField("dayOfWeekAlt", "dayOfWeekAlt", input.dayOfWeekAlt);
+    addField("label", "label", input.label);
+    addField("date", "date", input.date);
     return result;
   }
 

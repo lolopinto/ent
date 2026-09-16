@@ -81,16 +81,12 @@ test("right credentials", async () => {
     password: pw,
   });
 
-  let st: supertest.SuperTest<supertest.Test>;
-
-  st = await expectMutation(
+  const st = await expectMutation(
     {
       // pass a function that takes a server that keeps track of cookies etc
       // and use that for this request
       test: (app: Express) => {
-        return supertest.agent(
-          app,
-        ) as unknown as supertest.SuperTest<supertest.Test>;
+        return supertest.agent(app);
       },
       init: PassportAuthHandler.testInitSessionBasedFunction("secret", {
         loadOptions: User.loaderOptions(),

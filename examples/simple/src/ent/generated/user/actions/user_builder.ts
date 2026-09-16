@@ -41,6 +41,9 @@ import {
 import schema from "../../../../schema/user_schema";
 
 export interface UserInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   firstName?: string;
   lastName?: string;
   emailAddress?: string;
@@ -99,6 +102,8 @@ export class UserBuilder<
   readonly ent = User;
   readonly nodeType = NodeType.User;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -119,7 +124,16 @@ export class UserBuilder<
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;
     this.input = action.getInput();
-    const updateInput = (d: UserInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: UserInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -142,6 +156,9 @@ export class UserBuilder<
   }
 
   updateInput(input: UserInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -150,6 +167,7 @@ export class UserBuilder<
   }
 
   deleteInputKey(key: keyof UserInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -597,33 +615,52 @@ export class UserBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("FirstName", input.firstName);
-    addField("LastName", input.lastName);
-    addField("EmailAddress", input.emailAddress);
-    addField("PhoneNumber", input.phoneNumber);
-    addField("Password", input.password);
-    addField("AccountStatus", input.accountStatus);
-    addField("emailVerified", input.emailVerified);
-    addField("Bio", input.bio);
-    addField("nicknames", input.nicknames);
-    addField("prefs", input.prefs);
-    addField("prefsList", input.prefsList);
-    addField("prefs_diff", input.prefsDiff);
-    addField("daysOff", input.daysOff);
-    addField("preferredShift", input.preferredShift);
-    addField("timeInMs", input.timeInMs);
-    addField("fun_uuids", input.funUuids);
-    addField("superNestedObject", input.superNestedObject);
-    addField("onDemandWithPrivacy", input.onDemandWithPrivacy);
-    addField("onDemandNonNullable", input.onDemandNonNullable);
-    addField("onDemandNonNullableList", input.onDemandNonNullableList);
-    addField("nestedList", input.nestedList);
-    addField("int_enum", input.intEnum);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("FirstName", "firstName", input.firstName);
+    addField("LastName", "lastName", input.lastName);
+    addField("EmailAddress", "emailAddress", input.emailAddress);
+    addField("PhoneNumber", "phoneNumber", input.phoneNumber);
+    addField("Password", "password", input.password);
+    addField("AccountStatus", "accountStatus", input.accountStatus);
+    addField("emailVerified", "emailVerified", input.emailVerified);
+    addField("Bio", "bio", input.bio);
+    addField("nicknames", "nicknames", input.nicknames);
+    addField("prefs", "prefs", input.prefs);
+    addField("prefsList", "prefsList", input.prefsList);
+    addField("prefs_diff", "prefsDiff", input.prefsDiff);
+    addField("daysOff", "daysOff", input.daysOff);
+    addField("preferredShift", "preferredShift", input.preferredShift);
+    addField("timeInMs", "timeInMs", input.timeInMs);
+    addField("fun_uuids", "funUuids", input.funUuids);
+    addField("superNestedObject", "superNestedObject", input.superNestedObject);
+    addField(
+      "onDemandWithPrivacy",
+      "onDemandWithPrivacy",
+      input.onDemandWithPrivacy,
+    );
+    addField(
+      "onDemandNonNullable",
+      "onDemandNonNullable",
+      input.onDemandNonNullable,
+    );
+    addField(
+      "onDemandNonNullableList",
+      "onDemandNonNullableList",
+      input.onDemandNonNullableList,
+    );
+    addField("nestedList", "nestedList", input.nestedList);
+    addField("int_enum", "intEnum", input.intEnum);
     return result;
   }
 

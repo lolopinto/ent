@@ -20,6 +20,9 @@ import { GuestDataSource, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/guest_data_schema";
 
 export interface GuestDataInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   guestId?: ID | Builder<Guest, Viewer>;
   eventId?: ID | Builder<Event, Viewer>;
   dietaryRestrictions?: string;
@@ -45,6 +48,8 @@ export class GuestDataBuilder<
   readonly ent = GuestData;
   readonly nodeType = NodeType.GuestData;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -64,8 +69,16 @@ export class GuestDataBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-GuestData`;
     this.input = action.getInput();
-    const updateInput = (d: GuestDataInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: GuestDataInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -88,6 +101,9 @@ export class GuestDataBuilder<
   }
 
   updateInput(input: GuestDataInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -96,6 +112,7 @@ export class GuestDataBuilder<
   }
 
   deleteInputKey(key: keyof GuestDataInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -160,15 +177,26 @@ export class GuestDataBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("guestID", input.guestId);
-    addField("eventID", input.eventId);
-    addField("dietaryRestrictions", input.dietaryRestrictions);
-    addField("source", input.source);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("guestID", "guestId", input.guestId);
+    addField("eventID", "eventId", input.eventId);
+    addField(
+      "dietaryRestrictions",
+      "dietaryRestrictions",
+      input.dietaryRestrictions,
+    );
+    addField("source", "source", input.source);
     return result;
   }
 

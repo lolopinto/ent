@@ -24,6 +24,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/comment_schema";
 
 export interface CommentInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   authorId?: ID | Builder<User, ExampleViewerAlias>;
   body?: string;
   articleId?: ID | Builder<Ent<ExampleViewerAlias>, ExampleViewerAlias>;
@@ -56,6 +59,8 @@ export class CommentBuilder<
   readonly ent = Comment;
   readonly nodeType = NodeType.Comment;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -75,7 +80,20 @@ export class CommentBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Comment`;
     this.input = action.getInput();
-    const updateInput = (d: CommentInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: CommentInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -104,6 +122,14 @@ export class CommentBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: CommentInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -113,10 +139,12 @@ export class CommentBuilder<
 
   // override immutable field `authorId`
   overrideAuthorId(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.defaultInput.delete("authorId");
     this.input.authorId = val;
   }
 
   deleteInputKey(key: keyof CommentInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -235,19 +263,26 @@ export class CommentBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("AuthorID", input.authorId);
-    addField("Body", input.body);
-    addField("ArticleID", input.articleId);
-    addField("ArticleType", input.articleType);
-    addField("AttachmentID", input.attachmentId);
-    addField("AttachmentType", input.attachmentType);
-    addField("StickerID", input.stickerId);
-    addField("StickerType", input.stickerType);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("AuthorID", "authorId", input.authorId);
+    addField("Body", "body", input.body);
+    addField("ArticleID", "articleId", input.articleId);
+    addField("ArticleType", "articleType", input.articleType);
+    addField("AttachmentID", "attachmentId", input.attachmentId);
+    addField("AttachmentType", "attachmentType", input.attachmentType);
+    addField("StickerID", "stickerId", input.stickerId);
+    addField("StickerType", "stickerType", input.stickerType);
     return result;
   }
 

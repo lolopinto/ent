@@ -20,6 +20,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/tag_schema";
 
 export interface TagInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   workspaceId?: ID | Builder<Workspace, Viewer>;
   name?: string;
   color?: string | null;
@@ -44,6 +47,8 @@ export class TagBuilder<
   readonly ent = Tag;
   readonly nodeType = NodeType.Tag;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -61,7 +66,20 @@ export class TagBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Tag`;
     this.input = action.getInput();
-    const updateInput = (d: TagInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: TagInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -90,6 +108,14 @@ export class TagBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: TagInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -99,10 +125,12 @@ export class TagBuilder<
 
   // override immutable field `workspaceId`
   overrideWorkspaceId(val: ID | Builder<Workspace, Viewer>) {
+    this.defaultInput.delete("workspaceId");
     this.input.workspaceId = val;
   }
 
   deleteInputKey(key: keyof TagInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -213,36 +241,36 @@ export class TagBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("workspaceID", input.workspaceId);
-    if (
-      input.workspaceId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.workspaceId) {
-        this.orchestrator.addInboundEdge(
-          input.workspaceId,
-          EdgeType.WorkspaceToTags,
-          NodeType.Workspace,
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("workspaceID", "workspaceId", input.workspaceId);
+    addField("name", "name", input.name);
+    addField("color", "color", input.color);
+    {
+      const value = result.get("workspaceID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.workspaceId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.workspaceId &&
-        this.existingEnt.workspaceId !== input.workspaceId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.workspaceId,
-          EdgeType.WorkspaceToTags,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "workspaceID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.WorkspaceToTags,
+        NodeType.Workspace,
+        { existingIDs },
+      );
     }
-    addField("name", input.name);
-    addField("color", input.color);
     return result;
   }
 

@@ -139,22 +139,34 @@ export const ContactCreateType: GraphQLFieldConfig<
       lastName: input.lastName,
       userId: mustDecodeIDFromGQLID(input.userId.toString()),
       importantDates: input.importantDates,
-      attachments: input.attachments?.map((item: any) => ({
-        ...item,
-        fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
-        dupeFileId: item.dupeFileId
-          ? mustDecodeNullableIDFromGQLID(
-              item.dupeFileId?.toString() ?? item.dupeFileId,
-            )
-          : undefined,
-        creatorId: item.creatorId
-          ? mustDecodeNullableIDFromGQLID(
-              item.creatorId?.toString() ?? item.creatorId,
-            )
-          : undefined,
-      })),
-      emails: input.emails,
-      phoneNumbers: input.phoneNumbers,
+      attachments: input.attachments
+        ? input.attachments.map((item: any) => ({
+            ...item,
+            fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+            dupeFileId: item.dupeFileId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.dupeFileId?.toString() ?? item.dupeFileId,
+                )
+              : undefined,
+            creatorId: item.creatorId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.creatorId?.toString() ?? item.creatorId,
+                )
+              : undefined,
+          }))
+        : input.attachments,
+      emails: input.emails
+        ? input.emails.map((item: any) => ({
+            ...item,
+            ownerId: mustDecodeIDFromGQLID(item.ownerId.toString()),
+          }))
+        : input.emails,
+      phoneNumbers: input.phoneNumbers
+        ? input.phoneNumbers.map((item: any) => ({
+            ...item,
+            ownerId: mustDecodeIDFromGQLID(item.ownerId.toString()),
+          }))
+        : input.phoneNumbers,
     }).saveX();
     return { contact: contact };
   },
