@@ -2,7 +2,7 @@ ARG GOLANG_VERSION=v0.3.10
 ARG AUTO_SCHEMA_VERSION=0.0.41
 ARG NODE_VERSION=24
 ARG BUN_VERSION=1.3.6
-ARG DOCKER_TAG=v0.3.11
+ARG DOCKER_TAG=v0.3.12
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.25-trixie AS golang-image
@@ -16,7 +16,16 @@ ARG TARGETOS TARGETARCH
 # RUN --mount=target=. \
 # --mount=type=cache,target=/root/.cache/go-build \
 # --mount=type=cache,target=/go/pkg \
-RUN env -u GOBIN GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION && \
+# go-sqlite3 needs CGO even when Go cross-compiles for the other image architecture.
+RUN apt-get update && \
+  apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu gcc-x86-64-linux-gnu libc6-dev-arm64-cross libc6-dev-amd64-cross && \
+  rm -rf /var/lib/apt/lists/*
+RUN case "$TARGETARCH" in \
+    amd64) export CC=x86_64-linux-gnu-gcc ;; \
+    arm64) export CC=aarch64-linux-gnu-gcc ;; \
+    *) echo "unsupported target architecture: $TARGETARCH" >&2; exit 1 ;; \
+  esac && \
+  env -u GOBIN CGO_ENABLED=1 GOOS=$TARGETOS GOARCH=$TARGETARCH go install -ldflags="-X 'github.com/lolopinto/ent/internal/build_info.DockerVersion=$DOCKER_TAG' -X 'github.com/lolopinto/ent/internal/build_info.Time=$(date)'" github.com/lolopinto/ent/tsent@$GOLANG_VERSION && \
   if [ -f "/root/go/bin/${TARGETOS}_${TARGETARCH}/tsent" ]; then mv "/root/go/bin/${TARGETOS}_${TARGETARCH}/tsent" /root/go/bin/tsent; fi
 
 # get and install auto_schema

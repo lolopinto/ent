@@ -1,9 +1,38 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 )
+
+func TestDockerfileEnablesSQLiteForBothArchitectures(t *testing.T) {
+	for _, suffix := range SUFFIXES {
+		t.Run(suffix, func(t *testing.T) {
+			output := filepath.Join(t.TempDir(), "Dockerfile")
+			err := createDockerfile(output, dockerfileData{
+				NodeVersion: 24, DockerTag: "v1.2.3", Suffix: suffix,
+				TsentVersion: "v0.3.10", AutoSchemaVersion: "0.0.41",
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(output)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// go-sqlite3 becomes a runtime-error stub when cross-compilation
+			// silently disables CGO. Each supported target needs its C compiler.
+			for _, required := range []string{"CGO_ENABLED=1", "CC=x86_64-linux-gnu-gcc", "CC=aarch64-linux-gnu-gcc"} {
+				if !strings.Contains(string(data), required) {
+					t.Errorf("generated %s Dockerfile is missing %q", suffix, required)
+				}
+			}
+		})
+	}
+}
 
 func TestGetCommandArgsPushesOnce(t *testing.T) {
 	args := getCommandArgs(dockerfileData{
