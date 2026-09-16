@@ -14,7 +14,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Changed
 
 - release Docker v0.3.11 with tsent v0.3.10 and auto_schema 0.0.41; update
-  example Docker images and regenerate builders for `@snowtop/ent` 0.2.15.
+  example Docker images and regenerate builders for `@snowtop/ent` 0.2.15 (#2044).
 
 ### Fixed
 
