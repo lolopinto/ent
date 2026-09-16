@@ -993,6 +993,14 @@ func (obj *gqlobjectData) TSInterfaces() []*interfaceType {
 
 func (obj *gqlobjectData) ForeignImport(name string) bool {
 	if !obj.initMap {
+		// Nested action fields can carry a type name without a path while the
+		// owning input node supplies its import. Such references are not local.
+		imported := make(map[string]bool)
+		for _, imp := range append(obj.Imports(), obj.DefaultImports()...) {
+			if imp.ImportPath != "" {
+				imported[imp.Import] = true
+			}
+		}
 		obj.m = make(map[string]bool)
 
 		// any node Type defined here is local
@@ -1010,7 +1018,7 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 
 			for _, field := range node.Fields {
 				for _, imp := range field.AllImports() {
-					if imp.ImportPath == "" {
+					if imp.ImportPath == "" && !imported[imp.Import] {
 						obj.m[imp.Import] = true
 					}
 				}
@@ -1026,14 +1034,14 @@ func (obj *gqlobjectData) ForeignImport(name string) bool {
 
 			for _, imp := range fcfg.ArgImports {
 				// local...
-				if imp.ImportPath == "" {
+				if imp.ImportPath == "" && !imported[imp.Import] {
 					obj.m[imp.Import] = true
 				}
 			}
 
 			for _, imp := range fcfg.TypeImports {
 				// local...
-				if imp.ImportPath == "" {
+				if imp.ImportPath == "" && !imported[imp.Import] {
 					obj.m[imp.Import] = true
 				}
 			}

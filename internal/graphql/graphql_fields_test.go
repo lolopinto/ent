@@ -1,6 +1,8 @@
 package graphql
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -239,4 +241,56 @@ func actionConfigImportNames(cfg *fieldConfig) []string {
 		imports = append(imports, imp.Import)
 	}
 	return imports
+}
+
+func TestNestedActionInputImportsReferencedActionInput(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(t, map[string]string{
+		"address.ts": testhelper.GetCodeWithSchema(`
+			import { EntSchema, ActionOperation, StringType } from "{schema}";
+			export default new EntSchema({
+				fields: { street: StringType() },
+				actions: [{ operation: ActionOperation.Create }],
+			});`),
+		"event_activity.ts": testhelper.GetCodeWithSchema(`
+			import { EntSchema, ActionOperation, StringType } from "{schema}";
+			export default new EntSchema({
+				fields: { name: StringType() },
+				actions: [{ operation: ActionOperation.Create, actionOnlyFields: [{
+					name: "address", type: "Object", nullable: true,
+					actionName: "CreateAddressAction",
+				}] }],
+			});`),
+		"event.ts": testhelper.GetCodeWithSchema(`
+			import { EntSchema, ActionOperation, StringType } from "{schema}";
+			export default new EntSchema({
+				fields: { name: StringType() },
+				actions: [{ operation: ActionOperation.Create, actionOnlyFields: [{
+					name: "activities", type: "Object", list: true, nullable: true,
+					actionName: "CreateEventActivityAction",
+				}] }],
+			});`),
+	})
+	processor, err := codegen.NewTestCodegenProcessor("src/schema", schema, &codegen.CodegenConfig{})
+	require.NoError(t, err)
+	nodeData := schema.Nodes["Event"].NodeData
+	createAction := nodeData.ActionInfo.GetByName("CreateEventAction")
+	nodes, err := buildActionNodes(processor, nodeData, createAction)
+	require.NoError(t, err)
+	fieldConfig, err := buildActionFieldConfig(processor, nodeData, createAction)
+	require.NoError(t, err)
+	output := filepath.Join(t.TempDir(), "event_create_type.ts")
+	require.NoError(t, writeFile(processor, &gqlNode{
+		FilePath: output,
+		ObjData: &gqlobjectData{
+			Node:        nodeData.Node,
+			GQLNodes:    nodes,
+			FieldConfig: fieldConfig,
+			Package:     processor.Config.GetImportPackage(),
+		},
+	}))
+	contents, err := os.ReadFile(output)
+	require.NoError(t, err)
+	assert.Regexp(t, `import\s*\{\s*AddressEventActivityCreateInput\s*\}\s*from\s*"src/graphql/generated/mutations/event_activity/event_activity_create_type"`, string(contents))
+	assert.Contains(t, string(contents), "export const ActivityEventCreateInput")
+	assert.Contains(t, string(contents), "type: AddressEventActivityCreateInput")
 }
