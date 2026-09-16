@@ -126,7 +126,6 @@ class FieldAction extends SimpleAction<Assignment> {
         }
       }
     };
-    options.updateInput = builder.updateInput.bind(builder);
   }
 }
 
@@ -572,5 +571,22 @@ test("clearing edit defaults with no other data keeps the stored field and inver
   ];
   await action.saveX();
   expect((await raw(ent.id))!.default_owner_id).toBe(b.id);
+  expect(await rows(ent, defaultEdge)).toEqual(expectedRows(b.id));
+});
+
+test("a trigger that empties an edit leaves defaulted fields and inverse edges untouched", async () => {
+  const ent = await create({}, new IDViewer(b.id));
+  const before = await raw(ent.id);
+  const action = new FieldAction({ name: "ignored" }, ent);
+  action.getTriggers = () => [
+    {
+      changeset: (builder) => {
+        expect(builder.getInput().default_owner_id).toBe(a.id);
+        builder.fields.delete("name");
+      },
+    },
+  ];
+  await action.saveX();
+  expect(await raw(ent.id)).toEqual(before);
   expect(await rows(ent, defaultEdge)).toEqual(expectedRows(b.id));
 });

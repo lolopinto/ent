@@ -87,8 +87,15 @@ export interface OrchestratorOptions<
   action?: Action<TEnt, Builder<TEnt, TViewer>, TViewer, TInput>;
   schema: SchemaInputType;
   editedFields(): Map<string, any> | Promise<Map<string, any>>;
-  // this is called with fields with defaultValueOnCreate|Edit
-  updateInput?: (data: TInput, operation?: WriteOperation) => void;
+  // Defaults remain visible to hooks. defaultKeys identifies computed internal
+  // or onlyUpdateIfOtherFieldsBeingSet_BETA values that must not initiate edits.
+  // Ordinary editable defaults retain their ability to initiate a write.
+  // Transformed data in the same update is explicit and is not included.
+  updateInput?: (
+    data: TInput,
+    operation?: WriteOperation,
+    defaultKeys?: ReadonlySet<string>,
+  ) => void;
 
   // mapping of column to expressions to use
   // if set and a column exists, we use the expression here instead of the given expression in the sql query
@@ -1100,6 +1107,8 @@ export class Orchestrator<
   ): Promise<{ data: Data; userDefinedKeys: Set<string> }> {
     let data: Data = {};
     let defaultData: Data = {};
+    const defaultKeys = new Set<string>();
+    const transformedFields = new Set<string>();
 
     let input: Data = action?.getInput() || {};
 
@@ -1157,6 +1166,7 @@ export class Orchestrator<
           }
           data[this.getStorageKey(k)] = dbVal;
           if (!field.immutable) {
+            transformedFields.add(k);
             this.defaultFieldsByTSName[this.getInputKey(k)] = inputVal;
           }
           // hmm do we need this?
@@ -1200,7 +1210,7 @@ export class Orchestrator<
         userDefinedKeys.add(dbKey);
       }
 
-      if (value === undefined) {
+      if (value === undefined && !transformedFields.has(fieldName)) {
         if (this.actualOperation === WriteOperation.Insert) {
           if (field.defaultToViewerOnCreate && field.defaultValueOnCreate) {
             throw new Error(
@@ -1249,6 +1259,9 @@ export class Orchestrator<
 
         this.defaultFieldsByFieldName[fieldName] = defaultValue;
         this.defaultFieldsByTSName[this.getInputKey(fieldName)] = defaultValue;
+        if (field.disableUserEditable || updateOnlyIfOther) {
+          defaultKeys.add(this.getInputKey(fieldName));
+        }
       }
     }
 
@@ -1263,6 +1276,7 @@ export class Orchestrator<
         this.options.updateInput(
           this.defaultFieldsByTSName as TInput,
           this.actualOperation,
+          defaultKeys,
         );
       }
     }
@@ -1378,6 +1392,14 @@ export class Orchestrator<
     for (const fieldName of needsFullDataChecks) {
       const field = schemaFields.get(fieldName)!;
       let value = editedFields.get(fieldName);
+      // Deferred defaults are absent from editedFields, but validators must
+      // still receive the value that will be saved when this operation writes.
+      if (
+        value === undefined &&
+        (op === WriteOperation.Insert || this.hasData(data))
+      ) {
+        value = this.defaultFieldsByFieldName[fieldName];
+      }
 
       // @ts-ignore...
       // type hackery because it's hard

@@ -425,6 +425,7 @@ function commonTests() {
       op === SQLStatementOperation.Insert
         ? WriteOperation.Insert
         : WriteOperation.Edit,
+      expect.any(Set),
     );
   });
 

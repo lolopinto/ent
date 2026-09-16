@@ -13,6 +13,7 @@ import EditContactAction, {
 } from "./ent/contact/actions/edit_contact_action";
 import { CreateContactActionBase } from "./ent/generated/contact/actions/create_contact_action_base";
 import { EditContactActionBase } from "./ent/generated/contact/actions/edit_contact_action_base";
+import type { ContactInput } from "./ent/generated/contact/actions/contact_builder";
 import schema from "./graphql/generated/schema";
 import { verifyInternalRelationships } from "./internal_relationships_test";
 
@@ -164,6 +165,46 @@ async function main() {
     assert.equal(defaults.updatedAt.getTime(), originalUpdatedAt);
     console.log(
       "PASS: nullable INSERT, untouched defaults, and no-op EDIT preserve default behavior",
+    );
+
+    const emptied = new EditContactActionBase(viewer, defaults, {
+      name: "ignored",
+    });
+    emptied.getTriggers = () => [
+      {
+        changeset: (builder) => {
+          assert.equal(
+            (builder.getInput() as ContactInput).auditLabel,
+            "edited",
+          );
+          builder.deleteInputKey("name");
+        },
+      },
+    ];
+    await emptied.saveX();
+    defaults = await reload(defaults.id);
+    assert.equal(defaults.name, "Default");
+    assert.equal(defaults.auditLabel, "created");
+    assert.equal(defaults.updatedAt.getTime(), originalUpdatedAt);
+
+    const explicit = new EditContactActionBase(viewer, defaults, {
+      name: "ignored",
+    });
+    explicit.getTriggers = () => [
+      {
+        changeset: (builder) => {
+          builder.deleteInputKey("name");
+          // An explicit assignment counts even when equal to the computed default.
+          builder.updateInput({
+            auditLabel: (builder.getInput() as ContactInput).auditLabel,
+          });
+        },
+      },
+    ];
+    await explicit.saveX();
+    assert.equal((await reload(defaults.id)).auditLabel, "edited");
+    console.log(
+      "PASS: generated builders distinguish defaults from explicit trigger assignments",
     );
 
     // Test internal builder updates without running custom action triggers.

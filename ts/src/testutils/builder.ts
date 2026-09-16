@@ -237,6 +237,7 @@ export class SimpleBuilder<
   placeholderID: ID;
   public orchestrator: Orchestrator<T, Data, Viewer, TExistingEnt>;
   public fields: Map<string, any>;
+  private defaultInput = new Map<string, any>();
   nodeType: string;
   m: Map<string, any> = new Map();
 
@@ -312,11 +313,18 @@ export class SimpleBuilder<
         // to simulate what we do in generated builders where we return a new Map
         const m = new Map();
         for (const [k, v] of this.fields) {
-          m.set(k, v);
+          if (!this.defaultInput.has(k) || this.defaultInput.get(k) !== v) {
+            m.set(k, v);
+          }
         }
         return m;
       },
-      updateInput: this.updateInput.bind(this),
+      updateInput: (input, _operation, defaultKeys) => {
+        this.updateInput(input);
+        for (const key of defaultKeys ?? []) {
+          this.defaultInput.set(key, input[key]);
+        }
+      },
     });
   }
 
@@ -330,6 +338,7 @@ export class SimpleBuilder<
   updateInput(input: Data) {
     const knownFields = getFields(this.schema);
     for (const k in input) {
+      this.defaultInput.delete(k);
       if (knownFields.has(k)) {
         this.fields.set(k, input[k]);
       } else {

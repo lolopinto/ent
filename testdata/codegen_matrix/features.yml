@@ -627,7 +627,10 @@ features:
   - id: field.default_value_on_edit
     owns: [input.Field.HasDefaultValueOnEdit]
     mode: representative
-    rationale: Default-on-edit alters generated edit action behavior.
+    rationale: Default-on-edit alters generated edit action behavior. Computed defaults remain readable by hooks without turning an emptied edit into a write; explicit internal assignments still persist.
+    test_refs:
+      - ts/src/action/orchestrator_defaults.test.ts
+      - internal/codegenmatrix/internal_fields_test.go:TestDisableUserEditableBuilderPersistence
   - id: field.field_privacy
     owns: [input.Field.HasFieldPrivacy]
     mode: explicit
