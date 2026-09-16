@@ -13,7 +13,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
-- release `@snowtop/ent` 0.2.15 with `tsent` v0.3.9 for regenerated builders.
+- release `@snowtop/ent` 0.2.15 with `tsent` v0.3.9 for regenerated builders (#2042).
 
 ### Fixed
 
