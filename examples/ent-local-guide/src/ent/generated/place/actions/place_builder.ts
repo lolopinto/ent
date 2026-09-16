@@ -21,6 +21,9 @@ import { EdgeType, NodeType, PlaceCategory } from "../../types";
 import schema from "../../../../schema/place_schema";
 
 export interface PlaceInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name?: string;
   slug?: string;
   description?: string | null;
@@ -49,6 +52,8 @@ export class PlaceBuilder<
   readonly ent = Place;
   readonly nodeType = NodeType.Place;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -66,7 +71,16 @@ export class PlaceBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Place`;
     this.input = action.getInput();
-    const updateInput = (d: PlaceInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: PlaceInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -89,6 +103,9 @@ export class PlaceBuilder<
   }
 
   updateInput(input: PlaceInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -97,6 +114,7 @@ export class PlaceBuilder<
   }
 
   deleteInputKey(key: keyof PlaceInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -241,40 +259,40 @@ export class PlaceBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("name", input.name);
-    addField("slug", input.slug);
-    addField("description", input.description);
-    addField("website", input.website);
-    addField("category", input.category);
-    addField("creatorID", input.creatorId);
-    if (
-      input.creatorId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.creatorId) {
-        this.orchestrator.addInboundEdge(
-          input.creatorId,
-          EdgeType.UserToCreatedPlaces,
-          NodeType.User,
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("name", "name", input.name);
+    addField("slug", "slug", input.slug);
+    addField("description", "description", input.description);
+    addField("website", "website", input.website);
+    addField("category", "category", input.category);
+    addField("creatorID", "creatorId", input.creatorId);
+    addField("location", "location", input.location);
+    {
+      const value = result.get("creatorID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.creatorId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.creatorId &&
-        this.existingEnt.creatorId !== input.creatorId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.creatorId,
-          EdgeType.UserToCreatedPlaces,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "creatorID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.UserToCreatedPlaces,
+        NodeType.User,
+        { existingIDs },
+      );
     }
-    addField("location", input.location);
     return result;
   }
 

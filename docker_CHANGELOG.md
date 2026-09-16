@@ -9,16 +9,23 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
-### Added
+## [0.3.11]
 
 ### Changed
+
+- release Docker v0.3.11 with tsent v0.3.10 and auto_schema 0.0.41; update
+  example Docker images and regenerate builders for `@snowtop/ent` 0.2.15.
 
 ### Fixed
 
 - preserve imports for nested action input objects so regenerated GraphQL
   mutations compile when one action embeds another action's nested input (#2043).
+- include the no-op edit builder fix; upgrade to `@snowtop/ent` 0.2.15 and
+  regenerate builders to adopt it (#2041).
 
-## [0.3.10]
+## [0.3.10] (incomplete)
+
+Publication was cancelled after the Node 20 slim image; use v0.3.11.
 
 ### Changed
 

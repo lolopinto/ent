@@ -24,6 +24,9 @@ import { NodeType } from "../../types";
 import schema from "../../../../schema/file_schema";
 
 export interface FileInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   name?: string;
   path?: string;
   creatorId?: ID | Builder<User, ExampleViewerAlias>;
@@ -48,6 +51,8 @@ export class FileBuilder<
   readonly ent = File;
   readonly nodeType = NodeType.File;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -67,7 +72,16 @@ export class FileBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-File`;
     this.input = action.getInput();
-    const updateInput = (d: FileInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: FileInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -90,6 +104,9 @@ export class FileBuilder<
   }
 
   updateInput(input: FileInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -98,6 +115,7 @@ export class FileBuilder<
   }
 
   deleteInputKey(key: keyof FileInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -162,14 +180,21 @@ export class FileBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("name", input.name);
-    addField("path", input.path);
-    addField("creator_id", input.creatorId);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("name", "name", input.name);
+    addField("path", "path", input.path);
+    addField("creator_id", "creatorId", input.creatorId);
     return result;
   }
 

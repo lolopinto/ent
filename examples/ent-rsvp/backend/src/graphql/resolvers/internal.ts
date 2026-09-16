@@ -25,3 +25,4 @@ export * from "src/graphql/generated/resolvers/event_query_type";
 export * from "src/graphql/generated/resolvers/event_slug_available_query_type";
 export * from "src/graphql/generated/resolvers/viewer_query_type";
 export * from "src/graphql/resolvers/node_query_type";
+export * from "src/graphql/resolvers/viewer_type";

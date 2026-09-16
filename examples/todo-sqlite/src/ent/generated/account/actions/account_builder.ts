@@ -71,6 +71,8 @@ export class AccountBuilder<
   readonly ent = Account;
   readonly nodeType = NodeType.Account;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -89,7 +91,16 @@ export class AccountBuilder<
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Account`;
     this.input = action.getInput();
-    const updateInput = (d: AccountInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: AccountInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -112,6 +123,9 @@ export class AccountBuilder<
   }
 
   updateInput(input: AccountInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -120,6 +134,7 @@ export class AccountBuilder<
   }
 
   deleteInputKey(key: keyof AccountInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -403,23 +418,27 @@ export class AccountBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("id", input.id);
-    addField("createdAt", input.createdAt);
-    addField("updatedAt", input.updatedAt);
-    addField("deleted_at", input.deletedAt);
-    addField("Name", input.name);
-    addField("PhoneNumber", input.phoneNumber);
-    addField("accountState", input.accountState);
-    addField("accountPrefs", input.accountPrefs);
-    addField("accountPrefs3", input.accountPrefs3);
-    addField("accountPrefsList", input.accountPrefsList);
-    addField("credits", input.credits);
-    addField("country_infos", input.countryInfos);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("deleted_at", "deletedAt", input.deletedAt);
+    addField("Name", "name", input.name);
+    addField("PhoneNumber", "phoneNumber", input.phoneNumber);
+    addField("accountState", "accountState", input.accountState);
+    addField("accountPrefs", "accountPrefs", input.accountPrefs);
+    addField("accountPrefs3", "accountPrefs3", input.accountPrefs3);
+    addField("accountPrefsList", "accountPrefsList", input.accountPrefsList);
+    addField("credits", "credits", input.credits);
+    addField("country_infos", "countryInfos", input.countryInfos);
     return result;
   }
 

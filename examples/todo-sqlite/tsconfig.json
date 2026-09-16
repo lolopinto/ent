@@ -4,6 +4,7 @@
     "lib": ["es2018", "esnext.asynciterable"],
     "outDir": "./dist",
     "target": "es2018",
+    "module": "commonjs",
     "strictNullChecks": true,
     "downlevelIteration": true,
     "baseUrl": ".",

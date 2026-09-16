@@ -20,6 +20,9 @@ import { EdgeType, NodeType, NoteStatus } from "../../types";
 import schema from "../../../../schema/note_schema";
 
 export interface NoteInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   workspaceId?: ID | Builder<Workspace, Viewer>;
   authorId?: ID | Builder<User, Viewer>;
   title?: string;
@@ -47,6 +50,8 @@ export class NoteBuilder<
   readonly ent = Note;
   readonly nodeType = NodeType.Note;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -64,7 +69,20 @@ export class NoteBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Note`;
     this.input = action.getInput();
-    const updateInput = (d: NoteInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: NoteInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -99,6 +117,14 @@ export class NoteBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: NoteInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -108,15 +134,18 @@ export class NoteBuilder<
 
   // override immutable field `workspaceId`
   overrideWorkspaceId(val: ID | Builder<Workspace, Viewer>) {
+    this.defaultInput.delete("workspaceId");
     this.input.workspaceId = val;
   }
 
   // override immutable field `authorId`
   overrideAuthorId(val: ID | Builder<User, Viewer>) {
+    this.defaultInput.delete("authorId");
     this.input.authorId = val;
   }
 
   deleteInputKey(key: keyof NoteInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -298,61 +327,54 @@ export class NoteBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("workspaceID", input.workspaceId);
-    if (
-      input.workspaceId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.workspaceId) {
-        this.orchestrator.addInboundEdge(
-          input.workspaceId,
-          EdgeType.WorkspaceToNotes,
-          NodeType.Workspace,
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("workspaceID", "workspaceId", input.workspaceId);
+    addField("authorID", "authorId", input.authorId);
+    addField("title", "title", input.title);
+    addField("body", "body", input.body);
+    addField("summary", "summary", input.summary);
+    addField("status", "status", input.status);
+    {
+      const value = result.get("workspaceID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.workspaceId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.workspaceId &&
-        this.existingEnt.workspaceId !== input.workspaceId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.workspaceId,
-          EdgeType.WorkspaceToNotes,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "workspaceID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.WorkspaceToNotes,
+        NodeType.Workspace,
+        { existingIDs },
+      );
     }
-    addField("authorID", input.authorId);
-    if (
-      input.authorId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.authorId) {
-        this.orchestrator.addInboundEdge(
-          input.authorId,
-          EdgeType.UserToNotesAuthored,
-          NodeType.User,
-        );
+    {
+      const value = result.get("authorID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.authorId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.authorId &&
-        this.existingEnt.authorId !== input.authorId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.authorId,
-          EdgeType.UserToNotesAuthored,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "authorID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.UserToNotesAuthored,
+        NodeType.User,
+        { existingIDs },
+      );
     }
-    addField("title", input.title);
-    addField("body", input.body);
-    addField("summary", input.summary);
-    addField("status", input.status);
     return result;
   }
 

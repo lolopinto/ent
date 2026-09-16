@@ -18,7 +18,10 @@ import {
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import { GraphQLTime } from "@snowtop/ent/graphql";
+import {
+  GraphQLTime,
+  mustDecodeNullableIDFromGQLID,
+} from "@snowtop/ent/graphql";
 import CreateEventAction from "src/ent/event/actions/create_event_action";
 import { AddressEventActivityCreateInput } from "src/graphql/generated/mutations/event_activity/event_activity_create_type";
 import { EventType } from "src/graphql/resolvers/";
@@ -105,7 +108,16 @@ export const EventCreateType: GraphQLFieldConfig<
     const event = await CreateEventAction.create(context.getViewer(), {
       name: input.name,
       slug: input.slug,
-      activities: input.activities,
+      activities: input.activities
+        ? input.activities.map((item: any) => ({
+            ...item,
+            addressId: item.addressId
+              ? mustDecodeNullableIDFromGQLID(
+                  item.addressId?.toString() ?? item.addressId,
+                )
+              : undefined,
+          }))
+        : input.activities,
     }).saveX();
     return { event: event };
   },

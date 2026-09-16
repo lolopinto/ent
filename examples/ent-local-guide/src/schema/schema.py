@@ -7,7 +7,7 @@ from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
 
- 
+
 sa.Table("assoc_edge_config", metadata,
     sa.Column("edge_type", postgresql.UUID(), nullable=False),
     sa.Column("edge_name", sa.Text(), nullable=False),
@@ -20,7 +20,7 @@ sa.Table("assoc_edge_config", metadata,
     sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
     sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
 )
-   
+
 sa.Table("place_reviews", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -31,7 +31,7 @@ sa.Table("place_reviews", metadata,
     sa.Column("body", sa.Text(), nullable=True),
     sa.PrimaryKeyConstraint("id", name="place_reviews_id_pkey"),
 )
-   
+
 sa.Table("place_reviews_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -43,7 +43,7 @@ sa.Table("place_reviews_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="place_reviews_edges_id1_edge_type_id2_pkey"),
     sa.Index("place_reviews_edges_time_idx", "time"),
 )
-   
+
 sa.Table("places", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -59,7 +59,7 @@ sa.Table("places", metadata,
     sa.UniqueConstraint("slug", name="places_unique_slug"),
     sa.Index("places_location_gist", "location", postgresql_using="gist"),
 )
-   
+
 sa.Table("user_created_places_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -71,7 +71,7 @@ sa.Table("user_created_places_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_created_places_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_created_places_edges_time_idx", "time"),
 )
-   
+
 sa.Table("user_favorite_places_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -83,7 +83,7 @@ sa.Table("user_favorite_places_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_favorite_places_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_favorite_places_edges_time_idx", "time"),
 )
-   
+
 sa.Table("user_place_reviews_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -95,7 +95,7 @@ sa.Table("user_place_reviews_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="user_place_reviews_edges_id1_edge_type_id2_pkey"),
     sa.Index("user_place_reviews_edges_time_idx", "time"),
 )
-   
+
 sa.Table("users", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -106,7 +106,7 @@ sa.Table("users", metadata,
     sa.PrimaryKeyConstraint("id", name="users_id_pkey"),
     sa.UniqueConstraint("slug", name="users_unique_slug"),
 )
-  
+
 
 metadata.info["edges"] = {
   'public': {

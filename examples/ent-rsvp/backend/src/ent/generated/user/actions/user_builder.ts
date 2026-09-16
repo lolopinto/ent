@@ -20,6 +20,9 @@ import { NodeType } from "src/ent/generated/types";
 import schema from "src/schema/user_schema";
 
 export interface UserInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   firstName?: string;
   lastName?: string;
   emailAddress?: string;
@@ -45,6 +48,8 @@ export class UserBuilder<
   readonly ent = User;
   readonly nodeType = NodeType.User;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -62,7 +67,16 @@ export class UserBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-User`;
     this.input = action.getInput();
-    const updateInput = (d: UserInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: UserInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -85,6 +99,9 @@ export class UserBuilder<
   }
 
   updateInput(input: UserInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -93,6 +110,7 @@ export class UserBuilder<
   }
 
   deleteInputKey(key: keyof UserInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -157,15 +175,22 @@ export class UserBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("FirstName", input.firstName);
-    addField("LastName", input.lastName);
-    addField("EmailAddress", input.emailAddress);
-    addField("Password", input.password);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("FirstName", "firstName", input.firstName);
+    addField("LastName", "lastName", input.lastName);
+    addField("EmailAddress", "emailAddress", input.emailAddress);
+    addField("Password", "password", input.password);
     return result;
   }
 

@@ -1,59 +1,59 @@
 CREATE TABLE alembic_version (
-    version_num VARCHAR(32) NOT NULL, 
+    version_num VARCHAR(32) NOT NULL,
     CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
 );
 
 CREATE TABLE address_hosted_events_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT address_hosted_events_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX address_hosted_events_edges_time_idx ON address_hosted_events_edges (time);
 
 CREATE TABLE addresses (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    street_name TEXT NOT NULL, 
-    city TEXT NOT NULL, 
-    state TEXT NOT NULL, 
-    zip TEXT NOT NULL, 
-    apartment TEXT, 
-    country TEXT DEFAULT 'US' NOT NULL, 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    street_name TEXT NOT NULL,
+    city TEXT NOT NULL,
+    state TEXT NOT NULL,
+    zip TEXT NOT NULL,
+    apartment TEXT,
+    country TEXT DEFAULT 'US' NOT NULL,
     CONSTRAINT addresses_id_pkey PRIMARY KEY (id)
 );
 
 CREATE TABLE assoc_edge_config (
-    edge_type UUID NOT NULL, 
-    edge_name TEXT NOT NULL, 
-    symmetric_edge BOOLEAN DEFAULT 'false' NOT NULL, 
-    inverse_edge_type UUID, 
-    edge_table TEXT NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    CONSTRAINT assoc_edge_config_edge_type_pkey PRIMARY KEY (edge_type), 
-    CONSTRAINT assoc_edge_config_inverse_edge_type_fkey FOREIGN KEY(inverse_edge_type) REFERENCES assoc_edge_config (edge_type) ON DELETE RESTRICT, 
+    edge_type UUID NOT NULL,
+    edge_name TEXT NOT NULL,
+    symmetric_edge BOOLEAN DEFAULT 'false' NOT NULL,
+    inverse_edge_type UUID,
+    edge_table TEXT NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    CONSTRAINT assoc_edge_config_edge_type_pkey PRIMARY KEY (edge_type),
+    CONSTRAINT assoc_edge_config_inverse_edge_type_fkey FOREIGN KEY(inverse_edge_type) REFERENCES assoc_edge_config (edge_type) ON DELETE RESTRICT,
     CONSTRAINT assoc_edge_config_unique_edge_name UNIQUE (edge_name)
 );
 
 CREATE TABLE comments (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    author_id UUID NOT NULL, 
-    body TEXT NOT NULL, 
-    article_id UUID NOT NULL, 
-    article_type TEXT NOT NULL, 
-    attachment_id UUID, 
-    attachment_type TEXT, 
-    sticker_id UUID, 
-    sticker_type TEXT, 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    author_id UUID NOT NULL,
+    body TEXT NOT NULL,
+    article_id UUID NOT NULL,
+    article_type TEXT NOT NULL,
+    attachment_id UUID,
+    attachment_type TEXT,
+    sticker_id UUID,
+    sticker_type TEXT,
     CONSTRAINT comments_id_pkey PRIMARY KEY (id)
 );
 
@@ -64,69 +64,69 @@ CREATE INDEX comments_attachment_id_idx ON comments (attachment_id);
 CREATE INDEX comments_author_id_idx ON comments (author_id);
 
 CREATE TABLE contact_email_emails_for_contacts_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT contact_email_emails_for_contacts_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX contact_email_emails_for_contacts_edges_time_idx ON contact_email_emails_for_contacts_edges (time);
 
 CREATE TABLE defaults_examples (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    creator_id UUID NOT NULL, 
-    name TEXT NOT NULL, 
-    per_hour INTEGER DEFAULT '1' NOT NULL, 
-    hourly_limit INTEGER NOT NULL, 
-    payloads JSONB NOT NULL, 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    creator_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    per_hour INTEGER DEFAULT '1' NOT NULL,
+    hourly_limit INTEGER NOT NULL,
+    payloads JSONB NOT NULL,
     CONSTRAINT defaults_examples_id_pkey PRIMARY KEY (id)
 );
 
 CREATE TABLE event_hosts_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT event_hosts_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX event_hosts_edges_time_idx ON event_hosts_edges (time);
 
 CREATE TABLE event_rsvps_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT event_rsvps_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX event_rsvps_edges_time_idx ON event_rsvps_edges (time);
 
 CREATE TABLE events (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    name TEXT NOT NULL, 
-    user_id UUID NOT NULL, 
-    start_time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    end_time TIMESTAMP WITHOUT TIME ZONE, 
-    location TEXT NOT NULL, 
-    address_id UUID, 
-    cover_photo BYTEA, 
-    cover_photo2 TEXT, 
-    attachments JSONB, 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    name TEXT NOT NULL,
+    user_id UUID NOT NULL,
+    start_time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    end_time TIMESTAMP WITHOUT TIME ZONE,
+    location TEXT NOT NULL,
+    address_id UUID,
+    cover_photo BYTEA,
+    cover_photo2 TEXT,
+    attachments JSONB,
     CONSTRAINT events_id_pkey PRIMARY KEY (id)
 );
 
@@ -135,220 +135,220 @@ CREATE INDEX event_time_indices ON events (start_time, end_time);
 CREATE INDEX events_user_id_idx ON events (user_id);
 
 CREATE TABLE files (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    name TEXT NOT NULL, 
-    path TEXT NOT NULL, 
-    creator_id UUID NOT NULL, 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    name TEXT NOT NULL,
+    path TEXT NOT NULL,
+    creator_id UUID NOT NULL,
     CONSTRAINT files_id_pkey PRIMARY KEY (id)
 );
 
 CREATE TABLE global_login_auth_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT global_login_auth_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX global_login_auth_edges_time_idx ON global_login_auth_edges (time);
 
 CREATE TABLE holidays (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL, 
-    day_of_week TEXT NOT NULL, 
-    day_of_week_alt TEXT NOT NULL, 
-    label TEXT NOT NULL, 
-    date DATE DEFAULT '2020-02-01' NOT NULL, 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    day_of_week TEXT NOT NULL,
+    day_of_week_alt TEXT NOT NULL,
+    label TEXT NOT NULL,
+    date DATE DEFAULT '2020-02-01' NOT NULL,
     CONSTRAINT holidays_id_pkey PRIMARY KEY (id)
 );
 
 CREATE TABLE hours_of_operations (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL, 
-    day_of_week TEXT NOT NULL, 
-    day_of_week_alt TEXT, 
-    open TIME WITHOUT TIME ZONE NOT NULL, 
-    close TIME WITH TIME ZONE NOT NULL, 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    day_of_week TEXT NOT NULL,
+    day_of_week_alt TEXT,
+    open TIME WITHOUT TIME ZONE NOT NULL,
+    close TIME WITH TIME ZONE NOT NULL,
     CONSTRAINT hours_of_operations_id_pkey PRIMARY KEY (id)
 );
 
 CREATE TABLE object_comments_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT object_comments_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX object_comments_edges_time_idx ON object_comments_edges (time);
 
 CREATE TABLE object_likers_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT object_likers_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX object_likers_edges_time_idx ON object_likers_edges (time);
 
 CREATE TABLE user_created_events_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT user_created_events_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX user_created_events_edges_time_idx ON user_created_events_edges (time);
 
 CREATE TABLE user_friends_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
     CONSTRAINT user_friends_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2)
 );
 
 CREATE INDEX user_friends_edges_time_idx ON user_friends_edges (time);
 
 CREATE TABLE user_self_contact_edges (
-    id1 UUID NOT NULL, 
-    id1_type TEXT NOT NULL, 
-    edge_type UUID NOT NULL, 
-    id2 UUID NOT NULL, 
-    id2_type TEXT NOT NULL, 
-    time TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    data TEXT, 
-    CONSTRAINT user_self_contact_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2), 
+    id1 UUID NOT NULL,
+    id1_type TEXT NOT NULL,
+    edge_type UUID NOT NULL,
+    id2 UUID NOT NULL,
+    id2_type TEXT NOT NULL,
+    time TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    data TEXT,
+    CONSTRAINT user_self_contact_edges_id1_edge_type_id2_pkey PRIMARY KEY (id1, edge_type, id2),
     CONSTRAINT user_self_contact_edges_unique_id1_edge_type UNIQUE (id1, edge_type)
 );
 
 CREATE INDEX user_self_contact_edges_time_idx ON user_self_contact_edges (time);
 
 CREATE TABLE user_statistics (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    user_id UUID NOT NULL, 
-    auth_code_emails_sent INTEGER DEFAULT '0' NOT NULL, 
-    CONSTRAINT user_statistics_id_pkey PRIMARY KEY (id), 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    user_id UUID NOT NULL,
+    auth_code_emails_sent INTEGER DEFAULT '0' NOT NULL,
+    CONSTRAINT user_statistics_id_pkey PRIMARY KEY (id),
     CONSTRAINT user_statistics_unique_user_id UNIQUE (user_id)
 );
 
 CREATE TABLE users (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    first_name TEXT NOT NULL, 
-    last_name TEXT NOT NULL, 
-    email_address TEXT NOT NULL, 
-    phone_number TEXT, 
-    password TEXT, 
-    account_status TEXT, 
-    email_verified BOOLEAN DEFAULT 'false' NOT NULL, 
-    bio TEXT, 
-    nicknames TEXT[], 
-    prefs JSONB, 
-    prefs_list JSONB, 
-    prefs_diff JSON, 
-    days_off TEXT[], 
-    preferred_shift TEXT[], 
-    time_in_ms BIGINT, 
-    fun_uuids UUID[], 
-    new_col TEXT, 
-    new_col2 TEXT, 
-    super_nested_object JSONB, 
-    on_demand_with_privacy JSONB, 
-    on_demand_non_nullable JSONB NOT NULL, 
-    on_demand_non_nullable_list JSONB NOT NULL, 
-    nested_list JSONB[], 
-    int_enum INTEGER, 
-    name_idx TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))) STORED, 
-    CONSTRAINT users_id_pkey PRIMARY KEY (id), 
-    CONSTRAINT users_unique_email_address UNIQUE (email_address), 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    email_address TEXT NOT NULL,
+    phone_number TEXT,
+    password TEXT,
+    account_status TEXT,
+    email_verified BOOLEAN DEFAULT 'false' NOT NULL,
+    bio TEXT,
+    nicknames TEXT[],
+    prefs JSONB,
+    prefs_list JSONB,
+    prefs_diff JSON,
+    days_off TEXT[],
+    preferred_shift TEXT[],
+    time_in_ms BIGINT,
+    fun_uuids UUID[],
+    new_col TEXT,
+    new_col2 TEXT,
+    super_nested_object JSONB,
+    on_demand_with_privacy JSONB,
+    on_demand_non_nullable JSONB NOT NULL,
+    on_demand_non_nullable_list JSONB NOT NULL,
+    nested_list JSONB[],
+    int_enum INTEGER,
+    name_idx TSVECTOR GENERATED ALWAYS AS (to_tsvector('simple', coalesce(first_name, '') || ' ' || coalesce(last_name, ''))) STORED,
+    CONSTRAINT users_id_pkey PRIMARY KEY (id),
+    CONSTRAINT users_unique_email_address UNIQUE (email_address),
     CONSTRAINT users_unique_phone_number UNIQUE (phone_number)
 );
 
 CREATE INDEX user_name_idx ON users USING gin (name_idx);
 
 CREATE TABLE auth_codes (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    code TEXT NOT NULL, 
-    user_id UUID NOT NULL, 
-    email_address TEXT, 
-    phone_number TEXT, 
-    CONSTRAINT auth_codes_id_pkey PRIMARY KEY (id), 
-    CONSTRAINT auth_codes_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE, 
-    CONSTRAINT "uniqueCode" UNIQUE (email_address, code), 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    code TEXT NOT NULL,
+    user_id UUID NOT NULL,
+    email_address TEXT,
+    phone_number TEXT,
+    CONSTRAINT auth_codes_id_pkey PRIMARY KEY (id),
+    CONSTRAINT auth_codes_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE,
+    CONSTRAINT "uniqueCode" UNIQUE (email_address, code),
     CONSTRAINT "uniquePhoneCode" UNIQUE (phone_number, code)
 );
 
 CREATE INDEX auth_codes_user_id_idx ON auth_codes (user_id);
 
 CREATE TABLE contact_emails (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    extra JSONB, 
-    contact_id UUID NOT NULL, 
-    owner_id UUID NOT NULL, 
-    email_address TEXT NOT NULL, 
-    label TEXT NOT NULL, 
-    CONSTRAINT contact_emails_id_pkey PRIMARY KEY (id), 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    extra JSONB,
+    contact_id UUID NOT NULL,
+    owner_id UUID NOT NULL,
+    email_address TEXT NOT NULL,
+    label TEXT NOT NULL,
+    CONSTRAINT contact_emails_id_pkey PRIMARY KEY (id),
     CONSTRAINT contact_emails_owner_id_fkey FOREIGN KEY(owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE INDEX contact_emails_owner_id_idx ON contact_emails (owner_id);
 
 CREATE TABLE contact_phone_numbers (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    extra JSONB, 
-    contact_id UUID NOT NULL, 
-    owner_id UUID NOT NULL, 
-    phone_number TEXT NOT NULL, 
-    label TEXT NOT NULL, 
-    CONSTRAINT contact_phone_numbers_id_pkey PRIMARY KEY (id), 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    extra JSONB,
+    contact_id UUID NOT NULL,
+    owner_id UUID NOT NULL,
+    phone_number TEXT NOT NULL,
+    label TEXT NOT NULL,
+    CONSTRAINT contact_phone_numbers_id_pkey PRIMARY KEY (id),
     CONSTRAINT contact_phone_numbers_owner_id_fkey FOREIGN KEY(owner_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
 CREATE INDEX contact_phone_numbers_owner_id_idx ON contact_phone_numbers (owner_id);
 
 CREATE TABLE contacts (
-    id UUID NOT NULL, 
-    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL, 
-    email_ids UUID[] NOT NULL, 
-    phone_number_ids UUID[] NOT NULL, 
-    first_name TEXT NOT NULL, 
-    last_name TEXT NOT NULL, 
-    user_id UUID NOT NULL, 
-    important_dates JSONB, 
-    attachments JSONB, 
-    CONSTRAINT contacts_id_pkey PRIMARY KEY (id), 
+    id UUID NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    updated_at TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+    email_ids UUID[] NOT NULL,
+    phone_number_ids UUID[] NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    user_id UUID NOT NULL,
+    important_dates JSONB,
+    attachments JSONB,
+    CONSTRAINT contacts_id_pkey PRIMARY KEY (id),
     CONSTRAINT contacts_user_id_fkey FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
 );
 
@@ -391,8 +391,7 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE 'plpgsql';
- 
+
 CREATE OR REPLACE TRIGGER users_created BEFORE INSERT OR UPDATE
        ON users
        FOR EACH ROW EXECUTE PROCEDURE users_notify();;
-

@@ -9,20 +9,14 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
-### Added
-
-### Changed
-
-### Fixed
-
-- preserve imports for nested action input objects so regenerated GraphQL
-  mutations compile when one action embeds another action's nested input (#2043).
-
 ## [0.2.15]
 
 ### Changed
 
-- release `@snowtop/ent` 0.2.15 with `tsent` v0.3.9 for regenerated builders (#2042).
+- release `@snowtop/ent` 0.2.15; use `tsent` v0.3.10 or Docker v0.3.11
+  and regenerate builders (#2042, #2043).
+- update examples and companion package pins to 0.2.15, regenerate example
+  builders, and align SQLite compilation and Bun authentication test types.
 
 ### Fixed
 

@@ -135,21 +135,28 @@ export const ContactEditType: GraphQLFieldConfig<
         firstName: input.firstName,
         lastName: input.lastName,
         importantDates: input.importantDates,
-        attachments: input.attachments?.map((item: any) => ({
-          ...item,
-          fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
-          dupeFileId: item.dupeFileId
-            ? mustDecodeNullableIDFromGQLID(
-                item.dupeFileId?.toString() ?? item.dupeFileId,
-              )
-            : undefined,
-          creatorId: item.creatorId
-            ? mustDecodeNullableIDFromGQLID(
-                item.creatorId?.toString() ?? item.creatorId,
-              )
-            : undefined,
-        })),
-        emails: input.emails,
+        attachments: input.attachments
+          ? input.attachments.map((item: any) => ({
+              ...item,
+              fileId: mustDecodeIDFromGQLID(item.fileId.toString()),
+              dupeFileId: item.dupeFileId
+                ? mustDecodeNullableIDFromGQLID(
+                    item.dupeFileId?.toString() ?? item.dupeFileId,
+                  )
+                : undefined,
+              creatorId: item.creatorId
+                ? mustDecodeNullableIDFromGQLID(
+                    item.creatorId?.toString() ?? item.creatorId,
+                  )
+                : undefined,
+            }))
+          : input.attachments,
+        emails: input.emails
+          ? input.emails.map((item: any) => ({
+              ...item,
+              id: mustDecodeIDFromGQLID(item.id.toString()),
+            }))
+          : input.emails,
       },
     );
     return { contact };

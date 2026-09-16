@@ -20,6 +20,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/note_chunk_schema";
 
 export interface NoteChunkInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   noteId?: ID | Builder<Note, Viewer>;
   workspaceId?: ID | Builder<Workspace, Viewer>;
   ordinal?: number;
@@ -47,6 +50,8 @@ export class NoteChunkBuilder<
   readonly ent = NoteChunk;
   readonly nodeType = NodeType.NoteChunk;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -66,8 +71,20 @@ export class NoteChunkBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-NoteChunk`;
     this.input = action.getInput();
-    const updateInput = (d: NoteChunkInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: NoteChunkInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -102,6 +119,14 @@ export class NoteChunkBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: NoteChunkInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -111,15 +136,18 @@ export class NoteChunkBuilder<
 
   // override immutable field `noteId`
   overrideNoteId(val: ID | Builder<Note, Viewer>) {
+    this.defaultInput.delete("noteId");
     this.input.noteId = val;
   }
 
   // override immutable field `workspaceId`
   overrideWorkspaceId(val: ID | Builder<Workspace, Viewer>) {
+    this.defaultInput.delete("workspaceId");
     this.input.workspaceId = val;
   }
 
   deleteInputKey(key: keyof NoteChunkInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -184,61 +212,54 @@ export class NoteChunkBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("noteID", input.noteId);
-    if (
-      input.noteId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.noteId) {
-        this.orchestrator.addInboundEdge(
-          input.noteId,
-          EdgeType.NoteToChunks,
-          NodeType.Note,
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("noteID", "noteId", input.noteId);
+    addField("workspaceID", "workspaceId", input.workspaceId);
+    addField("ordinal", "ordinal", input.ordinal);
+    addField("content", "content", input.content);
+    addField("tokenCount", "tokenCount", input.tokenCount);
+    addField("embedding", "embedding", input.embedding);
+    {
+      const value = result.get("noteID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.noteId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.noteId &&
-        this.existingEnt.noteId !== input.noteId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.noteId,
-          EdgeType.NoteToChunks,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "noteID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.NoteToChunks,
+        NodeType.Note,
+        { existingIDs },
+      );
     }
-    addField("workspaceID", input.workspaceId);
-    if (
-      input.workspaceId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.workspaceId) {
-        this.orchestrator.addInboundEdge(
-          input.workspaceId,
-          EdgeType.WorkspaceToNoteChunks,
-          NodeType.Workspace,
-        );
+    {
+      const value = result.get("workspaceID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.workspaceId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.workspaceId &&
-        this.existingEnt.workspaceId !== input.workspaceId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.workspaceId,
-          EdgeType.WorkspaceToNoteChunks,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "workspaceID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.WorkspaceToNoteChunks,
+        NodeType.Workspace,
+        { existingIDs },
+      );
     }
-    addField("ordinal", input.ordinal);
-    addField("content", input.content);
-    addField("tokenCount", input.tokenCount);
-    addField("embedding", input.embedding);
     return result;
   }
 

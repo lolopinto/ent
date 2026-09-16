@@ -27,6 +27,9 @@ import { EdgeType, GuestTag, NodeType } from "src/ent/generated/types";
 import schema from "src/schema/guest_schema";
 
 export interface GuestInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   addressId?: ID | null | Builder<Address, Viewer>;
   name?: string;
   eventId?: ID | Builder<Event, Viewer>;
@@ -56,6 +59,8 @@ export class GuestBuilder<
   readonly ent = Guest;
   readonly nodeType = NodeType.Guest;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -73,7 +78,16 @@ export class GuestBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-Guest`;
     this.input = action.getInput();
-    const updateInput = (d: GuestInput) => this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: GuestInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -96,6 +110,9 @@ export class GuestBuilder<
   }
 
   updateInput(input: GuestInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -104,6 +121,7 @@ export class GuestBuilder<
   }
 
   deleteInputKey(key: keyof GuestInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -267,41 +285,41 @@ export class GuestBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("address_id", input.addressId);
-    if (
-      input.addressId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.addressId) {
-        this.orchestrator.addInboundEdge(
-          input.addressId,
-          EdgeType.AddressToLocatedAt,
-          NodeType.Address,
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("address_id", "addressId", input.addressId);
+    addField("Name", "name", input.name);
+    addField("eventID", "eventId", input.eventId);
+    addField("EmailAddress", "emailAddress", input.emailAddress);
+    addField("guestGroupID", "guestGroupId", input.guestGroupId);
+    addField("title", "title", input.title);
+    addField("guest_data_id", "guestDataId", input.guestDataId);
+    addField("tag", "tag", input.tag);
+    {
+      const value = result.get("address_id");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.addressId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.addressId &&
-        this.existingEnt.addressId !== input.addressId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.addressId,
-          EdgeType.AddressToLocatedAt,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "address_id",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.AddressToLocatedAt,
+        NodeType.Address,
+        { existingIDs },
+      );
     }
-    addField("Name", input.name);
-    addField("eventID", input.eventId);
-    addField("EmailAddress", input.emailAddress);
-    addField("guestGroupID", input.guestGroupId);
-    addField("title", input.title);
-    addField("guest_data_id", input.guestDataId);
-    addField("tag", input.tag);
     return result;
   }
 

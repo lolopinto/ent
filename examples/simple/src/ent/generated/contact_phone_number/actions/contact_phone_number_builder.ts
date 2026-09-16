@@ -26,6 +26,9 @@ import { ContactLabel, EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/contact_phone_number_schema";
 
 export interface ContactPhoneNumberInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   extra?: ContactInfoExtra | null;
   contactId?: ID | Builder<Contact, ExampleViewerAlias>;
   ownerId?: ID | Builder<User, ExampleViewerAlias>;
@@ -73,6 +76,8 @@ export class ContactPhoneNumberBuilder<
   readonly ent = ContactPhoneNumber;
   readonly nodeType = NodeType.ContactPhoneNumber;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -98,8 +103,20 @@ export class ContactPhoneNumberBuilder<
     super();
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-ContactPhoneNumber`;
     this.input = action.getInput();
-    const updateInput = (d: ContactPhoneNumberInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: ContactPhoneNumberInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      if (operation === WriteOperation.Insert) {
+        this.__updateInput(input);
+      } else {
+        this.updateInput(input);
+      }
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -134,6 +151,14 @@ export class ContactPhoneNumberBuilder<
       );
     }
 
+    this.__updateInput(input);
+  }
+
+  // Internal defaults use the same input and inverse-edge synchronization.
+  private __updateInput(input: ContactPhoneNumberInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -143,15 +168,18 @@ export class ContactPhoneNumberBuilder<
 
   // override immutable field `contactId`
   overrideContactId(val: ID | Builder<Contact, ExampleViewerAlias>) {
+    this.defaultInput.delete("contactId");
     this.input.contactId = val;
   }
 
   // override immutable field `ownerId`
   overrideOwnerId(val: ID | Builder<User, ExampleViewerAlias>) {
+    this.defaultInput.delete("ownerId");
     this.input.ownerId = val;
   }
 
   deleteInputKey(key: keyof ContactPhoneNumberInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -225,16 +253,23 @@ export class ContactPhoneNumberBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("extra", input.extra);
-    addField("contactID", input.contactId);
-    addField("ownerID", input.ownerId);
-    addField("phoneNumber", input.phoneNumber);
-    addField("label", input.label);
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("extra", "extra", input.extra);
+    addField("contactID", "contactId", input.contactId);
+    addField("ownerID", "ownerId", input.ownerId);
+    addField("phoneNumber", "phoneNumber", input.phoneNumber);
+    addField("label", "label", input.label);
     return result;
   }
 

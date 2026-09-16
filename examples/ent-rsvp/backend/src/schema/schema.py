@@ -7,7 +7,7 @@ from auto_schema.schema_item import FullTextIndex
 
 metadata = sa.MetaData()
 
- 
+
 sa.Table("address_located_at_edges", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -19,7 +19,7 @@ sa.Table("address_located_at_edges", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="address_located_at_edges_id1_edge_type_id2_pkey"),
     sa.Index("address_located_at_edges_time_idx", "time"),
 )
-   
+
 sa.Table("addresses", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -34,7 +34,7 @@ sa.Table("addresses", metadata,
     sa.PrimaryKeyConstraint("id", name="addresses_id_pkey"),
     sa.UniqueConstraint("owner_id", name="addresses_unique_owner_id"),
 )
-   
+
 sa.Table("assoc_edge_config", metadata,
     sa.Column("edge_type", postgresql.UUID(), nullable=False),
     sa.Column("edge_name", sa.Text(), nullable=False),
@@ -47,7 +47,7 @@ sa.Table("assoc_edge_config", metadata,
     sa.UniqueConstraint("edge_name", name="assoc_edge_config_unique_edge_name"),
     sa.ForeignKeyConstraint(["inverse_edge_type"], ["assoc_edge_config.edge_type"], name="assoc_edge_config_inverse_edge_type_fkey", ondelete="RESTRICT"),
 )
-   
+
 sa.Table("auth_codes", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -61,7 +61,7 @@ sa.Table("auth_codes", metadata,
     sa.ForeignKeyConstraint(["guest_id"], ["guests.id"], name="auth_codes_guest_id_fkey", ondelete="CASCADE"),
     sa.UniqueConstraint("email_address", "code", name="uniqueCode"),
 )
-   
+
 sa.Table("event_activities", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -78,7 +78,7 @@ sa.Table("event_activities", metadata,
     sa.PrimaryKeyConstraint("id", name="event_activities_id_pkey"),
     sa.ForeignKeyConstraint(["event_id"], ["events.id"], name="event_activities_event_id_fkey", ondelete="CASCADE"),
 )
-   
+
 sa.Table("event_rsvps", metadata,
     sa.Column("id1", postgresql.UUID(), nullable=False),
     sa.Column("id1_type", sa.Text(), nullable=False),
@@ -90,7 +90,7 @@ sa.Table("event_rsvps", metadata,
     sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="event_rsvps_id1_edge_type_id2_pkey"),
     sa.Index("event_rsvps_time_idx", "time"),
 )
-   
+
 sa.Table("events", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -103,7 +103,7 @@ sa.Table("events", metadata,
     sa.UniqueConstraint("slug", name="events_unique_slug"),
     sa.ForeignKeyConstraint(["creator_id"], ["users.id"], name="events_creator_id_fkey", ondelete="CASCADE"),
 )
-   
+
 sa.Table("guest_data", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -118,7 +118,7 @@ sa.Table("guest_data", metadata,
     sa.ForeignKeyConstraint(["guest_id"], ["guests.id"], name="guest_data_guest_id_fkey", ondelete="CASCADE"),
     sa.ForeignKeyConstraint(["event_id"], ["events.id"], name="guest_data_event_id_fkey", ondelete="CASCADE"),
 )
-   
+
 sa.Table("guest_groups", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -130,7 +130,7 @@ sa.Table("guest_groups", metadata,
     sa.PrimaryKeyConstraint("id", name="guest_groups_id_pkey"),
     sa.ForeignKeyConstraint(["event_id"], ["events.id"], name="guest_groups_event_id_fkey", ondelete="CASCADE"),
 )
-   
+
 sa.Table("guests", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -150,7 +150,7 @@ sa.Table("guests", metadata,
     sa.ForeignKeyConstraint(["guest_group_id"], ["guest_groups.id"], name="guests_guest_group_id_fkey", ondelete="CASCADE"),
     sa.UniqueConstraint("event_id", "email_address", name="uniqueEmail"),
 )
-   
+
 sa.Table("users", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -162,7 +162,7 @@ sa.Table("users", metadata,
     sa.PrimaryKeyConstraint("id", name="users_id_pkey"),
     sa.UniqueConstraint("email_address", name="users_unique_email_address"),
 )
-  
+
 
 metadata.info["edges"] = {
   'public': {

@@ -20,6 +20,9 @@ import { EdgeType, NodeType } from "../../types";
 import schema from "../../../../schema/place_review_schema";
 
 export interface PlaceReviewInput {
+  id?: ID;
+  createdAt?: Date;
+  updatedAt?: Date;
   placeId?: ID | Builder<Place, Viewer>;
   reviewerId?: ID | Builder<User, Viewer>;
   rating?: number;
@@ -45,6 +48,8 @@ export class PlaceReviewBuilder<
   readonly ent = PlaceReview;
   readonly nodeType = NodeType.PlaceReview;
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -64,8 +69,16 @@ export class PlaceReviewBuilder<
   ) {
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-PlaceReview`;
     this.input = action.getInput();
-    const updateInput = (d: PlaceReviewInput) =>
-      this.updateInput.apply(this, [d]);
+    const updateInput = (
+      input: PlaceReviewInput,
+      operation?: WriteOperation,
+      defaultKeys?: ReadonlySet<string>,
+    ) => {
+      this.updateInput(input);
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
+    };
 
     this.orchestrator = new Orchestrator({
       viewer,
@@ -88,6 +101,9 @@ export class PlaceReviewBuilder<
   }
 
   updateInput(input: PlaceReviewInput) {
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     // override input
     this.input = {
       ...this.input,
@@ -96,6 +112,7 @@ export class PlaceReviewBuilder<
   }
 
   deleteInputKey(key: keyof PlaceReviewInput) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -160,59 +177,52 @@ export class PlaceReviewBuilder<
 
     const result = new Map<string, any>();
 
-    const addField = function (key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (
+        value !== undefined &&
+        (!this.defaultInput.has(inputKey) ||
+          this.defaultInput.get(inputKey) !== value)
+      ) {
         result.set(key, value);
       }
     };
-    addField("placeID", input.placeId);
-    if (
-      input.placeId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.placeId) {
-        this.orchestrator.addInboundEdge(
-          input.placeId,
-          EdgeType.PlaceToReviews,
-          NodeType.Place,
-        );
+    addField("id", "id", input.id);
+    addField("createdAt", "createdAt", input.createdAt);
+    addField("updatedAt", "updatedAt", input.updatedAt);
+    addField("placeID", "placeId", input.placeId);
+    addField("reviewerID", "reviewerId", input.reviewerId);
+    addField("rating", "rating", input.rating);
+    addField("body", "body", input.body);
+    {
+      const value = result.get("placeID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.placeId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.placeId &&
-        this.existingEnt.placeId !== input.placeId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.placeId,
-          EdgeType.PlaceToReviews,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "placeID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.PlaceToReviews,
+        NodeType.Place,
+        { existingIDs },
+      );
     }
-    addField("reviewerID", input.reviewerId);
-    if (
-      input.reviewerId !== undefined ||
-      this.operation === WriteOperation.Delete
-    ) {
-      if (input.reviewerId) {
-        this.orchestrator.addInboundEdge(
-          input.reviewerId,
-          EdgeType.UserToPlaceReviews,
-          NodeType.User,
-        );
+    {
+      const value = result.get("reviewerID");
+      let existingIDs: ID[] = [];
+      if (this.existingEnt) {
+        const stored = this.existingEnt.reviewerId;
+        existingIDs = stored == null ? [] : [stored];
       }
-      if (
-        this.existingEnt &&
-        this.existingEnt.reviewerId &&
-        this.existingEnt.reviewerId !== input.reviewerId
-      ) {
-        this.orchestrator.removeInboundEdge(
-          this.existingEnt.reviewerId,
-          EdgeType.UserToPlaceReviews,
-        );
-      }
+      this.orchestrator.__setFieldEdges(
+        "reviewerID",
+        value === undefined ? undefined : value === null ? [] : [value],
+        EdgeType.UserToPlaceReviews,
+        NodeType.User,
+        { existingIDs },
+      );
     }
-    addField("rating", input.rating);
-    addField("body", input.body);
     return result;
   }
 
