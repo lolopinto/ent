@@ -6,6 +6,9 @@ on:
     paths:
       - .github/workflows/new_docker_image.yml
       - release_image/main.go
+      - release_image/main_test.go
+      - ts/Dockerfile
+      - ts/Dockerfile.tmpl
       - release_image/docker_version.txt
       - release_image/tsent_version.txt
       - release_image/auto_schema_version.txt
