@@ -14,7 +14,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 ### Fixed
 
 - enable SQLite codegen in arm64 images by cross-compiling tsent with its C
-  dependency enabled. Includes tsent v0.3.10 and auto_schema 0.0.41.
+  dependency enabled. Includes tsent v0.3.10 and auto_schema 0.0.41 (#2045).
 
 ## [0.3.11]
 

@@ -14,7 +14,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Changed
 
 - release `@snowtop/ent` 0.2.15; use `tsent` v0.3.10 or Docker v0.3.12
-  and regenerate builders (#2042, #2043).
+  and regenerate builders (#2042, #2043, #2045).
 - update examples and companion package pins to 0.2.15, regenerate example
   builders, and align SQLite compilation and Bun authentication test types (#2044).
 
