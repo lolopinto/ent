@@ -9,6 +9,15 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+- preserve imports for nested action input objects so regenerated GraphQL
+  mutations compile when one action embeds another action's nested input.
+
 ## [0.3.10]
 
 ### Changed

@@ -9,6 +9,15 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+- preserve imports for nested action input objects so regenerated GraphQL
+  mutations compile when one action embeds another action's nested input.
+
 ## [0.2.15]
 
 ### Changed
