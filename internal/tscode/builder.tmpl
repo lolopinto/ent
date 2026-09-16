@@ -18,7 +18,7 @@
   {{else -}}
   {
   {{end -}}
-    const value = input.{{$tsFieldName}};
+    const value = {{if .UpdateInput}}input.{{$tsFieldName}}{{else}}result.get("{{$field.FieldName}}"){{end}};
     {{if not .UpdateInput -}}
       let existingIDs: {{useTypeImport "ID"}}[] = [];
       if (this.existingEnt) {
@@ -131,6 +131,8 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
   readonly ent = {{$node}};
   readonly nodeType = {{useImport "NodeType"}}.{{$node}};
   private input: TInput;
+  // Values injected by the runtime remain readable without counting as edits.
+  private defaultInput = new Map<string, any>();
   private m: Map<string, any> = new Map();
 
   public constructor(
@@ -145,17 +147,20 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
     {{ end -}}
     this.placeholderID = `$ent.idPlaceholderID$ ${randomNum()}-{{$node}}`;
     this.input = action.getInput();
-    {{ if .FieldInfo.GetImmutableFields -}}
-    const updateInput = (input: {{$input}}, operation?: WriteOperation) => {
+    const updateInput = (input: {{$input}}, operation?: WriteOperation, defaultKeys?: ReadonlySet<string>) => {
+      {{ if .FieldInfo.GetImmutableFields -}}
       if (operation === WriteOperation.Insert) {
         this.__updateInput(input);
       } else {
         this.updateInput(input);
       }
+      {{ else -}}
+      this.updateInput(input);
+      {{ end -}}
+      for (const key of defaultKeys ?? []) {
+        this.defaultInput.set(key, input[key]);
+      }
     };
-    {{ else -}}
-    const updateInput = (d: {{$input}}) => this.updateInput.apply(this, [d]);
-    {{ end -}}
 
     this.orchestrator = new {{useImport "Orchestrator"}}({
       viewer,
@@ -197,6 +202,9 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
   // Internal defaults use the same input and inverse-edge synchronization.
   private __updateInput(input: {{$input}}) {
     {{ end -}}
+    for (const key of Object.keys(input)) {
+      this.defaultInput.delete(key);
+    }
     {{range $field := .FieldInfo.NotEditableInverseEdgeFieldsWithDefaults -}}
       {{ template "inverseEdge" (dict "Field" $field "Config" $cfg "Node" $node "Package" $pkg "UpdateInput" true) }}
     {{end -}}
@@ -211,6 +219,7 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
     {{ range $f := $immutableFields }}
       // override immutable field `{{$f.TsBuilderFieldName}}`
       {{$f.GetImmutableOverrideFieldNameInBuilder}}(val: {{$f.TsBuilderType $cfg}}) {
+      this.defaultInput.delete("{{$f.TsBuilderFieldName}}");
       this.input.{{$f.TsBuilderFieldName}} = val;
       }
     {{end }}
@@ -218,6 +227,7 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
 
 
   deleteInputKey(key: keyof {{.Node}}Input) {
+    this.defaultInput.delete(String(key));
     delete this.input[key];
   }
 
@@ -299,13 +309,13 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
 
     const result = new Map<string, any>();
 
-    const addField = function(key: string, value: any) {
-      if (value !== undefined) {
+    const addField = (key: string, inputKey: string, value: any) => {
+      if (value !== undefined && (!this.defaultInput.has(inputKey) || this.defaultInput.get(inputKey) !== value)) {
         result.set(key, value);
       }
     };
     {{range $field := .FieldInfo.EntFields -}}
-      addField("{{$field.FieldName}}", input.{{$field.TsBuilderFieldName}});
+      addField("{{$field.FieldName}}", "{{$field.TsBuilderFieldName}}", input.{{$field.TsBuilderFieldName}});
     {{end -}}
     {{range $field := .FieldInfo.GetInverseEdgeFieldsInBuilder -}}
       {{ template "inverseEdge" (dict "Field" $field "Config" $cfg "Node" $node "Package" $pkg) }}

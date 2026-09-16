@@ -11,26 +11,32 @@ import type {
 } from "./schema";
 import { PrivacyPolicy } from "../core/base";
 
-let tsFields: FieldMap = {
-  createdAt: TimestampType({
-    hideFromGraphQL: true,
-    disableUserEditable: true,
-    defaultValueOnCreate: () => {
-      return new Date();
-    },
-  }),
-  updatedAt: TimestampType({
-    hideFromGraphQL: true,
-    disableUserEditable: true,
-    defaultValueOnCreate: () => {
-      return new Date();
-    },
-    onlyUpdateIfOtherFieldsBeingSet_BETA: true,
-    defaultValueOnEdit: () => {
-      return new Date();
-    },
-  }),
-};
+function timestampFields(withTimezone: boolean): FieldMap {
+  return {
+    createdAt: TimestampType({
+      withTimezone,
+      hideFromGraphQL: true,
+      disableUserEditable: true,
+      defaultValueOnCreate: () => {
+        return new Date();
+      },
+    }),
+    updatedAt: TimestampType({
+      withTimezone,
+      hideFromGraphQL: true,
+      disableUserEditable: true,
+      defaultValueOnCreate: () => {
+        return new Date();
+      },
+      onlyUpdateIfOtherFieldsBeingSet_BETA: true,
+      defaultValueOnEdit: () => {
+        return new Date();
+      },
+    }),
+  };
+}
+
+let tsFields = timestampFields(false);
 
 // Timestamps is a Pattern that adds a createdAt and updatedAt timestamp fields to the ent
 export const Timestamps: Pattern = {
@@ -55,25 +61,7 @@ let nodeFields: FieldMap = {
 let nodeFieldsWithTZ: FieldMap = {
   // inconsistent naming :(
   id: nodeField,
-  createdAt: TimestampType({
-    hideFromGraphQL: true,
-    disableUserEditable: true,
-    defaultValueOnCreate: () => {
-      return new Date();
-    },
-    withTimezone: true,
-  }),
-  updatedAt: TimestampType({
-    hideFromGraphQL: true,
-    disableUserEditable: true,
-    defaultValueOnCreate: () => {
-      return new Date();
-    },
-    defaultValueOnEdit: () => {
-      return new Date();
-    },
-    withTimezone: true,
-  }),
+  ...timestampFields(true),
 };
 
 // Node is a Pattern that adds 3 fields to the ent: (id, createdAt, and updatedAt timestamps)

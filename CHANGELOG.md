@@ -9,6 +9,18 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+### Fixed
+
+- preserve no-op edits when triggers remove all explicit field changes, without
+  treating computed internal defaults as edits. Explicit internal assignments
+  still persist. Requires regenerated builders with the updated runtime (#2039).
+- give `EntSchemaWithTZ` the same conditional `updatedAt` behavior as
+  `EntSchema` and `Timestamps` (#2040).
+
 ## [0.2.14]
 
 ### Changed
