@@ -216,7 +216,7 @@ func TestActionOnlyObjectListFieldConfigDecodesNestedGraphQLIDs(t *testing.T) {
 	assert.Contains(
 		t,
 		contents,
-		"registrations: ((v: any) => v == null ? v : v.map((item: any) => ({...item, registryId: mustDecodeIDFromGQLID(item.registryId.toString())})))(input.registrations),",
+		"registrations: ((v: any) => v == null ? v : v.map((item: any) => item == null ? item : ({...item, registryId: mustDecodeIDFromGQLID(item.registryId.toString())})))(input.registrations),",
 	)
 	assert.Contains(t, actionConfigImportNames(createActionCfg), "mustDecodeIDFromGQLID")
 }
@@ -297,14 +297,15 @@ func TestNestedActionInputImportsReferencedActionInput(t *testing.T) {
 
 func TestNestedStructActionInputConversion(t *testing.T) {
 	schema := testhelper.ParseSchemaForTest(t, map[string]string{
+		"holiday_schema.ts": testhelper.GetCodeWithSchema(`import {EntSchema,StringType} from "{schema}"; export default new EntSchema({fields:{name:StringType()}});`),
 		"settings_schema.ts": testhelper.GetCodeWithSchema(`
    import { EntSchema, ActionOperation, StructType, StructTypeAsList, UUIDType, UUIDListType } from "{schema}";
    export default new EntSchema({ fields: {
     nested: StructType({tsType: "Outer", nullable: true, fields: {
      entries: StructTypeAsList({tsType: "Entry", nullable: true, fields: {
-      reference: UUIDType({nullable: true}),
+      reference: UUIDType({nullable: true, graphQLIDType: "Holiday"}),
       raw: UUIDType({nullable: true, disableBase64Encode: true}),
-      references: UUIDListType({nullable: true}),
+      references: UUIDListType({nullable: true, graphQLIDType: "Holiday"}),
      }}),
     }}),
    }, actions: [{operation: ActionOperation.Create}] });

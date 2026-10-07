@@ -499,6 +499,21 @@ func (qfcg *queryFieldConfigBuilder) getArgMap(cd *CustomData) map[string]*Custo
 }
 
 func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Processor, s *gqlSchema, cd *CustomData, field CustomField) (*fieldConfig, error) {
+	// Root resolvers opt in explicitly; preserve legacy raw root ID results.
+	nodeType := ""
+	if field.GraphQLIDType != "" {
+		if len(field.Results) != 1 || field.Results[0].Type != "ID" || field.Connection || field.Results[0].Connection {
+			return nil, fmt.Errorf("graphQLIDType requires an ID scalar or list: %s", field.GraphQLName)
+		}
+		var err error
+		nodeType, err = scalarReferenceNodeType(processor, field.GraphQLName, field.GraphQLIDType)
+		if err != nil {
+			return nil, err
+		}
+		if !processor.Config.Base64EncodeIDs() || field.DisableBase64Encode {
+			nodeType = ""
+		}
+	}
 	var argImports []*tsimport.ImportPath
 
 	if field.Connection {
@@ -641,6 +656,13 @@ func buildFieldConfigFrom(builder fieldConfigBuilder, processor *codegen.Process
 		}
 	}
 
+	if nodeType != "" {
+		// Wrap the complete body so both method and inline resolvers retain
+		// their argument handling, early returns, and asynchronous results.
+		functionContents = []string{fmt.Sprintf("return encodeGQLIDReference(await (async () => {\n%s\n})(), %q);", strings.Join(functionContents, "\n"), nodeType)}
+		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("encodeGQLIDReference"))
+	}
+
 	// fieldConfig can have connection
 	result := &fieldConfig{
 		Exported:         true,
@@ -727,7 +749,7 @@ func buildObjectType(processor *codegen.Processor, cd *CustomData, s *gqlSchema,
 
 	for _, f := range fields {
 		// maybe we'll care for input vs Payload here at some point
-		gqlField, err := getCustomGQLField(processor, cd, f, s, "obj")
+		gqlField, err := getCustomGQLField(processor, cd, f, s, "obj", gqlType == "GraphQLInputObjectType")
 		if err != nil {
 			return nil, err
 		}
@@ -803,7 +825,7 @@ func processCustomFields(processor *codegen.Processor, cd *CustomData, s *gqlSch
 				continue
 			}
 
-			gqlField, err := getCustomGQLField(processor, cd, field, s, instance)
+			gqlField, err := getCustomGQLField(processor, cd, field, s, instance, false)
 			if err != nil {
 				return err
 			}
@@ -874,7 +896,7 @@ func isConnection(field *CustomField) bool {
 
 // should be obj except if it's nested...
 // eg obj.edge for edges
-func getCustomGQLField(processor *codegen.Processor, cd *CustomData, field CustomField, s *gqlSchema, instance string) (*fieldType, error) {
+func getCustomGQLField(processor *codegen.Processor, cd *CustomData, field CustomField, s *gqlSchema, instance string, input bool) (*fieldType, error) {
 	if field.Connection {
 		return nil, fmt.Errorf("field is a connection. this should be handled elsewhere")
 	}
@@ -932,7 +954,7 @@ func getCustomGQLField(processor *codegen.Processor, cd *CustomData, field Custo
 	if field.GraphQLIDType != "" && (len(field.Results) != 1 || field.Results[0].Type != "ID" || field.Results[0].Connection) {
 		return nil, fmt.Errorf("graphQLIDType requires an ID scalar or list: %s", field.GraphQLName)
 	}
-	if len(field.Results) == 1 && field.Results[0].Type == "ID" {
+	if !input && len(field.Results) == 1 && field.Results[0].Type == "ID" {
 		nodeType, err := scalarReferenceNodeType(processor, field.GraphQLName, field.GraphQLIDType)
 		if err != nil {
 			return nil, err
@@ -1152,7 +1174,7 @@ func processCustomInterfaces(processor *codegen.Processor, cd *CustomData, s *gq
 		}
 
 		for _, f := range fields {
-			gqlField, err := getCustomGQLField(processor, cd, f, s, "obj")
+			gqlField, err := getCustomGQLField(processor, cd, f, s, "obj", false)
 			if err != nil {
 				return err
 			}

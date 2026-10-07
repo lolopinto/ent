@@ -3085,44 +3085,6 @@ func getActionPathFromAction(a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", a.GetNodeInfo().PackageName, names.ToFilePathName(a.GetActionName()))
 }
 
-func checkUnionType(cfg codegenapi.Config, nodeName string, f *field.Field, curr []string) ([]string, bool, error) {
-	t := f.GetFieldType()
-
-	t2, ok := t.(enttype.TSWithSubFields)
-	if ok {
-		// can have subFields nil and unionFields
-		subFields := t2.GetSubFields()
-		if subFields != nil {
-			newCurr := append(curr, f.GetGraphQLName())
-			actualSubFields := subFields.([]*input.Field)
-
-			fi, err := field.NewFieldInfoFromInputs(cfg, nodeName, actualSubFields, &field.Options{})
-			if err != nil {
-				return nil, false, err
-			}
-			for _, v := range fi.EntFields() {
-				ret, done, err := checkUnionType(cfg, nodeName, v, newCurr)
-				if err != nil {
-					return nil, false, err
-				}
-				if done {
-					return ret, done, nil
-				}
-			}
-		}
-	}
-	t3, ok2 := t.(enttype.TSWithUnionFields)
-	if ok2 {
-		unionFields := t3.GetUnionFields()
-		if unionFields != nil {
-			newCurr := append(curr, f.GetGraphQLName())
-			return newCurr, true, nil
-		}
-	}
-
-	return nil, false, nil
-}
-
 // prefix:input or args
 // returns (`foo: input.foo`, imports)
 func processActionField(processor *codegen.Processor, a action.Action, f action.ActionField, prefix string) (string, []*tsimport.ImportPath) {
@@ -3146,7 +3108,7 @@ func processActionField(processor *codegen.Processor, a action.Action, f action.
 		argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(processor.Config), true)...)
 	}
 
-	inputField, nestedImports := renderNestedActionInput(processor, a, f.GetFieldType(), inputField, map[string]bool{})
+	inputField, nestedImports := renderNestedActionInput(processor, a, f.GetFieldType(), inputField, map[string]*nestedInputVisit{})
 	argImports = append(argImports, nestedImports...)
 
 	return fmt.Sprintf(
@@ -3154,25 +3116,6 @@ func processActionField(processor *codegen.Processor, a action.Action, f action.
 		f.TSPublicAPIName(),
 		inputField,
 	), argImports
-}
-
-func customInterfaceForActionField(processor *codegen.Processor, a action.Action, tsInterface string) (*customtype.CustomInterface, bool) {
-	ci, ok := processor.Schema.CustomInterfaces[tsInterface]
-	if ok {
-		return ci, true
-	}
-	roots := append([]*customtype.CustomInterface{}, a.GetCustomInterfaces()...)
-	for _, ci := range processor.Schema.CustomInterfaces {
-		roots = append(roots, ci)
-	}
-	for _, root := range roots {
-		for _, ct := range root.GetAllCustomTypes() {
-			if ci, ok := ct.(*customtype.CustomInterface); ok && ci.TSType == tsInterface {
-				return ci, true
-			}
-		}
-	}
-	return nil, false
 }
 
 func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) (*fieldConfig, error) {
@@ -3234,42 +3177,6 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			inputFieldLine,
 		)
 		argImports = append(argImports, imports...)
-	}
-
-	lists := [][]string{}
-	for _, f := range a.GetFields() {
-		list, union, err := checkUnionType(processor.Config, nodeData.Node, f, []string{})
-
-		if err != nil {
-			return nil, err
-		}
-		if union {
-			lists = append(lists, list)
-		}
-	}
-
-	if len(lists) > 0 {
-		var sb strings.Builder
-		// outer list
-		sb.WriteString("[")
-		for _, list := range lists {
-			// inner list
-			sb.WriteString("[")
-			for _, str := range list {
-				sb.WriteString(strconv.Quote(str))
-				sb.WriteString(",")
-			}
-			// inner list
-			sb.WriteString("]")
-		}
-		// outer list
-		sb.WriteString("]")
-
-		result.FunctionContents = append(
-			result.FunctionContents,
-			fmt.Sprintf("input = transformUnionTypes(input, %s);", sb.String()),
-		)
-		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("transformUnionTypes"))
 	}
 
 	if a.GetOperation() == ent.CreateAction {
@@ -3500,9 +3407,6 @@ func inferStructFieldEdge(processor *codegen.Processor, ci *customtype.CustomInt
 	}
 
 	graphQLName := names.ToGraphQLName(processor.Config, fieldName)
-	if graphQLName == f.GetGraphQLName() {
-		return nil
-	}
 	for _, other := range ci.Fields {
 		if other != f && other.ExposeToGraphQL() && getStructFieldGraphQLName(processor, other) == graphQLName {
 			return nil
@@ -3616,7 +3520,7 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 
 					// Retain existing inferred node fields for compatibility,
 					// while also exposing their independently encoded saved ID.
-					if getDeclaredStructFieldEdgeInfo(f) != nil {
+					if getDeclaredStructFieldEdgeInfo(f) != nil || e.GraphQLEdgeName() == f.GetGraphQLName() {
 						continue
 					}
 				}

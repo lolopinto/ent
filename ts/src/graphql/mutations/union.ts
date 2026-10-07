@@ -37,3 +37,24 @@ export function transformUnionTypes<T extends Data>(
   }
   return input;
 }
+
+/** Convert the selected GraphQL union member before removing its wrapper.
+ * Generated member converters handle scalar IDs, nested structs and unions.
+ */
+export function transformUnionInput(
+  input: Data | null | undefined,
+  members: Record<string, (value: any) => any>,
+): any {
+  if (input == null) {
+    return input;
+  }
+  const keys = Object.keys(input);
+  if (keys.length !== 1) {
+    throw new Error(`can only only pass one key of union. passed ${keys.length}`);
+  }
+  const key = keys[0];
+  if (!Object.prototype.hasOwnProperty.call(members, key)) {
+    throw new Error(`unknown union member ${key}`);
+  }
+  return members[key](input[key]);
+}

@@ -417,3 +417,7 @@ privacy when exposing its value.
 Do not encode the value manually when using this metadata or inference. Use
 `disableBase64Encode: true` to return the accessor's value unchanged. The global
 `disableBase64Encoding` option also disables scalar reference encoding.
+
+Explicit `graphQLIDType` metadata also works on `@gqlQuery` and `@gqlMutation`
+ID results, including lists. Root resolvers require explicit metadata; their
+names alone do not enable encoding. Both encoding opt-outs apply to root results.
