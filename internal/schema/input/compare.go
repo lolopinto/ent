@@ -106,6 +106,8 @@ func fieldEqual(existingField, field *Field) bool {
 		existingField.HideFromGraphQL == field.HideFromGraphQL &&
 		PrivateOptionsEqual(existingField.Private, field.Private) &&
 		existingField.GraphQLName == field.GraphQLName &&
+		existingField.GraphQLIDType == field.GraphQLIDType &&
+		existingField.DisableBase64Encode == field.DisableBase64Encode &&
 		existingField.Index == field.Index &&
 		existingField.IndexConcurrently == field.IndexConcurrently &&
 		existingField.IndexWhere == field.IndexWhere &&

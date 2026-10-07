@@ -48,6 +48,7 @@ type Field struct {
 	dbName                   string // storage key/column name for the field
 	dbTypeOverride           string
 	dbExtension              string
+	graphQLIDType            string
 	graphQLName              string
 	exposeToActionsByDefault bool
 	disableBuilderType       bool
@@ -107,6 +108,7 @@ func newFieldFromInput(cfg codegenapi.Config, nodeName string, f *input.Field) (
 		indexConcurrently:          f.IndexConcurrently,
 		indexWhere:                 f.IndexWhere,
 		graphQLName:                f.GraphQLName,
+		graphQLIDType:              f.GraphQLIDType,
 		defaultValue:               f.ServerDefault,
 		unique:                     f.Unique,
 		dbTypeOverride:             f.Type.PostgresType,
@@ -952,6 +954,7 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 		polymorphic:                f.polymorphic,
 		index:                      f.index,
 		graphQLName:                f.graphQLName,
+		graphQLIDType:              f.graphQLIDType,
 		defaultValue:               f.defaultValue,
 		unique:                     f.unique,
 		dbColumn:                   f.dbColumn,
@@ -1007,3 +1010,5 @@ func (f *Field) Clone(opts ...Option) (*Field, error) {
 	}
 	return ret, nil
 }
+
+func (f *Field) GraphQLIDType() string { return f.graphQLIDType }

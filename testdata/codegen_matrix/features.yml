@@ -1,6 +1,11 @@
 version: 1
 
 fixtures:
+  - id: scalar_references
+    path: fixtures/scalar_references
+    description: Scalar reference IDs across global structs, nested lists, decorators and generated mutations.
+    surfaces: [parse_ts_schema, ts_codegen, graphql_codegen, generated_tsc, idempotence, runtime_tests]
+    covers: [struct.scalar_reference_ids]
   - id: immutable_defaults
     path: fixtures/immutable_defaults
     description: >
@@ -962,6 +967,10 @@ features:
       - ts/src/action/transformed_orchestrator.test.ts
       - examples/simple/src/ent/tests/transform_write_struct_input.test.ts
     rationale: Runtime transformWrite/input-shape behavior is covered outside compile-only codegen matrix.
+  - id: struct.scalar_reference_ids
+    owns: [input.Field.GraphQLIDType]
+    mode: covered
+    rationale: Generated scalar references encode without node loads and decode through nested mutation inputs.
   - id: struct.uuid_node_inference
     owns: []
     mode: explicit

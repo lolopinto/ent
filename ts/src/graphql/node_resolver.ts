@@ -118,7 +118,21 @@ export function mustDecodeNullableIDFromGQLID(
 }
 
 // This takes an ent and returns the graphql id
-export function encodeGQLID(node: Ent): string {
+export function encodeGQLID(node: Pick<Ent, "id" | "nodeType">): string {
   // let's do 3 parts. we take the "node" prefix
   return btoa(`node:${node.nodeType}:${node.id}`);
+}
+
+/** Encode a saved scalar reference without loading or authorizing its node.
+ * The resolver exposing the containing value remains responsible for privacy.
+ */
+export function encodeGQLIDReference(
+  value: ID | null | undefined | readonly (ID | null | undefined)[],
+  nodeType: string,
+): string | null | undefined | (string | null | undefined)[] {
+  const encode = (id: ID | null | undefined) =>
+    id == null ? id : encodeGQLID({ id, nodeType });
+  return Array.isArray(value)
+    ? value.map(encode)
+    : encode(value as ID | null | undefined);
 }

@@ -2323,6 +2323,9 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 
 	for _, edge := range nodeData.EdgeInfo.FieldEdges {
 		f := fieldInfo.GetFieldByName(edge.FieldName)
+		if f != nil && f.GraphQLIDType() != "" {
+			continue
+		}
 		// if field was already hidden, don't create edge for it
 		if !f.ExposeToGraphQL() {
 			continue
@@ -2370,6 +2373,20 @@ func buildNodeForObject(processor *codegen.Processor, nodeMap schema.NodeMapInfo
 				gqlField.FunctionContents = []string{fmt.Sprintf("return obj.%s();", field.TSPublicAPIName())}
 			} else {
 				gqlField.FunctionContents = []string{fmt.Sprintf("return obj.%s;", field.TSPublicAPIName())}
+			}
+		}
+		if field.GraphQLIDType() != "" {
+			gqlField.ResolverMethod = ""
+			nodeType, err := fieldScalarReferenceNodeType(processor, field)
+			if err != nil {
+				return nil, err
+			}
+			if nodeType != "" {
+				value := fmt.Sprintf("obj.%s", field.TSPublicAPIName())
+				if asyncAccessor {
+					value = "await " + value + "()"
+				}
+				setScalarIDResolver(gqlField, value, nodeType)
 			}
 		}
 		if err := result.addField(gqlField); err != nil {
@@ -3068,44 +3085,6 @@ func getActionPathFromAction(a action.Action) string {
 	return fmt.Sprintf("src/ent/%s/actions/%s", a.GetNodeInfo().PackageName, names.ToFilePathName(a.GetActionName()))
 }
 
-func checkUnionType(cfg codegenapi.Config, nodeName string, f *field.Field, curr []string) ([]string, bool, error) {
-	t := f.GetFieldType()
-
-	t2, ok := t.(enttype.TSWithSubFields)
-	if ok {
-		// can have subFields nil and unionFields
-		subFields := t2.GetSubFields()
-		if subFields != nil {
-			newCurr := append(curr, f.GetGraphQLName())
-			actualSubFields := subFields.([]*input.Field)
-
-			fi, err := field.NewFieldInfoFromInputs(cfg, nodeName, actualSubFields, &field.Options{})
-			if err != nil {
-				return nil, false, err
-			}
-			for _, v := range fi.EntFields() {
-				ret, done, err := checkUnionType(cfg, nodeName, v, newCurr)
-				if err != nil {
-					return nil, false, err
-				}
-				if done {
-					return ret, done, nil
-				}
-			}
-		}
-	}
-	t3, ok2 := t.(enttype.TSWithUnionFields)
-	if ok2 {
-		unionFields := t3.GetUnionFields()
-		if unionFields != nil {
-			newCurr := append(curr, f.GetGraphQLName())
-			return newCurr, true, nil
-		}
-	}
-
-	return nil, false, nil
-}
-
 // prefix:input or args
 // returns (`foo: input.foo`, imports)
 func processActionField(processor *codegen.Processor, a action.Action, f action.ActionField, prefix string) (string, []*tsimport.ImportPath) {
@@ -3129,102 +3108,14 @@ func processActionField(processor *codegen.Processor, a action.Action, f action.
 		argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(processor.Config), true)...)
 	}
 
-	var customList []string
-	var listType bool
-
-	customType, ok := f.GetFieldType().(enttype.TSTypeWithCustomType)
-	if ok {
-		cti := customType.GetCustomTypeInfo()
-		if cti != nil {
-
-			ci, ok := customInterfaceForActionField(processor, a, cti.TSInterface)
-			if ok {
-				var fields []action.ActionField
-				for _, f := range ci.Fields {
-					fields = append(fields, f)
-				}
-				for _, f := range ci.NonEntFields {
-					fields = append(fields, f)
-				}
-				for _, f := range fields {
-					nestedType := f.GetFieldType()
-
-					customRenderer, ok := nestedType.(enttype.CustomGQLRenderer)
-					if !ok {
-						continue
-					}
-					listType = enttype.IsListType(typ)
-					nestedInputField := fmt.Sprintf("%s.%s", inputField, f.GetGraphQLName())
-
-					if listType {
-						// if list type, operate on "item in a loop"
-						nestedInputField = fmt.Sprintf("item.%s", f.GetGraphQLName())
-					}
-					nestedInputFieldPrefix := nestedInputField
-					nestedInputField = customRenderer.CustomGQLRender(processor.Config, nestedInputField)
-					if nestedInputField == nestedInputFieldPrefix {
-						// nothing changed here
-						continue
-					}
-					argImports = append(argImports, getGQLFileImports(customRenderer.ArgImports(processor.Config), true)...)
-
-					if f.Nullable() {
-						nestedInputField = fmt.Sprintf("%s: %s ? %s: undefined",
-							f.TSPublicAPIName(),
-							nestedInputFieldPrefix,
-							nestedInputField,
-						)
-					} else {
-						nestedInputField = fmt.Sprintf("%s: %s", f.TSPublicAPIName(), nestedInputField)
-					}
-
-					customList = append(customList, nestedInputField)
-				}
-			}
-		}
-	}
-
-	resPrefix := inputField
-	res := resPrefix
-
-	if len(customList) > 0 {
-		if listType {
-			res = fmt.Sprintf("{...item,  %s}", strings.Join(customList, ","))
-
-		} else {
-			res = fmt.Sprintf("{...%s,  %s}", resPrefix, strings.Join(customList, ","))
-		}
-
-		if listType {
-			if inputOptional {
-				res = fmt.Sprintf("%s ? %s.map((item: any) =>  ( %s )) : %s", resPrefix, resPrefix, res, resPrefix)
-			} else {
-				res = fmt.Sprintf("%s.map((item: any) =>  ( %s ))", resPrefix, res)
-			}
-		} else if f.Nullable() {
-			res = fmt.Sprintf("%s ? %s: undefined", resPrefix, res)
-		}
-		inputField = res
-	}
+	inputField, nestedImports := renderNestedActionInput(processor, a, f.GetFieldType(), inputField, map[string]*nestedInputVisit{})
+	argImports = append(argImports, nestedImports...)
 
 	return fmt.Sprintf(
 		"%s: %s,",
 		f.TSPublicAPIName(),
 		inputField,
 	), argImports
-}
-
-func customInterfaceForActionField(processor *codegen.Processor, a action.Action, tsInterface string) (*customtype.CustomInterface, bool) {
-	ci, ok := processor.Schema.CustomInterfaces[tsInterface]
-	if ok {
-		return ci, true
-	}
-	for _, ci := range a.GetCustomInterfaces() {
-		if ci.TSType == tsInterface {
-			return ci, true
-		}
-	}
-	return nil, false
 }
 
 func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeData, a action.Action) (*fieldConfig, error) {
@@ -3286,42 +3177,6 @@ func buildActionFieldConfig(processor *codegen.Processor, nodeData *schema.NodeD
 			inputFieldLine,
 		)
 		argImports = append(argImports, imports...)
-	}
-
-	lists := [][]string{}
-	for _, f := range a.GetFields() {
-		list, union, err := checkUnionType(processor.Config, nodeData.Node, f, []string{})
-
-		if err != nil {
-			return nil, err
-		}
-		if union {
-			lists = append(lists, list)
-		}
-	}
-
-	if len(lists) > 0 {
-		var sb strings.Builder
-		// outer list
-		sb.WriteString("[")
-		for _, list := range lists {
-			// inner list
-			sb.WriteString("[")
-			for _, str := range list {
-				sb.WriteString(strconv.Quote(str))
-				sb.WriteString(",")
-			}
-			// inner list
-			sb.WriteString("]")
-		}
-		// outer list
-		sb.WriteString("]")
-
-		result.FunctionContents = append(
-			result.FunctionContents,
-			fmt.Sprintf("input = transformUnionTypes(input, %s);", sb.String()),
-		)
-		argImports = append(argImports, tsimport.NewEntGraphQLImportPath("transformUnionTypes"))
 	}
 
 	if a.GetOperation() == ent.CreateAction {
@@ -3626,8 +3481,12 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 
 		if !ciInfo.input {
 			fieldEdge := getDeclaredStructFieldEdgeInfo(f)
-			if fieldEdge == nil {
+			if fieldEdge == nil && f.GraphQLIDType() == "" {
 				fieldEdge = inferStructFieldEdge(processor, ci, f)
+			}
+			// Explicit scalar metadata does not create a node field.
+			if f.GraphQLIDType() != "" {
+				fieldEdge = nil
 			}
 
 			// should exist for id fields...
@@ -3659,7 +3518,11 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 						}
 					}
 
-					continue
+					// Retain existing inferred node fields for compatibility,
+					// while also exposing their independently encoded saved ID.
+					if getDeclaredStructFieldEdgeInfo(f) != nil || e.GraphQLEdgeName() == f.GetGraphQLName() {
+						continue
+					}
 				}
 			}
 		}
@@ -3668,7 +3531,15 @@ func buildCustomInterfaceNode(processor *codegen.Processor, ci *customtype.Custo
 			ft.HasResolveFunction = true
 			ft.FunctionContents = []string{fmt.Sprintf("return %s", fieldName)}
 		}
-		// }
+		if !ciInfo.input {
+			nodeType, err := fieldScalarReferenceNodeType(processor, f)
+			if err != nil {
+				return nil, err
+			}
+			if nodeType != "" {
+				setScalarIDResolver(ft, fieldName, nodeType)
+			}
+		}
 		if err := result.addField(ft); err != nil {
 			return nil, err
 		}

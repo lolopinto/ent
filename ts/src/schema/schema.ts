@@ -548,6 +548,12 @@ interface PrivateOptions {
 // FieldOptions are configurable options for fields.
 // Can be combined with options for specific field types as neededs
 export interface FieldOptions {
+  /** Referenced Ent schema for scalar UUID output, without loading a node.
+   * In structs, inferred from an unambiguous ID-suffixed field name otherwise.
+   */
+  graphQLIDType?: string;
+  /** Keep UUID GraphQL input and output values raw. */
+  disableBase64Encode?: boolean;
   // optional modification of fields: nullable/storagekey etc.
   nullable?: boolean;
   storageKey?: string; // db?

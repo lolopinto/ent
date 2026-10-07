@@ -193,3 +193,27 @@ test("class instances and nested Dates retain their identity", async () => {
   expect(input.detail).toBeInstanceOf(Detail);
   expect(input.at).toBe(date);
 });
+
+test("nullable nested global structs and lists retain null inheritance", async () => {
+  setGlobalSchema({ fields: { detail: detail() } });
+  try {
+    const field = StructType({
+      tsType: "Settings",
+      fields: {
+        nested: StructType({ globalType: "Detail", nullable: true }),
+        entries: StructTypeAsList({ globalType: "Detail", nullable: true }),
+      },
+    });
+    for (const entries of [null, [], [{ displayName: "alice" }]]) {
+      const input = { nested: null, entries };
+      expect(await field.valid(input)).toBe(true);
+      expect(JSON.parse(field.format(input))).toEqual({
+        nested: null,
+        entries: entries?.map(() => ({ display_name: "ALICE" })) ?? null,
+      });
+      expect(input).toEqual({ nested: null, entries });
+    }
+  } finally {
+    clearGlobalSchema();
+  }
+});

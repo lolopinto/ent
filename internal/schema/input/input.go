@@ -193,6 +193,7 @@ type Field struct {
 	FetchOnDemand       bool                `json:"fetchOnDemand,omitempty"`
 	DBOnly              bool                `json:"dbOnly,omitempty"`
 	DisableBase64Encode bool                `json:"disableBase64Encode,omitempty"`
+	GraphQLIDType       string              `json:"graphQLIDType,omitempty"`
 
 	Immutable bool `json:"immutable,omitempty"`
 

@@ -9,6 +9,20 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+- add `graphQLIDType` metadata for scalar entity references in GraphQL structs
+  and decorated fields, with support for encoding opt-outs (#2046).
+
+### Changed
+
+### Fixed
+
+- encode scalar reference IDs without loading their nodes, and preserve raw
+  stored IDs, nulls, empty lists, ordering, and duplicates through nested/global
+  struct GraphQL round-trips. Requires regeneration with the updated CLI and
+  runtime (#2046).
+
 ## [0.2.15]
 
 ### Changed

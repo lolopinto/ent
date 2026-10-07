@@ -1094,3 +1094,12 @@ func testType(t *testing.T, exp expType, typ enttype.Type) {
 		require.Nil(t, exp.relativeMathInfo)
 	}
 }
+
+// Action inputs make required schema fields optional on edit. That conversion
+// must retain a raw-ID opt-out instead of starting to decode those values.
+func TestIDNullabilityPreservesEncodingOptOut(t *testing.T) {
+	id := &enttype.IDType{DisableBase64Encode: true}
+	nullable := id.GetNullableType().(*enttype.NullableIDType)
+	require.True(t, nullable.DisableBase64Encode)
+	require.True(t, nullable.GetNonNullableType().(*enttype.IDType).DisableBase64Encode)
+}

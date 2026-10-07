@@ -41,6 +41,7 @@ export {
   mustDecodeIDFromGQLID,
   mustDecodeNullableIDFromGQLID,
   encodeGQLID,
+  encodeGQLIDReference,
 } from "./node_resolver";
 export type { NodeResolver } from "./node_resolver";
-export { transformUnionTypes } from "./mutations/union";
+export { transformUnionTypes, transformUnionInput } from "./mutations/union";

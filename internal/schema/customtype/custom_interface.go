@@ -2,6 +2,7 @@ package customtype
 
 import (
 	"github.com/lolopinto/ent/internal/codegen/codegenapi"
+	"github.com/lolopinto/ent/internal/enttype"
 	"github.com/lolopinto/ent/internal/field"
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/enum"
@@ -145,6 +146,13 @@ func (ci *CustomInterface) HasConvertFunction(cfg codegenapi.Config) bool {
 	}
 
 	for _, f := range ci.Fields {
+		// Global struct references are not Children (which own declarations).
+		// Emit a wrapper so their field converters can run on nested values.
+		if typ, ok := f.GetFieldType().(enttype.TSWithSubFields); ok && typ.GetSubFields() == nil {
+			if info := typ.GetCustomTypeInfo(); info != nil && info.TSInterface != "" {
+				return true
+			}
+		}
 		if f.TsFieldName(cfg) != f.GetDbColName() {
 			return true
 		}

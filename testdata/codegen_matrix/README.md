@@ -54,6 +54,12 @@ The matrix catalog lives in `features.yml`.
   It runs once with the default Node/pg launcher settings and once with
   Bun/Bun SQL settings, so generated Bun-specific resolver exports and
   Postgres value conversion helpers stay covered by the same broad fixture.
+- `scalar_references` executes generated GraphQL queries and mutations against
+  SQLite. It covers saved scalar IDs in global structs, nested lists, decorated
+  fields, encoding opt-outs, and read/edit/save round-trips. Runtime encoder and
+  null-formatting regressions live in `ts/src/graphql/scalar_id.test.ts` and
+  `ts/src/schema/struct_input.test.ts`; generator regressions live in
+  `internal/graphql` and `internal/schema/customtype`.
 - `immutable_defaults` also runs fixture-local Jest tests against actual generated
   builders and local Ent source, using a temporary SQLite database. It verifies
   immutable creation defaults, constructor precedence, explicit overrides, action

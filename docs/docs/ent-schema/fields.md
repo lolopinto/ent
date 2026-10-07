@@ -270,3 +270,30 @@ Provides the value to be logged when the field is logged. For sensitive values l
 ## Postscript
 
 PS: the `PasswordType` field is private, hidden from GraphQL and sensitive by default.
+
+### Scalar reference IDs in structs
+
+With base64 ID encoding enabled, a struct UUID field such as `holiday_id` or
+`holidayId` exposes `holidayId: ID!` encoded with the `Holiday` node type when
+that schema exists and is visible in GraphQL. UUID lists such as `holidayIds`
+encode each element. The scalar resolver reads the saved ID without loading the
+referenced node, so deleted or unavailable references retain their IDs.
+Existing inferred node fields remain available and retain their privacy checks.
+
+Use `graphQLIDType` when the field name does not identify the schema, or when you
+want only a scalar reference:
+
+```ts
+referenceId: UUIDType({ graphQLIDType: "Holiday", nullable: true }),
+referenceIds: UUIDListType({ graphQLIDType: "Holiday", nullable: true }),
+```
+
+`graphQLIDType` names an Ent schema, not a GraphQL type or a stored node-type
+string. It does not create an edge or load a node. It supports global structs and
+nested structs and lists. Generated mutations decode encoded IDs before actions
+receive them; storage and cached objects keep raw IDs. Null values, empty lists,
+ordering, and duplicates are preserved. Privacy on the containing field or
+entity still applies.
+
+Set `disableBase64Encode: true` on a UUID field to keep its input and output raw.
+The global `disableBase64Encoding` codegen option also disables this encoding.
