@@ -279,6 +279,8 @@ const Function CustomFieldType = "FUNCTION"
 const AsyncFunction CustomFieldType = "ASYNC_FUNCTION"
 
 type CustomField struct {
+	GraphQLIDType       string `json:"graphQLIDType,omitempty"`
+	DisableBase64Encode bool   `json:"disableBase64Encode,omitempty"`
 	// Node is not the best name.
 
 	// for custom queries/mutations
@@ -344,6 +346,10 @@ func (cf *CustomField) UnmarshalJSON(data []byte) error {
 	cf.Description = getStringFromMap(m, "description")
 	cf.FunctionContents = getStringFromMap(m, "functionContents")
 	cf.EdgeName = getStringFromMap(m, "edgeName")
+	cf.GraphQLIDType = getStringFromMap(m, "graphQLIDType")
+	if err := getValFromMap(m, "disableBase64Encode", &cf.DisableBase64Encode); err != nil {
+		return err
+	}
 	if err := getValFromMap(m, "args", &cf.Args); err != nil {
 		return err
 	}
@@ -677,6 +683,8 @@ func customFieldEqual(cf1, cf2 *CustomField) bool {
 	}
 	return cf1.Node == cf2.Node &&
 		cf1.GraphQLName == cf2.GraphQLName &&
+		cf1.GraphQLIDType == cf2.GraphQLIDType &&
+		cf1.DisableBase64Encode == cf2.DisableBase64Encode &&
 		cf1.FunctionName == cf2.FunctionName &&
 		customItemsListEqual(cf1.Args, cf2.Args) &&
 		customItemsListEqual(cf1.Results, cf2.Results) &&

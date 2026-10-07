@@ -216,7 +216,7 @@ func TestActionOnlyObjectListFieldConfigDecodesNestedGraphQLIDs(t *testing.T) {
 	assert.Contains(
 		t,
 		contents,
-		"registrations: input.registrations ? input.registrations.map((item: any) =>  ( {...item,  registryId: mustDecodeIDFromGQLID(item.registryId.toString())} )) : input.registrations,",
+		"registrations: ((v: any) => v == null ? v : v.map((item: any) => ({...item, registryId: mustDecodeIDFromGQLID(item.registryId.toString())})))(input.registrations),",
 	)
 	assert.Contains(t, actionConfigImportNames(createActionCfg), "mustDecodeIDFromGQLID")
 }
@@ -293,4 +293,33 @@ func TestNestedActionInputImportsReferencedActionInput(t *testing.T) {
 	assert.Regexp(t, `import\s*\{\s*AddressEventActivityCreateInput\s*\}\s*from\s*"src/graphql/generated/mutations/event_activity/event_activity_create_type"`, string(contents))
 	assert.Contains(t, string(contents), "export const ActivityEventCreateInput")
 	assert.Contains(t, string(contents), "type: AddressEventActivityCreateInput")
+}
+
+func TestNestedStructActionInputConversion(t *testing.T) {
+	schema := testhelper.ParseSchemaForTest(t, map[string]string{
+		"settings_schema.ts": testhelper.GetCodeWithSchema(`
+   import { EntSchema, ActionOperation, StructType, StructTypeAsList, UUIDType, UUIDListType } from "{schema}";
+   export default new EntSchema({ fields: {
+    nested: StructType({tsType: "Outer", nullable: true, fields: {
+     entries: StructTypeAsList({tsType: "Entry", nullable: true, fields: {
+      reference: UUIDType({nullable: true}),
+      raw: UUIDType({nullable: true, disableBase64Encode: true}),
+      references: UUIDListType({nullable: true}),
+     }}),
+    }}),
+   }, actions: [{operation: ActionOperation.Create}] });
+  `),
+	})
+	p, err := codegen.NewTestCodegenProcessor("src/schema", schema, &codegen.CodegenConfig{DisableGraphQLRoot: true})
+	require.NoError(t, err)
+	node := schema.Nodes["Settings"].NodeData
+	a := node.ActionInfo.GetByName("CreateSettingsAction")
+	cfg, err := buildActionFieldConfig(p, node, a)
+	require.NoError(t, err)
+	contents := strings.Join(cfg.FunctionContents, "\n")
+	assert.Contains(t, contents, "v == null ? v")
+	assert.Contains(t, contents, "mustDecodeNullableIDFromGQLID(item.reference?.toString() ?? item.reference)")
+	assert.Contains(t, contents, "item.references ? item.references.map((i:any) => mustDecodeIDFromGQLID(i.toString())) : item.references")
+	assert.NotContains(t, contents, "mustDecodeNullableIDFromGQLID(item.raw")
+	assert.Contains(t, contents, ")(v.entries)")
 }

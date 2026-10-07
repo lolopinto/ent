@@ -116,6 +116,10 @@ interface gqlFieldArg extends Omit<gqlFieldOptionsBase, "name"> {
 }
 
 export interface gqlFieldOptions extends gqlFieldOptionsBase {
+  /** Ent schema for an ID scalar (or list), without resolving the node. */
+  graphQLIDType?: string;
+  /** Return raw IDs even when global base64 encoding is enabled. */
+  disableBase64Encode?: boolean;
   class: string;
 
   args?: gqlFieldArg[];
@@ -159,6 +163,8 @@ export type CustomFieldTypeInput =
   | "ASYNC_FUNCTION";
 
 interface CustomFieldImpl {
+  graphQLIDType?: string;
+  disableBase64Encode?: boolean;
   nodeName: string;
   gqlName: string;
   functionName: string; // accessorName (not necessarily a function)
@@ -791,6 +797,8 @@ export class GQLCapture {
       results: results,
       fieldType: fieldType!,
       description: options?.description,
+      graphQLIDType: options.graphQLIDType,
+      disableBase64Encode: options.disableBase64Encode,
     };
   }
 

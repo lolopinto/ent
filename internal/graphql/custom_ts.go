@@ -929,6 +929,24 @@ func getCustomGQLField(processor *codegen.Processor, cd *CustomData, field Custo
 		}
 	}
 
+	if field.GraphQLIDType != "" && (len(field.Results) != 1 || field.Results[0].Type != "ID" || field.Results[0].Connection) {
+		return nil, fmt.Errorf("graphQLIDType requires an ID scalar or list: %s", field.GraphQLName)
+	}
+	if len(field.Results) == 1 && field.Results[0].Type == "ID" {
+		nodeType, err := scalarReferenceNodeType(processor, field.GraphQLName, field.GraphQLIDType)
+		if err != nil {
+			return nil, err
+		}
+		if nodeType != "" && processor.Config.Base64EncodeIDs() && !field.DisableBase64Encode {
+			value := fmt.Sprintf("%s.%s", instance, field.FunctionName)
+			if field.FieldType == Function || field.FieldType == AsyncFunction {
+				value += fmt.Sprintf("(%s)", strings.Join(args, ","))
+			}
+			// Await also covers promise-valued accessors.
+			gqlField.HasAsyncModifier = true
+			setScalarIDResolver(gqlField, "await "+value, nodeType)
+		}
+	}
 	return gqlField, nil
 }
 

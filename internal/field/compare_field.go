@@ -81,6 +81,7 @@ func FieldEqual(existing, field *Field) bool {
 		existing.dbTypeOverride == field.dbTypeOverride &&
 		existing.dbExtension == field.dbExtension &&
 		existing.graphQLName == field.graphQLName &&
+		existing.graphQLIDType == field.graphQLIDType &&
 		existing.exposeToActionsByDefault == field.exposeToActionsByDefault &&
 		existing.disableBuilderType == field.disableBuilderType &&
 		existing.derivedWhenEmbedded == field.derivedWhenEmbedded &&

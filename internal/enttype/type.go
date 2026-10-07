@@ -264,7 +264,7 @@ func (t *IDType) GetTSType() string {
 }
 
 func (t *IDType) GetNullableType() TSType {
-	return &NullableIDType{}
+	return &NullableIDType{DisableBase64Encode: t.DisableBase64Encode}
 }
 
 func (t *IDType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
@@ -305,7 +305,7 @@ func (t *NullableIDType) GetTSType() string {
 }
 
 func (t *NullableIDType) GetNonNullableType() TSType {
-	return &IDType{}
+	return &IDType{DisableBase64Encode: t.DisableBase64Encode}
 }
 
 func (t *NullableIDType) GetTSGraphQLImports(input bool) []*tsimport.ImportPath {
@@ -1586,8 +1586,8 @@ func (t *NullableArrayListType) CustomGQLRender(cfg Config, v string) string {
 		return v
 	}
 
-	// TODO need an undefined vs null flag?
-	return fmt.Sprintf("%s ? %s.map((i:any) => %s) : undefined", v, v, t2.CustomGQLRender(cfg, "i"))
+	// Preserve explicit null separately from omitted input.
+	return fmt.Sprintf("%s ? %s.map((i:any) => %s) : %s", v, v, t2.CustomGQLRender(cfg, "i"), v)
 }
 
 func (t *NullableArrayListType) ArgImports(cfg Config) []*tsimport.ImportPath {

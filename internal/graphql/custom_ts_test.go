@@ -1431,7 +1431,7 @@ func TestCustomStructUUIDFieldInfersNodeFromName(t *testing.T) {
 		name: ci.GQLName,
 	})
 	require.NoError(t, err)
-	require.Len(t, obj.Fields, 2)
+	require.Len(t, obj.Fields, 3)
 
 	horseField := obj.Fields[0]
 	assert.Equal(t, "horse", horseField.Name)
@@ -1444,7 +1444,9 @@ func TestCustomStructUUIDFieldInfersNodeFromName(t *testing.T) {
 	require.Len(t, horseField.ExtraImports, 1)
 	assert.Equal(t, "Horse", horseField.ExtraImports[0].Import)
 
-	horseNameField := obj.Fields[1]
+	assert.Equal(t, "horseId", obj.Fields[1].Name)
+    assert.Equal(t, []string{`return encodeGQLIDReference(obj.horseId, "horse");`}, obj.Fields[1].FunctionContents)
+    horseNameField := obj.Fields[2]
 	assert.Equal(t, "horseName", horseNameField.Name)
 	assert.False(t, horseNameField.HasResolveFunction)
 
@@ -1472,7 +1474,7 @@ func TestCustomStructUUIDFieldInfersNodeFromName(t *testing.T) {
 	require.Len(t, labelObj.Fields, 3)
 	assert.Equal(t, "horseId", labelObj.Fields[0].Name)
 	assert.Equal(t, "GraphQLID", labelObj.Fields[0].FieldType())
-	assert.False(t, labelObj.Fields[0].HasResolveFunction)
+	assert.True(t, labelObj.Fields[0].HasResolveFunction)
 	assert.Equal(t, "horse", labelObj.Fields[1].Name)
 	assert.Equal(t, "hiddenHorseId", labelObj.Fields[2].Name)
 	assert.Equal(t, "GraphQLID", labelObj.Fields[2].FieldType())
@@ -1552,7 +1554,7 @@ func TestCustomStructUUIDFieldInferenceAvoidsExplicitEdgeNameCollision(t *testin
 	require.Len(t, obj.Fields, 2)
 	assert.Equal(t, "sheepId", obj.Fields[0].Name)
 	assert.Equal(t, "GraphQLID", obj.Fields[0].FieldType())
-	assert.False(t, obj.Fields[0].HasResolveFunction)
+	assert.True(t, obj.Fields[0].HasResolveFunction)
 	assert.Equal(t, "sheep", obj.Fields[1].Name)
 	assert.True(t, obj.Fields[1].HasResolveFunction)
 }

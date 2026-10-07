@@ -1240,3 +1240,21 @@ describe("function", () => {
     validateNoCustom();
   });
 });
+
+test("captures scalar reference metadata and encoding opt-out", () => {
+  class Reference {
+    @gqlField({
+      class: "Reference",
+      type: "ID",
+      graphQLIDType: "Holiday",
+      disableBase64Encode: true,
+    })
+    get referenceId(): string {
+      return "saved-id";
+    }
+  }
+  expect(GQLCapture.getCustomFields().get("Reference")?.[0]).toMatchObject({
+    graphQLIDType: "Holiday",
+    disableBase64Encode: true,
+  });
+});

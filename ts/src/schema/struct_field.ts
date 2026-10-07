@@ -94,7 +94,9 @@ export class StructField extends BaseField implements Field {
       if (val === undefined) {
         return;
       }
-      if (field.format) {
+      if (val === null && field.nullable) {
+        ret[dbKey] = null;
+      } else if (field.format) {
         // indicate nested so this isn't JSON stringified
         ret[dbKey] = field.format(val, true);
       } else {

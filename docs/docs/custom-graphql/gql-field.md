@@ -389,3 +389,31 @@ View the [GraphQL documentation](https://graphql.org/learn/schema/#lists-and-non
 ## async
 
 Indicates that this method is async and an async caller should be generated in the generated GraphQL code.
+
+## Scalar entity references
+
+Use `graphQLIDType` to expose a saved reference as an encoded `ID` without loading
+its node. Return the raw ID from the property, getter, or method:
+
+```ts
+@gqlField({
+  class: "Settings",
+  type: "ID",
+  graphQLIDType: "Holiday",
+  nullable: true,
+})
+get referenceId(): string | null {
+  return this.savedHolidayId;
+}
+```
+
+This also supports `type: ["ID"]`, nullable list elements, and async methods.
+When metadata is omitted, an ID-suffixed GraphQL name such as `holidayId` can
+infer the visible `Holiday` schema. Ambiguous names need explicit metadata.
+The generated resolver encodes the saved value with the referenced node type;
+it does not authorize or load that node. The accessor remains responsible for
+privacy when exposing its value.
+
+Do not encode the value manually when using this metadata or inference. Use
+`disableBase64Encode: true` to return the accessor's value unchanged. The global
+`disableBase64Encoding` option also disables scalar reference encoding.
