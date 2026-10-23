@@ -11,12 +11,12 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
-- prepare `@snowtop/ent` 0.2.16 with the patched YAML parser and refreshed dependencies; prepare `@snowtop/ent-graphql-tests` 0.1.1 with patched Express.
-- prepare `auto_schema` 0.0.42 with Mako 1.4.3 to address template path traversal.
+- prepare `@snowtop/ent` 0.2.16 with the patched YAML parser and refreshed dependencies; prepare `@snowtop/ent-graphql-tests` 0.1.1 with patched Express (#2048).
+- prepare `auto_schema` 0.0.42 with Mako 1.4.3 to address template path traversal (#2048).
 
 ### Fixed
 
-- update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records.
+- update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 
 ## [0.2.15]
