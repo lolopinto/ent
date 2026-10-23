@@ -8,6 +8,7 @@ pytest = "==9.0.3"
 
 [packages]
 alembic = "==1.18.4"
+Mako = "==1.4.3"
 datetime = "==4.3"
 sqlalchemy = "==2.0.49"
 psycopg2 = "==2.9.11"

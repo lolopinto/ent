@@ -33,7 +33,7 @@
   "devDependencies": {
     "@snowtop/ent": "0.2.15",
     "@types/jest": "30.0.0",
-    "jest": "30.3.0",
+    "jest": "30.5.2",
     "ts-jest": "29.4.6"
   },
   "peerDependencies": {
@@ -41,7 +41,8 @@
   },
   "overrides": {
     "@snowtop/ent": {
-      "uuid": "11.1.1"
+      "uuid": "11.1.1",
+      "js-yaml": "4.3.2"
     }
   }
 }

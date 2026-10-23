@@ -6,7 +6,7 @@ import {
 } from "@snowtop/ent/graphql";
 import { GraphQLID } from "graphql";
 import type { FileUpload } from "@snowtop/ent/graphql/upload";
-import parse from "csv-parse";
+import { parse } from "csv-parse";
 import { User } from "../../ent/user";
 import CreateContactAction from "../../ent/contact/actions/create_contact_action";
 import { ExampleViewer } from "../../viewer/viewer";
@@ -64,7 +64,7 @@ export class ImportContactResolver {
         fromLine: 2, //skip header
         trim: true,
         skipEmptyLines: true,
-        skipLinesWithEmptyValues: true,
+        skip_records_with_empty_values: true,
       }),
     );
     for await (const record of parser) {
