@@ -2,3 +2,4 @@
 !.dockerignore
 !Dockerfile
 !Dockerfile.tmpl
+!check-node-version.sh

@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
@@ -135,24 +136,12 @@ type dockerfileData struct {
 	AutoSchemaVersion string
 }
 
-// MinimumNodeVersion is the security floor within each supported Node.js major.
-func (d *dockerfileData) MinimumNodeVersion() string {
-	switch d.NodeVersion {
-	case 22:
-		return "22.23.4"
-	case 24:
-		return "24.22.1"
-	default:
-		return ""
-	}
-}
-
 func (d *dockerfileData) Development() bool {
 	return d.Suffix == "dev"
 }
 
 func createDockerfile(path string, d dockerfileData) error {
-	if d.MinimumNodeVersion() == "" {
+	if !slices.Contains(NODE_VERSIONS, d.NodeVersion) {
 		return fmt.Errorf("unsupported Node.js major version %d", d.NodeVersion)
 	}
 	cfg, err := codegen.NewConfig("src/schema", "")
@@ -166,6 +155,18 @@ func createDockerfile(path string, d dockerfileData) error {
 		TemplateName:      "Dockerfile.tmpl",
 		PathToFile:        path,
 	}))
+}
+
+// prepareBuildContext includes every local file referenced by the Dockerfile.
+func prepareBuildContext(dir string, d dockerfileData) error {
+	if err := createDockerfile(path.Join(dir, "Dockerfile"), d); err != nil {
+		return err
+	}
+	script, err := os.ReadFile(util.GetAbsolutePath("../ts/check-node-version.sh"))
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path.Join(dir, "check-node-version.sh"), script, 0644)
 }
 
 func getTags(d dockerfileData) []string {
@@ -230,10 +231,10 @@ func run(d dockerfileData, push, refreshRuntimes bool, wg *sync.WaitGroup) error
 	defer os.RemoveAll(dir)
 	dockerfile := path.Join(dir, "Dockerfile")
 
-	err = createDockerfile(dockerfile, d)
+	err = prepareBuildContext(dir, d)
 
 	if err != nil {
-		return fmt.Errorf("error creating docker file: %w", err)
+		return fmt.Errorf("error preparing Docker build context: %w", err)
 	}
 
 	if !push {

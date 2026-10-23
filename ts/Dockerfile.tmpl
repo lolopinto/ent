@@ -1,7 +1,7 @@
 ARG GOLANG_VERSION={{.TsentVersion}}
 ARG AUTO_SCHEMA_VERSION={{.AutoSchemaVersion}}
 ARG NODE_VERSION={{.NodeVersion}}
-ARG NODE_MIN_VERSION={{.MinimumNodeVersion}}
+ARG NODE_MIN_VERSION
 ARG BUN_VERSION=1.4.4
 ARG DOCKER_TAG={{.DockerTag}}
 
@@ -57,6 +57,8 @@ ENV PATH=/opt/bun/bin:/root/go/bin:/opt/venv/bin:/usr/local/sbin:/usr/local/bin:
 # this is associating this image with this repo
 LABEL org.opencontainers.image.source="https://github.com/lolopinto/ent"
 
+COPY check-node-version.sh /usr/local/bin/check-node-version.sh
+
 # install node and dependencies
 # TODO platform specific stuff in the node layers here...
 RUN \
@@ -70,10 +72,7 @@ RUN \
   echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
   apt-get update && \
   apt-get install nodejs -yqq && \
-  node_version="$(node -p 'process.versions.node')" && \
-  if [ "${node_version%%.*}" != "$NODE_VERSION" ] || ! dpkg --compare-versions "$node_version" ge "$NODE_MIN_VERSION"; then \
-    echo "Node.js $node_version does not satisfy major $NODE_VERSION with minimum $NODE_MIN_VERSION" >&2; exit 1; \
-  fi && \
+  sh /usr/local/bin/check-node-version.sh "$NODE_VERSION" "$NODE_MIN_VERSION" && \
   npm install -g yarn && \
   apt-get autoremove wget -yqq && \
   rm -rf /var/lib/apt/lists/*
