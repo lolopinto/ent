@@ -24,7 +24,6 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	20,
 	22,
 	24,
 }
@@ -135,11 +134,26 @@ type dockerfileData struct {
 	AutoSchemaVersion string
 }
 
+// NodeRelease pins the patched runtime independently of the public major-version image tag.
+func (d *dockerfileData) NodeRelease() string {
+	switch d.NodeVersion {
+	case 22:
+		return "22.23.4"
+	case 24:
+		return "24.22.1"
+	default:
+		return ""
+	}
+}
+
 func (d *dockerfileData) Development() bool {
 	return d.Suffix == "dev"
 }
 
 func createDockerfile(path string, d dockerfileData) error {
+	if d.NodeRelease() == "" {
+		return fmt.Errorf("unsupported Node.js major version %d", d.NodeVersion)
+	}
 	cfg, err := codegen.NewConfig("src/schema", "")
 	if err != nil {
 		return err

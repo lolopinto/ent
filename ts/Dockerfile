@@ -1,11 +1,12 @@
 ARG GOLANG_VERSION=v0.3.10
 ARG AUTO_SCHEMA_VERSION=0.0.41
 ARG NODE_VERSION=24
-ARG BUN_VERSION=1.3.6
-ARG DOCKER_TAG=v0.3.12
+ARG NODE_RELEASE=24.22.1
+ARG BUN_VERSION=1.4.4
+ARG DOCKER_TAG=v0.3.13
 
 # get and install tsent
-FROM --platform=$BUILDPLATFORM golang:1.25-trixie AS golang-image
+FROM --platform=$BUILDPLATFORM golang:1.26.10-trixie AS golang-image
 ARG GOLANG_VERSION
 ARG DOCKER_TAG
 ENV GOPATH=/root/go
@@ -29,19 +30,21 @@ RUN case "$TARGETARCH" in \
   if [ -f "/root/go/bin/${TARGETOS}_${TARGETARCH}/tsent" ]; then mv "/root/go/bin/${TARGETOS}_${TARGETARCH}/tsent" /root/go/bin/tsent; fi
 
 # get and install auto_schema
-FROM python:3.12-trixie AS python-image
+FROM python:3.12.15-trixie AS python-image
 ARG AUTO_SCHEMA_VERSION
 RUN python -m venv /opt/venv
 # Make sure we use the virtualenv
 ENV PATH=/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
-RUN python3 -m pip install auto_schema==$AUTO_SCHEMA_VERSION
+RUN python3 -m pip install --no-cache-dir --upgrade pip==26.2.2 certifi==2026.10.19 && \
+  python3 -m pip install --no-cache-dir auto_schema==$AUTO_SCHEMA_VERSION
 #RUN python3 -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ auto_schema_test==$AUTO_SCHEMA_VERSION
 
 # final image needs to be python-based to have auto-schema work
-FROM python:3.12-trixie AS final-image
+FROM python:3.12.15-trixie AS final-image
 ARG GOLANG_VERSION
 ARG NODE_VERSION
+ARG NODE_RELEASE
 ARG BUN_VERSION
 
 ENV GOPATH=/root/go
@@ -64,7 +67,7 @@ RUN \
   curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
   echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
   apt-get update && \
-  apt-get install nodejs -yqq && \
+  apt-get install "nodejs=${NODE_RELEASE}-1nodesource1" -yqq && \
   npm install -g yarn && \
   apt-get autoremove wget -yqq && \
   rm -rf /var/lib/apt/lists/*
@@ -72,6 +75,8 @@ RUN \
 RUN mkdir -p "$BUN_INSTALL" && \
   curl -fsSL https://bun.com/install | bash -s -- "bun-v${BUN_VERSION}" && \
   bun --version
+
+RUN python3 -m pip install --no-cache-dir --upgrade pip==26.2.2 certifi==2026.10.19
 
 # these next ones are not included in slim variants
 

@@ -19,10 +19,10 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      PIPENV_PYTHON: '3.14'
+      PIPENV_PYTHON: '3.14.9'
     strategy:
       matrix:
-        postgresql-version: [14.20, 15.15, 16.11, 17.7, 18.1]
+        postgresql-version: [14.24, 15.19, 16.15, 17.11, 18.6]
 
     services:
       # Label used to access the service container
@@ -50,7 +50,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.14'
+        python-version: '3.14.9'
         cache: pipenv
         cache-dependency-path: python/Pipfile.lock
 

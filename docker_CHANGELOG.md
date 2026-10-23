@@ -9,6 +9,16 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+- prepare Docker v0.3.13 with Node 22.23.4 / 24.22.1, Bun 1.4.4, Python
+  3.12.15 and updated pip/certificates; rebuild tsent with Go 1.26.10.
+- stop publishing images for end-of-life Node 20.
+
+### Fixed
+
 ## [0.3.12]
 
 ### Fixed
