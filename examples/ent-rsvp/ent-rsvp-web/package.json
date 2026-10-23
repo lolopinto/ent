@@ -16,7 +16,7 @@
     "extract-files": "9.0.0",
     "graphql": "15.5.0",
     "luxon": "3.2.1",
-    "next": "15.5.18",
+    "next": "15.5.28",
     "react": "18.3.1",
     "react-bootstrap": "2.10.10",
     "react-datepicker": "9.1.0",
@@ -41,8 +41,8 @@
     "typescript": "5.9.3"
   },
   "overrides": {
-    "nanoid": "3.3.12",
-    "postcss": "8.5.15",
+    "nanoid": "3.3.18",
+    "postcss": "8.5.31",
     "yaml": "1.10.3"
   }
 }

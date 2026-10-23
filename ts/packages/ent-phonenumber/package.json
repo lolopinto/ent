@@ -29,9 +29,9 @@
   },
   "homepage": "https://github.com/lolopinto/ent#readme",
   "devDependencies": {
-    "@snowtop/ent": "0.2.15",
+    "@snowtop/ent": "0.2.16",
     "@types/jest": "30.0.0",
-    "jest": "30.4.2",
+    "jest": "30.5.2",
     "ts-jest": "29.4.11",
     "typescript": "5.9.3"
   },
@@ -42,10 +42,6 @@
     "@snowtop/ent": ">= 0.2.8"
   },
   "overrides": {
-    "@snowtop/ent": {
-      "brace-expansion": "5.0.6",
-      "uuid": "11.1.1"
-    },
     "anymatch": {
       "picomatch": "2.3.2"
     },

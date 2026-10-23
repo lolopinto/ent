@@ -21,7 +21,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@snowtop/ent-graphql-tests": "0.1.0",
+    "@snowtop/ent-graphql-tests": "0.1.1",
     "@types/bcryptjs": "2.4.2",
     "@types/bun": "1.3.14",
     "@types/express": "4.17.13",
@@ -32,7 +32,7 @@
     "@types/supertest": "7.2.0",
     "@types/uuid": "11.0.0",
     "cookie-parser": "1.4.7",
-    "jest": "30.4.2",
+    "jest": "30.5.2",
     "jest-date-mock": "1.0.8",
     "jest-expect-message": "1.1.3",
     "supertest": "7.2.2",
@@ -41,7 +41,7 @@
     "tsconfig-paths": "3.11.0"
   },
   "dependencies": {
-    "@snowtop/ent": "0.2.15",
+    "@snowtop/ent": "0.2.16",
     "@snowtop/ent-email": "0.1.0",
     "@snowtop/ent-passport": "0.1.0",
     "@snowtop/ent-password": "0.1.0",
@@ -57,9 +57,9 @@
     "@types/pg": "8.6.1",
     "bcryptjs": "2.4.3",
     "camel-case": "4.1.2",
-    "csv-parse": "4.16.3",
+    "csv-parse": "7.0.3",
     "dataloader": "2.2.3",
-    "express": "4.22.2",
+    "express": "4.22.3",
     "express-session": "1.19.0",
     "glob": "13.0.6",
     "graphql": "16.12.0",

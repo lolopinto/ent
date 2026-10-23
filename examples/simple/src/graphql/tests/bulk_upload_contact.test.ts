@@ -6,7 +6,7 @@ import schema from "../generated/schema";
 import { randomEmail, randomPhoneNumber } from "../../util/random";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
 
-test("bulk upload", async () => {
+test("bulk upload skips empty records and parses quoted fields", async () => {
   const user = await CreateUserAction.create(new LoggedOutExampleViewer(), {
     firstName: "Jon",
     lastName: "snow",
@@ -17,9 +17,11 @@ test("bulk upload", async () => {
 
   const csv = `firstName, lastName, emailAddress
   Arya, Stark, ${randomEmail()}
+
+  ,,
   Robb, Stark, ${randomEmail()}
   Rickon, Stark, ${randomEmail()}
-  Bran, Stark, ${randomEmail()}
+  "Bran, the Broken", Stark, ${randomEmail()}
   Rickon, Stark, ${randomEmail()}`;
 
   await expectMutation(
