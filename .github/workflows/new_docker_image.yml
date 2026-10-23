@@ -6,9 +6,11 @@ on:
     paths:
       - .github/workflows/new_docker_image.yml
       - release_image/main.go
-      - release_image/main_test.go
+      - release_image/*_test.go
       - ts/Dockerfile
       - ts/Dockerfile.tmpl
+      - ts/check-node-version.sh
+      - ts/.dockerignore
       - release_image/docker_version.txt
       - release_image/tsent_version.txt
       - release_image/auto_schema_version.txt
@@ -37,7 +39,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v6
       with:
-        go-version: '1.25'
+        go-version: '1.26.10'
         cache: true
         cache-dependency-path: go.sum
 
@@ -87,7 +89,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v6
       with:
-        go-version: '1.25'
+        go-version: '1.26.10'
         cache: true
         cache-dependency-path: go.sum
 

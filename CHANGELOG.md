@@ -9,6 +9,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ## [Unreleased]
 
+### Fixed
+
+- update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
+
 ## [0.2.15]
 
 ### Changed

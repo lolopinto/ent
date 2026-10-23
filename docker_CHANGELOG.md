@@ -9,6 +9,20 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ## [Unreleased]
 
+### Added
+
+### Changed
+
+- prepare Docker v0.3.13 with the latest available Node 22 / 24 releases (minimum
+  22.23.4 / 24.22.1), Bun 1.4.4, Python
+  3.12.15 and updated pip/certificates; rebuild tsent with Go 1.26.10 (#2047).
+- stop publishing images for end-of-life Node 20 (#2047).
+
+### Fixed
+
+- select the matching Node security minimum when overriding the standalone
+  Dockerfile's Node major, while preserving explicit minimum overrides (#2047).
+
 ## [0.3.12]
 
 ### Fixed

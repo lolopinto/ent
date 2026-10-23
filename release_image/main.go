@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
@@ -24,7 +25,6 @@ const REPO = "ghcr.io/lolopinto/ent"
 const UPDATE_LATEST = true
 
 var NODE_VERSIONS = []int{
-	20,
 	22,
 	24,
 }
@@ -86,7 +86,7 @@ func loadReleaseVersions() (releaseVersions, error) {
 	}, nil
 }
 
-func do(version int, versions releaseVersions, push bool) error {
+func do(version int, versions releaseVersions, push, refreshRuntimes bool) error {
 	var wg sync.WaitGroup
 	wg.Add(len(SUFFIXES))
 	var serr syncerr.Error
@@ -100,7 +100,7 @@ func do(version int, versions releaseVersions, push bool) error {
 				Suffix:            suffix,
 				TsentVersion:      versions.TsentVersion,
 				AutoSchemaVersion: versions.AutoSchemaVersion,
-			}, push, &wg)
+			}, push, refreshRuntimes, &wg)
 			serr.Append(err)
 		}(j)
 	}
@@ -111,6 +111,7 @@ func do(version int, versions releaseVersions, push bool) error {
 
 func main() {
 	push := flag.Bool("push", false, "build and push Docker images")
+	refreshRuntimes := flag.Bool("refresh-runtimes", false, "bypass the final image stage cache to refresh runtime packages")
 	flag.Parse()
 
 	versions, err := loadReleaseVersions()
@@ -121,7 +122,7 @@ func main() {
 	// do node versions sequentially
 	for i := range NODE_VERSIONS {
 		v := NODE_VERSIONS[i]
-		if err := do(v, versions, *push); err != nil {
+		if err := do(v, versions, *push, *refreshRuntimes); err != nil {
 			log.Fatal(fmt.Sprintf(`error creating version %d`, v), err)
 		}
 	}
@@ -140,6 +141,9 @@ func (d *dockerfileData) Development() bool {
 }
 
 func createDockerfile(path string, d dockerfileData) error {
+	if !slices.Contains(NODE_VERSIONS, d.NodeVersion) {
+		return fmt.Errorf("unsupported Node.js major version %d", d.NodeVersion)
+	}
 	cfg, err := codegen.NewConfig("src/schema", "")
 	if err != nil {
 		return err
@@ -153,6 +157,18 @@ func createDockerfile(path string, d dockerfileData) error {
 	}))
 }
 
+// prepareBuildContext includes every local file referenced by the Dockerfile.
+func prepareBuildContext(dir string, d dockerfileData) error {
+	if err := createDockerfile(path.Join(dir, "Dockerfile"), d); err != nil {
+		return err
+	}
+	script, err := os.ReadFile(util.GetAbsolutePath("../ts/check-node-version.sh"))
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path.Join(dir, "check-node-version.sh"), script, 0644)
+}
+
 func getTags(d dockerfileData) []string {
 	ret := []string{
 		fmt.Sprintf("%s:%s-nodejs-%d-%s", REPO, d.DockerTag, d.NodeVersion, d.Suffix),
@@ -164,7 +180,7 @@ func getTags(d dockerfileData) []string {
 	return ret
 }
 
-func getCommandArgs(d dockerfileData, builder string) []string {
+func getCommandArgs(d dockerfileData, builder string, refreshRuntimes bool) []string {
 	cacheTag := fmt.Sprintf("%s:cache-nodejs%d", REPO, d.NodeVersion)
 	tags := getTags(d)
 	ret := []string{
@@ -181,6 +197,10 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 		"--push",
 	}
 
+	if refreshRuntimes {
+		ret = append(ret, "--no-cache-filter", "final-image")
+	}
+
 	for _, tag := range tags {
 		ret = append(ret, "--tag")
 		ret = append(ret, tag)
@@ -190,7 +210,7 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 	return ret
 }
 
-func run(d dockerfileData, push bool, wg *sync.WaitGroup) error {
+func run(d dockerfileData, push, refreshRuntimes bool, wg *sync.WaitGroup) error {
 	defer wg.Done()
 	dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
 	info, err := os.Stat(dir)
@@ -211,17 +231,17 @@ func run(d dockerfileData, push bool, wg *sync.WaitGroup) error {
 	defer os.RemoveAll(dir)
 	dockerfile := path.Join(dir, "Dockerfile")
 
-	err = createDockerfile(dockerfile, d)
+	err = prepareBuildContext(dir, d)
 
 	if err != nil {
-		return fmt.Errorf("error creating docker file: %w", err)
+		return fmt.Errorf("error preparing Docker build context: %w", err)
 	}
 
 	if !push {
 		fmt.Printf(
 			"dry-run: rendered %s; would run docker %s\n",
 			dockerfile,
-			strings.Join(getCommandArgs(d, "<builder>"), " "),
+			strings.Join(getCommandArgs(d, "<builder>", refreshRuntimes), " "),
 		)
 		return nil
 	}
@@ -248,7 +268,7 @@ func run(d dockerfileData, push bool, wg *sync.WaitGroup) error {
 	}()
 
 	// build image
-	cmd := exec.Command("docker", getCommandArgs(d, builder)...)
+	cmd := exec.Command("docker", getCommandArgs(d, builder, refreshRuntimes)...)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

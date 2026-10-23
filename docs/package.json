@@ -21,8 +21,8 @@
     "clsx": "2.1.1",
     "file-loader": "6.2.0",
     "raw-loader": "4.0.2",
-    "react": "19.2.7",
-    "react-dom": "19.2.7",
+    "react": "19.2.9",
+    "react-dom": "19.2.9",
     "url-loader": "4.1.1"
   },
   "overrides": {
@@ -42,6 +42,6 @@
     ]
   },
   "engines": {
-    "node": ">=20.0"
+    "node": ">=22.23.4"
   }
 }
