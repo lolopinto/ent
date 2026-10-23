@@ -85,7 +85,7 @@ func loadReleaseVersions() (releaseVersions, error) {
 	}, nil
 }
 
-func do(version int, versions releaseVersions, push bool) error {
+func do(version int, versions releaseVersions, push, refreshRuntimes bool) error {
 	var wg sync.WaitGroup
 	wg.Add(len(SUFFIXES))
 	var serr syncerr.Error
@@ -99,7 +99,7 @@ func do(version int, versions releaseVersions, push bool) error {
 				Suffix:            suffix,
 				TsentVersion:      versions.TsentVersion,
 				AutoSchemaVersion: versions.AutoSchemaVersion,
-			}, push, &wg)
+			}, push, refreshRuntimes, &wg)
 			serr.Append(err)
 		}(j)
 	}
@@ -110,6 +110,7 @@ func do(version int, versions releaseVersions, push bool) error {
 
 func main() {
 	push := flag.Bool("push", false, "build and push Docker images")
+	refreshRuntimes := flag.Bool("refresh-runtimes", false, "bypass the final image stage cache to refresh runtime packages")
 	flag.Parse()
 
 	versions, err := loadReleaseVersions()
@@ -120,7 +121,7 @@ func main() {
 	// do node versions sequentially
 	for i := range NODE_VERSIONS {
 		v := NODE_VERSIONS[i]
-		if err := do(v, versions, *push); err != nil {
+		if err := do(v, versions, *push, *refreshRuntimes); err != nil {
 			log.Fatal(fmt.Sprintf(`error creating version %d`, v), err)
 		}
 	}
@@ -134,8 +135,8 @@ type dockerfileData struct {
 	AutoSchemaVersion string
 }
 
-// NodeRelease pins the patched runtime independently of the public major-version image tag.
-func (d *dockerfileData) NodeRelease() string {
+// MinimumNodeVersion is the security floor within each supported Node.js major.
+func (d *dockerfileData) MinimumNodeVersion() string {
 	switch d.NodeVersion {
 	case 22:
 		return "22.23.4"
@@ -151,7 +152,7 @@ func (d *dockerfileData) Development() bool {
 }
 
 func createDockerfile(path string, d dockerfileData) error {
-	if d.NodeRelease() == "" {
+	if d.MinimumNodeVersion() == "" {
 		return fmt.Errorf("unsupported Node.js major version %d", d.NodeVersion)
 	}
 	cfg, err := codegen.NewConfig("src/schema", "")
@@ -178,7 +179,7 @@ func getTags(d dockerfileData) []string {
 	return ret
 }
 
-func getCommandArgs(d dockerfileData, builder string) []string {
+func getCommandArgs(d dockerfileData, builder string, refreshRuntimes bool) []string {
 	cacheTag := fmt.Sprintf("%s:cache-nodejs%d", REPO, d.NodeVersion)
 	tags := getTags(d)
 	ret := []string{
@@ -195,6 +196,10 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 		"--push",
 	}
 
+	if refreshRuntimes {
+		ret = append(ret, "--no-cache-filter", "final-image")
+	}
+
 	for _, tag := range tags {
 		ret = append(ret, "--tag")
 		ret = append(ret, tag)
@@ -204,7 +209,7 @@ func getCommandArgs(d dockerfileData, builder string) []string {
 	return ret
 }
 
-func run(d dockerfileData, push bool, wg *sync.WaitGroup) error {
+func run(d dockerfileData, push, refreshRuntimes bool, wg *sync.WaitGroup) error {
 	defer wg.Done()
 	dir := fmt.Sprintf("node_%d_%s", d.NodeVersion, d.Suffix)
 	info, err := os.Stat(dir)
@@ -235,7 +240,7 @@ func run(d dockerfileData, push bool, wg *sync.WaitGroup) error {
 		fmt.Printf(
 			"dry-run: rendered %s; would run docker %s\n",
 			dockerfile,
-			strings.Join(getCommandArgs(d, "<builder>"), " "),
+			strings.Join(getCommandArgs(d, "<builder>", refreshRuntimes), " "),
 		)
 		return nil
 	}
@@ -262,7 +267,7 @@ func run(d dockerfileData, push bool, wg *sync.WaitGroup) error {
 	}()
 
 	// build image
-	cmd := exec.Command("docker", getCommandArgs(d, builder)...)
+	cmd := exec.Command("docker", getCommandArgs(d, builder, refreshRuntimes)...)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

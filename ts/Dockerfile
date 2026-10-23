@@ -1,7 +1,7 @@
 ARG GOLANG_VERSION=v0.3.10
 ARG AUTO_SCHEMA_VERSION=0.0.41
 ARG NODE_VERSION=24
-ARG NODE_RELEASE=24.22.1
+ARG NODE_MIN_VERSION=24.22.1
 ARG BUN_VERSION=1.4.4
 ARG DOCKER_TAG=v0.3.13
 
@@ -44,7 +44,7 @@ RUN python3 -m pip install --no-cache-dir --upgrade pip==26.2.2 certifi==2026.10
 FROM python:3.12.15-trixie AS final-image
 ARG GOLANG_VERSION
 ARG NODE_VERSION
-ARG NODE_RELEASE
+ARG NODE_MIN_VERSION
 ARG BUN_VERSION
 
 ENV GOPATH=/root/go
@@ -67,7 +67,11 @@ RUN \
   curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
   echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_VERSION.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
   apt-get update && \
-  apt-get install "nodejs=${NODE_RELEASE}-1nodesource1" -yqq && \
+  apt-get install nodejs -yqq && \
+  node_version="$(node -p 'process.versions.node')" && \
+  if [ "${node_version%%.*}" != "$NODE_VERSION" ] || ! dpkg --compare-versions "$node_version" ge "$NODE_MIN_VERSION"; then \
+    echo "Node.js $node_version does not satisfy major $NODE_VERSION with minimum $NODE_MIN_VERSION" >&2; exit 1; \
+  fi && \
   npm install -g yarn && \
   apt-get autoremove wget -yqq && \
   rm -rf /var/lib/apt/lists/*
