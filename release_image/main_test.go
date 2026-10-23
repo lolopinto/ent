@@ -179,3 +179,72 @@ func TestStandaloneDockerfileUsesSameNodeGuard(t *testing.T) {
 		t.Fatal("standalone Dockerfile and release template must enforce the same Node minimum check")
 	}
 }
+
+func TestStandaloneDockerfileNodeOverrides(t *testing.T) {
+	if _, err := exec.LookPath("dpkg"); err != nil {
+		t.Skip("requires Debian dpkg")
+	}
+	data, err := os.ReadFile("../ts/Dockerfile")
+	if err != nil {
+		t.Fatal(err)
+	}
+	dockerfile := string(data)
+	globalArgs, _, _ := strings.Cut(dockerfile, "FROM ")
+	defaults := map[string]string{}
+	for _, line := range strings.Split(globalArgs, "\n") {
+		if arg, ok := strings.CutPrefix(line, "ARG "); ok {
+			name, value, _ := strings.Cut(arg, "=")
+			defaults[name] = value
+		}
+	}
+	_, finalStage, ok := strings.Cut(dockerfile, " AS final-image\n")
+	if !ok {
+		t.Fatal("missing final image stage")
+	}
+	_, install, ok := strings.Cut(finalStage, "RUN \\\n")
+	if !ok {
+		t.Fatal("missing installation step")
+	}
+	selection, _, ok := strings.Cut(install, "  apt-get update")
+	if !ok {
+		t.Fatal("missing package installation boundary")
+	}
+	_, guard, ok := strings.Cut(install, "  node_version=")
+	if !ok {
+		t.Fatal("missing Node guard")
+	}
+	guard, _, ok = strings.Cut(guard, "  npm install")
+	if !ok {
+		t.Fatal("missing guard boundary")
+	}
+	script := strings.ReplaceAll(selection+"node_version="+guard+" true", "\\\n", "")
+	for _, tc := range []struct {
+		name, major, minimum, actual string
+		pass                         bool
+	}{
+		{"default major", "", "", "24.22.1", true},
+		{"Node 22 override", "22", "", "22.23.4", true},
+		{"Node 22 below default minimum", "22", "", "22.23.3", false},
+		{"Node 24 below default minimum", "24", "", "24.22.0", false},
+		{"explicit minimum accepted", "22", "22.24.0", "22.24.0", true},
+		{"explicit minimum enforced", "22", "22.24.0", "22.23.4", false},
+		{"explicit lower minimum preserved", "22", "22.23.3", "22.23.3", true},
+		{"unsupported major", "20", "", "20.99.0", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			major, minimum := defaults["NODE_VERSION"], defaults["NODE_MIN_VERSION"]
+			if tc.major != "" {
+				major = tc.major
+			}
+			if tc.minimum != "" {
+				minimum = tc.minimum
+			}
+			cmd := exec.Command("sh", "-c", `node() { printf '%s' "$TEST_NODE_VERSION"; }; `+script)
+			cmd.Env = append(os.Environ(), "NODE_VERSION="+major, "NODE_MIN_VERSION="+minimum, "TEST_NODE_VERSION="+tc.actual)
+			out, err := cmd.CombinedOutput()
+			if (err == nil) != tc.pass {
+				t.Fatalf("expected pass=%v, error=%v, output=%s", tc.pass, err, out)
+			}
+		})
+	}
+}

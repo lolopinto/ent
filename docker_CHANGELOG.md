@@ -20,6 +20,9 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ### Fixed
 
+- select the matching Node security minimum when overriding the standalone
+  Dockerfile's Node major, while preserving explicit minimum overrides (#2047).
+
 ## [0.3.12]
 
 ### Fixed
