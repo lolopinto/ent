@@ -30,7 +30,7 @@
   "homepage": "https://github.com/lolopinto/ent#readme",
   "dependencies": {},
   "devDependencies": {
-    "@snowtop/ent": "0.2.15",
+    "@snowtop/ent": "0.2.16",
     "@types/jest": "30.0.0",
     "jest": "30.5.2",
     "pg": "8.20.0",
@@ -39,11 +39,5 @@
   "peerDependencies": {
     "@snowtop/ent": ">=0.2.8",
     "pg": "8.20.0"
-  },
-  "overrides": {
-    "@snowtop/ent": {
-      "uuid": "11.1.1",
-      "js-yaml": "4.3.2"
-    }
   }
 }

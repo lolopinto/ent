@@ -1,10 +1,10 @@
 ARG GOLANG_VERSION=v0.3.10
-ARG AUTO_SCHEMA_VERSION=0.0.41
+ARG AUTO_SCHEMA_VERSION=0.0.42
 ARG NODE_VERSION=24
 # An omitted minimum is selected by check-node-version.sh.
 ARG NODE_MIN_VERSION
 ARG BUN_VERSION=1.4.4
-ARG DOCKER_TAG=v0.3.13
+ARG DOCKER_TAG=v0.3.14
 
 # get and install tsent
 FROM --platform=$BUILDPLATFORM golang:1.26.10-trixie AS golang-image

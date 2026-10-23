@@ -13,6 +13,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 
 ### Changed
 
+- release Docker v0.3.14 with auto_schema 0.0.42 and Mako 1.4.3; retain tsent v0.3.10 and the patched Node 22 / 24 runtimes (#2048).
 - prepare Docker v0.3.13 with the latest available Node 22 / 24 releases (minimum
   22.23.4 / 24.22.1), Bun 1.4.4, Python
   3.12.15 and updated pip/certificates; rebuild tsent with Go 1.26.10 (#2047).

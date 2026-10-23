@@ -32,7 +32,7 @@
     "bcryptjs": "2.4.3"
   },
   "devDependencies": {
-    "@snowtop/ent": "0.2.15",
+    "@snowtop/ent": "0.2.16",
     "@types/jest": "30.0.0",
     "jest": "30.5.2",
     "password-validator": "5.3.0",
@@ -43,11 +43,6 @@
     "@snowtop/ent": ">=0.2.8"
   },
   "overrides": {
-    "@snowtop/ent": {
-      "brace-expansion": "5.0.12",
-      "uuid": "11.1.1",
-      "js-yaml": "4.3.2"
-    },
     "anymatch": {
       "picomatch": "2.3.2"
     },

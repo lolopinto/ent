@@ -13,7 +13,7 @@ import supertest from "supertest";
 import { Guest, User } from "src/ent";
 import each from "jest-each";
 
-async function confirmNoViewer(st?: supertest.SuperTest<supertest.Test>) {
+async function confirmNoViewer(st?: supertest.Agent) {
   await expectQueryFromRoot(
     {
       root: "viewer",
@@ -41,7 +41,7 @@ each([[true], [false]]).test("log guest in. any: %s", async (any: boolean) => {
   expect(code.guestId).toBe(guest.id);
 
   let jwtToken: string = "";
-  let st: supertest.SuperTest<supertest.Test>;
+  let st: supertest.Agent;
 
   let mutation = "authGuest";
   let args: Data = {
@@ -134,7 +134,7 @@ each([[true], [false]]).test("log user in. any: %s", async (any: boolean) => {
   const user = await createUser();
 
   let jwtToken: string = "";
-  let st: supertest.SuperTest<supertest.Test>;
+  let st: supertest.Agent;
 
   let mutation = "authUser";
   let args: Data = {
