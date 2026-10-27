@@ -37,7 +37,9 @@ test.each([
     clause: Eq("id", user.id),
     loadEntOptions: FakeUser.loaderOptions(),
   });
-  if (mode === "source") q.__maybeSetSource(user);
+  if (mode === "source") {
+    q.__maybeSetSource(user);
+  }
   const connection =
     mode === "connection"
       ? new GraphQLEdgeConnection(user.viewer, user, () => q, { first: 1 })
