@@ -24,6 +24,7 @@ func NodeEqual(existing, node *Node) bool {
 		assocEdgesEqual(existing.AssocEdges, node.AssocEdges) &&
 		actionsEqual(existing.Actions, node.Actions) &&
 		existing.EnumTable == node.EnumTable &&
+		existing.HasDefaultActionPrivacy == node.HasDefaultActionPrivacy &&
 		change.MapListEqual(existing.DBRows, node.DBRows) &&
 		constraintsEqual(existing.Constraints, node.Constraints) &&
 		indicesEqual(existing.Indices, node.Indices) &&

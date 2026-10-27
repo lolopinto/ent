@@ -557,3 +557,11 @@ func TestNode(t *testing.T) {
 	node2 := marshallAndUnmarshallNode(t, node)
 	require.True(t, NodeEqual(node, node2))
 }
+
+func TestNodeDefaultActionPrivacyChange(t *testing.T) {
+	before := &Node{}
+	after := &Node{HasDefaultActionPrivacy: true}
+	require.False(t, NodeEqual(before, after))
+	require.False(t, NodeEqual(after, before))
+	require.True(t, NodeEqual(after, marshallAndUnmarshallNode(t, after)))
+}

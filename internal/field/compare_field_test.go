@@ -376,3 +376,11 @@ func TestFieldWithNoServerDefault1(t *testing.T) {
 	}
 	require.False(t, FieldEqual(f, f2))
 }
+
+func TestCompareDBOnlyField(t *testing.T) {
+	visible := &Field{FieldName: "secret", fieldType: &enttype.StringType{}}
+	hidden := &Field{FieldName: "secret", fieldType: &enttype.StringType{}, dbOnly: true}
+	require.False(t, FieldEqual(visible, hidden))
+	require.False(t, FieldEqual(hidden, visible))
+	require.True(t, FieldEqual(hidden, hidden))
+}
