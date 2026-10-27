@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net/url"
 	"os"
 	"sync"
 	"testing"
@@ -44,7 +45,7 @@ func TestConfig(t *testing.T) {
 				SslMode:  "disable",
 			},
 			expConnStr:    "postgres://ola:@localhost/tsent_test?sslmode=disable",
-			sqlAlchemyURI: "postgresql+psycopg2://ola:@localhost/tsent_test",
+			sqlAlchemyURI: "postgresql+psycopg2://ola:@localhost/tsent_test?sslmode=disable",
 		},
 		"postgres with escaped password": {
 			connStringEnv: "postgres://ola:kx%40jj5%2Fg@localhost/tsent_test",
@@ -57,7 +58,7 @@ func TestConfig(t *testing.T) {
 				Password: "kx@jj5/g",
 			},
 			expConnStr:    "postgres://ola:kx%40jj5%2Fg@localhost/tsent_test?sslmode=disable",
-			sqlAlchemyURI: "postgresql+psycopg2://ola:kx%40jj5%2Fg@localhost/tsent_test",
+			sqlAlchemyURI: "postgresql+psycopg2://ola:kx%40jj5%2Fg@localhost/tsent_test?sslmode=disable",
 		},
 	}
 
@@ -131,5 +132,19 @@ func TestConcurrentGet(t *testing.T) {
 			continue
 		}
 		assert.Same(t, first, current)
+	}
+}
+
+func TestMigrationSSLMode(t *testing.T) {
+	t.Setenv("ENT_DEV_SCHEMA_ENABLED", "false")
+	for _, mode := range []string{"disable", "require", "verify-ca", "verify-full"} {
+		t.Run(mode, func(t *testing.T) {
+			db := &DBConfig{Dialect: "postgres", Host: "localhost", Port: 5432, User: "test", Password: "a@b/c", Database: "test", SslMode: mode}
+			uri, err := url.Parse(db.GetSQLAlchemyDatabaseURIgo())
+			assert.NoError(t, err)
+			assert.Equal(t, mode, uri.Query().Get("sslmode"))
+			password, _ := uri.User.Password()
+			assert.Equal(t, "a@b/c", password)
+		})
 	}
 }

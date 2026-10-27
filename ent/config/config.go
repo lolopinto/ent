@@ -53,7 +53,7 @@ func (db *DBConfig) GetConnectionStrWithoutDevSchema() string {
 
 func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
 	if db.Dialect == "postgres" {
-		return db.getConnectionStr("postgresql+psycopg2", false, true)
+		return db.getConnectionStr("postgresql+psycopg2", true, true)
 	}
 	return db.connString
 }
