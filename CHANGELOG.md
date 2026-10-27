@@ -16,6 +16,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- bind entity IDs as parameters in Go UPDATE queries. ([#2052](https://github.com/lolopinto/ent/pull/2052)).
+
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 
