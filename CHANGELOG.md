@@ -16,6 +16,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- keep sensitive values out of cache logs, metrics, and missing-row errors. Cache diagnostic identities are now opaque and process-local. ([#2054](https://github.com/lolopinto/ent/pull/2054)).
+
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 
