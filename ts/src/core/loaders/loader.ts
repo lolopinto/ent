@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "../cache_utils";
 import DataLoader from "dataloader";
 import { Loader, LoaderFactory, Context, DataOptions } from "../base";
 import { log, logEnabled } from "../logger";
@@ -49,7 +50,7 @@ export function getLoader<K, V>(
 ): Loader<K, V> {
   // just create a new one every time if no context cache
   if (!context?.cache) {
-    log("debug", `new loader created for ${factory.name}`);
+    log("debug", `new loader created for ${cacheDiagnosticKey(factory.name)}`);
     return create();
   }
 
@@ -64,7 +65,7 @@ export function getCustomLoader<K, V>(
 ): Loader<K, V> {
   // just create a new one every time if no context cache
   if (!context?.cache) {
-    log("debug", `new loader created for ${key}`);
+    log("debug", `new loader created for ${cacheDiagnosticKey(key)}`);
     return create();
   }
 
@@ -102,7 +103,7 @@ function instrumentCacheMap<K, V>(
         if (hook) {
           hook({
             tableName,
-            key: cacheKeyFn ? cacheKeyFn(key) : key,
+            key: cacheDiagnosticKey(cacheKeyFn ? cacheKeyFn(key) : key),
           });
         }
       }
@@ -133,7 +134,7 @@ export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
         const hook = getOnDataLoaderBatch();
         if (hook) {
           hook({
-            loaderName,
+            loaderName: cacheDiagnosticKey(loaderName),
             batchSize: keys.length,
           });
         }
@@ -244,7 +245,7 @@ export class CacheMap<K, V> implements CacheMapLike<K, V> {
       // TODO this is not the best log format
       // was designed for ObjectLoader time. Now we have different needs e.g. count, assoc etc
       log("cache", {
-        "dataloader-cache-hit": key,
+        "dataloader-cache-hit": cacheDiagnosticKey(key),
         tableName: this.options.tableName,
       });
     }

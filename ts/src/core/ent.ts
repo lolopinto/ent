@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "./cache_utils";
 import {
   Context,
   CreateRowOptions,
@@ -65,7 +66,7 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
     if (this.logEnabled && ret) {
       const key = getEntKey(this.viewer, id, this.options);
       log("cache", {
-        "ent-cache-hit": key,
+        "ent-cache-hit": cacheDiagnosticKey(key),
       });
     }
     return ret;
@@ -867,7 +868,7 @@ export async function loadRowX(options: LoadRowOptions): Promise<Data> {
     throw new Error(
       `couldn't find row for query ${options.clause.clause(
         1,
-      )} with values ${options.clause.values()}`,
+      )} with values ${options.clause.logValues()}`,
     );
   }
   return result;
@@ -1328,7 +1329,6 @@ function encodeCursorPayload(json: string): string {
 export function decodeCursorPayload(encoded: string): string {
   return Buffer.from(encoded, "base64").toString("utf8");
 }
-
 
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {

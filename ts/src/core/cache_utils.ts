@@ -1,3 +1,5 @@
+import { createHmac, randomBytes } from "crypto";
+
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   if (!value || typeof value !== "object") {
     return false;
@@ -27,4 +29,26 @@ export function stableStringify(value: unknown): string {
   const normalized = normalizeForStableStringify(value);
   const result = JSON.stringify(normalized);
   return result === undefined ? "undefined" : result;
+}
+
+// Diagnostic identities stay stable within a process without exposing cache data.
+// A random HMAC key prevents guessing low-entropy secrets from logged digests.
+const diagnosticKey = randomBytes(32);
+const diagnosticObjects = new WeakMap<object, string>();
+export function cacheDiagnosticKey(value: unknown): string {
+  if (
+    (typeof value === "object" && value !== null) ||
+    typeof value === "function"
+  ) {
+    // Generic loaders may use cyclic objects. Do not serialize or call user code.
+    let identity = diagnosticObjects.get(value);
+    if (!identity) {
+      identity = randomBytes(32).toString("hex");
+      diagnosticObjects.set(value, identity);
+    }
+    return identity;
+  }
+  return createHmac("sha256", diagnosticKey)
+    .update(`${typeof value}:${String(value)}`)
+    .digest("hex");
 }

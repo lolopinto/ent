@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "../cache_utils";
 import DataLoader from "dataloader";
 import {
   LoadRowOptions,
@@ -176,7 +177,9 @@ class clauseCacheMap<
     const ret = this.m.get(key2);
     if (ret) {
       log("cache", {
-        "dataloader-cache-hit": key2 + (this.count ? ":count" : ""),
+        "dataloader-cache-hit": cacheDiagnosticKey(
+          key2 + (this.count ? ":count" : ""),
+        ),
         tableName: this.options.tableName,
       });
     }

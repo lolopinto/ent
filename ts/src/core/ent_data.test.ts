@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "./cache_utils";
 import {
   PrivacyPolicy,
   ID,
@@ -470,7 +471,9 @@ async function testLoadRow(addCtx?: boolean, disableWrite?: boolean) {
             queryOption,
             // cache hit on 2nd query
             {
-              "cache-hit": "fields:bar,baz,foo,clause:bar=1",
+              "cache-hit": cacheDiagnosticKey(
+                "fields:bar,baz,foo,clause:bar=1",
+              ),
               tableName: options.tableName,
             },
           ],
@@ -512,7 +515,9 @@ function commonTests() {
               qOption,
               {
                 // cache hit on 2nd query
-                "cache-hit": "fields:bar,baz,foo,clause:in:bar:1,2,3",
+                "cache-hit": cacheDiagnosticKey(
+                  "fields:bar,baz,foo,clause:in:bar:1,2,3",
+                ),
                 tableName: options.tableName,
               },
             ],
@@ -563,18 +568,18 @@ function commonTests() {
             // when there's a context cache, we only run the query once so should be the same result
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
-              "dataloader-cache-hit": 1,
+              "dataloader-cache-hit": cacheDiagnosticKey(1),
               tableName: options.tableName,
             };
             const entLoggedoutCacheHit: Data = {
-              "ent-cache-hit": ent.getEntKey(
-                new LoggedOutViewer(),
-                1,
-                User.loaderOptions(),
+              "ent-cache-hit": cacheDiagnosticKey(
+                ent.getEntKey(new LoggedOutViewer(), 1, User.loaderOptions()),
               ),
             };
             const entCacheHit: Data = {
-              "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+              "ent-cache-hit": cacheDiagnosticKey(
+                ent.getEntKey(vc, 1, User.loaderOptions()),
+              ),
             };
             // query first time, 2nd time ent cache
             const expQueries2: Data[] = [queryOption, entLoggedoutCacheHit];
@@ -688,18 +693,22 @@ function commonTests() {
             // when there's a context cache, we only run the query once so should be the same result
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
-              "dataloader-cache-hit": 1,
+              "dataloader-cache-hit": cacheDiagnosticKey(1),
               tableName: options.tableName,
             };
             const entLoggedoutCacheHit: Data = {
-              "ent-cache-hit": ent.getEntKey(
-                new LoggedOutViewer(),
-                1,
-                Contact.loaderOptions(),
+              "ent-cache-hit": cacheDiagnosticKey(
+                ent.getEntKey(
+                  new LoggedOutViewer(),
+                  1,
+                  Contact.loaderOptions(),
+                ),
               ),
             };
             const entCacheHit: Data = {
-              "ent-cache-hit": ent.getEntKey(vc, 1, Contact.loaderOptions()),
+              "ent-cache-hit": cacheDiagnosticKey(
+                ent.getEntKey(vc, 1, Contact.loaderOptions()),
+              ),
             };
             const expQueries2: Data[] = [queryOption, entLoggedoutCacheHit];
 
@@ -785,28 +794,22 @@ function commonTests() {
             // when there's a context cache, we only run the query once so should be the same result
             const expQueries1: Data[] = [queryOption];
             const cacheHit: Data = {
-              "dataloader-cache-hit": 1,
+              "dataloader-cache-hit": cacheDiagnosticKey(1),
               tableName: options.tableName,
             };
             const entCacheHit1: Data = {
-              "ent-cache-hit": ent.getEntKey(
-                getIDViewer(1, ctx),
-                1,
-                Account.loaderOptions(),
+              "ent-cache-hit": cacheDiagnosticKey(
+                ent.getEntKey(getIDViewer(1, ctx), 1, Account.loaderOptions()),
               ),
             };
             const entCacheHit2: Data = {
-              "ent-cache-hit": ent.getEntKey(
-                getIDViewer(2, ctx),
-                1,
-                Account.loaderOptions(),
+              "ent-cache-hit": cacheDiagnosticKey(
+                ent.getEntKey(getIDViewer(2, ctx), 1, Account.loaderOptions()),
               ),
             };
             const entCacheHit3: Data = {
-              "ent-cache-hit": ent.getEntKey(
-                getIDViewer(3, ctx),
-                1,
-                Account.loaderOptions(),
+              "ent-cache-hit": cacheDiagnosticKey(
+                ent.getEntKey(getIDViewer(3, ctx), 1, Account.loaderOptions()),
               ),
             };
             const expQueries2: Data[] = [queryOption, entCacheHit1];
@@ -970,13 +973,19 @@ function commonTests() {
       const expQueries2 = [
         ...expQueries,
         {
-          "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 1, User.loaderOptions()),
+          ),
         },
         {
-          "ent-cache-hit": ent.getEntKey(vc, 2, User.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 2, User.loaderOptions()),
+          ),
         },
         {
-          "ent-cache-hit": ent.getEntKey(vc, 3, User.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 3, User.loaderOptions()),
+          ),
         },
       ];
       validateQueries(expQueries2);
@@ -1055,7 +1064,9 @@ function commonTests() {
               [
                 qOption,
                 {
-                  "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+                  "ent-cache-hit": cacheDiagnosticKey(
+                    ent.getEntKey(vc, 1, User.loaderOptions()),
+                  ),
                 },
               ],
             ];
@@ -1097,7 +1108,9 @@ function commonTests() {
               [
                 qOption,
                 {
-                  "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+                  "ent-cache-hit": cacheDiagnosticKey(
+                    ent.getEntKey(vc, 1, User.loaderOptions()),
+                  ),
                 },
               ],
             ];
@@ -1162,7 +1175,9 @@ function commonTests() {
             [
               qOption,
               {
-                "cache-hit": "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
+                "cache-hit": cacheDiagnosticKey(
+                  "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
+                ),
                 tableName: options.tableName,
               },
             ],
@@ -1205,7 +1220,9 @@ function commonTests() {
             [
               qOption,
               {
-                "cache-hit": "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
+                "cache-hit": cacheDiagnosticKey(
+                  "fields:bar,baz,foo,clause:bar=1 AND baz=baz",
+                ),
                 tableName: options.tableName,
               },
             ],
@@ -1275,13 +1292,19 @@ function commonTests() {
 
       const cacheHits = [
         {
-          "ent-cache-hit": ent.getEntKey(vc, 1, User.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 1, User.loaderOptions()),
+          ),
         },
         {
-          "ent-cache-hit": ent.getEntKey(vc, 2, User.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 2, User.loaderOptions()),
+          ),
         },
         {
-          "ent-cache-hit": ent.getEntKey(vc, 3, User.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 3, User.loaderOptions()),
+          ),
         },
       ];
       const expQueries2 = [...expQueries, ...cacheHits];
@@ -1389,7 +1412,7 @@ function commonTests() {
           `couldn't find row for value 6 in table users`,
         );
         expect(ml.logs).toStrictEqual([
-          { "ent-cache-hit": "idViewer:1:users:bar::6" },
+          { "ent-cache-hit": cacheDiagnosticKey("idViewer:1:users:bar::6") },
         ]);
       }
     });
@@ -1475,13 +1498,19 @@ function commonTests() {
 
       const cacheHits = [
         {
-          "ent-cache-hit": ent.getEntKey(vc, 1, Contact.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 1, Contact.loaderOptions()),
+          ),
         },
         {
-          "ent-cache-hit": ent.getEntKey(vc, 2, Contact.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 2, Contact.loaderOptions()),
+          ),
         },
         {
-          "ent-cache-hit": ent.getEntKey(vc, 3, Contact.loaderOptions()),
+          "ent-cache-hit": cacheDiagnosticKey(
+            ent.getEntKey(vc, 3, Contact.loaderOptions()),
+          ),
         },
       ];
       const expQueries2 = [...expQueries, ...cacheHits];
@@ -1593,7 +1622,7 @@ function commonTests() {
       validateQueries([
         qOption,
         {
-          "cache-hit": "fields:bar,baz,foo,clause:baz=baz",
+          "cache-hit": cacheDiagnosticKey("fields:bar,baz,foo,clause:baz=baz"),
           tableName: options.tableName,
         },
       ]);
@@ -1681,7 +1710,7 @@ function commonTests() {
       validateQueries([
         qOption,
         {
-          "cache-hit": "fields:bar,baz,foo,clause:baz=baz",
+          "cache-hit": cacheDiagnosticKey("fields:bar,baz,foo,clause:baz=baz"),
           tableName: options.tableName,
         },
       ]);
@@ -1830,7 +1859,9 @@ function commonTests() {
             queries2 = [
               queryOption,
               {
-                "cache-hit": "fields:bar,baz,foo,clause:bar=1",
+                "cache-hit": cacheDiagnosticKey(
+                  "fields:bar,baz,foo,clause:bar=1",
+                ),
                 tableName: "users",
               },
             ];

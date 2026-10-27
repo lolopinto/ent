@@ -1,15 +1,18 @@
 export type DataLoaderBatchMetrics = {
+  // Opaque process-local identity; never includes query values.
   loaderName: string;
   batchSize: number;
 };
 
 export type DataLoaderCacheHitMetrics = {
   tableName: string;
+  // Opaque process-local cache identity.
   key: unknown;
 };
 
 export type QueryCacheHitMetrics = {
   tableName: string;
+  // Opaque process-local cache identity.
   key: string;
 };
 

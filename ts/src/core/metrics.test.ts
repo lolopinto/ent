@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "./cache_utils";
 import { createCountDataLoader } from "./loaders/raw_count_loader";
 import { ContextCache } from "./context";
 import { setMetricsHook } from "./metrics";
@@ -56,17 +57,48 @@ describe("metrics hooks", () => {
     contextCache.getCachedRows(queryOptions);
 
     expect(onDataLoaderBatch).toHaveBeenCalledWith({
-      loaderName: "rawCountLoader:users:id",
+      loaderName: cacheDiagnosticKey("rawCountLoader:users:id"),
       batchSize: 2,
     });
     expect(onDataLoaderCacheHit).toHaveBeenCalledWith({
       tableName: "users",
-      key: 1,
+      key: cacheDiagnosticKey(1),
     });
     expect(onDataLoaderCacheHit).toHaveBeenCalledWith({
       tableName: "users",
-      key: 2,
+      key: cacheDiagnosticKey(2),
     });
     expect(onQueryCacheHit).toHaveBeenCalledTimes(2);
   });
+});
+
+it("metrics preserve cached bigint and cyclic-object loader keys", async () => {
+  const { InstrumentedDataLoader } = await import("./loaders/loader");
+  const circular: { self?: unknown } = {};
+  circular.self = circular;
+  const keys = [BigInt(1), circular];
+  const hits: unknown[] = [];
+  setMetricsHook({ onDataLoaderCacheHit: (info) => hits.push(info.key) });
+  try {
+    const loader = new InstrumentedDataLoader<unknown, number>(
+      "generic",
+      async (keys) => keys.map(() => 5),
+      { cacheMap: new Map() },
+      "events",
+    );
+    for (const key of keys) {
+      loader.prime(key, 5);
+      expect(await loader.load(key)).toBe(5);
+      expect(await loader.load(key)).toBe(5);
+    }
+    expect(hits).toHaveLength(4);
+    expect(hits[0]).toBe(hits[1]);
+    expect(hits[2]).toBe(hits[3]);
+    expect(hits[0]).not.toBe(hits[2]);
+    for (const hit of hits) {
+      expect(typeof hit).toBe("string");
+    }
+  } finally {
+    setMetricsHook();
+  }
 });
