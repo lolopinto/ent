@@ -875,6 +875,17 @@ export class Orchestrator<
     // future optimization: can get schemaFields to memoize based on different values
     const schemaFields = getFields(this.options.schema);
 
+    const editedFields = await this.options.editedFields();
+
+    let { data: editedData, userDefinedKeys } =
+      await this.getFieldsWithDefaultValues(
+        builder,
+        schemaFields,
+        editedFields,
+        action,
+      );
+
+    // Write transformations determine which field permissions apply.
     // also future optimization, no need to go through the list of fields multiple times
     let editPrivacyFields = new Map<string, PrivacyPolicy>();
     switch (this.actualOperation) {
@@ -892,16 +903,6 @@ export class Orchestrator<
         );
         break;
     }
-
-    const editedFields = await this.options.editedFields();
-
-    let { data: editedData, userDefinedKeys } =
-      await this.getFieldsWithDefaultValues(
-        builder,
-        schemaFields,
-        editedFields,
-        action,
-      );
 
     return {
       editedData,
@@ -1141,6 +1142,12 @@ export class Orchestrator<
       });
     }
     if (transformed) {
+      if (
+        transformed.op === SQLStatementOperation.Insert &&
+        (this.existingEnt || transformed.existingEnt)
+      ) {
+        throw new Error("cannot transform to insert with an existing ent");
+      }
       if (sqlOp === SQLStatementOperation.Insert && sqlOp !== transformed.op) {
         if (!transformed.existingEnt) {
           throw new Error(

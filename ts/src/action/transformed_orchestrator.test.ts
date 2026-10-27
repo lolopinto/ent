@@ -1,7 +1,7 @@
 import { v4 as uuidv4 } from "uuid";
 import { advanceTo } from "jest-date-mock";
 import { WriteOperation } from "../action";
-import { Context, Data, Viewer } from "../core/base";
+import { Allow, Deny, Context, Data, ID, Viewer } from "../core/base";
 import { LoggedOutViewer } from "../core/viewer";
 import each from "jest-each";
 import {
@@ -379,6 +379,60 @@ function getInsertCountryAction(
 
 function commonTests() {
   test.each([
+    false,
+    true,
+  ])("transformed insert uses edit field policy (allowed=%s)", async (allowed) => {
+    let expectedID: ID | undefined;
+    const apply = jest.fn(async (_viewer, ent) => {
+      expect(ent?.id).toBe(expectedID);
+      return allowed ? Allow() : Deny();
+    });
+    const schema = new EntBuilderSchema(User, {
+      patterns: [new DeletedAtPattern()],
+      fields: {
+        FirstName: StringType({
+          editPrivacyPolicy: { rules: [{ apply }] },
+          createOnlyOverrideEditPrivacyPolicy: {
+            rules: [{ apply: async () => Allow() }],
+          },
+        }),
+        LastName: StringType(),
+      },
+    });
+    const viewer = new LoggedOutViewer();
+    const makeAction = (firstName: string) =>
+      new SimpleAction(
+        viewer,
+        schema,
+        new Map([
+          ["FirstName", firstName],
+          ["LastName", "Snow"],
+        ]),
+        WriteOperation.Insert,
+        null,
+      );
+    // The creation override must remain usable for an ordinary insert.
+    const user = await makeAction("Jon").saveX();
+    expectedID = user.id;
+    expect(apply).not.toHaveBeenCalled();
+    const edit = makeAction("Aegon");
+    Object.assign(edit, {
+      transformWrite: () => ({
+        op: SQLStatementOperation.Update,
+        existingEnt: user,
+      }),
+    });
+    if (allowed) {
+      expect((await edit.saveX()).id).toBe(user.id);
+    } else {
+      await expect(edit.saveX()).rejects.toThrow(/permission/);
+    }
+    expect(apply).toHaveBeenCalledTimes(1);
+    const row = await getNewLoader().load(user.id);
+    expect(row?.first_name).toBe(allowed ? "Aegon" : "Jon");
+  });
+
+  test.each([
     SQLStatementOperation.Insert,
     SQLStatementOperation.Update,
   ])("default synchronization receives the transformed operation %s", async (op) => {
@@ -404,13 +458,15 @@ function commonTests() {
         new LoggedOutViewer(),
         schema,
         new Map(),
-        op === SQLStatementOperation.Insert
-          ? WriteOperation.Edit
-          : WriteOperation.Insert,
-        existing,
+        WriteOperation.Insert,
+        null,
       ),
       {
-        transformWrite: () => ({ op, existingEnt: existing }),
+        transformWrite: () => ({
+          op,
+          existingEnt:
+            op === SQLStatementOperation.Update ? existing : undefined,
+        }),
       },
     );
     const options = action.builder.orchestrator.__getOptions();
@@ -427,6 +483,33 @@ function commonTests() {
         : WriteOperation.Edit,
       expect.any(Set),
     );
+  });
+
+  test("a transformed insert cannot update an existing entity with creation permissions", async () => {
+    const existing = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      undefined,
+    ).saveX();
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchema,
+      new Map([["FirstName", "Aegon"]]),
+      WriteOperation.Edit,
+      existing,
+    );
+    Object.assign(action, {
+      transformWrite: () => ({
+        op: SQLStatementOperation.Insert,
+        existingEnt: existing,
+      }),
+    });
+    await expect(action.saveX()).rejects.toThrow(
+      "cannot transform to insert with an existing ent",
+    );
+    expect((await getNewLoader().load(existing.id))?.first_name).toBe("Jon");
   });
 
   test("delete -> update", async () => {
