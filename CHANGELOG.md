@@ -16,7 +16,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- preserve caller identity and enforce ownership in Todo, RSVP, and Simple examples; remove the public inverse event-address relationship ([#2055](https://github.com/lolopinto/ent/pull/2055)).
+- preserve Todo query viewers and restrict its two account-wide bulk mutations to the account owner; enforce RSVP address/activity ownership and guest-group consistency, protect Simple confirmations and alternate user deletion, and remove the inverse event-address API (#2055).
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 
