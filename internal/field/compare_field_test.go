@@ -384,3 +384,11 @@ func TestCompareDBOnlyField(t *testing.T) {
 	require.False(t, FieldEqual(hidden, visible))
 	require.True(t, FieldEqual(hidden, hidden))
 }
+
+func TestCompareImmutableField(t *testing.T) {
+	mutable := &Field{FieldName: "secret", fieldType: &enttype.StringType{}}
+	immutable := &Field{FieldName: "secret", fieldType: &enttype.StringType{}, immutable: true}
+	require.False(t, FieldEqual(mutable, immutable))
+	require.False(t, FieldEqual(immutable, mutable))
+	require.True(t, FieldEqual(immutable, immutable))
+}

@@ -68,6 +68,7 @@ func FieldEqual(existing, field *Field) bool {
 		compareType(existing.graphqlFieldType, field.graphqlFieldType) &&
 		existing.dbColumn == field.dbColumn &&
 		existing.dbOnly == field.dbOnly &&
+		existing.immutable == field.immutable &&
 		existing.hideFromGraphQL == field.hideFromGraphQL &&
 		existing.private == field.private &&
 		input.PolymorphicOptionsEqual(existing.polymorphic, field.polymorphic) &&
