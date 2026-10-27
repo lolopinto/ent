@@ -29,6 +29,6 @@ export const RemoveCompletedTodosType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     const r = new TodosResolver();
-    return r.removeCompletedTodos(args.accountID);
+    return r.removeCompletedTodos(context, args.accountID);
   },
 };

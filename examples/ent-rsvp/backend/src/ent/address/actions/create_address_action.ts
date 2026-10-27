@@ -1,39 +1,60 @@
-import { ID, Ent, AllowIfEntIsVisibleRule } from "@snowtop/ent";
-import {
-  AllowIfConditionAppliesRule,
-  AlwaysDenyRule,
-} from "@snowtop/ent/core/privacy";
+import { AllowIfViewerEqualsRule, AlwaysDenyRule } from "@snowtop/ent";
 import { CreateAddressActionBase } from "src/ent/generated/address/actions/create_address_action_base";
 import type { AddressCreateInput } from "src/ent/generated/address/actions/create_address_action_base";
-import { AllowIfBuilder, Builder } from "@snowtop/ent/action";
-import { getLoaderOptions } from "src/ent/generated/loadAny";
+import { EventActivityBuilder } from "src/ent/generated/event_activity/actions/event_activity_builder";
+import { UserBuilder } from "src/ent/generated/user/actions/user_builder";
+import {
+  AllowIfEventCreatorRule,
+  AllowIfEventCreatorFromActivityRule,
+} from "src/ent/event/privacy/event_creator";
 import { NodeType } from "src/ent/generated/const";
 
 export type { AddressCreateInput };
 
-// we're only writing this once except with --force and packageName provided
 export default class CreateAddressAction extends CreateAddressActionBase {
   getPrivacyPolicy() {
-    return {
-      rules: [
-        new AllowIfBuilder(this.input.ownerId),
-        // TODO this is too complicated.
-        // change AllowIfEntIsVisibleRule to take Builder and discard it
-        // need a better conditional check?
-        // and/or a sub rule that somehow enforces types in some kind of chaining
-        new AllowIfConditionAppliesRule(
-          () => {
-            return (
-              (this.input.ownerId as Builder<Ent>).placeholderID === undefined
-            );
-          },
-          new AllowIfEntIsVisibleRule(
-            this.input.ownerId as ID,
-            getLoaderOptions(this.input.ownerType as unknown as NodeType),
-          ),
-        ),
-        AlwaysDenyRule,
-      ],
-    };
+    const owner = this.input.ownerId;
+    if (typeof owner === "object") {
+      // Nested creation is allowed only for the matching owner type and caller.
+      if (
+        owner.viewer.viewerID !== this.viewer.viewerID ||
+        !this.viewer.viewerID
+      ) {
+        return { rules: [AlwaysDenyRule] };
+      }
+      if (
+        this.input.ownerType === NodeType.EventActivity &&
+        owner instanceof EventActivityBuilder
+      ) {
+        const input = owner.getInput();
+        return {
+          rules: [
+            new AllowIfEventCreatorRule(owner.getNewEventIdValue(), input),
+            AlwaysDenyRule,
+          ],
+        };
+      }
+      if (
+        this.input.ownerType === NodeType.User &&
+        owner instanceof UserBuilder
+      ) {
+        return {
+          rules: [
+            new AllowIfViewerEqualsRule(
+              owner.existingEnt?.id ?? owner.placeholderID,
+            ),
+            AlwaysDenyRule,
+          ],
+        };
+      }
+      return { rules: [AlwaysDenyRule] };
+    }
+    const rule =
+      this.input.ownerType === NodeType.EventActivity
+        ? new AllowIfEventCreatorFromActivityRule(owner)
+        : this.input.ownerType === NodeType.User
+          ? new AllowIfViewerEqualsRule(owner)
+          : AlwaysDenyRule;
+    return { rules: [rule, AlwaysDenyRule] };
   }
 }

@@ -1,5 +1,5 @@
-import { ID, IDViewer } from "@snowtop/ent";
-import { gqlMutation } from "@snowtop/ent/graphql";
+import { ID, RequestContext } from "@snowtop/ent";
+import { gqlMutation, gqlContextType } from "@snowtop/ent/graphql";
 import { Account, AccountToTodosQuery } from "src/ent";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
 import { AccountBuilder } from "src/ent/generated/account/actions/account_builder";
@@ -13,6 +13,7 @@ export class TodosResolver {
     name: "markAllTodosAs",
     type: "Account",
     args: [
+      gqlContextType(),
       {
         name: "accountID",
         type: GraphQLID,
@@ -25,15 +26,14 @@ export class TodosResolver {
     async: true,
   })
   async markAllTodos(
-    // we're simplifying, no viewer or anything complicated and anyone can perform the action
+    context: RequestContext,
     accountID: ID,
     completed: boolean,
   ) {
-    const vc = new IDViewer(accountID);
-    const viewer = vc.viewerID;
+    const vc = context.getViewer();
 
-    const account = await Account.loadX(vc, viewer);
-    const todos = await AccountToTodosQuery.query(vc, viewer).queryEnts();
+    const account = await Account.loadX(vc, accountID);
+    const todos = await AccountToTodosQuery.query(vc, accountID).queryEnts();
     const bulk = BaseAction.bulkAction(
       account,
       AccountBuilder,
@@ -49,6 +49,7 @@ export class TodosResolver {
     name: "removeCompletedTodos",
     type: "Account",
     args: [
+      gqlContextType(),
       {
         name: "accountID",
         type: GraphQLID,
@@ -56,15 +57,11 @@ export class TodosResolver {
     ],
     async: true,
   })
-  async removeCompletedTodos(
-    // we're simplifying, no viewer or anything complicated and anyone can perform the action
-    accountID: ID,
-  ) {
-    const vc = new IDViewer(accountID);
-    const viewer = vc.viewerID;
+  async removeCompletedTodos(context: RequestContext, accountID: ID) {
+    const vc = context.getViewer();
 
-    const account = await Account.loadX(vc, viewer);
-    const todos = await AccountToTodosQuery.query(vc, viewer).queryEnts();
+    const account = await Account.loadX(vc, accountID);
+    const todos = await AccountToTodosQuery.query(vc, accountID).queryEnts();
     const completedTodos = todos.filter((todo) => todo.completed);
 
     const bulk = BaseAction.bulkAction(

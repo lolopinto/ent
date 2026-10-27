@@ -153,14 +153,6 @@ test("change address", async () => {
   ).saveX();
   expect(await event.addressId()).toBe(address.id);
 
-  let [hostedEvents, hostedEventsEdges] = await Promise.all([
-    address.queryHostedEvents().queryEnts(),
-    address.queryHostedEvents().queryEdges(),
-  ]);
-
-  expect(hostedEvents.length).toBe(1);
-  expect(hostedEventsEdges.length).toBe(1);
-
   let newAddress = await createAddress();
   let editedEvent = await EditEventAction.create(
     new ExampleViewer(event.creatorId),
@@ -171,31 +163,6 @@ test("change address", async () => {
   ).saveX();
   expect(await editedEvent.addressId()).toBe(newAddress.id);
 
-  const oldAddress = address;
-  let [hostedEvents2, hostedEventsEdges2] = await Promise.all([
-    oldAddress.queryHostedEvents().queryEnts(),
-    oldAddress.queryHostedEvents().queryEdges(),
-  ]);
-  expect(hostedEvents2.length).toBe(0);
-  expect(hostedEventsEdges2.length).toBe(0);
-
-  let [hostedEvents3, hostedEventsEdges3] = await Promise.all([
-    newAddress.queryHostedEvents().queryEnts(),
-    newAddress.queryHostedEvents().queryEdges(),
-  ]);
-  expect(hostedEvents3.length).toBe(1);
-  expect(hostedEventsEdges3.length).toBe(1);
-
-  expect(hostedEvents3.length).toBe(1);
-  expect(hostedEvents3[0].id).toBe(event.id);
-  expect(hostedEventsEdges3.length).toBe(1);
-  expect(hostedEventsEdges3[0]).toMatchObject({
-    id1: newAddress.id,
-    id1Type: newAddress.nodeType,
-    id2: event.id,
-    id2Type: event.nodeType,
-  });
-
   // set to null
   editedEvent = await EditEventAction.create(
     new ExampleViewer(event.creatorId),
@@ -205,13 +172,6 @@ test("change address", async () => {
     },
   ).saveX();
   expect(await editedEvent.addressId()).toBe(null);
-
-  let [hostedEvents4, hostedEventsEdges4] = await Promise.all([
-    newAddress.queryHostedEvents().queryEnts(),
-    newAddress.queryHostedEvents().queryEdges(),
-  ]);
-  expect(hostedEvents4.length).toBe(0);
-  expect(hostedEventsEdges4.length).toBe(0);
 });
 
 test("addressId privacy", async () => {
@@ -313,9 +273,9 @@ test("delete event rando", async () => {
   let user = await createUser();
   const vc = new ExampleViewer(user.id);
 
-  await expect(
-    DeleteEventAction.create(vc, event).saveX(),
-  ).rejects.toThrow(/ does not have permission to delete Event/);
+  await expect(DeleteEventAction.create(vc, event).saveX()).rejects.toThrow(
+    / does not have permission to delete Event/,
+  );
 });
 
 describe("validators", () => {

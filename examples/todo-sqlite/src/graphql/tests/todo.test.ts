@@ -1,3 +1,6 @@
+import { graphql } from "graphql";
+import { LoggedOutViewer } from "@snowtop/ent";
+import { TestContext } from "@snowtop/ent/testutils/context/test_context";
 import { Account, AccountToTodosQuery, Todo } from "src/ent";
 import {
   expectMutation,
@@ -385,4 +388,48 @@ test("assignees", async () => {
       },
     ],
   );
+});
+
+test.each([
+  "anonymous",
+  "unrelated",
+  "self",
+])("custom todo routes preserve the %s caller", async (mode) => {
+  const account = await createAccount();
+  await createWorkspace(account);
+  await createTodoForSelf({ creatorId: account.id });
+  const other = await createAccount();
+  const viewer =
+    mode === "self"
+      ? account.viewer
+      : mode === "unrelated"
+        ? other.viewer
+        : new LoggedOutViewer();
+  const selection = "phone_number created_workspaces { nodes { name } }";
+  const expected = {
+    phone_number: mode === "self" ? account.phoneNumber : null,
+    created_workspaces: { nodes: mode === "self" ? [{ name: "test" }] : [] },
+  };
+  for (const source of [
+    `query($id: ID!) { result: open_todos_plural(id: $id) { assignee { ${selection} } } }`,
+    `query($id: ID!) { result: open_todos(id: $id) { nodes { assignee { ${selection} } } } }`,
+    `mutation($id: ID!) { result: markAllTodosAs(accountID: $id, completed: false) { ${selection} } }`,
+    `mutation($id: ID!) { result: removeCompletedTodos(accountID: $id) { ${selection} } }`,
+  ]) {
+    const result = await graphql({
+      schema,
+      source,
+      variableValues: { id: account.id },
+      contextValue: new TestContext(viewer),
+    });
+    expect(result.errors).toBeUndefined();
+    const data = result.data!.result as any;
+    expect(
+      Array.isArray(data)
+        ? data[0].assignee
+        : data.nodes
+          ? data.nodes[0].assignee
+          : data,
+    ).toEqual(expected);
+  }
 });

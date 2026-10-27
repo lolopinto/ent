@@ -27,7 +27,6 @@ import {
 import { getFields } from "@snowtop/ent/schema";
 import { addressLoader, addressLoaderInfo } from "./loaders";
 import { NodeType } from "./types";
-import { AddressToHostedEventsQuery } from "../internal";
 import schema from "../../schema/address";
 
 export class AddressBase implements Ent<ExampleViewerAlias> {
@@ -220,9 +219,5 @@ export class AddressBase implements Ent<ExampleViewerAlias> {
 
   static getField(key: string): Field | undefined {
     return AddressBase.getSchemaFields().get(key);
-  }
-
-  queryHostedEvents(): AddressToHostedEventsQuery {
-    return AddressToHostedEventsQuery.query(this.viewer, this.id);
   }
 }
