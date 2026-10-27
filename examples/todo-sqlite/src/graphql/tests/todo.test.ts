@@ -413,8 +413,6 @@ test.each([
   for (const source of [
     `query($id: ID!) { result: open_todos_plural(id: $id) { assignee { ${selection} } } }`,
     `query($id: ID!) { result: open_todos(id: $id) { nodes { assignee { ${selection} } } } }`,
-    `mutation($id: ID!) { result: markAllTodosAs(accountID: $id, completed: false) { ${selection} } }`,
-    `mutation($id: ID!) { result: removeCompletedTodos(accountID: $id) { ${selection} } }`,
   ]) {
     const result = await graphql({
       schema,
@@ -432,4 +430,39 @@ test.each([
           : data,
     ).toEqual(expected);
   }
+});
+
+test.each([
+  "anonymous",
+  "unrelated",
+])("account-wide todo writes reject %s callers before changing data", async (mode) => {
+  const [account, todos] = await createTodos();
+  const other = await createAccount();
+  const viewer = mode === "anonymous" ? new LoggedOutViewer() : other.viewer;
+  await ChangeTodoStatusAction.create(account.viewer, todos[0], {
+    completed: true,
+  }).saveX();
+  const empty = await createAccount();
+  for (const target of [account, empty]) {
+    for (const mutation of [
+      "markAllTodosAs(accountID: $id, completed: true)",
+      "removeCompletedTodos(accountID: $id)",
+    ]) {
+      const result = await graphql({
+        schema,
+        source: `mutation($id: ID!) { ${mutation} { id } }`,
+        variableValues: { id: target.id },
+        contextValue: new TestContext(viewer),
+      });
+      expect(result.errors?.length).toBeGreaterThan(0);
+    }
+  }
+  const persisted = await AccountToTodosQuery.query(
+    account.viewer,
+    account.id,
+  ).queryEnts();
+  expect(persisted).toHaveLength(todos.length);
+  expect(persisted.filter((t) => t.completed).map((t) => t.id)).toEqual([
+    todos[0].id,
+  ]);
 });

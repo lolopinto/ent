@@ -1,4 +1,9 @@
-import { ID, RequestContext } from "@snowtop/ent";
+import {
+  ID,
+  RequestContext,
+  applyPrivacyPolicyX,
+  AllowIfViewerPrivacyPolicy,
+} from "@snowtop/ent";
 import { gqlMutation, gqlContextType } from "@snowtop/ent/graphql";
 import { Account, AccountToTodosQuery } from "src/ent";
 import { BaseAction } from "@snowtop/ent/action/experimental_action";
@@ -33,6 +38,7 @@ export class TodosResolver {
     const vc = context.getViewer();
 
     const account = await Account.loadX(vc, accountID);
+    await applyPrivacyPolicyX(vc, AllowIfViewerPrivacyPolicy, account);
     const todos = await AccountToTodosQuery.query(vc, accountID).queryEnts();
     const bulk = BaseAction.bulkAction(
       account,
@@ -61,6 +67,7 @@ export class TodosResolver {
     const vc = context.getViewer();
 
     const account = await Account.loadX(vc, accountID);
+    await applyPrivacyPolicyX(vc, AllowIfViewerPrivacyPolicy, account);
     const todos = await AccountToTodosQuery.query(vc, accountID).queryEnts();
     const completedTodos = todos.filter((todo) => todo.completed);
 

@@ -42,7 +42,7 @@ import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_ad
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 import CreateCommentAction from "../comment/actions/create_comment_action";
-import DeleteUserAction2 from "../user/actions/delete_user_action_2";
+import DeleteUserAction2 from "../user/actions/delete_user_action2";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import EditUserAllFieldsAction from "../user/actions/edit_user_all_fields_action";
 import { getSimpleInsertAction } from "@snowtop/ent/action/experimental_action";
