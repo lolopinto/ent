@@ -45,7 +45,7 @@ func TestConfig(t *testing.T) {
 				SslMode:  "disable",
 			},
 			expConnStr:    "postgres://ola:@localhost/tsent_test?sslmode=disable",
-			sqlAlchemyURI: "postgresql+psycopg2://ola:@localhost/tsent_test?sslmode=disable",
+			sqlAlchemyURI: "postgresql+psycopg2://ola:@localhost/tsent_test",
 		},
 		"postgres with escaped password": {
 			connStringEnv: "postgres://ola:kx%40jj5%2Fg@localhost/tsent_test",
@@ -58,7 +58,7 @@ func TestConfig(t *testing.T) {
 				Password: "kx@jj5/g",
 			},
 			expConnStr:    "postgres://ola:kx%40jj5%2Fg@localhost/tsent_test?sslmode=disable",
-			sqlAlchemyURI: "postgresql+psycopg2://ola:kx%40jj5%2Fg@localhost/tsent_test?sslmode=disable",
+			sqlAlchemyURI: "postgresql+psycopg2://ola:kx%40jj5%2Fg@localhost/tsent_test",
 		},
 	}
 
@@ -146,5 +146,44 @@ func TestMigrationSSLMode(t *testing.T) {
 			password, _ := uri.User.Password()
 			assert.Equal(t, "a@b/c", password)
 		})
+	}
+}
+
+func TestMigrationSSLModePresence(t *testing.T) {
+	t.Setenv("ENT_DEV_SCHEMA_ENABLED", "false")
+	for _, source := range []string{"url", "yaml", "struct"} {
+		for _, mode := range []string{"", "disable", "require", "verify-ca", "verify-full"} {
+			t.Run(source+"/"+mode, func(t *testing.T) {
+				t.Setenv("PGSSLMODE", "require")
+				db := &DBConfig{Dialect: "postgres", Host: "localhost", User: "test", Database: "test", SslMode: mode}
+				if source == "url" {
+					conn := "postgres://test@localhost/test"
+					if mode != "" {
+						conn += "?sslmode=" + mode
+					}
+					t.Setenv("DB_CONNECTION_STRING", conn)
+					var err error
+					db, err = parseConnectionString()
+					assert.NoError(t, err)
+					if mode == "" {
+						assert.Contains(t, db.GetConnectionStr(), "sslmode=disable")
+					}
+				} else if source == "yaml" {
+					t.Setenv("DB_CONNECTION_STRING", "")
+					path := t.TempDir() + "/database.yml"
+					content := "dialect: postgres\nhost: localhost\nuser: test\ndatabase: test\n"
+					if mode != "" {
+						content += "sslmode: " + mode + "\n"
+					}
+					assert.NoError(t, os.WriteFile(path, []byte(content), 0600))
+					t.Setenv("PATH_TO_DB_FILE", path)
+					db = loadDBConfig()
+				}
+				uri, err := url.Parse(db.GetSQLAlchemyDatabaseURIgo())
+				assert.NoError(t, err)
+				assert.Equal(t, mode != "", uri.Query().Has("sslmode"))
+				assert.Equal(t, mode, uri.Query().Get("sslmode"))
+			})
+		}
 	}
 }
