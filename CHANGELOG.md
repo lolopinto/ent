@@ -16,8 +16,6 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- regenerate privacy changes incrementally, including dbOnly fields in shared patterns and default action policies. ([#2050](https://github.com/lolopinto/ent/pull/2050)).
-
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 
