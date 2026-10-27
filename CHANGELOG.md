@@ -16,6 +16,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- enforce custom query privacy for rows and counts, and use final write permissions after transformations. ([#2049](https://github.com/lolopinto/ent/pull/2049)).
+
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 
