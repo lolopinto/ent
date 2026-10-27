@@ -14,7 +14,7 @@ import {
 import { loadRow, loadRows } from "../ent";
 import { mapWithConcurrency } from "../async_utils";
 import * as clause from "../clause";
-import { log } from "../logger";
+import { logIf } from "../logger";
 import { getCombinedClause } from "../clause";
 
 import {
@@ -176,12 +176,12 @@ class clauseCacheMap<
     const key2 = key.instanceKey();
     const ret = this.m.get(key2);
     if (ret) {
-      log("cache", {
+      logIf("cache", () => ({
         "dataloader-cache-hit": cacheDiagnosticKey(
           key2 + (this.count ? ":count" : ""),
         ),
         tableName: this.options.tableName,
-      });
+      }));
     }
     return ret;
   }

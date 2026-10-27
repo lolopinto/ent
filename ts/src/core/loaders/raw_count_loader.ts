@@ -63,7 +63,7 @@ export function createCountDataLoader<K extends any>(
   const loaderName = options.groupCol
     ? `rawCountLoader:${options.tableName}:${options.groupCol}`
     : options.clause
-      ? `rawCountLoader:${options.tableName}:${options.clause.instanceKey()}`
+      ? `rawCountLoader:${options.tableName}:clause`
       : `rawCountLoader:${options.tableName}`;
   const loaderOptions: DataLoader.Options<K, number> = {
     maxBatchSize: getLoaderMaxBatchSize(),

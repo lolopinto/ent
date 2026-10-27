@@ -43,7 +43,7 @@ import {
   InstrumentedDataLoader,
   getLoaderMaxBatchSize,
 } from "./loaders/loader";
-import { log, logEnabled, logTrace } from "./logger";
+import { log, logIf, logEnabled, logTrace } from "./logger";
 import {
   OrderBy,
   buildQueryData,
@@ -65,9 +65,9 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
     const ret = this.m.get(id);
     if (this.logEnabled && ret) {
       const key = getEntKey(this.viewer, id, this.options);
-      log("cache", {
+      logIf("cache", () => ({
         "ent-cache-hit": cacheDiagnosticKey(key),
-      });
+      }));
     }
     return ret;
   }
@@ -157,7 +157,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   options: LoadEntOptions<TEnt, TViewer>,
   map: entCacheMap<TViewer, TEnt>,
 ): DataLoader<ID, TEnt | ErrorWrapper> {
-  const loaderName = `entLoader:${options.loaderFactory.name}`;
+  const loaderName = `entLoader:${options.loaderFactory.options.tableName}:${options.loaderFactory.options.key}`;
   const tableName = options.loaderFactory.options?.tableName;
   // share the cache across loaders even if we create a new instance
   const loaderOptions: DataLoader.Options<any, any> = {
@@ -392,9 +392,9 @@ export async function loadEntXViaKey<
     .createLoader(viewer.context)
     .load(key);
   if (!row) {
-    // todo make this better
+    // Unique keys can be sensitive; existing generated loaders do not carry that metadata.
     throw new Error(
-      `${options.loaderFactory.name}: couldn't find row for value ${key}`,
+      `${options.loaderFactory.options.tableName}:${options.loaderFactory.options.key}: couldn't find row for supplied value`,
     );
   }
   const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(

@@ -2,7 +2,7 @@ import { IncomingMessage, ServerResponse } from "http";
 import { Data, Loader, LoaderWithLoadMany, QueryOptions, Viewer } from "./base";
 
 import { Context } from "./base";
-import { log } from "./logger";
+import { logIf } from "./logger";
 import { stableStringify, cacheDiagnosticKey } from "./cache_utils";
 import { getOnQueryCacheHit } from "./metrics";
 import { getOrderByKey, getSelectFieldsKey } from "./query_impl";
@@ -94,9 +94,9 @@ export class ContextCache {
     if (l) {
       return l;
     }
-    log(
+    logIf(
       "debug",
-      `new context-aware loader created for ${cacheDiagnosticKey(name)}`,
+      () => `new context-aware loader created for ${cacheDiagnosticKey(name)}`,
     );
     l = create();
     this.loaders.set(name, l);
@@ -111,9 +111,9 @@ export class ContextCache {
     if (l) {
       return l;
     }
-    log(
+    logIf(
       "debug",
-      `new context-aware loader created for ${cacheDiagnosticKey(name)}`,
+      () => `new context-aware loader created for ${cacheDiagnosticKey(name)}`,
     );
     l = create();
     this.loaderWithLoadMany.set(name, l);
@@ -142,10 +142,10 @@ export class ContextCache {
           key: cacheDiagnosticKey(key),
         });
       }
-      log("cache", {
+      logIf("cache", () => ({
         "cache-hit": cacheDiagnosticKey(key),
         tableName: options.tableName,
-      });
+      }));
     }
     return rows || null;
   }
@@ -165,10 +165,10 @@ export class ContextCache {
           key: cacheDiagnosticKey(key),
         });
       }
-      log("cache", {
+      logIf("cache", () => ({
         "cache-hit": cacheDiagnosticKey(key),
         tableName: options.tableName,
-      });
+      }));
     }
     return row || null;
   }

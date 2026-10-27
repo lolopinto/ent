@@ -1,7 +1,7 @@
 import { cacheDiagnosticKey } from "../cache_utils";
 import DataLoader from "dataloader";
 import { Loader, LoaderFactory, Context, DataOptions } from "../base";
-import { log, logEnabled } from "../logger";
+import { logIf, logEnabled } from "../logger";
 import { getOnDataLoaderBatch, getOnDataLoaderCacheHit } from "../metrics";
 
 const DEFAULT_MAX_BATCH_SIZE = 1000;
@@ -50,7 +50,10 @@ export function getLoader<K, V>(
 ): Loader<K, V> {
   // just create a new one every time if no context cache
   if (!context?.cache) {
-    log("debug", `new loader created for ${cacheDiagnosticKey(factory.name)}`);
+    logIf(
+      "debug",
+      () => `new loader created for ${cacheDiagnosticKey(factory.name)}`,
+    );
     return create();
   }
 
@@ -65,7 +68,7 @@ export function getCustomLoader<K, V>(
 ): Loader<K, V> {
   // just create a new one every time if no context cache
   if (!context?.cache) {
-    log("debug", `new loader created for ${cacheDiagnosticKey(key)}`);
+    logIf("debug", () => `new loader created for ${cacheDiagnosticKey(key)}`);
     return create();
   }
 
@@ -123,6 +126,7 @@ function instrumentCacheMap<K, V>(
 
 export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
   constructor(
+    // A stable, non-sensitive metric label, not a cache identity or query value.
     loaderName: string,
     batchLoadFn: BatchLoadFn<K, V>,
     options: DataLoader.Options<K, V>,
@@ -134,7 +138,7 @@ export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
         const hook = getOnDataLoaderBatch();
         if (hook) {
           hook({
-            loaderName: cacheDiagnosticKey(loaderName),
+            loaderName,
             batchSize: keys.length,
           });
         }
@@ -244,10 +248,10 @@ export class CacheMap<K, V> implements CacheMapLike<K, V> {
       // might be a lot?
       // TODO this is not the best log format
       // was designed for ObjectLoader time. Now we have different needs e.g. count, assoc etc
-      log("cache", {
+      logIf("cache", () => ({
         "dataloader-cache-hit": cacheDiagnosticKey(key),
         tableName: this.options.tableName,
-      });
+      }));
     }
     return ret;
   }

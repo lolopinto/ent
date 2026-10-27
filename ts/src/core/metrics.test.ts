@@ -57,7 +57,7 @@ describe("metrics hooks", () => {
     contextCache.getCachedRows(queryOptions);
 
     expect(onDataLoaderBatch).toHaveBeenCalledWith({
-      loaderName: cacheDiagnosticKey("rawCountLoader:users:id"),
+      loaderName: "rawCountLoader:users:id",
       batchSize: 2,
     });
     expect(onDataLoaderCacheHit).toHaveBeenCalledWith({

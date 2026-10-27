@@ -81,7 +81,7 @@ function createLoader<K extends any>(
   const loaderName = options.groupCol
     ? `queryLoader:${options.tableName}:${options.groupCol}`
     : options.clause
-      ? `queryLoader:${options.tableName}:${options.clause.instanceKey()}`
+      ? `queryLoader:${options.tableName}:clause`
       : `queryLoader:${options.tableName}`;
   const loaderOptions: DataLoader.Options<K, Data[]> = {
     maxBatchSize: getLoaderMaxBatchSize(),
