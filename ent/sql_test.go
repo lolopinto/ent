@@ -22,7 +22,7 @@ type testUser2 struct {
 	Viewer       viewer.ViewerContext
 }
 
-/// TODO we want created_at and updated_at here at some point since that'll be automatically generated actually
+// / TODO we want created_at and updated_at here at some point since that'll be automatically generated actually
 func (user *testUser2) DBFields() DBFields {
 	return DBFields{
 		"id": func(v interface{}) error {
@@ -230,10 +230,11 @@ func TestUpdateBuilder(t *testing.T) {
 				"email_address": "test@email.com",
 				"first_name":    "Jon",
 			}),
-			"UPDATE users SET email_address = ?, first_name = ? WHERE id = 45 RETURNING *",
+			"UPDATE users SET email_address = ?, first_name = ? WHERE id = ? RETURNING *",
 			[]interface{}{
 				"test@email.com",
 				"Jon",
+				"45",
 			},
 		},
 	}
@@ -393,5 +394,22 @@ func colsFromUpdateRegex(r *regexp.Regexp) func(*testing.T, string, *sqlTestCase
 			expectedCols[idx] = strings.TrimSpace(parts[0])
 		}
 		return actualCols, expectedCols
+	}
+}
+
+type customKeyUser struct{ testUser2 }
+
+func (*customKeyUser) GetPrimaryKey() string { return "user_id" }
+
+func TestUpdateBindsID(t *testing.T) {
+	for _, id := range []string{"45", "x' OR '1'='1", "a\\'b"} {
+		t.Run(id, func(t *testing.T) {
+			user := &customKeyUser{}
+			user.ID = id
+			query, values, err := getUpdateQuery("users", user, map[string]interface{}{"first_name": "Jon"}).Build()
+			require.NoError(t, err)
+			require.Equal(t, "UPDATE users SET first_name = ? WHERE user_id = ? RETURNING *", query)
+			require.Equal(t, []interface{}{"Jon", id}, values)
+		})
 	}
 }
