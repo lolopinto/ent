@@ -1172,6 +1172,19 @@ export function sensitiveValue(val: any): SensitiveValue {
   };
 }
 
+// JSON member names are SQL string literals, not identifiers or expressions.
+function jsonMemberLiteral(field: string): string {
+  if (DB.getDialect() === Dialect.SQLite) {
+    // SQLite treats operands starting with $ as paths; always encode a literal member path.
+    field = `$.${JSON.stringify(field)}`;
+  }
+  const quoted = field.replace(/'/g, "''");
+  if (DB.getDialect() === Dialect.Postgres && quoted.includes("\\")) {
+    return `E'${quoted.replace(/\\/g, "\\\\")}'`;
+  }
+  return `'${quoted}'`;
+}
+
 // These don't return Clauses but return helpful things that can be passed to clauses
 
 // https://www.postgresql.org/docs/12/functions-json.html#FUNCTIONS-JSON-OP-TABLE
@@ -1183,7 +1196,7 @@ export function JSONObjectFieldKeyASJSON<T extends Data, K = keyof T>(
   overrideAlias?: string | null,
 ): keyof T {
   // type as keyof T to make it easier to use in other queries
-  return `${renderCol(col, overrideAlias)}->'${field}'`;
+  return `${renderCol(col, overrideAlias)}->${jsonMemberLiteral(field)}`;
 }
 
 export function JSONObjectFieldKeyAsText<T extends Data, K = keyof T>(
@@ -1192,7 +1205,7 @@ export function JSONObjectFieldKeyAsText<T extends Data, K = keyof T>(
   overrideAlias?: string | null,
 ): keyof T {
   // type as keyof T to make it easier to use in other queries
-  return `${renderCol(col, overrideAlias)}->>'${field}'`;
+  return `${renderCol(col, overrideAlias)}->>${jsonMemberLiteral(field)}`;
 }
 
 // can't get this to work...
@@ -1319,7 +1332,7 @@ export function JSONKeyInList<T extends Data, K = keyof T>(
     )}) AS json_element`,
     // @ts-ignore
     clause: And(
-      JSONKeyExists("json_element", jsonCol),
+      JSONKeyExists("json_element::jsonb", jsonCol),
       // @ts-ignore
       Eq(JSONObjectFieldKeyAsText<T, K>("json_element", jsonCol), val),
     ),
