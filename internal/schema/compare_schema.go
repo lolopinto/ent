@@ -55,7 +55,11 @@ func comparePattern(p1, p2 *PatternInfo) ([]change.Change, error) {
 	// TODO is this even possible?
 	// this is basically just a delete and add no?
 	// name change is possible because name in schema can be different from pattern file?
-	if p1.Name != p2.Name {
+	fieldChanges, err := field.CompareFieldInfo(p1.FieldInfo, p2.FieldInfo)
+	if err != nil {
+		return nil, err
+	}
+	if p1.Name != p2.Name || len(fieldChanges) != 0 {
 		ret = append(ret, change.Change{
 			Change: change.ModifyPattern,
 			Name:   p1.Name,
@@ -291,14 +295,17 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 
 	ret = append(ret, changes...)
 
+	privacyChanged := n1.HasDefaultActionPrivacy != n2.HasDefaultActionPrivacy
+
 	// if anything changes, just add ModifyNode
 	// eventually, we can make this smarter but want to slightly err on the side of caution here
 	// maybe move action changes after. can't think of a reason to have actions affect node file
-	if !opts.skipFields && len(ret) != 0 {
+	if !opts.skipFields && (len(ret) != 0 || privacyChanged) {
 		ret = append(ret, change.Change{
-			Change:      change.ModifyNode,
-			Name:        n2.Node,
-			GraphQLName: n2.Node,
+			Change:          change.ModifyNode,
+			WriteAllForNode: privacyChanged,
+			Name:            n2.Node,
+			GraphQLName:     n2.Node,
 		})
 	}
 
