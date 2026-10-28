@@ -75,6 +75,7 @@ export class CustomClauseQuery<
 > extends BaseEdgeQuery<any, TDest, Data> {
   private clause: Clause;
   private source?: TSource;
+  private privacyStarted = false;
 
   constructor(
     public viewer: TViewer,
@@ -119,6 +120,9 @@ export class CustomClauseQuery<
   }
 
   __maybeSetSource(src: TSource) {
+    if (this.privacyStarted && this.source !== src) {
+      throw new Error("cannot change source after query privacy evaluation");
+    }
     if (this.source && this.source !== src) {
       console.warn("source already set to something else");
     } else {
@@ -127,12 +131,6 @@ export class CustomClauseQuery<
   }
 
   async sourceEnt(_id: ID) {
-    // The sourceEnt is used for privacy checks and if we have the source we already know
-    // the privacy checks have been done or will be done
-    // This is being set for completeness but we don't really care about this.
-
-    // See https://github.com/lolopinto/ent/blob/15af0165f83458acc1d1c9f934f4534dca6154ff/ts/src/core/query/query.ts#L729-L739 for how sourceEnt is
-    // used in the codebase
     return this.source ?? null;
   }
 
@@ -141,6 +139,11 @@ export class CustomClauseQuery<
   }
 
   async queryRawCount(): Promise<number> {
+    const [info] = await this.genIDInfosToFetch();
+    if (info.invalidated) {
+      return 0;
+    }
+
     // sqlite needs as count otherwise it returns count(1)
     let fields: SelectBaseDataOptions["fields"] = ["count(1) as count"];
     if (this.options.joinBETA) {
@@ -178,13 +181,21 @@ export class CustomClauseQuery<
     throw new Error(`queryAllRawCount doesn't make sense in CustomClauseQuery`);
   }
 
-  // nothing to do here
-  protected async loadRawIDs(_addID: (src: ID) => void): Promise<void> {}
+  protected async loadRawIDs(addID: (src: ID | Ent) => void): Promise<void> {
+    this.privacyStarted = true;
+    // A global query still has one policy evaluation, without a source Ent.
+    addID(this.source ?? 1);
+  }
 
   protected async loadRawData(
-    _infos: IDInfo[],
+    infos: IDInfo[],
     options: EdgeQueryableDataOptions,
   ) {
+    const [info] = infos;
+    if (info.invalidated) {
+      this.edges.set(info.id, []);
+      return;
+    }
     if (!options.orderby) {
       options.orderby = [
         {
