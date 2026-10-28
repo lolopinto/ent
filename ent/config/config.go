@@ -32,6 +32,8 @@ type DBConfig struct {
 	SslMode    string `yaml:"sslmode"`
 	FilePath   string `yaml:"filePath"`
 	connString string
+
+	sslModeDefaulted bool
 }
 
 func (db *DBConfig) GetConnectionStr() string {
@@ -53,7 +55,9 @@ func (db *DBConfig) GetConnectionStrWithoutDevSchema() string {
 
 func (db *DBConfig) GetSQLAlchemyDatabaseURIgo() string {
 	if db.Dialect == "postgres" {
-		return db.getConnectionStr("postgresql+psycopg2", false, true)
+		// Omit an unspecified mode so libpq can honor PGSSLMODE and its defaults.
+		explicitSSLMode := db.SslMode != "" && !(db.sslModeDefaulted && db.SslMode == "disable")
+		return db.getConnectionStr("postgresql+psycopg2", explicitSSLMode, true)
 	}
 	return db.connString
 }
@@ -141,6 +145,7 @@ func (r *DBConfig) setPort(val string) {
 
 func (r *DBConfig) setSSLMode(val string) {
 	r.SslMode = val
+	r.sslModeDefaulted = false
 }
 
 func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool, includeDevSchema bool) string {
@@ -279,8 +284,9 @@ func parseConnectionString() (*DBConfig, error) {
 
 	r := &DBConfig{
 		// only postgres supported for now
-		Dialect: "postgres",
-		SslMode: "disable",
+		Dialect:          "postgres",
+		SslMode:          "disable",
+		sslModeDefaulted: true,
 	}
 	m := map[string]func(string){
 		"dbname":      r.setDbName,

@@ -24,6 +24,7 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 - regenerate fields, builders, pattern mixins, and action bases when `dbOnly`, `immutable`, or default action privacy changes (#2050).
 - select the matching Node security minimum when overriding the standalone
   Dockerfile's Node major, while preserving explicit minimum overrides (#2047).
+- preserve explicitly configured migration SSL modes; leave omitted modes to libpq defaults and `PGSSLMODE` (#2051).
 
 ## [0.3.12]
 
