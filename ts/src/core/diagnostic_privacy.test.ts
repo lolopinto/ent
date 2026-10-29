@@ -14,7 +14,7 @@ import { loadRow, loadRows, loadRowX, loadEntXViaKey, loadEntX } from "./ent";
 import { ObjectLoaderFactory } from "./loaders/object_loader";
 import { getCustomLoader } from "./loaders/loader";
 import { clearLogLevels, setLogLevels } from "./logger";
-import { setMetricsHook } from "./metrics";
+import { DataLoaderBatchMetrics, setMetricsHook } from "./metrics";
 
 let db: TempDB;
 beforeAll(async () => {
@@ -163,10 +163,8 @@ test("disabled diagnostics do not compute cache digests", async () => {
 test("batch labels are stable structural names while clause caches remain distinct", async () => {
   const user = await createTestUser({ firstName: "batch-secret-a" });
   const context = new TestContext(new IDViewer(user.id));
-  const names: string[] = [];
-  setMetricsHook({
-    onDataLoaderBatch: ({ loaderName }) => names.push(loaderName),
-  });
+  const batches: DataLoaderBatchMetrics[] = [];
+  setMetricsHook({ onDataLoaderBatch: (event) => batches.push(event) });
   try {
     for (const [secret, expected] of [
       ["batch-secret-a", 1],
@@ -192,6 +190,15 @@ test("batch labels are stable structural names while clause caches remain distin
         clause: Eq("first_name", sensitiveValue("batch-secret-a")),
       }),
     });
+    const names = batches.map((event) => event.loaderName);
+    for (const kind of ["queryLoader", "rawCountLoader"]) {
+      const matching = batches.filter(
+        (e) => e.loaderName === `${kind}:fake_users:clause`,
+      );
+      expect(matching).toHaveLength(2);
+      expect(matching[0].loaderId).not.toBe(matching[1].loaderId);
+    }
+    expect(JSON.stringify(batches)).not.toContain("batch-secret");
     expect(
       names.filter((n) => n === "queryLoader:fake_users:clause"),
     ).toHaveLength(2);

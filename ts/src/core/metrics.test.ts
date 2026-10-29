@@ -1,3 +1,11 @@
+import { AssocEdgeLoaderFactory } from "./loaders/assoc_edge_loader";
+import { AssocEdge } from "./ent";
+import { ObjectLoaderFactory } from "./loaders/object_loader";
+import * as cacheUtils from "./cache_utils";
+import { QueryLoaderFactory } from "./loaders/query_loader";
+import { TestContext } from "../testutils/context/test_context";
+import { clearLogLevels } from "./logger";
+import { InstrumentedDataLoader } from "./loaders/loader";
 import { cacheDiagnosticKey } from "./cache_utils";
 import { createCountDataLoader } from "./loaders/raw_count_loader";
 import { ContextCache } from "./context";
@@ -7,8 +15,12 @@ import * as clause from "./clause";
 import type { QueryOptions } from "./base";
 
 jest.mock("./ent", () => ({
+  AssocEdge: jest.requireActual("./ent").AssocEdge,
+  loadEdgeData: jest.fn(async () => ({ edgeTable: "edges" })),
+  loadCustomEdges: jest.fn(async () => []),
   loadRow: jest.fn(),
   loadRows: jest.fn(),
+  getDefaultLimit: () => 1000,
 }));
 
 describe("metrics hooks", () => {
@@ -58,6 +70,7 @@ describe("metrics hooks", () => {
 
     expect(onDataLoaderBatch).toHaveBeenCalledWith({
       loaderName: "rawCountLoader:users:id",
+      loaderId: expect.stringMatching(/^[a-f0-9]{64}$/),
       batchSize: 2,
     });
     expect(onDataLoaderCacheHit).toHaveBeenCalledWith({
@@ -101,4 +114,197 @@ it("metrics preserve cached bigint and cyclic-object loader keys", async () => {
   } finally {
     setMetricsHook();
   }
+});
+
+describe("batch loader identities", () => {
+  beforeEach(() => {
+    setMetricsHook();
+    clearLogLevels();
+    jest.clearAllMocks();
+    (loadRows as jest.Mock).mockResolvedValue([]);
+  });
+  afterEach(() => {
+    setMetricsHook();
+    jest.restoreAllMocks();
+  });
+
+  it.each([
+    "query",
+    "count",
+  ])("distinguishes %s clauses while correlating equivalent configurations", async (kind) => {
+    const hook = jest.fn();
+    setMetricsHook({ onDataLoaderBatch: hook });
+    for (const secret of ["private-a", "private-b", "private-a"]) {
+      const options = {
+        tableName: "users",
+        fields: ["id"],
+        clause: clause.Eq("email", clause.sensitiveValue(secret)),
+      };
+      const context = new TestContext();
+      const loader =
+        kind === "query"
+          ? new QueryLoaderFactory(options).createLoader(context)
+          : createCountDataLoader(options, context);
+      await loader.load("unused");
+    }
+    const events = hook.mock.calls.map(([event]) => event);
+    expect(events).toHaveLength(3);
+    expect(new Set(events.map((e) => e.loaderName)).size).toBe(1);
+    for (const event of events) {
+      expect(event.loaderId).toMatch(/^[a-f0-9]{64}$/);
+    }
+    expect(events[0].loaderId).not.toBe(events[1].loaderId);
+    expect(events[0].loaderId).toBe(events[2].loaderId);
+    expect(JSON.stringify(events)).not.toContain("private-");
+  });
+
+  it("distinguishes configured query limits, ordering and transformations", async () => {
+    const hook = jest.fn();
+    setMetricsHook({ onDataLoaderBatch: hook });
+    const factory = new QueryLoaderFactory({
+      tableName: "users",
+      fields: ["id"],
+      groupCol: "account_id",
+      clause: clause.Eq("email", clause.sensitiveValue("private-base")),
+    });
+    const context = new TestContext();
+    for (const options of [
+      {},
+      { limit: 2 },
+      { orderby: [{ column: "id", direction: "ASC" as const }] },
+      { disableTransformations: true },
+    ]) {
+      await factory.createConfigurableLoader(options, context).load("account");
+    }
+    // Equivalent explicit defaults, on a different context/loader object.
+    await factory
+      .createConfigurableLoader(
+        {
+          limit: 1000,
+          orderby: [{ column: "created_at", direction: "DESC" }],
+          disableTransformations: false,
+        },
+        new TestContext(),
+      )
+      .load("account");
+    const events = hook.mock.calls.map(([event]) => event);
+    expect(events).toHaveLength(5);
+    expect(new Set(events.slice(0, 4).map((e) => e.loaderId)).size).toBe(4);
+    expect(events[0].loaderId).toBe(events[4].loaderId);
+    expect(JSON.stringify(events)).not.toContain("private-base");
+  });
+
+  it.each([
+    "id",
+    "clause",
+    "count",
+  ])("keeps object %s loader configurations distinct", async (kind) => {
+    const hook = jest.fn();
+    setMetricsHook({ onDataLoaderBatch: hook });
+    for (const secret of [
+      "object-secret-a",
+      "object-secret-b",
+      "object-secret-a",
+    ]) {
+      const factory = new ObjectLoaderFactory({
+        tableName: "users",
+        fields: ["id"],
+        key: "id",
+        clause: clause.Eq("email", clause.sensitiveValue(secret)),
+      });
+      const context = new TestContext();
+      if (kind === "count") {
+        await factory
+          .createCountLoader(context)
+          .load(clause.Eq("id", "unused"));
+      } else if (kind === "clause") {
+        await factory.createLoader(context).load(clause.Eq("id", "unused"));
+      } else {
+        await factory.createLoader(context).load("unused");
+      }
+    }
+    const events = hook.mock.calls.map(([event]) => event);
+    expect(events).toHaveLength(3);
+    expect(events[0].loaderId).not.toBe(events[1].loaderId);
+    expect(events[0].loaderId).toBe(events[2].loaderId);
+    expect(JSON.stringify(events)).not.toContain("object-secret");
+  });
+
+  it("does not evaluate dynamic object clauses to identify a loader", async () => {
+    const dynamicClause = jest.fn(() => clause.Eq("active", true));
+    const factory = new ObjectLoaderFactory({
+      tableName: "users",
+      fields: ["id"],
+      key: "id",
+      clause: dynamicClause,
+      instanceKey: "dynamic-secret",
+    });
+    const hook = jest.fn();
+    setMetricsHook({ onDataLoaderBatch: hook });
+    await factory.createLoader(new TestContext()).load("unused");
+    // The query calls the clause once; diagnostics must not invoke it again.
+    expect(dynamicClause).toHaveBeenCalledTimes(1);
+    expect(hook.mock.calls[0][0].loaderId).toMatch(/^[a-f0-9]{64}$/);
+    expect(JSON.stringify(hook.mock.calls)).not.toContain("dynamic-secret");
+  });
+
+  it("distinguishes association loader configurations and normalizes defaults", async () => {
+    const hook = jest.fn();
+    setMetricsHook({ onDataLoaderBatch: hook });
+    const factory = new AssocEdgeLoaderFactory("edge-type", AssocEdge);
+    for (const options of [
+      {},
+      { limit: 2 },
+      { orderby: [{ column: "time", direction: "ASC" as const }] },
+      { disableTransformations: true },
+      { clause: clause.Eq("data", clause.sensitiveValue("edge-secret-a")) },
+      { clause: clause.Eq("data", clause.sensitiveValue("edge-secret-b")) },
+      {
+        limit: 1000,
+        orderby: [{ column: "time", direction: "DESC" as const }],
+        disableTransformations: false,
+      },
+    ]) {
+      await factory
+        .createConfigurableLoader(options, new TestContext())
+        .load("unused");
+    }
+    const events = hook.mock.calls.map(([event]) => event);
+    expect(events).toHaveLength(7);
+    expect(new Set(events.slice(0, 6).map((e) => e.loaderId)).size).toBe(6);
+    expect(events[0].loaderId).toBe(events[6].loaderId);
+    expect(JSON.stringify(events)).not.toContain("edge-secret");
+  });
+
+  it("computes an ID only on the first observed batch and reuses it after hook changes", async () => {
+    const digest = jest.spyOn(cacheUtils, "cacheDiagnosticKey");
+    const identity = jest.fn(() => "private-loader-identity");
+    const loader = new InstrumentedDataLoader<number, number>(
+      "example",
+      async (keys) => keys.map((key) => key),
+      { cache: false },
+      undefined,
+      undefined,
+      identity,
+    );
+    await loader.load(1);
+    expect(digest).not.toHaveBeenCalled();
+    expect(identity).not.toHaveBeenCalled();
+    const hook = jest.fn();
+    setMetricsHook({ onDataLoaderBatch: hook });
+    await loader.load(2);
+    await loader.load(3);
+    expect(digest).toHaveBeenCalledTimes(1);
+    setMetricsHook();
+    await loader.load(4);
+    setMetricsHook({ onDataLoaderBatch: hook });
+    await loader.load(5);
+    expect(digest).toHaveBeenCalledTimes(1);
+    const events = hook.mock.calls.map(([event]) => event);
+    expect(events).toHaveLength(3);
+    expect(identity).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(events)).not.toContain("private-loader-identity");
+    expect(events[0].loaderId).toMatch(/^[a-f0-9]{64}$/);
+    expect(new Set(events.map((e) => e.loaderId)).size).toBe(1);
+  });
 });

@@ -1,4 +1,5 @@
 import DataLoader from "dataloader";
+import { stableStringify } from "../cache_utils";
 import {
   LoadRowOptions,
   ID,
@@ -120,6 +121,13 @@ export function createCountDataLoader<K extends any>(
     },
     loaderOptions,
     options.tableName,
+    undefined,
+    () =>
+      stableStringify({
+        loaderName,
+        groupColType: options.groupColType || "uuid",
+        clause: options.clause?.instanceKey(),
+      }),
   );
 }
 

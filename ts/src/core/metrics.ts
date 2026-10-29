@@ -1,6 +1,9 @@
 export type DataLoaderBatchMetrics = {
   // Stable structural loader label; never includes query values.
   loaderName: string;
+  // Opaque logical loader identity, stable only within this process. Use for
+  // debugging/correlation, not as a metric label (potentially high cardinality).
+  loaderId: string;
   batchSize: number;
 };
 

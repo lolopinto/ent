@@ -50,6 +50,20 @@ function getEffectiveOptions(
   };
 }
 
+function getBatchIdentity(
+  loaderName: string,
+  options: EdgeQueryableDataOptions = {},
+): string {
+  const effective = getEffectiveOptions(options);
+  return stableStringify({
+    loaderName,
+    limit: effective.limit,
+    orderby: getOrderByKey(effective.orderby ?? getDefaultOrderBy()),
+    disableTransformations: effective.disableTransformations,
+    clause: effective.clause?.instanceKey(),
+  });
+}
+
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
   edgeType: string,
@@ -126,6 +140,8 @@ function createLoader<T extends AssocEdge>(
     },
     loaderOptions,
     edgeData.edgeTable,
+    undefined,
+    () => getBatchIdentity(loaderName, options),
   );
 }
 
@@ -241,6 +257,8 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
         }),
       },
       edgeData.edgeTable,
+      undefined,
+      () => getBatchIdentity(loaderName, this.options),
     );
     return this.loader;
   }

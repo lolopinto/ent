@@ -132,13 +132,18 @@ export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
     options: DataLoader.Options<K, V>,
     tableName?: string,
     cacheKeyFn?: (key: K) => unknown,
+    // Full logical identity (may contain secrets). Evaluated only for metrics;
+    // only its opaque digest is emitted. Defaults to the label for simple loaders.
+    loaderIdentity: () => string = () => loaderName,
   ) {
+    let loaderId: string | undefined;
     const wrappedBatchFn: BatchLoadFn<K, V> = async (keys) => {
       if (keys.length) {
         const hook = getOnDataLoaderBatch();
         if (hook) {
           hook({
             loaderName,
+            loaderId: (loaderId ??= cacheDiagnosticKey(loaderIdentity())),
             batchSize: keys.length,
           });
         }

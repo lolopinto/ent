@@ -1,4 +1,5 @@
-import { cacheDiagnosticKey } from "../cache_utils";
+import { getSelectFieldsKey } from "../query_impl";
+import { cacheDiagnosticKey, stableStringify } from "../cache_utils";
 import DataLoader from "dataloader";
 import {
   LoadRowOptions,
@@ -134,9 +135,28 @@ async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
   return parseInt(row.count, 10);
 }
 
-// optional clause...
-// so ObjectLoaderFactory and createDataLoader need to take a new optional field which is a clause that's always added here
-// and we need a disableTransform which skips loader completely and uses loadRow...
+// Do not evaluate a dynamic clause for diagnostics. Factories already require
+// its instanceKey; directly constructed loaders can fall back to function identity.
+function getBatchIdentity(
+  loaderName: string,
+  options: ObjectLoaderOptions,
+): string {
+  return stableStringify({
+    loaderName,
+    key: options.key,
+    keyType: options.keyType || "uuid",
+    fields: getSelectFieldsKey(options.fields),
+    alias: options.alias,
+    fieldsAlias: options.fieldsAlias,
+    disableFieldsAlias: options.disableFieldsAlias ?? false,
+    disableDefaultOrderByAlias: options.disableDefaultOrderByAlias ?? false,
+    clause:
+      typeof options.clause === "function"
+        ? options.instanceKey || cacheDiagnosticKey(options.clause)
+        : (options.clause?.instanceKey() ?? options.instanceKey ?? ""),
+  });
+}
+
 function createDataLoader(options: SelectDataOptions, context?: Context) {
   const loaderName = `objectLoader:${options.tableName}:${options.key}`;
   const loaderOptions: DataLoader.Options<any, any> = {
@@ -156,6 +176,8 @@ function createDataLoader(options: SelectDataOptions, context?: Context) {
     },
     loaderOptions,
     options.tableName,
+    undefined,
+    () => getBatchIdentity(loaderName, options),
   );
 }
 
@@ -239,6 +261,7 @@ function createClauseDataLoder<
     },
     options.tableName,
     (key) => key.instanceKey(),
+    () => getBatchIdentity(loaderName, options),
   );
 }
 
@@ -265,6 +288,7 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
     },
     options.tableName,
     (key) => `${key.instanceKey()}:count`,
+    () => getBatchIdentity(loaderName, options),
   );
 }
 

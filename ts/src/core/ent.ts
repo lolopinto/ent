@@ -213,6 +213,8 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
     },
     loaderOptions,
     tableName,
+    undefined,
+    () => `ent-loader:${viewer.instanceKey()}:${options.loaderFactory.name}`,
   );
 }
 
