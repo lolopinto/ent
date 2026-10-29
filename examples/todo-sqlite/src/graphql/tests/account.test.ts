@@ -5,7 +5,12 @@ import {
   expectQueryFromRoot,
 } from "@snowtop/ent-graphql-tests";
 import { Account } from "src/ent";
-import { createAccount, randomPhoneNumber } from "src/ent/testutils/util";
+import { TestContext } from "@snowtop/ent/testutils/context/test_context";
+import {
+  createAccount,
+  createTodoForSelf,
+  randomPhoneNumber,
+} from "src/ent/testutils/util";
 import schema from "src/graphql/generated/schema";
 
 test("create", async () => {
@@ -168,4 +173,81 @@ test("viewer_can_see", async () => {
     ["id", account2.id],
     ["can_viewer_see_info.phone_number", false],
   );
+});
+
+test.each(["anonymous", "unrelated", "self"])(
+  "account mutations reject %s callers before changing data",
+  async (mode) => {
+    const account = await createAccount();
+    const other = await createAccount();
+    const todo = await createTodoForSelf({ creatorId: account.id });
+    const viewer =
+      mode === "self"
+        ? account.viewer
+        : mode === "unrelated"
+          ? other.viewer
+          : new LoggedOutViewer();
+
+    const mutations: [string, string, Record<string, unknown>][] = [
+      // no one, including the account, can set its balance directly
+      [
+        "accountUpdateBalance",
+        "AccountUpdateBalanceInput",
+        { id: account.id, credits: 1000000 },
+      ],
+    ];
+    if (mode !== "self") {
+      mutations.push(
+        [
+          "accountTransferCredits",
+          "AccountTransferCreditsInput",
+          { id: account.id, to: other.id, amount: 100 },
+        ],
+        ["editAccount", "EditAccountInput", { id: account.id, name: "Aegon" }],
+        [
+          "todoStatusAccountEdit",
+          "TodoStatusAccountEditInput",
+          { id: account.id, todo_id: todo.id, todo_status: "CLOSED_TODOS_DUP" },
+        ],
+        ["deleteAccount", "DeleteAccountInput", { id: account.id }],
+      );
+    }
+    for (const [mutation, inputType, input] of mutations) {
+      const result = await graphql({
+        schema,
+        source: `mutation($input: ${inputType}!) { ${mutation}(input: $input) { __typename } }`,
+        variableValues: { input },
+        contextValue: new TestContext(viewer),
+      });
+      expect(result.errors?.length, mutation).toBeGreaterThan(0);
+      expect(result.errors![0].message, mutation).toMatch(
+        /does not have permission/,
+      );
+    }
+
+    const reloaded = await Account.loadX(account.viewer, account.id);
+    expect(reloaded.credits).toBe(1000);
+    expect(reloaded.name).toBe(account.name);
+    expect(await reloaded.todoStatusFor(todo)).toBeNull();
+    const reloadedOther = await Account.loadX(other.viewer, other.id);
+    expect(reloadedOther.credits).toBe(1000);
+  },
+);
+
+test("account can transfer its own credits", async () => {
+  const account = await createAccount();
+  const other = await createAccount();
+  await expectMutation(
+    {
+      viewer: account.viewer,
+      schema,
+      mutation: "accountTransferCredits",
+      args: { id: account.id, to: other.id, amount: 100 },
+    },
+    ["account.id", account.id],
+  );
+  const reloaded = await Account.loadX(account.viewer, account.id);
+  expect(reloaded.credits).toBe(900);
+  const reloadedOther = await Account.loadX(other.viewer, other.id);
+  expect(reloadedOther.credits).toBe(1100);
 });

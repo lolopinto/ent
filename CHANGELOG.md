@@ -17,6 +17,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - preserve Todo query viewers and restrict its two account-wide bulk mutations to the account owner; enforce RSVP address/activity ownership and guest-group consistency, protect Simple confirmations and alternate user deletion, and remove the inverse event-address API (#2055).
+- restrict the Todo example's single-todo actions to the todo's owner: creating, deleting and setting a bounty require the creator, while status, rename and tag changes allow the creator or assignee. Account edits, deletes, todo-status edits and credit transfers require the account itself, transfers must be positive, balances can no longer be set directly (including via `accountUpdateBalance`), and a bounty is paid out once, when the todo is first completed.
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 

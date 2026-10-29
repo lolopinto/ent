@@ -10,7 +10,7 @@ import {
   createTodoSelfInWorkspace,
   createTodoOtherInWorksapce,
 } from "../testutils/util";
-import { IDViewer, query } from "@snowtop/ent";
+import { IDViewer, LoggedOutViewer, query, Viewer } from "@snowtop/ent";
 import { advanceTo } from "jest-date-mock";
 import { TodoAddTagAction } from "../todo/actions/todo_add_tag_action";
 import { TodoRemoveTagAction } from "../todo/actions/todo_remove_tag_action";
@@ -414,4 +414,173 @@ test("assignees", async () => {
   expect(assigned.map((t) => t.id).sort()).toEqual(
     [todo.id, todo2.id, todo3.id].sort(),
   );
+});
+
+describe("ownership", () => {
+  async function nonOwners(): Promise<Viewer[]> {
+    const other = await createAccount();
+    return [other.viewer, new LoggedOutViewer()];
+  }
+
+  async function expectUnchanged(todo: Todo) {
+    const reloaded = await Todo.loadX(todo.viewer, todo.id);
+    expect(reloaded.text).toBe(todo.text);
+    expect(reloaded.completed).toBe(todo.completed);
+    expect(reloaded.bounty).toBe(todo.bounty);
+    expect(reloaded.getDeletedAt()).toBeNull();
+    expect(await reloaded.queryTags().queryRawCount()).toBe(0);
+  }
+
+  test("create requires the viewer to be the creator", async () => {
+    const creator = await createAccount();
+    for (const viewer of await nonOwners()) {
+      const action = CreateTodoAction.create(viewer, {
+        text: "watch GOT",
+        creatorId: creator.id,
+        assigneeId: creator.id,
+        scopeId: creator.id,
+        scopeType: NodeType.Account,
+      });
+      expect(await action.valid()).toBe(false);
+      await expect(action.saveX()).rejects.toThrow(
+        /does not have permission to create/,
+      );
+    }
+    // assigning to yourself doesn't make you the creator
+    const assignee = await createAccount();
+    expect(
+      await CreateTodoAction.create(assignee.viewer, {
+        text: "watch GOT",
+        creatorId: creator.id,
+        assigneeId: assignee.id,
+        scopeId: assignee.id,
+        scopeType: NodeType.Account,
+      }).valid(),
+    ).toBe(false);
+    expect(await creator.queryTodos().queryRawCount()).toBe(0);
+  });
+
+  test("create with tags requires the viewer to be the creator", async () => {
+    const creator = await createAccount();
+    const other = await createAccount();
+    await expect(
+      CreateTodoAction.create(other.viewer, {
+        text: "watch GOT",
+        creatorId: creator.id,
+        assigneeId: creator.id,
+        scopeId: creator.id,
+        scopeType: NodeType.Account,
+        tags: [{ displayName: "sports" }],
+      }).saveX(),
+    ).rejects.toThrow(/does not have permission to create/);
+    expect(await creator.queryTodos().queryRawCount()).toBe(0);
+  });
+
+  test("non-owners cannot edit, tag or delete a todo", async () => {
+    const todo = await createTodoForSelf();
+    const tag = await createTag("sports", await todo.loadCreatorX());
+    for (const viewer of await nonOwners()) {
+      const actions = [
+        ChangeTodoStatusAction.create(viewer, todo, { completed: true }),
+        RenameTodoStatusAction.create(viewer, todo, { text: "re-watch GOT" }),
+        ChangeTodoBountyAction.create(viewer, todo, { bounty: 10 }),
+        TodoAddTagAction.create(viewer, todo).addTag(tag),
+        DeleteTodoAction.create(viewer, todo),
+      ];
+      for (const action of actions) {
+        expect(await action.valid()).toBe(false);
+      }
+      await expect(
+        RenameTodoStatusAction.create(viewer, todo, {
+          text: "re-watch GOT",
+        }).saveX(),
+      ).rejects.toThrow(/does not have permission to edit/);
+      // soft delete is an edit
+      await expect(
+        DeleteTodoAction.create(viewer, todo).saveX(),
+      ).rejects.toThrow(/does not have permission to edit/);
+      await expect(
+        DeleteTodoAction.create(viewer, todo).hardDeleteX(),
+      ).rejects.toThrow(/does not have permission to delete/);
+    }
+    await expectUnchanged(todo);
+  });
+
+  test("non-owners cannot remove a tag", async () => {
+    const todo = await createTodoForSelf();
+    const tag = await createTag("sports", await todo.loadCreatorX());
+    await TodoAddTagAction.create(todo.viewer, todo).addTag(tag).saveX();
+    for (const viewer of await nonOwners()) {
+      expect(
+        await TodoRemoveTagAction.create(viewer, todo).removeTag(tag).valid(),
+      ).toBe(false);
+    }
+    expect(await todo.queryTags().queryRawCount()).toBe(1);
+  });
+
+  test("assignee can update status, text and tags but not bounty or delete", async () => {
+    let { todo } = await createTodoOtherInWorksapce();
+    const assigneeViewer = new IDViewer(todo.assigneeId);
+    const assignee = await Account.loadX(assigneeViewer, todo.assigneeId);
+    const tag = await createTag("sports", assignee);
+
+    todo = await RenameTodoStatusAction.create(assignee.viewer, todo, {
+      text: "re-watch GOT",
+    }).saveX();
+    expect(todo.text).toBe("re-watch GOT");
+    await TodoAddTagAction.create(assignee.viewer, todo).addTag(tag).saveX();
+    expect(await todo.queryTags().queryRawCount()).toBe(1);
+    await TodoRemoveTagAction.create(assignee.viewer, todo)
+      .removeTag(tag)
+      .saveX();
+    expect(await todo.queryTags().queryRawCount()).toBe(0);
+
+    // bounty spends the creator's credits and deleting removes the creator's todo
+    expect(
+      await ChangeTodoBountyAction.create(assignee.viewer, todo, {
+        bounty: 100,
+      }).valid(),
+    ).toBe(false);
+    expect(await DeleteTodoAction.create(assignee.viewer, todo).valid()).toBe(
+      false,
+    );
+
+    // completing as the assignee updates the creator's account status
+    todo = await ChangeTodoStatusAction.create(assignee.viewer, todo, {
+      completed: true,
+    }).saveX();
+    expect(todo.completed).toBe(true);
+    const creator = await todo.loadCreatorX();
+    expect(await creator.todoStatusFor(todo)).toBe(
+      AccountTodoStatus.ClosedTodosDup,
+    );
+  });
+
+  test("assignee completing a bounty is paid once", async () => {
+    let { todo } = await createTodoOtherInWorksapce();
+    todo = await ChangeTodoBountyAction.create(todo.viewer, todo, {
+      bounty: 100,
+    }).saveX();
+    const assigneeViewer = new IDViewer(todo.assigneeId);
+    const assignee = await Account.loadX(assigneeViewer, todo.assigneeId);
+
+    todo = await ChangeTodoStatusAction.create(assignee.viewer, todo, {
+      completed: true,
+    }).saveX();
+    expect(todo.bounty).toBeNull();
+    // completing again, or reopening and completing, doesn't pay again
+    for (const completed of [true, false, true]) {
+      todo = await ChangeTodoStatusAction.create(assignee.viewer, todo, {
+        completed,
+      }).saveX();
+    }
+
+    const reloadedAssignee = await Account.loadX(assignee.viewer, assignee.id);
+    const reloadedCreator = await Account.loadX(
+      new IDViewer(todo.creatorId),
+      todo.creatorId,
+    );
+    expect(reloadedAssignee.credits).toBe(1100);
+    expect(reloadedCreator.credits).toBe(900);
+  });
 });

@@ -1,5 +1,5 @@
 import { graphql } from "graphql";
-import { LoggedOutViewer } from "@snowtop/ent";
+import { Data, IDViewer, LoggedOutViewer, Viewer } from "@snowtop/ent";
 import { TestContext } from "@snowtop/ent/testutils/context/test_context";
 import { Account, AccountToTodosQuery, Todo } from "src/ent";
 import {
@@ -465,4 +465,96 @@ test.each([
   expect(persisted.filter((t) => t.completed).map((t) => t.id)).toEqual([
     todos[0].id,
   ]);
+});
+
+async function runAs(viewer: Viewer, source: string, input: Data) {
+  return graphql({
+    schema,
+    source,
+    variableValues: { input },
+    contextValue: new TestContext(viewer),
+  });
+}
+
+test.each(["anonymous", "unrelated"])(
+  "single todo mutations reject %s callers before changing data",
+  async (mode) => {
+    const account = await createAccount();
+    const todo = await createTodoForSelf({ creatorId: account.id });
+    const tag = await createTag("sports", account);
+    const other = await createAccount();
+    const viewer = mode === "anonymous" ? new LoggedOutViewer() : other.viewer;
+
+    const mutations: [string, string, Data][] = [
+      [
+        "createTodo",
+        "CreateTodoInput",
+        {
+          creator_id: account.id,
+          text: "forged",
+          assignee_id: account.id,
+          scope_id: account.id,
+          scope_type: "account",
+        },
+      ],
+      [
+        "changeTodoStatus",
+        "ChangeTodoStatusInput",
+        { id: todo.id, completed: true },
+      ],
+      ["renameTodo", "RenameTodoInput", { id: todo.id, text: "renamed" }],
+      [
+        "changeTodoBounty",
+        "ChangeTodoBountyInput",
+        { id: todo.id, bounty: 10 },
+      ],
+      ["removeTodoTag", "RemoveTodoTagInput", { id: todo.id, tag_id: tag.id }],
+      ["deleteTodo", "DeleteTodoInput", { id: todo.id }],
+    ];
+    for (const [mutation, inputType, input] of mutations) {
+      const result = await runAs(
+        viewer,
+        `mutation($input: ${inputType}!) { ${mutation}(input: $input) { __typename } }`,
+        input,
+      );
+      expect(result.errors?.length, mutation).toBeGreaterThan(0);
+      expect(result.errors![0].message, mutation).toMatch(
+        /does not have permission/,
+      );
+    }
+
+    // addTodoTag can fail (__canFailBETA) so a denied add returns a null todo
+    // instead of an error
+    const addTag = await runAs(
+      viewer,
+      `mutation($input: AddTodoTagInput!) { addTodoTag(input: $input) { todo { id } } }`,
+      { id: todo.id, tag_id: tag.id },
+    );
+    expect(addTag.errors).toBeUndefined();
+    expect(addTag.data).toEqual({ addTodoTag: { todo: null } });
+
+    const persisted = await AccountToTodosQuery.query(
+      account.viewer,
+      account.id,
+    ).queryEnts();
+    expect(persisted.map((t) => t.id)).toEqual([todo.id]);
+    expect(persisted[0].text).toBe(todo.text);
+    expect(persisted[0].completed).toBe(false);
+    expect(persisted[0].bounty).toBeNull();
+    expect(await persisted[0].queryTags().queryRawCount()).toBe(0);
+  },
+);
+
+test("assignee can complete a todo through graphql", async () => {
+  const { todo } = await createTodoOtherInWorksapce();
+  await expectMutation(
+    {
+      viewer: new IDViewer(todo.assigneeId),
+      schema,
+      mutation: "changeTodoStatus",
+      args: { id: todo.id, completed: true },
+    },
+    ["todo.id", todo.id],
+    ["todo.completed", true],
+  );
 });

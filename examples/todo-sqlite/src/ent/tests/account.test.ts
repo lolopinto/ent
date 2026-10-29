@@ -6,6 +6,8 @@ import { advanceTo } from "jest-date-mock";
 import { AccountUpdateBalanceAction } from "../account/actions/account_update_balance_action";
 import { AccountTransferCreditsAction } from "../account/actions/account_transfer_credits_action";
 import { Transaction } from "@snowtop/ent/action";
+import { LoggedOutViewer, Viewer } from "@snowtop/ent";
+import { SystemViewer } from "src/privacy/policies";
 
 test("create", async () => {
   await createAccount();
@@ -89,35 +91,44 @@ test("really delete", async () => {
 });
 
 test("update balance", async () => {
-  let account = await createAccount();
+  // balances only change on behalf of an authorized transfer
+  const account = await createAccount();
   expect(account.credits).toBe(1000);
-  account = await AccountUpdateBalanceAction.create(account.viewer, account, {
+  const system = new SystemViewer();
+  await AccountUpdateBalanceAction.create(system, account, {
     credits: {
       add: 100,
     },
   }).saveX();
-  expect(account.credits).toBe(1100);
+  await expectCredits(account, 1100);
 
-  account = await AccountUpdateBalanceAction.create(account.viewer, account, {
-    credits: {
-      subtract: 330,
+  await AccountUpdateBalanceAction.create(
+    system,
+    await Account.loadX(account.viewer, account.id),
+    {
+      credits: {
+        subtract: 330,
+      },
     },
-  }).saveX();
-  expect(account.credits).toBe(770);
+  ).saveX();
+  await expectCredits(account, 770);
 
   try {
-    await AccountUpdateBalanceAction.create(account.viewer, account, {
-      credits: {
-        subtract: 1000,
+    await AccountUpdateBalanceAction.create(
+      system,
+      await Account.loadX(account.viewer, account.id),
+      {
+        credits: {
+          subtract: 1000,
+        },
       },
-    }).saveX();
+    ).saveX();
     throw new Error(`should have thrown`);
   } catch (err) {
     expect((err as Error).message).toBe("cannot have negative credits balance");
   }
 
-  account = await Account.loadX(account.viewer, account.id);
-  expect(account.credits).toBe(770);
+  await expectCredits(account, 770);
 });
 
 test("transfer balance", async () => {
@@ -223,4 +234,77 @@ test("transfer balance in transaction 1 overage", async () => {
   expect(account1.credits).toBe(1000);
   expect(account2.credits).toBe(1000);
   expect(account3.credits).toBe(1000);
+});
+
+async function expectCredits(account: Account, credits: number) {
+  const reloaded = await Account.loadX(account.viewer, account.id);
+  expect(reloaded.credits).toBe(credits);
+}
+
+test("no viewer can set a balance directly", async () => {
+  const account = await createAccount();
+  const other = await createAccount();
+  for (const viewer of [account.viewer, other.viewer, new LoggedOutViewer()]) {
+    const action = AccountUpdateBalanceAction.create(viewer, account, {
+      credits: { add: 100 },
+    });
+    expect(await action.valid()).toBe(false);
+    await expect(action.saveX()).rejects.toThrow(
+      /does not have permission to edit/,
+    );
+  }
+  await expectCredits(account, 1000);
+});
+
+test("only the source account can transfer credits", async () => {
+  const account1 = await createAccount();
+  const account2 = await createAccount();
+  const viewers: Viewer[] = [account2.viewer, new LoggedOutViewer()];
+  for (const viewer of viewers) {
+    // e.g. account2 pulling credits from account1 to itself
+    const action = AccountTransferCreditsAction.create(viewer, account1, {
+      to: account2.id,
+      amount: 50,
+    });
+    expect(await action.valid()).toBe(false);
+    await expect(action.saveX()).rejects.toThrow(
+      /does not have permission to edit/,
+    );
+  }
+  await expectCredits(account1, 1000);
+  await expectCredits(account2, 1000);
+});
+
+test("transfer amount must be positive", async () => {
+  const account1 = await createAccount();
+  const account2 = await createAccount();
+  for (const amount of [0, -50]) {
+    // a negative transfer would pull credits from the recipient
+    await expect(
+      AccountTransferCreditsAction.create(account1.viewer, account1, {
+        to: account2.id,
+        amount,
+      }).saveX(),
+    ).rejects.toThrow("transfer amount must be a positive integer");
+  }
+  await expectCredits(account1, 1000);
+  await expectCredits(account2, 1000);
+});
+
+test("only the account can edit or delete itself", async () => {
+  const account = await createAccount();
+  const other = await createAccount();
+  for (const viewer of [other.viewer, new LoggedOutViewer()]) {
+    expect(
+      await EditAccountAction.create(viewer, account, {
+        name: "Aegon Targaryen",
+      }).valid(),
+    ).toBe(false);
+    expect(await DeleteAccountAction.create(viewer, account).valid()).toBe(
+      false,
+    );
+  }
+  const reloaded = await Account.loadX(account.viewer, account.id);
+  expect(reloaded.name).toBe(account.name);
+  expect(reloaded.getDeletedAt()).toBeNull();
 });

@@ -1,20 +1,14 @@
-import {
-  PrivacyPolicy,
-  Viewer,
-  Ent,
-  ID,
-  AlwaysAllowPrivacyPolicy,
-} from "@snowtop/ent";
 import { ChangeTodoBountyActionBase } from "src/ent/generated/todo/actions/change_todo_bounty_action_base";
 import type { ChangeTodoBountyActionValidators, ChangeTodoBountyInput } from "src/ent/generated/todo/actions/change_todo_bounty_action_base";
 import { NodeType } from "src/ent/generated/types";
 import { Account } from "src/ent/internal";
+import { AllowIfTodoCreatorPrivacyPolicy } from "src/privacy/policies";
 
 export type { ChangeTodoBountyInput };
 
 export class ChangeTodoBountyAction extends ChangeTodoBountyActionBase {
   getPrivacyPolicy() {
-    return AlwaysAllowPrivacyPolicy;
+    return AllowIfTodoCreatorPrivacyPolicy;
   }
   getValidators(): ChangeTodoBountyActionValidators {
     return [
