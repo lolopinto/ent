@@ -235,12 +235,6 @@ type Address implements Node {
   zip: String!
   apartment: String
   country: String!
-  hostedEvents(
-    first: Int
-    after: String
-    last: Int
-    before: String
-  ): AddressToHostedEventsConnection!
 }
 
 type Attachment {
@@ -776,18 +770,6 @@ type User implements Node {
 }
 
 union WithDayOfWeek = Holiday | HoursOfOperation
-
-type AddressToHostedEventsEdge implements Edge {
-  node: Event!
-  cursor: String!
-}
-
-type AddressToHostedEventsConnection implements Connection {
-  edges: [AddressToHostedEventsEdge!]!
-  nodes: [Event!]!
-  pageInfo: PageInfo!
-  rawCount: Int!
-}
 
 type AuthorToCommentsEdge implements Edge {
   node: Comment!

@@ -1,3 +1,6 @@
+import { graphql } from "graphql";
+import { LoggedOutViewer } from "@snowtop/ent";
+import { TestContext } from "@snowtop/ent/testutils/context/test_context";
 import { Account, AccountToTodosQuery, Todo } from "src/ent";
 import {
   expectMutation,
@@ -385,4 +388,81 @@ test("assignees", async () => {
       },
     ],
   );
+});
+
+test.each([
+  "anonymous",
+  "unrelated",
+  "self",
+])("custom todo routes preserve the %s caller", async (mode) => {
+  const account = await createAccount();
+  await createWorkspace(account);
+  await createTodoForSelf({ creatorId: account.id });
+  const other = await createAccount();
+  const viewer =
+    mode === "self"
+      ? account.viewer
+      : mode === "unrelated"
+        ? other.viewer
+        : new LoggedOutViewer();
+  const selection = "phone_number created_workspaces { nodes { name } }";
+  const expected = {
+    phone_number: mode === "self" ? account.phoneNumber : null,
+    created_workspaces: { nodes: mode === "self" ? [{ name: "test" }] : [] },
+  };
+  for (const source of [
+    `query($id: ID!) { result: open_todos_plural(id: $id) { assignee { ${selection} } } }`,
+    `query($id: ID!) { result: open_todos(id: $id) { nodes { assignee { ${selection} } } } }`,
+  ]) {
+    const result = await graphql({
+      schema,
+      source,
+      variableValues: { id: account.id },
+      contextValue: new TestContext(viewer),
+    });
+    expect(result.errors).toBeUndefined();
+    const data = result.data!.result as any;
+    expect(
+      Array.isArray(data)
+        ? data[0].assignee
+        : data.nodes
+          ? data.nodes[0].assignee
+          : data,
+    ).toEqual(expected);
+  }
+});
+
+test.each([
+  "anonymous",
+  "unrelated",
+])("account-wide todo writes reject %s callers before changing data", async (mode) => {
+  const [account, todos] = await createTodos();
+  const other = await createAccount();
+  const viewer = mode === "anonymous" ? new LoggedOutViewer() : other.viewer;
+  await ChangeTodoStatusAction.create(account.viewer, todos[0], {
+    completed: true,
+  }).saveX();
+  const empty = await createAccount();
+  for (const target of [account, empty]) {
+    for (const mutation of [
+      "markAllTodosAs(accountID: $id, completed: true)",
+      "removeCompletedTodos(accountID: $id)",
+    ]) {
+      const result = await graphql({
+        schema,
+        source: `mutation($id: ID!) { ${mutation} { id } }`,
+        variableValues: { id: target.id },
+        contextValue: new TestContext(viewer),
+      });
+      expect(result.errors?.length).toBeGreaterThan(0);
+    }
+  }
+  const persisted = await AccountToTodosQuery.query(
+    account.viewer,
+    account.id,
+  ).queryEnts();
+  expect(persisted).toHaveLength(todos.length);
+  expect(persisted.filter((t) => t.completed).map((t) => t.id)).toEqual([
+    todos[0].id,
+  ]);
 });

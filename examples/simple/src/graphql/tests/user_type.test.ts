@@ -17,7 +17,7 @@ import EditUserAction from "../../ent/user/actions/edit_user_action";
 import CreateContactAction, {
   ContactCreateInput,
 } from "../../ent/contact/actions/create_contact_action";
-import { GraphQLObjectType } from "graphql";
+import { graphql, GraphQLObjectType } from "graphql";
 import { v1 } from "uuid";
 import {
   NotifType,
@@ -1539,4 +1539,35 @@ test("can_viewer_do", async () => {
     ["id", encodeGQLID(user2)],
     ["canViewerDo.userEdit", false],
   );
+});
+
+test("userDelete2 permits self deletion but denies a friend who can read the user", async () => {
+  const owner = await create({});
+  const friend = await create({});
+  const ownerViewer = new ExampleViewer(owner.id);
+  const friendViewer = new ExampleViewer(friend.id);
+  const friendship = EditUserAction.create(ownerViewer, owner, {});
+  friendship.builder.addFriend(friend);
+  await friendship.saveX();
+  expect(await User.load(friendViewer, owner.id)).not.toBeNull();
+  const source =
+    "mutation($input: DeleteUserInput2!) { userDelete2(input: $input) { deletedUserId } }";
+  for (const viewer of [loggedOutViewer, friendViewer]) {
+    const result = await graphql({
+      schema,
+      source,
+      variableValues: { input: { id: encodeGQLID(owner), log: false } },
+      contextValue: { getViewer: () => viewer },
+    });
+    expect(result.errors?.length).toBeGreaterThan(0);
+    expect(await User.load(ownerViewer, owner.id)).not.toBeNull();
+  }
+  const result = await graphql({
+    schema,
+    source,
+    variableValues: { input: { id: encodeGQLID(owner), log: false } },
+    contextValue: { getViewer: () => ownerViewer },
+  });
+  expect(result.errors).toBeUndefined();
+  expect(await User.load(ownerViewer, owner.id)).toBeNull();
 });

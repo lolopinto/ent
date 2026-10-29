@@ -42,7 +42,7 @@ import ConfirmEditEmailAddressAction from "../user/actions/confirm_edit_email_ad
 import EditPhoneNumberAction from "../user/actions/edit_phone_number_action";
 import ConfirmEditPhoneNumberAction from "../user/actions/confirm_edit_phone_number_action";
 import CreateCommentAction from "../comment/actions/create_comment_action";
-import DeleteUserAction2 from "../user/actions/delete_user_action_2";
+import DeleteUserAction2 from "../user/actions/delete_user_action2";
 import { LoggedOutExampleViewer, ExampleViewer } from "../../viewer/viewer";
 import EditUserAllFieldsAction from "../user/actions/edit_user_all_fields_action";
 import { getSimpleInsertAction } from "@snowtop/ent/action/experimental_action";
@@ -840,6 +840,37 @@ describe("edit email", () => {
     return { user, newEmail, code };
   }
 
+  test("cannot confirm email for a visible friend using own code", async () => {
+    const { user, newEmail, code } = await createUserAndSendEmail();
+    const friend = await create({});
+    const link = EditUserAction.create(user.viewer, user, {});
+    link.builder.addFriend(friend);
+    await link.saveX();
+    const visible = await User.loadX(user.viewer, friend.id);
+    await expect(
+      ConfirmEditEmailAddressAction.create(user.viewer, visible, {
+        emailAddress: newEmail,
+        code: code!,
+      }).saveX(),
+    ).rejects.toThrow(/permission/);
+    expect((await User.loadX(friend.viewer, friend.id)).emailAddress).toBe(
+      friend.emailAddress,
+    );
+    expect(await user.queryAuthCodes().queryRawCount()).toBe(1);
+    const confirmed = await ConfirmEditEmailAddressAction.create(
+      user.viewer,
+      user,
+      { emailAddress: newEmail, code: code! },
+    ).saveX();
+    expect(confirmed.emailAddress).toBe(newEmail);
+    await expect(
+      ConfirmEditEmailAddressAction.create(user.viewer, confirmed, {
+        emailAddress: newEmail,
+        code: code!,
+      }).saveX(),
+    ).rejects.toThrow(/not found/);
+  });
+
   test("change email address", async () => {
     let { user, newEmail, code } = await createUserAndSendEmail();
 
@@ -949,6 +980,37 @@ describe("edit phone number", () => {
 
     return { user, newPhoneNumber, code };
   }
+
+  test("cannot confirm phone for a visible friend using own code", async () => {
+    const { user, newPhoneNumber, code } = await createUserAndSendSMS();
+    const friend = await create({});
+    const link = EditUserAction.create(user.viewer, user, {});
+    link.builder.addFriend(friend);
+    await link.saveX();
+    const visible = await User.loadX(user.viewer, friend.id);
+    await expect(
+      ConfirmEditPhoneNumberAction.create(user.viewer, visible, {
+        phoneNumber: newPhoneNumber,
+        code: code!,
+      }).saveX(),
+    ).rejects.toThrow(/permission/);
+    expect((await User.loadX(friend.viewer, friend.id)).phoneNumber).toBe(
+      friend.phoneNumber,
+    );
+    expect(await user.queryAuthCodes().queryRawCount()).toBe(1);
+    const confirmed = await ConfirmEditPhoneNumberAction.create(
+      user.viewer,
+      user,
+      { phoneNumber: newPhoneNumber, code: code! },
+    ).saveX();
+    expect(confirmed.phoneNumber).toBe(newPhoneNumber);
+    await expect(
+      ConfirmEditPhoneNumberAction.create(user.viewer, confirmed, {
+        phoneNumber: newPhoneNumber,
+        code: code!,
+      }).saveX(),
+    ).rejects.toThrow(/not found/);
+  });
 
   test("change phone number", async () => {
     let { user, newPhoneNumber, code } = await createUserAndSendSMS();

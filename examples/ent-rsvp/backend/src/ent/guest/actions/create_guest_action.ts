@@ -1,5 +1,10 @@
+import { GuestGroup } from "src/ent";
+import { GuestGroupBuilder } from "src/ent/generated/guest_group/actions/guest_group_builder";
 import { CreateGuestActionBase } from "src/ent/generated/guest/actions/create_guest_action_base";
-import type { GuestCreateInput, CreateGuestActionTriggers } from "src/ent/generated/guest/actions/create_guest_action_base";
+import type {
+  GuestCreateInput,
+  CreateGuestActionTriggers,
+} from "src/ent/generated/guest/actions/create_guest_action_base";
 import { AllowIfEventCreatorPrivacyPolicy } from "src/ent/event/privacy/event_creator";
 import CreateAuthCodeAction from "src/ent/auth_code/actions/create_auth_code_action";
 
@@ -10,6 +15,27 @@ export default class CreateGuestAction extends CreateGuestActionBase {
   getPrivacyPolicy() {
     // only creator of event can create guest
     return new AllowIfEventCreatorPrivacyPolicy(this.input.eventId);
+  }
+
+  getValidators() {
+    return [
+      {
+        validate: async () => {
+          const group = this.input.guestGroupId;
+          const eventId =
+            group instanceof GuestGroupBuilder
+              ? group.viewer.viewerID === this.viewer.viewerID
+                ? group.getNewEventIdValue()
+                : undefined
+              : typeof group === "object"
+                ? undefined
+                : (await GuestGroup.load(this.viewer, group))?.eventId;
+          if (eventId !== this.input.eventId) {
+            throw new Error("guest group must belong to the guest's event");
+          }
+        },
+      },
+    ];
   }
 
   getTriggers(): CreateGuestActionTriggers {

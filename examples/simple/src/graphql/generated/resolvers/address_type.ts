@@ -8,18 +8,12 @@ import type { RequestContext } from "@snowtop/ent";
 import type { ExampleViewer as ExampleViewerAlias } from "../../../viewer/viewer";
 import {
   GraphQLID,
-  GraphQLInt,
   GraphQLNonNull,
   GraphQLObjectType,
   GraphQLString,
 } from "graphql";
-import {
-  GraphQLEdgeConnection,
-  GraphQLNodeInterface,
-  nodeIDEncoder,
-} from "@snowtop/ent/graphql";
-import { Address, AddressToHostedEventsQuery } from "../../../ent";
-import { AddressToHostedEventsConnectionType } from "../../resolvers/internal";
+import { GraphQLNodeInterface, nodeIDEncoder } from "@snowtop/ent/graphql";
+import { Address } from "../../../ent";
 
 export const AddressType = new GraphQLObjectType({
   name: "Address",
@@ -48,39 +42,6 @@ export const AddressType = new GraphQLObjectType({
     },
     country: {
       type: new GraphQLNonNull(GraphQLString),
-    },
-    hostedEvents: {
-      type: new GraphQLNonNull(AddressToHostedEventsConnectionType()),
-      args: {
-        first: {
-          description: "",
-          type: GraphQLInt,
-        },
-        after: {
-          description: "",
-          type: GraphQLString,
-        },
-        last: {
-          description: "",
-          type: GraphQLInt,
-        },
-        before: {
-          description: "",
-          type: GraphQLString,
-        },
-      },
-      resolve: (
-        obj: Address,
-        args: any,
-        context: RequestContext<ExampleViewerAlias>,
-      ) => {
-        return new GraphQLEdgeConnection(
-          obj.viewer,
-          obj,
-          (v, obj: Address) => AddressToHostedEventsQuery.query(v, obj),
-          args,
-        );
-      },
     },
   }),
   interfaces: () => [GraphQLNodeInterface],

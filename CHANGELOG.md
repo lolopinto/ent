@@ -18,6 +18,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- preserve Todo query viewers and restrict its two account-wide bulk mutations to the account owner; enforce RSVP address/activity ownership and guest-group consistency, protect Simple confirmations and alternate user deletion, and remove the inverse event-address API (#2055).
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 - bind entity IDs as parameters in Go UPDATE statements (#2052).

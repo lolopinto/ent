@@ -1,3 +1,4 @@
+import { EditUserPrivacy } from "./edit_user_privacy";
 import type { Trigger, Validator } from "@snowtop/ent/action";
 import { ConfirmEditPhoneNumberActionBase } from "../../generated/user/actions/confirm_edit_phone_number_action_base";
 import type { ConfirmEditPhoneNumberInput } from "../../generated/user/actions/confirm_edit_phone_number_action_base";
@@ -19,6 +20,10 @@ async function findAuthCode(
 }
 // we're only writing this once except with --force and packageName provided
 export default class ConfirmEditPhoneNumberAction extends ConfirmEditPhoneNumberActionBase {
+  getPrivacyPolicy() {
+    return EditUserPrivacy;
+  }
+
   getValidators(): Validator<
     User,
     UserBuilder<ConfirmEditPhoneNumberInput, User>,

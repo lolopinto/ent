@@ -8,18 +8,6 @@ from auto_schema.schema_item import FullTextIndex
 metadata = sa.MetaData()
 
 
-sa.Table("address_hosted_events_edges", metadata,
-    sa.Column("id1", postgresql.UUID(), nullable=False),
-    sa.Column("id1_type", sa.Text(), nullable=False),
-    sa.Column("edge_type", postgresql.UUID(), nullable=False),
-    sa.Column("id2", postgresql.UUID(), nullable=False),
-    sa.Column("id2_type", sa.Text(), nullable=False),
-    sa.Column("time", sa.TIMESTAMP(), nullable=False),
-    sa.Column("data", sa.Text(), nullable=True),
-    sa.PrimaryKeyConstraint("id1", "edge_type", "id2", name="address_hosted_events_edges_id1_edge_type_id2_pkey"),
-    sa.Index("address_hosted_events_edges_time_idx", "time"),
-)
-
 sa.Table("addresses", metadata,
     sa.Column("id", postgresql.UUID(), nullable=False),
     sa.Column("created_at", sa.TIMESTAMP(), nullable=False),
@@ -345,7 +333,6 @@ sa.Table("users", metadata,
 
 metadata.info["edges"] = {
   'public': {
-    'AddressToHostedEventsEdge': {"edge_name":"AddressToHostedEventsEdge", "edge_type":"d1979d4b-d033-4562-b078-cc528fec25bb", "edge_table":"address_hosted_events_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'CommentToPostEdge': {"edge_name":"CommentToPostEdge", "edge_type":"f430af94-d38a-4aaa-a92f-cfc56b6f811b", "edge_table":"object_comments_edges", "symmetric_edge":False, "inverse_edge_type":"8caba9c4-8035-447f-9eb1-4dd09a2d250c"},
     'ContactEmailToEmailsForContactsEdge': {"edge_name":"ContactEmailToEmailsForContactsEdge", "edge_type":"daee7f0d-264f-44da-b2ff-5481e4143b22", "edge_table":"contact_email_emails_for_contacts_edges", "symmetric_edge":False, "inverse_edge_type":None},
     'ContactToSelfContactForUserEdge': {"edge_name":"ContactToSelfContactForUserEdge", "edge_type":"71483ce5-06f3-4468-bf05-afecd3a430e2", "edge_table":"user_self_contact_edges", "symmetric_edge":False, "inverse_edge_type":"d504201d-cf3f-4eef-b6a0-0b46a7ae186b"},
