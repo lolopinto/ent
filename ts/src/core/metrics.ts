@@ -1,5 +1,6 @@
 export type DataLoaderBatchMetrics = {
-  // Stable structural loader label; never includes query values.
+  // Built-in loaders use stable structural labels. Custom callers must exclude
+  // query values; this label is emitted without redaction.
   loaderName: string;
   // Opaque logical loader identity, stable only within this process. Use for
   // debugging/correlation, not as a metric label (potentially high cardinality).
@@ -10,7 +11,8 @@ export type DataLoaderBatchMetrics = {
 
 export type DataLoaderCacheHitMetrics = {
   tableName: string;
-  // Opaque process-local cache identity.
+  // Ent emits an opaque process-local string. Keep unknown for compatibility
+  // with existing producers of this public metrics type.
   key: unknown;
 };
 

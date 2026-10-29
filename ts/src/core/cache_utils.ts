@@ -32,8 +32,10 @@ export function stableStringify(value: unknown): string {
   return result === undefined ? "undefined" : result;
 }
 
-// Diagnostic identities stay stable within a process without exposing cache data.
-// A random HMAC key prevents guessing low-entropy secrets from logged digests.
+// Diagnostic identities are process-local. Objects, functions and unregistered
+// symbols use reference identity, so equal contents do not imply equal IDs.
+// Other primitive keys, including registered symbols, use a random HMAC key
+// to prevent guessing low-entropy secrets from logged digests.
 const diagnosticKey = randomBytes(32);
 const diagnosticReferences = new WeakMap<object | symbol, string>();
 let nextDiagnosticReference = 0n;
@@ -43,8 +45,8 @@ export function cacheDiagnosticKey(value: unknown): string {
     typeof value === "function" ||
     (typeof value === "symbol" && Symbol.keyFor(value) === undefined)
   ) {
-    // Reference keys include non-registered symbols (supported since Node 20).
-    // Do not serialize objects, inspect symbol descriptions or call user code.
+    // This reference-only branch does not serialize objects, inspect unregistered
+    // symbol descriptions or call user code.
     let identity = diagnosticReferences.get(value);
     if (!identity) {
       identity = `ref:${++nextDiagnosticReference}`;
@@ -52,6 +54,8 @@ export function cacheDiagnosticKey(value: unknown): string {
     }
     return identity;
   }
+  // Registered symbols are hashed from their string representation, including
+  // the registry key; the text is not emitted.
   return createHmac("sha256", diagnosticKey)
     .update(`${typeof value}:${String(value)}`)
     .digest("hex");

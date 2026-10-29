@@ -156,9 +156,8 @@ function missingEntError<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   options: LoadEntOptions<TEnt, TViewer>,
 ): Error {
   const factory = options.loaderFactory;
-  // Existing generated loaders do not carry unique-field sensitivity metadata.
-  // Omit the supplied value; identify clause-specific factories without exposing
-  // the secret-bearing factory name itself.
+  // Any lookup value, including an ID, may be sensitive. Omit it and identify
+  // clause-specific factories without exposing the secret-bearing factory name.
   return new Error(
     `${factory.options.tableName}:${factory.options.key}: couldn't find row for supplied value (lookup ${cacheDiagnosticKey(factory.name)})`,
   );

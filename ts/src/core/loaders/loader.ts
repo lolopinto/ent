@@ -136,8 +136,8 @@ export type LoaderMetricsOptions<K> = {
   identity?: () => LoaderIdentity | undefined;
 };
 
-// All batch IDs share encoding, hashing and lazy memoization here. Each loader
-// supplies only the configuration that determines its queries/cache identity.
+// Encode and hash the configuration supplied by each loader. The constructor
+// below computes this lazily and memoizes the result per loader instance.
 function batchIdentity(
   loaderName: string,
   options: LoaderMetricsOptions<unknown>,
@@ -154,12 +154,15 @@ function batchIdentity(
 
 export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
   constructor(
-    // A stable, non-sensitive metric label, not a cache identity or query value.
+    // Callers must supply a stable label without query values or other sensitive
+    // data: it is emitted without redaction.
     loaderName: string,
     batchLoadFn: BatchLoadFn<K, V>,
     options: DataLoader.Options<K, V>,
     metricsOrTableName?: LoaderMetricsOptions<K> | string,
-    // Retained for existing callers using the positional tableName/cacheKeyFn API.
+    // Legacy positional argument, used only when metricsOrTableName is a string
+    // or undefined. With an options object, set its cacheKeyFn instead; this
+    // positional argument is ignored.
     cacheKeyFn?: (key: K) => unknown,
   ) {
     const metrics =
@@ -275,10 +278,7 @@ export class CacheMap<K, V> implements CacheMapLike<K, V> {
   get(key: K) {
     const ret = this.m.get(key);
     if (ret) {
-      // should this be debug?
-      // might be a lot?
-      // TODO this is not the best log format
-      // was designed for ObjectLoader time. Now we have different needs e.g. count, assoc etc
+      // Keep cache keys opaque: raw keys can contain sensitive lookup values.
       logIf("cache", () => ({
         "dataloader-cache-hit": cacheDiagnosticKey(key),
         tableName: this.options.tableName,
