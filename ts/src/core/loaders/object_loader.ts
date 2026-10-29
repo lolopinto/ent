@@ -1,3 +1,5 @@
+import { getSelectFieldsKey } from "../query_impl";
+import { cacheDiagnosticKey } from "../cache_utils";
 import DataLoader from "dataloader";
 import {
   LoadRowOptions,
@@ -13,7 +15,7 @@ import {
 import { loadRow, loadRows } from "../ent";
 import { mapWithConcurrency } from "../async_utils";
 import * as clause from "../clause";
-import { log } from "../logger";
+import { logIf } from "../logger";
 import { getCombinedClause } from "../clause";
 
 import {
@@ -133,9 +135,28 @@ async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
   return parseInt(row.count, 10);
 }
 
-// optional clause...
-// so ObjectLoaderFactory and createDataLoader need to take a new optional field which is a clause that's always added here
-// and we need a disableTransform which skips loader completely and uses loadRow...
+// Do not evaluate a dynamic clause for diagnostics. Factories already require
+// its instanceKey. For direct loaders without one, omit the logical ID rather
+// than misrepresenting a function-object identity as a stable configuration.
+function getBatchConfiguration(options: ObjectLoaderOptions) {
+  if (typeof options.clause === "function" && !options.instanceKey) {
+    return undefined;
+  }
+  return {
+    key: options.key,
+    keyType: options.keyType || "uuid",
+    fields: getSelectFieldsKey(options.fields),
+    alias: options.alias,
+    fieldsAlias: options.fieldsAlias,
+    disableFieldsAlias: options.disableFieldsAlias ?? false,
+    disableDefaultOrderByAlias: options.disableDefaultOrderByAlias ?? false,
+    clause:
+      typeof options.clause === "function"
+        ? options.instanceKey
+        : (options.clause?.instanceKey() ?? options.instanceKey ?? ""),
+  };
+}
+
 function createDataLoader(options: SelectDataOptions, context?: Context) {
   const loaderName = `objectLoader:${options.tableName}:${options.key}`;
   const loaderOptions: DataLoader.Options<any, any> = {
@@ -154,7 +175,10 @@ function createDataLoader(options: SelectDataOptions, context?: Context) {
       return loadRowsForIDLoader(options, ids, context);
     },
     loaderOptions,
-    options.tableName,
+    {
+      tableName: options.tableName,
+      identity: () => getBatchConfiguration(options),
+    },
   );
 }
 
@@ -175,10 +199,12 @@ class clauseCacheMap<
     const key2 = key.instanceKey();
     const ret = this.m.get(key2);
     if (ret) {
-      log("cache", {
-        "dataloader-cache-hit": key2 + (this.count ? ":count" : ""),
+      logIf("cache", () => ({
+        "dataloader-cache-hit": cacheDiagnosticKey(
+          key2 + (this.count ? ":count" : ""),
+        ),
         tableName: this.options.tableName,
-      });
+      }));
     }
     return ret;
   }
@@ -234,8 +260,11 @@ function createClauseDataLoder<
       cacheMap: createClauseCacheMap<TQueryData, K, TResultData[]>(options),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
-    options.tableName,
-    (key) => key.instanceKey(),
+    {
+      tableName: options.tableName,
+      cacheKeyFn: (key) => key.instanceKey(),
+      identity: () => getBatchConfiguration(options),
+    },
   );
 }
 
@@ -260,8 +289,11 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
       cacheMap: createClauseCacheMap<V, K, number>(options, true),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
-    options.tableName,
-    (key) => `${key.instanceKey()}:count`,
+    {
+      tableName: options.tableName,
+      cacheKeyFn: (key) => `${key.instanceKey()}:count`,
+      identity: () => getBatchConfiguration(options),
+    },
   );
 }
 
@@ -285,7 +317,7 @@ export class ObjectLoader<
   private memoizedInitPrime: () => void;
 
   constructor(
-    private options: SelectDataOptions,
+    private options: ObjectLoaderOptions,
     public context?: Context,
     private toPrime?: ObjectLoaderFactory<TResultData>[],
   ) {
@@ -447,7 +479,7 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
   private loader: DataLoader<clause.Clause<V, K>, number> | null;
 
   constructor(
-    private options: SelectDataOptions,
+    private options: ObjectLoaderOptions,
     public context?: Context,
   ) {
     if (context) {
@@ -485,8 +517,9 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
   }
 }
 
-interface ObjectLoaderOptions extends SelectDataOptions {
-  // needed when clause is a function...
+export interface ObjectLoaderOptions extends SelectDataOptions {
+  // Identifies equivalent dynamic clauses across loader instances. Required by
+  // factories; direct loaders without it omit loaderId from batch metrics.
   instanceKey?: string;
 }
 

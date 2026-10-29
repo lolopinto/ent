@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "../cache_utils";
 import { v4 as uuidv4 } from "uuid";
 
 import { TestContext } from "../../testutils/context/test_context";
@@ -1130,7 +1131,7 @@ function verifyGroupedCacheHit(ids: ID[]) {
   // cache hit for each id
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
-      "dataloader-cache-hit": ids[idx],
+      "dataloader-cache-hit": cacheDiagnosticKey(ids[idx]),
       tableName: "user_to_contacts_table",
     });
   });
@@ -1168,7 +1169,7 @@ function verifyDefaultContextCacheHit(ids: ID[]) {
       limit: getDefaultLimit(),
     });
     expect(log).toStrictEqual({
-      "cache-hit": cacheKey,
+      "cache-hit": cacheDiagnosticKey(cacheKey),
       tableName: "user_to_contacts_table",
     });
   });
@@ -1256,7 +1257,7 @@ function verifyMultiCountQueryOffset(
         limit: 1,
       });
       expect(log).toStrictEqual({
-        "cache-hit": cacheKey,
+        "cache-hit": cacheDiagnosticKey(cacheKey),
         tableName: "user_to_contacts_table",
       });
 

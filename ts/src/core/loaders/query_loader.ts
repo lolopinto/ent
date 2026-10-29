@@ -17,7 +17,12 @@ import {
 } from "../ent";
 import { stableStringify } from "../cache_utils";
 import { memoizeNoArgs } from "../memoize";
-import { getOrderByKey, OrderBy, orderByHasExpressions } from "../query_impl";
+import {
+  getOrderByKey,
+  getSelectFieldsKey,
+  OrderBy,
+  orderByHasExpressions,
+} from "../query_impl";
 import {
   createLoaderCacheMap,
   InstrumentedDataLoader,
@@ -77,11 +82,12 @@ function createLoader<K extends any>(
   options: QueryOptions,
   queryOptions?: EdgeQueryableDataOptions,
   context?: Context,
+  cacheIdentity?: string,
 ): DataLoader<K, Data[]> {
   const loaderName = options.groupCol
     ? `queryLoader:${options.tableName}:${options.groupCol}`
     : options.clause
-      ? `queryLoader:${options.tableName}:${options.clause.instanceKey()}`
+      ? `queryLoader:${options.tableName}:clause`
       : `queryLoader:${options.tableName}`;
   const loaderOptions: DataLoader.Options<K, Data[]> = {
     maxBatchSize: getLoaderMaxBatchSize(),
@@ -155,7 +161,18 @@ function createLoader<K extends any>(
       return result;
     },
     loaderOptions,
-    options.tableName,
+    {
+      tableName: options.tableName,
+      identity: () => ({
+        cacheIdentity,
+        fields: getSelectFieldsKey(options.fields),
+        baseClause: options.clause?.instanceKey(),
+        clause: queryOptions?.clause?.instanceKey(),
+        limit: queryOptions?.limit || getDefaultLimit(),
+        orderby: getOrderByKey(getOrderByLocal(options, queryOptions)),
+        disableTransformations: queryOptions?.disableTransformations ?? false,
+      }),
+    },
   );
 }
 
@@ -225,9 +242,10 @@ class QueryLoader<K extends any> implements Loader<K, Data[]> {
     private options: QueryOptions,
     public context?: Context,
     private queryOptions?: EdgeQueryableDataOptions,
+    cacheIdentity?: string,
   ) {
     if (context) {
-      this.loader = createLoader(options, queryOptions, context);
+      this.loader = createLoader(options, queryOptions, context, cacheIdentity);
     }
     this.memoizedInitPrime = memoizeNoArgs(this.initPrime.bind(this));
   }
@@ -310,7 +328,7 @@ export class QueryLoaderFactory<K extends any>
   createLoader(context?: Context) {
     return getLoader(
       this,
-      () => new QueryLoader(this.options, context),
+      () => new QueryLoader(this.options, context, undefined, this.name),
       context,
     );
   }
@@ -369,7 +387,7 @@ export class QueryLoaderFactory<K extends any>
     )}:disableTransformations:${disableTransformations}`;
     return getCustomLoader(
       key,
-      () => new QueryLoader(queryOptions, context, options),
+      () => new QueryLoader(queryOptions, context, options, key),
       context,
     );
   }
