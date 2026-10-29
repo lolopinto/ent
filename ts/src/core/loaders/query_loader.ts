@@ -161,11 +161,9 @@ function createLoader<K extends any>(
       return result;
     },
     loaderOptions,
-    options.tableName,
-    undefined,
-    () =>
-      stableStringify({
-        loaderName,
+    {
+      tableName: options.tableName,
+      identity: () => ({
         cacheIdentity,
         fields: getSelectFieldsKey(options.fields),
         baseClause: options.clause?.instanceKey(),
@@ -174,6 +172,7 @@ function createLoader<K extends any>(
         orderby: getOrderByKey(getOrderByLocal(options, queryOptions)),
         disableTransformations: queryOptions?.disableTransformations ?? false,
       }),
+    },
   );
 }
 

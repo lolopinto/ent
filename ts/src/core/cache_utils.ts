@@ -1,3 +1,4 @@
+/// <reference lib="es2023.collection" />
 import { createHmac, randomBytes } from "crypto";
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -34,17 +35,20 @@ export function stableStringify(value: unknown): string {
 // Diagnostic identities stay stable within a process without exposing cache data.
 // A random HMAC key prevents guessing low-entropy secrets from logged digests.
 const diagnosticKey = randomBytes(32);
-const diagnosticObjects = new WeakMap<object, string>();
+const diagnosticReferences = new WeakMap<object | symbol, string>();
+let nextDiagnosticReference = 0n;
 export function cacheDiagnosticKey(value: unknown): string {
   if (
     (typeof value === "object" && value !== null) ||
-    typeof value === "function"
+    typeof value === "function" ||
+    (typeof value === "symbol" && Symbol.keyFor(value) === undefined)
   ) {
-    // Generic loaders may use cyclic objects. Do not serialize or call user code.
-    let identity = diagnosticObjects.get(value);
+    // Reference keys include non-registered symbols (supported since Node 20).
+    // Do not serialize objects, inspect symbol descriptions or call user code.
+    let identity = diagnosticReferences.get(value);
     if (!identity) {
-      identity = randomBytes(32).toString("hex");
-      diagnosticObjects.set(value, identity);
+      identity = `ref:${++nextDiagnosticReference}`;
+      diagnosticReferences.set(value, identity);
     }
     return identity;
   }

@@ -13,7 +13,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 - release `@snowtop/ent` 0.2.16 with the patched YAML parser and refreshed dependencies, and `@snowtop/ent-graphql-tests` 0.1.1 with patched Express; update examples and companion package pins to these releases (#2048).
 - release `auto_schema` 0.0.42 with Mako 1.4.3 to address template path traversal; update example images to Docker v0.3.14 (#2048).
-- redact cache-hit keys and missing-row/unique-key error values; metrics cache-hit keys are now opaque process-local identities, while batch metrics provide stable structural loader names and opaque process-local loader IDs for distinguishing configurations (#2054).
+- redact cache-hit keys and missing-row lookup values, retaining opaque lookup identifiers for diagnostics; metrics cache-hit keys are opaque process-local identities, while batch metrics provide stable structural loader names and optional process-local loader IDs. Dynamic clauses need an explicit instanceKey to correlate configurations across loader instances (#2054).
 
 ### Fixed
 

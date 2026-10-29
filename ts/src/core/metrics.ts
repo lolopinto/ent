@@ -3,7 +3,8 @@ export type DataLoaderBatchMetrics = {
   loaderName: string;
   // Opaque logical loader identity, stable only within this process. Use for
   // debugging/correlation, not as a metric label (potentially high cardinality).
-  loaderId: string;
+  // Optional for compatibility and when a dynamic clause lacks an instanceKey.
+  loaderId?: string;
   batchSize: number;
 };
 

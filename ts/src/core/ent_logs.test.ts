@@ -516,7 +516,9 @@ function commonTests() {
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
-        "ent-cache-hit": cacheDiagnosticKey(getEntKey(ctx.getViewer(), 1, options)),
+        "ent-cache-hit": cacheDiagnosticKey(
+          getEntKey(ctx.getViewer(), 1, options),
+        ),
       });
       // ent cache hit
       expect(ent1).toBe(ent2);
@@ -566,7 +568,9 @@ function commonTests() {
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
-        "ent-cache-hit": cacheDiagnosticKey(getEntKey(ctx.getViewer(), 13, options)),
+        "ent-cache-hit": cacheDiagnosticKey(
+          getEntKey(ctx.getViewer(), 13, options),
+        ),
       });
       // ent cache hit
       expect(ent2).toBe(null);
@@ -599,7 +603,7 @@ function commonTests() {
         throw new Error("should have thrown");
       } catch (err) {
         expect((err as Error).message).toBe(
-          `couldn't find row for value 13 in table users`,
+          `users:id: couldn't find row for supplied value (lookup ${cacheDiagnosticKey(options.loaderFactory.name)})`,
         );
       }
 
@@ -623,13 +627,15 @@ function commonTests() {
         throw new Error("should have thrown");
       } catch (err) {
         expect((err as Error).message).toBe(
-          `couldn't find row for value 13 in table users`,
+          `users:id: couldn't find row for supplied value (lookup ${cacheDiagnosticKey(options.loaderFactory.name)})`,
         );
       }
 
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
-        "ent-cache-hit": cacheDiagnosticKey(getEntKey(ctx.getViewer(), 13, options)),
+        "ent-cache-hit": cacheDiagnosticKey(
+          getEntKey(ctx.getViewer(), 13, options),
+        ),
       });
       ml.clear();
 
@@ -679,7 +685,9 @@ function commonTests() {
       // should hit ent cache so nothing in the logs
       expect(ml.logs.length).toEqual(1);
       expect(ml.logs[0]).toStrictEqual({
-        "ent-cache-hit": cacheDiagnosticKey(getEntKey(ctx.getViewer(), 1, options)),
+        "ent-cache-hit": cacheDiagnosticKey(
+          getEntKey(ctx.getViewer(), 1, options),
+        ),
       });
 
       ml.clear();

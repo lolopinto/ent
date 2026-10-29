@@ -1,4 +1,4 @@
-import { cacheDiagnosticKey } from "../cache_utils";
+import { cacheDiagnosticKey, stableStringify } from "../cache_utils";
 import DataLoader from "dataloader";
 import { Loader, LoaderFactory, Context, DataOptions } from "../base";
 import { logIf, logEnabled } from "../logger";
@@ -124,37 +124,63 @@ function instrumentCacheMap<K, V>(
   };
 }
 
+export type LoaderIdentity =
+  | string
+  | Record<string, string | number | boolean | null | undefined>;
+
+export type LoaderMetricsOptions<K> = {
+  tableName?: string;
+  cacheKeyFn?: (key: K) => unknown;
+  // Full logical configuration, never emitted directly. Returning undefined
+  // omits loaderId when no stable logical identity is available.
+  identity?: () => LoaderIdentity | undefined;
+};
+
+// All batch IDs share encoding, hashing and lazy memoization here. Each loader
+// supplies only the configuration that determines its queries/cache identity.
+function batchIdentity(
+  loaderName: string,
+  options: LoaderMetricsOptions<unknown>,
+) {
+  const configuration = options.identity ? options.identity() : loaderName;
+  return configuration === undefined
+    ? {}
+    : {
+        loaderId: cacheDiagnosticKey(
+          stableStringify({ loaderName, configuration }),
+        ),
+      };
+}
+
 export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
   constructor(
     // A stable, non-sensitive metric label, not a cache identity or query value.
     loaderName: string,
     batchLoadFn: BatchLoadFn<K, V>,
     options: DataLoader.Options<K, V>,
-    tableName?: string,
+    metricsOrTableName?: LoaderMetricsOptions<K> | string,
+    // Retained for existing callers using the positional tableName/cacheKeyFn API.
     cacheKeyFn?: (key: K) => unknown,
-    // Full logical identity (may contain secrets). Evaluated only for metrics;
-    // only its opaque digest is emitted. Defaults to the label for simple loaders.
-    loaderIdentity: () => string = () => loaderName,
   ) {
-    let loaderId: string | undefined;
+    const metrics =
+      typeof metricsOrTableName === "string" || metricsOrTableName === undefined
+        ? { tableName: metricsOrTableName, cacheKeyFn }
+        : metricsOrTableName;
+    let identity: { loaderId?: string } | undefined;
     const wrappedBatchFn: BatchLoadFn<K, V> = async (keys) => {
       if (keys.length) {
         const hook = getOnDataLoaderBatch();
         if (hook) {
-          hook({
-            loaderName,
-            loaderId: (loaderId ??= cacheDiagnosticKey(loaderIdentity())),
-            batchSize: keys.length,
-          });
+          identity ??= batchIdentity(loaderName, metrics);
+          hook({ loaderName, ...identity, batchSize: keys.length });
         }
       }
       return batchLoadFn(keys);
     };
-
     const cacheMap = instrumentCacheMap(
       options.cacheMap,
-      tableName,
-      cacheKeyFn,
+      metrics.tableName,
+      metrics.cacheKeyFn,
     );
     const loaderOptions =
       cacheMap === options.cacheMap ? options : { ...options, cacheMap };

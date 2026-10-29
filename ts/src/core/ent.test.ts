@@ -429,7 +429,7 @@ function commonTests() {
         await loadEntX(noCtxV, "1", options);
         throw new Error("should have thrown");
       } catch (e) {
-        expect(e.message).toMatch(/couldn't find row for value/);
+        expect(e.message).toMatch(/couldn't find row for supplied value/);
       }
     });
 
@@ -438,7 +438,7 @@ function commonTests() {
         await loadEntX(ctx.getViewer(), "1", options);
         throw new Error("should have thrown");
       } catch (e) {
-        expect(e.message).toMatch(/couldn't find row for value 1/);
+        expect(e.message).toMatch(/couldn't find row for supplied value/);
       }
     });
 

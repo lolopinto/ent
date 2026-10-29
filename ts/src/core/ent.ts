@@ -152,6 +152,18 @@ export function getEntLoaderPrivacyConcurrencyLimit() {
   return entLoaderPrivacyConcurrencyLimit;
 }
 
+function missingEntError<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+  options: LoadEntOptions<TEnt, TViewer>,
+): Error {
+  const factory = options.loaderFactory;
+  // Existing generated loaders do not carry unique-field sensitivity metadata.
+  // Omit the supplied value; identify clause-specific factories without exposing
+  // the secret-bearing factory name itself.
+  return new Error(
+    `${factory.options.tableName}:${factory.options.key}: couldn't find row for supplied value (lookup ${cacheDiagnosticKey(factory.name)})`,
+  );
+}
+
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
@@ -181,7 +193,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       return mapWithConcurrency(
         rows,
         getEntLoaderPrivacyConcurrencyLimit(),
-        async (row, idx) => {
+        async (row) => {
           // db error
           if (rowIsError(row)) {
             if (row instanceof Error) {
@@ -191,16 +203,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
             return new Error(row.message);
           }
           if (!row) {
-            if (tableName) {
-              return new ErrorWrapper(
-                new Error(
-                  `couldn't find row for value ${keys[idx]} in table ${tableName}`,
-                ),
-              );
-            }
-            return new ErrorWrapper(
-              new Error(`couldn't find row for value ${keys[idx]}`),
-            );
+            return new ErrorWrapper(missingEntError(options));
           }
 
           const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
@@ -212,9 +215,11 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       );
     },
     loaderOptions,
-    tableName,
-    undefined,
-    () => `ent-loader:${viewer.instanceKey()}:${options.loaderFactory.name}`,
+    {
+      tableName,
+      identity: () =>
+        `ent-loader:${viewer.instanceKey()}:${options.loaderFactory.name}`,
+    },
   );
 }
 
@@ -394,10 +399,7 @@ export async function loadEntXViaKey<
     .createLoader(viewer.context)
     .load(key);
   if (!row) {
-    // Unique keys can be sensitive; existing generated loaders do not carry that metadata.
-    throw new Error(
-      `${options.loaderFactory.options.tableName}:${options.loaderFactory.options.key}: couldn't find row for supplied value`,
-    );
+    throw missingEntError(options);
   }
   const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
     viewer,

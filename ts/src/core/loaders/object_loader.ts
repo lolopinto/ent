@@ -1,5 +1,5 @@
 import { getSelectFieldsKey } from "../query_impl";
-import { cacheDiagnosticKey, stableStringify } from "../cache_utils";
+import { cacheDiagnosticKey } from "../cache_utils";
 import DataLoader from "dataloader";
 import {
   LoadRowOptions,
@@ -136,13 +136,13 @@ async function loadCountForClauseLoader<V extends Data = Data, K = keyof V>(
 }
 
 // Do not evaluate a dynamic clause for diagnostics. Factories already require
-// its instanceKey; directly constructed loaders can fall back to function identity.
-function getBatchIdentity(
-  loaderName: string,
-  options: ObjectLoaderOptions,
-): string {
-  return stableStringify({
-    loaderName,
+// its instanceKey. For direct loaders without one, omit the logical ID rather
+// than misrepresenting a function-object identity as a stable configuration.
+function getBatchConfiguration(options: ObjectLoaderOptions) {
+  if (typeof options.clause === "function" && !options.instanceKey) {
+    return undefined;
+  }
+  return {
     key: options.key,
     keyType: options.keyType || "uuid",
     fields: getSelectFieldsKey(options.fields),
@@ -152,9 +152,9 @@ function getBatchIdentity(
     disableDefaultOrderByAlias: options.disableDefaultOrderByAlias ?? false,
     clause:
       typeof options.clause === "function"
-        ? options.instanceKey || cacheDiagnosticKey(options.clause)
+        ? options.instanceKey
         : (options.clause?.instanceKey() ?? options.instanceKey ?? ""),
-  });
+  };
 }
 
 function createDataLoader(options: SelectDataOptions, context?: Context) {
@@ -175,9 +175,10 @@ function createDataLoader(options: SelectDataOptions, context?: Context) {
       return loadRowsForIDLoader(options, ids, context);
     },
     loaderOptions,
-    options.tableName,
-    undefined,
-    () => getBatchIdentity(loaderName, options),
+    {
+      tableName: options.tableName,
+      identity: () => getBatchConfiguration(options),
+    },
   );
 }
 
@@ -259,9 +260,11 @@ function createClauseDataLoder<
       cacheMap: createClauseCacheMap<TQueryData, K, TResultData[]>(options),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
-    options.tableName,
-    (key) => key.instanceKey(),
-    () => getBatchIdentity(loaderName, options),
+    {
+      tableName: options.tableName,
+      cacheKeyFn: (key) => key.instanceKey(),
+      identity: () => getBatchConfiguration(options),
+    },
   );
 }
 
@@ -286,9 +289,11 @@ function createClauseCountDataLoader<V extends Data = Data, K = keyof V>(
       cacheMap: createClauseCacheMap<V, K, number>(options, true),
       maxBatchSize: getLoaderMaxBatchSize(),
     },
-    options.tableName,
-    (key) => `${key.instanceKey()}:count`,
-    () => getBatchIdentity(loaderName, options),
+    {
+      tableName: options.tableName,
+      cacheKeyFn: (key) => `${key.instanceKey()}:count`,
+      identity: () => getBatchConfiguration(options),
+    },
   );
 }
 
@@ -312,7 +317,7 @@ export class ObjectLoader<
   private memoizedInitPrime: () => void;
 
   constructor(
-    private options: SelectDataOptions,
+    private options: ObjectLoaderOptions,
     public context?: Context,
     private toPrime?: ObjectLoaderFactory<TResultData>[],
   ) {
@@ -474,7 +479,7 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
   private loader: DataLoader<clause.Clause<V, K>, number> | null;
 
   constructor(
-    private options: SelectDataOptions,
+    private options: ObjectLoaderOptions,
     public context?: Context,
   ) {
     if (context) {
@@ -512,8 +517,9 @@ export class ObjectCountLoader<V extends Data = Data, K = keyof V>
   }
 }
 
-interface ObjectLoaderOptions extends SelectDataOptions {
-  // needed when clause is a function...
+export interface ObjectLoaderOptions extends SelectDataOptions {
+  // Identifies equivalent dynamic clauses across loader instances. Required by
+  // factories; direct loaders without it omit loaderId from batch metrics.
   instanceKey?: string;
 }
 

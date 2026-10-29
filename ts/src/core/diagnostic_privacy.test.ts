@@ -10,7 +10,15 @@ import { TempDB } from "../testutils/db/temp_db";
 import { FakeUser } from "../testutils/fake_data";
 import { TestContext } from "../testutils/context/test_context";
 import { Eq, sensitiveValue } from "./clause";
-import { loadRow, loadRows, loadRowX, loadEntXViaKey, loadEntX } from "./ent";
+import {
+  loadRow,
+  loadRows,
+  loadRowX,
+  loadEntXViaKey,
+  loadEntX,
+  loadEnt,
+  getEntLoader,
+} from "./ent";
 import { ObjectLoaderFactory } from "./loaders/object_loader";
 import { getCustomLoader } from "./loaders/loader";
 import { clearLogLevels, setLogLevels } from "./logger";
@@ -210,4 +218,56 @@ test("batch labels are stable structural names while clause caches remain distin
   } finally {
     setMetricsHook();
   }
+});
+
+test.each([
+  false,
+  true,
+])("missing entity errors redact batch keys and distinguish loader configurations (context=%s)", async (withContext) => {
+  const user = await createTestUser();
+  const viewer = withContext
+    ? new TestContext(new IDViewer(user.id)).getViewer()
+    : new IDViewer(user.id);
+  const errors: string[] = [];
+  for (const secret of [
+    "lookup-clause-a",
+    "lookup-clause-b",
+    "lookup-clause-a",
+  ]) {
+    const options = {
+      ...FakeUser.loaderOptions(),
+      loaderFactory: new ObjectLoaderFactory({
+        ...FakeUser.loaderOptions(),
+        key: "email_address",
+        keyType: "text",
+        clause: Eq("first_name", sensitiveValue(secret)),
+      }),
+    };
+    expect(await loadEnt(viewer, "missing-key-secret", options)).toBeNull();
+    for (const load of [loadEntX, loadEntXViaKey]) {
+      try {
+        await load(viewer, "missing-key-secret", options);
+        throw new Error("expected missing row");
+      } catch (err) {
+        const message = (err as Error).message;
+        expect(message).toContain("couldn't find row");
+        expect(message).toContain("email_address");
+        expect(message).not.toContain("missing-key-secret");
+        expect(message).not.toContain("lookup-clause");
+        errors.push(message);
+      }
+    }
+    const results = await getEntLoader(viewer, options).loadMany([
+      "missing-key-secret",
+      "other-key-secret",
+    ]);
+    for (const result of results) {
+      expect(JSON.stringify(result)).not.toContain("key-secret");
+      // Error.message is non-enumerable; check the wrapped message itself too.
+      expect((result as any).error.message).not.toContain("key-secret");
+    }
+  }
+  expect(errors[0]).toBe(errors[1]);
+  expect(errors[0]).not.toBe(errors[2]);
+  expect(errors[0]).toBe(errors[4]);
 });

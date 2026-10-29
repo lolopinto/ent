@@ -1,6 +1,6 @@
 import { AssocEdgeLoaderFactory } from "./loaders/assoc_edge_loader";
 import { AssocEdge } from "./ent";
-import { ObjectLoaderFactory } from "./loaders/object_loader";
+import { ObjectLoader, ObjectLoaderFactory } from "./loaders/object_loader";
 import * as cacheUtils from "./cache_utils";
 import { QueryLoaderFactory } from "./loaders/query_loader";
 import { TestContext } from "../testutils/context/test_context";
@@ -9,7 +9,7 @@ import { InstrumentedDataLoader } from "./loaders/loader";
 import { cacheDiagnosticKey } from "./cache_utils";
 import { createCountDataLoader } from "./loaders/raw_count_loader";
 import { ContextCache } from "./context";
-import { setMetricsHook } from "./metrics";
+import { DataLoaderBatchMetrics, setMetricsHook } from "./metrics";
 import { loadRows } from "./ent";
 import * as clause from "./clause";
 import type { QueryOptions } from "./base";
@@ -283,9 +283,7 @@ describe("batch loader identities", () => {
       "example",
       async (keys) => keys.map((key) => key),
       { cache: false },
-      undefined,
-      undefined,
-      identity,
+      { identity },
     );
     await loader.load(1);
     expect(digest).not.toHaveBeenCalled();
@@ -307,4 +305,129 @@ describe("batch loader identities", () => {
     expect(events[0].loaderId).toMatch(/^[a-f0-9]{64}$/);
     expect(new Set(events.map((e) => e.loaderId)).size).toBe(1);
   });
+});
+
+test("batch metrics remain compatible with producers that supply only legacy fields", () => {
+  const legacy: DataLoaderBatchMetrics = { loaderName: "old", batchSize: 1 };
+  expect(legacy.loaderId).toBeUndefined();
+});
+
+test("direct dynamic loaders omit unknown logical identity and accept explicit stable keys", async () => {
+  const hook = jest.fn();
+  setMetricsHook({ onDataLoaderBatch: hook });
+  (loadRows as jest.Mock).mockResolvedValue([]);
+  try {
+    for (const instanceKey of [
+      undefined,
+      undefined,
+      "config-a",
+      "config-b",
+      "config-a",
+    ]) {
+      const dynamicClause = jest.fn(() => clause.Eq("active", true));
+      const loader = new ObjectLoader(
+        {
+          tableName: "users",
+          fields: ["id"],
+          key: "id",
+          clause: dynamicClause,
+          instanceKey,
+        },
+        new TestContext(),
+      );
+      await loader.load("unused");
+      expect(dynamicClause).toHaveBeenCalledTimes(1);
+    }
+    const events = hook.mock.calls.map(([event]) => event);
+    expect(events[0]).not.toHaveProperty("loaderId");
+    expect(events[1]).not.toHaveProperty("loaderId");
+    expect(events[2].loaderId).toMatch(/^[a-f0-9]{64}$/);
+    expect(events[2].loaderId).not.toBe(events[3].loaderId);
+    expect(events[2].loaderId).toBe(events[4].loaderId);
+  } finally {
+    setMetricsHook();
+  }
+});
+
+test("object diagnostic identities use stable distinct counters without evaluating objects", () => {
+  const first = {
+    toJSON: () => {
+      throw new Error("do not serialize");
+    },
+  };
+  const second = {};
+  expect(cacheDiagnosticKey(first)).toMatch(/^ref:[0-9]+$/);
+  expect(cacheDiagnosticKey(first)).toBe(cacheDiagnosticKey(first));
+  expect(cacheDiagnosticKey(first)).not.toBe(cacheDiagnosticKey(second));
+  expect(cacheDiagnosticKey("ref:1")).toMatch(/^[a-f0-9]{64}$/);
+});
+
+test.each([
+  "legacy",
+  "options",
+])("%s metrics arguments preserve cache-key normalization", async (form) => {
+  const hook = jest.fn();
+  setMetricsHook({ onDataLoaderCacheHit: hook });
+  const normalize = (key: string) => `normalized:${key}`;
+  try {
+    const batch = async (keys: readonly string[]) => keys.map(() => 1);
+    const options = { cacheMap: new Map<string, Promise<number>>() };
+    const loader =
+      form === "legacy"
+        ? new InstrumentedDataLoader(
+            "custom",
+            batch,
+            options,
+            "users",
+            normalize,
+          )
+        : new InstrumentedDataLoader("custom", batch, options, {
+            tableName: "users",
+            cacheKeyFn: normalize,
+          });
+    await loader.load("private-key");
+    await loader.load("private-key");
+    expect(hook).toHaveBeenCalledWith({
+      tableName: "users",
+      key: cacheDiagnosticKey("normalized:private-key"),
+    });
+    expect(JSON.stringify(hook.mock.calls)).not.toContain("private-key");
+  } finally {
+    setMetricsHook();
+  }
+});
+
+test("distinct local symbol keys stay distinct while registry symbols correlate", async () => {
+  const keys = [
+    Symbol("private-description"),
+    Symbol("private-description"),
+    Symbol.for("private-description"),
+  ];
+  const hook = jest.fn();
+  setMetricsHook({ onDataLoaderCacheHit: hook });
+  try {
+    const loader = new InstrumentedDataLoader<symbol, number>(
+      "symbols",
+      async (values) => values.map(() => 0),
+      { cacheMap: new Map() },
+      "users",
+    );
+    for (const [index, key] of keys.entries()) {
+      loader.prime(key, index);
+      expect(await loader.load(key)).toBe(index);
+      expect(await loader.load(key)).toBe(index);
+    }
+    const identities = hook.mock.calls.map(([event]) => event.key);
+    expect(new Set(identities).size).toBe(3);
+    expect(identities[0]).toBe(identities[1]);
+    expect(identities[2]).toBe(identities[3]);
+    expect(identities[4]).toBe(
+      cacheDiagnosticKey(Symbol.for("private-description")),
+    );
+    expect(JSON.stringify(hook.mock.calls)).not.toContain(
+      "private-description",
+    );
+  } finally {
+    setMetricsHook();
+  }
 });

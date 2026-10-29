@@ -1409,7 +1409,7 @@ function commonTests() {
         throw new Error(`should throw`);
       } catch (err) {
         expect((err as Error).message).toBe(
-          `couldn't find row for value 6 in table users`,
+          `users:bar: couldn't find row for supplied value (lookup ${cacheDiagnosticKey(User.loaderOptions().loaderFactory.name)})`,
         );
         expect(ml.logs).toStrictEqual([
           { "ent-cache-hit": cacheDiagnosticKey("idViewer:1:users:bar::6") },
@@ -1435,7 +1435,7 @@ function commonTests() {
         const missingError = results[1] as any;
         expect(missingError.error).toBeInstanceOf(Error);
         expect(missingError.error.message).toBe(
-          "couldn't find row for value 4 in table users",
+          `users:bar: couldn't find row for supplied value (lookup ${cacheDiagnosticKey(User.loaderOptions().loaderFactory.name)})`,
         );
 
         const entResult = results[2] as User;
