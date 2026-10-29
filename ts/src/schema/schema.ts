@@ -501,6 +501,8 @@ export interface FieldEdge {
   // inverseEdge is optional. if present, indicates it maps to an edge in the other schema
   // it creates the edge in the other schema if not provided.
   // this makes it so that we can define and write the edge from this schema
+  // the inverse edge doesn't apply this field's privacyPolicy so if the field has
+  // one, the inverse edge must set hideFromGraphQL: true. ignored for private fields.
   inverseEdge?: string | InverseFieldEdge;
 
   // this *intentionally* breaks the mold from what we do for polymorphic edges

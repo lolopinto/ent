@@ -40,7 +40,7 @@ export default new EntSchema({
       defaultValueOnEdit: (builder) => builder.viewer.viewerID,
       fieldEdge: {
         schema: "Contact",
-        inverseEdge: { name: "defaultAssignments" },
+        inverseEdge: { name: "defaultAssignments", hideFromGraphQL: true },
       },
     }),
     private_owner_id: UUIDType({
@@ -49,7 +49,7 @@ export default new EntSchema({
       privacyPolicy: AlwaysDenyPrivacyPolicy,
       fieldEdge: {
         schema: "Contact",
-        inverseEdge: { name: "privateAssignments" },
+        inverseEdge: { name: "privateAssignments", hideFromGraphQL: true },
       },
     }),
     member_ids: UUIDListType({

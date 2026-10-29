@@ -596,7 +596,9 @@ features:
   - id: field.field_edge.inverse
     owns: [input.FieldEdge.InverseEdge, input.InverseFieldEdge.Name, input.InverseFieldEdge.TableName, input.InverseFieldEdge.HideFromGraphQL, input.InverseFieldEdge.EdgeConstName]
     mode: explicit
-    rationale: Inverse field edges have distinct generated query and GraphQL paths.
+    rationale: Inverse field edges have distinct generated query and GraphQL paths. Inverse edges of fields with field privacy must set hideFromGraphQL, which internal_fields exercises.
+    test_refs:
+      - internal/schema/schema_inverse_field_edge_privacy_test.go:TestInverseFieldEdgeOnFieldWithFieldPrivacy
   - id: field.field_edge.index_edge
     owns: [input.FieldEdge.IndexEdge, input.IndexEdgeOptions.Name, input.IndexEdgeOptions.OrderBy, input.OrderByOption.Column, input.OrderByOption.Direction, input.OrderByDirection.Ascending, input.OrderByDirection.Descending, input.OrderByOption.Alias, input.OrderByOption.NullsPlacement, input.NullsPlacement.First, input.NullsPlacement.Last]
     mode: explicit

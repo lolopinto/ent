@@ -21,6 +21,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 - bind entity IDs as parameters in Go UPDATE statements (#2052).
+- codegen now fails when a field with field privacy (`privacyPolicy`) declares a `fieldEdge.inverseEdge` exposed to GraphQL; the generated inverse connection let viewers enumerate the relationship, including `rawCount`, without the field's privacy check. Set `hideFromGraphQL: true` on the `inverseEdge` (the edge is still written and queryable from TypeScript) or remove the `inverseEdge`.
 
 ## [0.2.15]
 

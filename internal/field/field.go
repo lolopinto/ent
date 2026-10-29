@@ -797,6 +797,17 @@ func (f *Field) AddInverseEdge(cfg codegenapi.Config, edge *edge.AssociationEdge
 	if f.fieldEdge == nil {
 		return fmt.Errorf("cannot add an inverse edge on a field without a field edge")
 	}
+	// the inverse edge lets the other side enumerate this relationship (including
+	// via rawCount) without evaluating this field's privacy policy, so it can't be
+	// exposed in GraphQL when the field has field privacy.
+	// private and dbOnly fields don't get here since they have no field edge
+	if f.hasFieldPrivacy && !edge.HideFromGraphQL() {
+		return fmt.Errorf(
+			"field %s has field privacy but its inverse edge %s is exposed to GraphQL, which would reveal the relationship to viewers who can't see the field. set hideFromGraphQL: true on the inverseEdge or remove the inverseEdge",
+			f.FieldName,
+			edge.EdgeName,
+		)
+	}
 	var err error
 	f.inverseEdge, err = edge.CloneWithCommonInfo(cfg, f.fieldEdge.Schema)
 	return err
