@@ -296,11 +296,14 @@ func compareNode(n1, n2 *NodeData, opts *compareNodeOptions) ([]change.Change, e
 	ret = append(ret, changes...)
 
 	privacyChanged := n1.HasDefaultActionPrivacy != n2.HasDefaultActionPrivacy
+	// canViewerSee/canViewerEdit only render in the node's GraphQL type
+	canViewerChanged := n1.ShowCanViewerSee != n2.ShowCanViewerSee ||
+		n1.ShowCanViewerEdit != n2.ShowCanViewerEdit
 
 	// if anything changes, just add ModifyNode
 	// eventually, we can make this smarter but want to slightly err on the side of caution here
 	// maybe move action changes after. can't think of a reason to have actions affect node file
-	if !opts.skipFields && (len(ret) != 0 || privacyChanged) {
+	if !opts.skipFields && (len(ret) != 0 || privacyChanged || canViewerChanged) {
 		ret = append(ret, change.Change{
 			Change:          change.ModifyNode,
 			WriteAllForNode: privacyChanged,

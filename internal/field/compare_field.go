@@ -94,6 +94,7 @@ func FieldEqual(existing, field *Field) bool {
 		existing.hasDefaultValueOnEdit == field.hasDefaultValueOnEdit &&
 		existing.defaultToViewerOnCreate == field.defaultToViewerOnCreate &&
 		existing.hasFieldPrivacy == field.hasFieldPrivacy &&
+		existing.hasEditFieldPrivacy == field.hasEditFieldPrivacy &&
 		existing.forceRequiredInAction == field.forceRequiredInAction &&
 		existing.forceOptionalInAction == field.forceOptionalInAction &&
 		existing.patternName == field.patternName &&

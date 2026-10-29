@@ -149,6 +149,19 @@ func TestMigrationSSLMode(t *testing.T) {
 	}
 }
 
+func TestSSLModeIsQueryEscaped(t *testing.T) {
+	t.Setenv("ENT_DEV_SCHEMA_ENABLED", "false")
+	mode := "require&sslrootcert=/tmp/x#frag"
+	db := &DBConfig{Dialect: "postgres", Host: "localhost", User: "test", Database: "test", SslMode: mode}
+	for _, conn := range []string{db.GetConnectionStr(), db.GetSQLAlchemyDatabaseURIgo()} {
+		uri, err := url.Parse(conn)
+		assert.NoError(t, err)
+		assert.Equal(t, mode, uri.Query().Get("sslmode"))
+		assert.False(t, uri.Query().Has("sslrootcert"))
+		assert.Empty(t, uri.Fragment)
+	}
+}
+
 func TestMigrationSSLModePresence(t *testing.T) {
 	t.Setenv("ENT_DEV_SCHEMA_ENABLED", "false")
 	for _, source := range []string{"url", "yaml", "struct"} {

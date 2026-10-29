@@ -165,7 +165,7 @@ func (dbData *DBConfig) getConnectionStr(driver string, sslmode bool, includeDev
 	if sslmode {
 		format = format + "?sslmode={sslmode}"
 		parts = append(parts,
-			"{sslmode}", dbData.SslMode,
+			"{sslmode}", url.QueryEscape(dbData.SslMode),
 		)
 	}
 

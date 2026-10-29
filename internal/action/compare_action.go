@@ -9,6 +9,7 @@ import (
 	"github.com/lolopinto/ent/internal/schema/change"
 	"github.com/lolopinto/ent/internal/schema/customtype"
 	"github.com/lolopinto/ent/internal/schema/enum"
+	"github.com/lolopinto/ent/internal/schema/input"
 )
 
 func compareCommonActionInfo(action1, action2 commonActionInfo) bool {
@@ -22,6 +23,7 @@ func compareCommonActionInfo(action1, action2 commonActionInfo) bool {
 		edge.AssocEdgesEqual(action1.Edges, action2.Edges) &&
 		edge.AssocEdgeGroupEqual(action1.EdgeGroup, action1.EdgeGroup) &&
 		action1.Operation == action2.Operation &&
+		input.CanViewerDoEqual(action1.canViewerDo, action2.canViewerDo) &&
 		customtype.CompareInterfacesMapEqual(action1.customInterfaces, action2.customInterfaces) &&
 		enum.EnumsEqual(action1.tsEnums, action2.tsEnums) &&
 		enum.GQLEnumsEqual(action1.gqlEnums, action2.gqlEnums) &&

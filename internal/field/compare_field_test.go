@@ -392,3 +392,11 @@ func TestCompareImmutableField(t *testing.T) {
 	require.False(t, FieldEqual(immutable, mutable))
 	require.True(t, FieldEqual(immutable, immutable))
 }
+
+func TestCompareEditFieldPrivacyField(t *testing.T) {
+	open := &Field{FieldName: "secret", fieldType: &enttype.StringType{}}
+	guarded := &Field{FieldName: "secret", fieldType: &enttype.StringType{}, hasEditFieldPrivacy: true}
+	require.False(t, FieldEqual(open, guarded))
+	require.False(t, FieldEqual(guarded, open))
+	require.True(t, FieldEqual(guarded, guarded))
+}

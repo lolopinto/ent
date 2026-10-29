@@ -21,6 +21,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 - bind entity IDs as parameters in Go UPDATE statements (#2052).
+- fix `JSONKeyInList` on Postgres `json` columns, which failed because its key-exists check ran against `json` rather than `jsonb` elements (#2053).
 
 ## [0.2.15]
 

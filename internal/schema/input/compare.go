@@ -25,6 +25,8 @@ func NodeEqual(existing, node *Node) bool {
 		actionsEqual(existing.Actions, node.Actions) &&
 		existing.EnumTable == node.EnumTable &&
 		existing.HasDefaultActionPrivacy == node.HasDefaultActionPrivacy &&
+		existing.ShowCanViewerSee == node.ShowCanViewerSee &&
+		existing.ShowCanViewerEdit == node.ShowCanViewerEdit &&
 		change.MapListEqual(existing.DBRows, node.DBRows) &&
 		constraintsEqual(existing.Constraints, node.Constraints) &&
 		indicesEqual(existing.Indices, node.Indices) &&
@@ -122,6 +124,7 @@ func fieldEqual(existingField, field *Field) bool {
 		existingField.HasDefaultValueOnCreate == field.HasDefaultValueOnCreate &&
 		existingField.HasDefaultValueOnEdit == field.HasDefaultValueOnEdit &&
 		existingField.HasFieldPrivacy == field.HasFieldPrivacy &&
+		existingField.HasEditFieldPrivacy == field.HasEditFieldPrivacy &&
 
 		PolymorphicOptionsEqual(existingField.Polymorphic, field.Polymorphic) &&
 		existingField.DerivedWhenEmbedded == field.DerivedWhenEmbedded &&
@@ -297,7 +300,18 @@ func edgeActionEqual(existing, action *EdgeAction) bool {
 		existing.CustomGraphQLName == action.CustomGraphQLName &&
 		existing.CustomInputName == action.CustomInputName &&
 		existing.HideFromGraphQL == action.HideFromGraphQL &&
-		actionOnlyFieldsEqual(existing.ActionOnlyFields, action.ActionOnlyFields)
+		actionOnlyFieldsEqual(existing.ActionOnlyFields, action.ActionOnlyFields) &&
+		CanViewerDoEqual(existing.CanViewerDo, action.CanViewerDo)
+}
+
+func CanViewerDoEqual(existing, canViewerDo *CanViewerDo) bool {
+	ret := change.CompareNilVals(existing == nil, canViewerDo == nil)
+	if ret != nil {
+		return *ret
+	}
+
+	return existing.AddAllFields == canViewerDo.AddAllFields &&
+		change.StringListEqual(existing.InputFields, canViewerDo.InputFields)
 }
 
 func actionOnlyFieldsEqual(existing, actions []*ActionField) bool {
@@ -365,7 +379,8 @@ func actionEqual(existing, action *Action) bool {
 		existing.CustomActionName == action.CustomActionName &&
 		existing.CustomInputName == action.CustomInputName &&
 		existing.HideFromGraphQL == action.HideFromGraphQL &&
-		actionOnlyFieldsEqual(existing.ActionOnlyFields, action.ActionOnlyFields)
+		actionOnlyFieldsEqual(existing.ActionOnlyFields, action.ActionOnlyFields) &&
+		CanViewerDoEqual(existing.CanViewerDo, action.CanViewerDo)
 }
 
 func foreignKeyInfoEqual(existing, fkey *ForeignKeyInfo) bool {

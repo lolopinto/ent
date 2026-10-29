@@ -4272,3 +4272,59 @@ func TestCompareFieldWriteRestrictions(t *testing.T) {
 		}
 	}
 }
+
+func TestCompareCanViewerOptions(t *testing.T) {
+	build := func(node *input.Node) *schema.Schema {
+		node.Fields = append([]*input.Field{{Name: "id", Type: &input.FieldType{DBType: input.UUID}, PrimaryKey: true}}, node.Fields...)
+		s, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, &input.Schema{Nodes: map[string]*input.Node{"User": node}}, base.TypeScript)
+		require.NoError(t, err)
+		return s
+	}
+	secret := func(editPrivacy bool) *input.Field {
+		return &input.Field{Name: "secret", Type: &input.FieldType{DBType: input.String}, HasFieldPrivacy: true, HasEditFieldPrivacy: editPrivacy}
+	}
+	modifyNode := change.Change{Change: change.ModifyNode, Name: "User", GraphQLName: "User"}
+
+	tests := map[string]struct {
+		before, after func() *input.Node
+		expected      []change.Change
+	}{
+		"showCanViewerSee": {
+			before:   func() *input.Node { return &input.Node{Fields: []*input.Field{secret(false)}} },
+			after:    func() *input.Node { return &input.Node{Fields: []*input.Field{secret(false)}, ShowCanViewerSee: true} },
+			expected: []change.Change{modifyNode},
+		},
+		"showCanViewerEdit": {
+			before:   func() *input.Node { return &input.Node{Fields: []*input.Field{secret(true)}} },
+			after:    func() *input.Node { return &input.Node{Fields: []*input.Field{secret(true)}, ShowCanViewerEdit: true} },
+			expected: []change.Change{modifyNode},
+		},
+		"hasEditFieldPrivacy": {
+			before:   func() *input.Node { return &input.Node{Fields: []*input.Field{secret(false)}, ShowCanViewerEdit: true} },
+			after:    func() *input.Node { return &input.Node{Fields: []*input.Field{secret(true)}, ShowCanViewerEdit: true} },
+			expected: []change.Change{{Change: change.ModifyField, Name: "secret"}, modifyNode},
+		},
+		"canViewerDo": {
+			before: func() *input.Node {
+				return &input.Node{Fields: []*input.Field{secret(false)}, Actions: []*input.Action{{Operation: ent.EditAction}}}
+			},
+			after: func() *input.Node {
+				return &input.Node{Fields: []*input.Field{secret(false)}, Actions: []*input.Action{{Operation: ent.EditAction, CanViewerDo: &input.CanViewerDo{}}}}
+			},
+			expected: []change.Change{{Change: change.ModifyAction, Name: "EditUserAction", GraphQLName: "userEdit"}, modifyNode},
+		},
+	}
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
+			changes, err := schema.CompareSchemas(build(tt.before()), build(tt.after()))
+			require.NoError(t, err)
+			for _, c := range tt.expected {
+				require.Contains(t, changes["User"], c)
+			}
+
+			changes, err = schema.CompareSchemas(build(tt.after()), build(tt.after()))
+			require.NoError(t, err)
+			require.Empty(t, changes)
+		})
+	}
+}

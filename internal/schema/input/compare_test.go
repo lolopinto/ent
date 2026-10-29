@@ -565,3 +565,41 @@ func TestNodeDefaultActionPrivacyChange(t *testing.T) {
 	require.False(t, NodeEqual(after, before))
 	require.True(t, NodeEqual(after, marshallAndUnmarshallNode(t, after)))
 }
+
+func TestNodeCanViewerChange(t *testing.T) {
+	for _, after := range []*Node{{ShowCanViewerSee: true}, {ShowCanViewerEdit: true}} {
+		before := &Node{}
+		require.False(t, NodeEqual(before, after))
+		require.False(t, NodeEqual(after, before))
+		require.True(t, NodeEqual(after, marshallAndUnmarshallNode(t, after)))
+	}
+}
+
+func TestFieldEditPrivacyChange(t *testing.T) {
+	before := &Field{Name: "secret", Type: &FieldType{DBType: String}}
+	after := &Field{Name: "secret", Type: &FieldType{DBType: String}, HasEditFieldPrivacy: true}
+	require.False(t, fieldEqual(before, after))
+	require.False(t, fieldEqual(after, before))
+	require.True(t, fieldEqual(after, after))
+}
+
+func TestActionCanViewerDoChange(t *testing.T) {
+	variants := []*CanViewerDo{
+		nil,
+		{},
+		{AddAllFields: true},
+		{InputFields: []string{"name"}},
+		{InputFields: []string{"email"}},
+	}
+	for i, v1 := range variants {
+		for j, v2 := range variants {
+			a1 := &Action{Operation: ent.EditAction, CanViewerDo: v1}
+			a2 := &Action{Operation: ent.EditAction, CanViewerDo: v2}
+			require.Equal(t, i == j, actionEqual(a1, a2))
+
+			e1 := &EdgeAction{Operation: ent.AddEdgeAction, CanViewerDo: v1}
+			e2 := &EdgeAction{Operation: ent.AddEdgeAction, CanViewerDo: v2}
+			require.Equal(t, i == j, edgeActionEqual(e1, e2))
+		}
+	}
+}

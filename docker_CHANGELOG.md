@@ -25,6 +25,8 @@ Changelog for the npm version are [here](/CHANGELOG.md).
 - select the matching Node security minimum when overriding the standalone
   Dockerfile's Node major, while preserving explicit minimum overrides (#2047).
 - preserve explicitly configured migration SSL modes; leave omitted modes to libpq defaults and `PGSSLMODE` (#2051).
+- regenerate GraphQL node types when `showCanViewerSee`, `showCanViewerEdit`, a field's edit privacy, or an action's `canViewerDo` changes.
+- URL-encode the configured `sslmode` in database connection strings.
 
 ## [0.3.12]
 
