@@ -458,8 +458,10 @@ function commonTests() {
         new LoggedOutViewer(),
         schema,
         new Map(),
-        WriteOperation.Insert,
-        null,
+        op === SQLStatementOperation.Insert
+          ? WriteOperation.Edit
+          : WriteOperation.Insert,
+        existing,
       ),
       {
         transformWrite: () => ({
@@ -485,7 +487,11 @@ function commonTests() {
     );
   });
 
-  test("a transformed insert cannot update an existing entity with creation permissions", async () => {
+  test.each([
+    WriteOperation.Edit,
+    WriteOperation.Delete,
+    WriteOperation.Insert,
+  ])("%s transformed to insert creates a new row", async (operation) => {
     const existing = await getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
@@ -493,11 +499,31 @@ function commonTests() {
       ]),
       undefined,
     ).saveX();
+    const editPolicy = jest.fn(async () => Deny());
+    const createPolicy = jest.fn(async (_viewer, ent) => {
+      expect(ent.id).not.toBe(existing.id);
+      return Allow();
+    });
+    const schema = new EntBuilderSchema(User, {
+      patterns: [new DeletedAtPattern()],
+      fields: {
+        FirstName: StringType({
+          editPrivacyPolicy: { rules: [{ apply: editPolicy }] },
+          createOnlyOverrideEditPrivacyPolicy: {
+            rules: [{ apply: createPolicy }],
+          },
+        }),
+        LastName: StringType(),
+      },
+    });
     const action = new SimpleAction(
       new LoggedOutViewer(),
-      UserSchema,
-      new Map([["FirstName", "Aegon"]]),
-      WriteOperation.Edit,
+      schema,
+      new Map([
+        ["FirstName", "Aegon"],
+        ["LastName", "Targaryen"],
+      ]),
+      operation,
       existing,
     );
     Object.assign(action, {
@@ -506,10 +532,13 @@ function commonTests() {
         existingEnt: existing,
       }),
     });
-    await expect(action.saveX()).rejects.toThrow(
-      "cannot transform to insert with an existing ent",
-    );
+    const created = await action.saveX();
+    expect(created.id).not.toBe(existing.id);
+    expect(action.builder.existingEnt).toBeNull();
+    expect((await getNewLoader().load(created.id))?.first_name).toBe("Aegon");
     expect((await getNewLoader().load(existing.id))?.first_name).toBe("Jon");
+    expect(editPolicy).not.toHaveBeenCalled();
+    expect(createPolicy).toHaveBeenCalledTimes(1);
   });
 
   test("delete -> update", async () => {

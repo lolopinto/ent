@@ -225,6 +225,28 @@ export class Account extends AccountBase {
 
 To fetch a query that isn't source based or that's global to your database e.g. all closed todos in the last day, instead of using `CustomEdgeQueryBase` above, you can use `CustomClauseQuery`. This can also be exposed as a GraphQL [Connection](https://graphql.org/learn/pagination/#complete-connection-model) that follows the [Relay Spec](https://relay.dev/graphql/connections.htm).
 
+### Query privacy and source reuse
+
+Override `getPrivacyPolicy()` to authorize a `CustomClauseQuery`. Denial returns
+empty results and zero counts, including a GraphQL connection's total count,
+without fetching rows. A global query evaluates the policy without a source;
+a source-bound GraphQL connection passes its parent entity to the policy.
+Destination-entity privacy still applies when loading entities. Counts authorize
+the query as a whole; they do not evaluate each destination entity's policy.
+
+Create a separate query instance for each source when using a custom privacy
+policy. Binding an instance to a different source throws, even before its first
+read. Another entity instance with the same ID can reuse the original binding.
+Once authorization starts on a global query, it cannot be bound to a source.
+Queries using the default `AlwaysAllowPrivacyPolicy` retain their existing
+source-binding behavior.
+
+Query instances cache authorization and results, including rejected promises.
+After a policy throws, create a new query instance to retry; do not reuse or
+rebind the failed instance.
+
+### Example
+
 ```ts
 
   @gqlQuery({ 

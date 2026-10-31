@@ -66,6 +66,13 @@ This is available in the `@snowtop/ent-soft-delete` npm package. Code is availab
 
 ## API
 
+Write transformations select field permissions and defaults for the resulting
+operation. Returning `SQLStatementOperation.Insert` clears the existing entity
+from the builder and creates a new row. Supply all required input fields that
+do not have creation defaults; fields from the original row are not copied.
+The original row remains unchanged. This also applies when a transform returns
+Insert for a builder that already has an existing entity.
+
 The API for Pattern looks like:
 
 ```ts

@@ -15,6 +15,7 @@ import {
   loadRow,
   loadRows,
 } from "../ent";
+import { AlwaysAllowPrivacyPolicy } from "../privacy";
 import { OrderBy } from "../query_impl";
 
 import { BaseEdgeQuery, IDInfo } from "./query";
@@ -120,14 +121,34 @@ export class CustomClauseQuery<
   }
 
   __maybeSetSource(src: TSource) {
-    if (this.privacyStarted && this.source !== src) {
-      throw new Error("cannot change source after query privacy evaluation");
+    if (this.source === src || (src && this.source?.id === src.id)) {
+      return;
     }
-    if (this.source && this.source !== src) {
-      console.warn("source already set to something else");
-    } else {
-      this.source = src;
+    // Only a custom policy depends on the source, so only it must not be
+    // evaluated against one source and then served for another.
+    if (!this.hasCustomPrivacy()) {
+      if (this.source) {
+        console.warn("source already set to something else");
+      } else {
+        this.source = src;
+      }
+      return;
     }
+    if (this.source) {
+      throw new Error(
+        "cannot change source of a custom query with a privacy policy; create a new query per source",
+      );
+    }
+    if (this.privacyStarted) {
+      throw new Error(
+        "cannot change source after query privacy evaluation; create a new query per source",
+      );
+    }
+    this.source = src;
+  }
+
+  private hasCustomPrivacy() {
+    return this.getPrivacyPolicy() !== AlwaysAllowPrivacyPolicy;
   }
 
   async sourceEnt(_id: ID) {
@@ -139,9 +160,11 @@ export class CustomClauseQuery<
   }
 
   async queryRawCount(): Promise<number> {
-    const [info] = await this.genIDInfosToFetch();
-    if (info.invalidated) {
-      return 0;
+    if (this.hasCustomPrivacy()) {
+      const [info] = await this.genIDInfosToFetch();
+      if (info.invalidated) {
+        return 0;
+      }
     }
 
     // sqlite needs as count otherwise it returns count(1)
@@ -220,11 +243,7 @@ export class CustomClauseQuery<
       distinct: this.options.joinBETA !== undefined,
     });
 
-    if (this.source) {
-      this.edges.set(this.source.id, rows);
-    } else {
-      this.edges.set(1, rows);
-    }
+    this.edges.set(info.id, rows);
   }
 
   dataToID(edge: Data): ID {

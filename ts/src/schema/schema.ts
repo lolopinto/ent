@@ -360,8 +360,8 @@ export interface TransformedUpdateOperation<
 
   data?: Data;
 
-  // if changing to an update, we want to return the ent
-  // TODO don't have a way to delete the ent e.g. update -> insert
+  // Supply the target ent when transforming an insert into an update.
+  // Insert transformations clear the existing ent, even if one is supplied here.
   existingEnt?: T | null;
   changeset?(): Promise<Changeset> | Changeset;
 }

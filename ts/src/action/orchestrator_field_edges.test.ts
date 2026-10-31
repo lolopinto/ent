@@ -307,6 +307,36 @@ test("delete transformed to edit retracts generated removals before triggers", a
   expect(await rows(ent)).toEqual(expectedRows(a.id));
 });
 
+test.each([
+  WriteOperation.Edit,
+  WriteOperation.Delete,
+])("%s transformed to insert preserves old memberships and creates new ones", async (operation) => {
+  const ent = await create({ owner_id: a.id, default_owner_id: b.id });
+  const action = new FieldAction(
+    { name: "new assignment", owner_id: c.id },
+    ent,
+    operation,
+  );
+  action.builder.orchestrator.__getOptions().action!.transformWrite = () => ({
+    op: SQLStatementOperation.Insert,
+  });
+  action.getTriggers = () => [
+    {
+      changeset: () => {
+        expect(action.builder.existingEnt).toBeNull();
+        expect(queued(action, WriteOperation.Delete)).toEqual([]);
+        expect(queued(action, WriteOperation.Delete, defaultEdge)).toEqual([]);
+      },
+    },
+  ];
+  const created = await action.saveX();
+  expect(created.id).not.toBe(ent.id);
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+  expect(await rows(ent, defaultEdge)).toEqual(expectedRows(b.id));
+  expect(await rows(created)).toEqual(expectedRows(c.id));
+  expect(await rows(created, defaultEdge)).toEqual(expectedRows(a.id));
+});
+
 test("create transformed to edit refreshes stored memberships before defaults and triggers", async () => {
   const ent = await create({ default_owner_id: b.id });
   const action = new FieldAction({ name: "edited" });

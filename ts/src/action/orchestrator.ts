@@ -1142,12 +1142,6 @@ export class Orchestrator<
       });
     }
     if (transformed) {
-      if (
-        transformed.op === SQLStatementOperation.Insert &&
-        (this.existingEnt || transformed.existingEnt)
-      ) {
-        throw new Error("cannot transform to insert with an existing ent");
-      }
       if (sqlOp === SQLStatementOperation.Insert && sqlOp !== transformed.op) {
         if (!transformed.existingEnt) {
           throw new Error(
@@ -1186,7 +1180,13 @@ export class Orchestrator<
         this.changesets.push(changeset);
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
-      if (transformed.existingEnt) {
+      if (this.actualOperation === WriteOperation.Insert) {
+        // The SQL writer uses existingEnt to choose UPDATE versus INSERT.
+        // Clear both references before defaults, field policies, and edges
+        // are evaluated, including for an Insert -> Insert transform.
+        this.existingEnt = null as TExistingEnt;
+        builder.existingEnt = null;
+      } else if (transformed.existingEnt) {
         // @ts-ignore
         this.existingEnt = transformed.existingEnt;
         // modify existing ent in builder. it's readonly in generated ents but doesn't apply here

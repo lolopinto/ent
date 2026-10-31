@@ -170,15 +170,44 @@ test("constructor ownership still passes through action privacy", async () => {
   ).rejects.toThrow(/permission/);
 });
 
-test("edit-to-insert cannot use creation permissions to update an existing row", async () => {
+test("edit-to-insert initializes defaults while keeping public immutable setters guarded", async () => {
   const viewer = await createViewer();
-  const existing = await new CreateDocumentActionBase(viewer, { title: "Original" }).saveX();
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+  }).saveX();
   class EditAsCreate extends EditDocumentActionBase {
-    transformWrite() { return { op: SQLStatementOperation.Insert }; }
+    transformWrite() {
+      return { op: SQLStatementOperation.Insert };
+    }
+    getTriggers() {
+      return [
+        {
+          changeset: (builder: this["builder"]) => {
+            expect(builder.getNewOwnerIdValue()).toBe(viewer.viewerID);
+            builder.overrideSyncValue(" TRIGGER INSERT ");
+          },
+        },
+      ];
+    }
   }
-  const action = new EditAsCreate(viewer, existing, { title: "Transformed insert" });
-  await expect(action.saveX()).rejects.toThrow("cannot transform to insert with an existing ent");
+  const action = new EditAsCreate(viewer, existing, {
+    title: "Transformed insert",
+  });
+  await action.validX();
+  expect(action.builder.orchestrator.getValidatedFields()).toMatchObject({
+    owner_id: viewer.viewerID,
+    sync_value: "trigger insert",
+    async_value: "async",
+  });
+  const created = await action.saveX();
+  expect(created.id).not.toBe(existing.id);
+  expect(created.syncValue).toBe("trigger insert");
+  await expectEdges(viewer, created);
+  await expectEdges(viewer, existing);
   expect((await Document.loadX(viewer, existing.id)).title).toBe("Original");
+  expect(() => action.builder.updateInput({ syncValue: "forbidden" })).toThrow(
+    /overrideSyncValue/,
+  );
 });
 
 test("insert-to-edit rejects immutable edit defaults and preserves constructor input", async () => {
