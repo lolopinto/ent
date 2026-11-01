@@ -4,6 +4,7 @@ import { loadEdges, loadRow } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
 import { StringType } from "../schema/field";
+import { SQLStatementOperation } from "../schema";
 import {
   User,
   SimpleBuilder,
@@ -146,6 +147,86 @@ const createUser = async (map: Map<string, any>): Promise<User> => {
 };
 
 function commonTests() {
+  test.each([
+    "inbound",
+    "outbound",
+  ])("explicit %s removal survives an edit-to-insert transform", async (direction) => {
+    const existing = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Old"],
+        ["LastName", "Row"],
+      ]),
+    ).saveX();
+    const other = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Other"],
+        ["LastName", "Row"],
+      ]),
+    ).saveX();
+    const seed = new SimpleAction(
+      existing.viewer,
+      UserSchema,
+      new Map(),
+      WriteOperation.Edit,
+      existing,
+    );
+    const inbound = direction === "inbound";
+    if (inbound) {
+      seed.builder.orchestrator.addInboundEdge(other.id, "edge", "User");
+    } else {
+      seed.builder.orchestrator.addOutboundEdge(other.id, "edge", "User");
+    }
+    await seed.saveX();
+    const action = new SimpleAction(
+      existing.viewer,
+      UserSchema,
+      new Map([
+        ["FirstName", "New"],
+        ["LastName", "Row"],
+      ]),
+      WriteOperation.Edit,
+      existing,
+    );
+    Object.assign(action, {
+      transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+    });
+    if (inbound) {
+      action.builder.orchestrator.removeInboundEdge(other.id, "edge");
+      action.builder.orchestrator.addInboundEdge(other.id, "edge", "User");
+    } else {
+      action.builder.orchestrator.removeOutboundEdge(other.id, "edge");
+      action.builder.orchestrator.addOutboundEdge(other.id, "edge", "User");
+    }
+    const created = await action.saveX();
+    expect(created.id).not.toBe(existing.id);
+    expect(
+      (await loadRow({
+        tableName: "users",
+        fields: ["first_name"],
+        clause: clause.Eq("id", existing.id),
+      }))!.first_name,
+    ).toBe("Old");
+    const primary = await loadEdges({
+      id1: inbound ? other.id : existing.id,
+      edgeType: "edge",
+    });
+    expect(primary.map((edge) => edge.id2)).toEqual(
+      inbound ? [created.id] : [],
+    );
+    const inverse = await loadEdges({
+      id1: inbound ? existing.id : other.id,
+      edgeType: "inverseEdge",
+    });
+    expect(inverse.map((edge) => edge.id2)).toEqual(
+      inbound ? [] : [created.id],
+    );
+    const newEdges = await loadEdges({
+      id1: created.id,
+      edgeType: inbound ? "inverseEdge" : "edge",
+    });
+    expect(newEdges.map((edge) => edge.id2)).toEqual([other.id]);
+  });
+
   describe("inbound edge", () => {
     test("no options", async () => {
       const builder = getLoggedInBuilder();

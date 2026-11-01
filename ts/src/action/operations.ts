@@ -906,7 +906,9 @@ export class EdgeOperation<TViewer extends Viewer = Viewer>
     id1: ID,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation<TViewer> {
-    const existingEnt = getExistingEntForWrite(builder);
+    // Explicit removals on an Edit/Delete transformed to Insert still refer
+    // to the original row. Generated field-edge removals are cleared separately.
+    const existingEnt = getExistingEntForWrite(builder) ?? builder.existingEnt;
     if (!existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }
@@ -932,7 +934,9 @@ export class EdgeOperation<TViewer extends Viewer = Viewer>
     id2: ID,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation<TViewer> {
-    const existingEnt = getExistingEntForWrite(builder);
+    // Explicit removals on an Edit/Delete transformed to Insert still refer
+    // to the original row. Generated field-edge removals are cleared separately.
+    const existingEnt = getExistingEntForWrite(builder) ?? builder.existingEnt;
     if (!existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }

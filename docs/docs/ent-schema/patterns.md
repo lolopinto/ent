@@ -66,28 +66,9 @@ This is available in the `@snowtop/ent-soft-delete` npm package. Code is availab
 
 ## API
 
-Write transformations select field permissions and defaults for the resulting
-operation. Returning `SQLStatementOperation.Insert` clears the current write
-target and creates a new row. Supply all required input fields that do not have
-creation defaults; fields from the original row are not copied. The original
-row remains unchanged, and Edit/Delete hooks can still read it through
-`builder.existingEnt`. Generated field accessors, `getEntID()`, and inverse edges
-use the new write target instead. This also applies when a transform returns
-Insert for a builder that already has an existing entity. Relative numeric
-expressions require an update; use absolute values for an insert.
-
-For an existing write target, `getEntID()` returns its current ID without running
-transformations or defaults. After validation, it returns the transformed target's
-ID; triggers and observers can use it to obtain that ID. When no existing target
-is available, it initializes creation defaults. Circular ID dependencies between
-transforms or defaults fail with an error instead of hanging.
-
-After upgrading, regenerate builders with `tsent codegen --write-all` before
-using Edit/Delete-to-Insert transformations. Previously generated accessors read
-`builder.existingEnt` directly and can return the original row's values or ID.
-Custom builder accessors that need the current write target should use
-`getExistingEntForWrite(builder)`, imported from `@snowtop/ent/action`; it returns
-`null` for an insert and supports older custom builders.
+A pattern can customize writes with `transformWrite`. See
+[Write transformations](/docs/actions/write-transformations) for operation,
+permission, and persistence behavior shared by patterns and actions.
 
 The API for Pattern looks like:
 

@@ -32,6 +32,7 @@ There are different ways to customize the action after the code has been generat
 * validators: validate the input in addition to the per-field validation that may already exist
 * triggers: customize the list of side effects that should be added to the transaction related to this action
 * observers: customize the list of external side effects e.g. send an email, send a text, add some logging, etc.
+* [write transformations](/docs/actions/write-transformations): change the operation or target row before defaults and field permissions are selected
 
 We'll dive into each of these in the following sections.
 

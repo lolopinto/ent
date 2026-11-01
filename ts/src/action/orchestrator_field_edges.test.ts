@@ -25,6 +25,7 @@ import {
 import { createRowForTest } from "../testutils/write";
 import { WriteOperation } from "./action";
 import { Transaction } from "./transaction";
+import { EdgeOperation } from "./operations";
 
 class Assignment extends BaseEnt {
   nodeType = "Assignment";
@@ -701,4 +702,81 @@ test.each(
   expect(await rows(ent)).toEqual(
     expected.sort((x, y) => String(x.id1).localeCompare(String(y.id1))),
   );
+});
+
+test.each([
+  "unchanged",
+  "unrelated",
+])("%s manual builder edges do not rebuild field edge operations", async (scenario) => {
+  const ent = await create({ owner_id: a.id });
+  const owner = editContact();
+  if (scenario === "unrelated") {
+    Object.assign(owner, {
+      transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+    });
+  }
+  const action = new FieldAction({ name: "changed" }, ent);
+  const edgeType = scenario === "unrelated" ? "manual-edge" : ownerEdge;
+  if (scenario === "unrelated") {
+    await createRowForTest({
+      tableName: "assoc_edge_config",
+      fields: {
+        edge_type: edgeType,
+        edge_name: edgeType,
+        edge_table: "field_edges",
+        symmetric_edge: false,
+        inverse_edge_type: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+  }
+  action.builder.orchestrator.addInboundEdge(
+    owner.builder,
+    edgeType,
+    "Contact",
+  );
+  const changeset = await action.builder.orchestrator.build();
+  const before = Array.from(changeset.operations);
+  await owner.changeset();
+  const after = Array.from(changeset.executor());
+  expect(after).toHaveLength(before.length);
+  after.forEach((op, i) => expect(op).toBe(before[i]));
+});
+
+test.each([
+  "during validation",
+  "after changeset",
+])("manual builder aliases reconcile when their target changes %s", async (timing) => {
+  const ent = await create({ owner_id: a.id });
+  const owner = editContact();
+  const action = new FieldAction({ owner_id: b.id }, ent);
+  action.builder.orchestrator.addInboundEdge(
+    owner.builder,
+    ownerEdge,
+    "Contact",
+    { data: "manual" },
+  );
+  Object.assign(owner, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  if (timing === "during validation") {
+    action.getValidators = () => [
+      {
+        validate: async () => {
+          await owner.changeset();
+        },
+      },
+    ];
+  }
+  const changeset = await action.builder.build();
+  if (timing === "after changeset") {
+    await owner.changeset();
+  }
+  const ops = Array.from(changeset.executor());
+  expect(
+    ops.some((op) => op instanceof EdgeOperation && op.edgeInput.id1 === a.id),
+  ).toBe(true);
+  // Read the prepared removal before any SQL has executed.
+  expect(queued(action, WriteOperation.Delete)).toContain(a.id);
 });

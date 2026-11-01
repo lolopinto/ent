@@ -267,6 +267,10 @@ export class Orchestrator<
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap<TViewer> = new Map();
   private fieldEdgeSources = new WeakMap<edgeInputData<TViewer>, Set<string>>();
+  private fieldEdgeReferenceIDs = new Map<
+    string,
+    ReadonlyMap<Builder<Ent, any>, ID>
+  >();
   private fieldEdgeInputs = new Map<
     string,
     {
@@ -419,8 +423,15 @@ export class Orchestrator<
   ) {
     // Existing builders and literal IDs can refer to the same database row.
     // Use placeholder IDs as queue keys so unsaved builders remain dependencies.
-    const endpointID = (id: ID | Builder<Ent, any>): ID =>
-      isBuilder(id) ? (getExistingEntForWrite(id)?.id ?? id.placeholderID) : id;
+    let referenceIDs: Map<Builder<Ent, any>, ID> | undefined;
+    const endpointID = (id: ID | Builder<Ent, any>): ID => {
+      if (!isBuilder(id)) {
+        return id;
+      }
+      const target = getExistingEntForWrite(id)?.id ?? id.placeholderID;
+      (referenceIDs ??= new Map()).set(id, target);
+      return target;
+    };
     this.fieldEdgeInputs.set(fieldName, {
       edgeType,
       nodeType,
@@ -517,6 +528,13 @@ export class Orchestrator<
         this.fieldEdgeSources.set(edge, contribution.sources);
         this.addEdge(edge, op);
       }
+    }
+    // Record the IDs used for this membership calculation. A referenced
+    // transform can finish during validation, before edge operations are built.
+    if (referenceIDs) {
+      this.fieldEdgeReferenceIDs.set(edgeType, referenceIDs);
+    } else {
+      this.fieldEdgeReferenceIDs.delete(edgeType);
     }
   }
 
@@ -722,26 +740,33 @@ export class Orchestrator<
     const edgeStart = ops.length;
     append();
     const edgeCount = ops.length - edgeStart;
-    if (
-      !this.fieldEdgeInputs.size ||
-      !(
-        Array.from(this.fieldEdgeInputs.values()).some((field) =>
-          field.ids?.some(isBuilder),
-        ) ||
-        Array.from(this.edges.values()).some((operations) =>
-          Array.from(operations.values()).some((edges) =>
-            Array.from(edges.values()).some((edge) => isBuilder(edge.id)),
-          ),
-        )
-      )
-    ) {
+    if (!this.fieldEdgeReferenceIDs.size) {
       return;
     }
+    const references = new Map(this.fieldEdgeReferenceIDs);
     // A referenced builder may still be transforming while this changeset is
     // built. Reconcile once all changesets are ready, without awaiting another
     // builder during input collection or triggering its defaults early.
     return () => {
+      const changedEdgeTypes = new Set<string>();
+      for (const [edgeType, ids] of references) {
+        for (const [builder, id] of ids) {
+          if (
+            (getExistingEntForWrite(builder)?.id ?? builder.placeholderID) !==
+            id
+          ) {
+            changedEdgeTypes.add(edgeType);
+            break;
+          }
+        }
+      }
+      if (!changedEdgeTypes.size) {
+        return;
+      }
       for (const [name, field] of this.fieldEdgeInputs) {
+        if (!changedEdgeTypes.has(field.edgeType)) {
+          continue;
+        }
         this.__setFieldEdges(
           name,
           field.ids,
