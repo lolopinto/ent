@@ -13,6 +13,10 @@ Transformations run before defaults and field permissions are selected. Returnin
 when the action started as an insert or as an edit of another row. Returning
 `SQLStatementOperation.Delete` is supported only for a delete action.
 
+A returned `changeset()` callback runs after the operation and write target are
+updated, before defaults. Use builder references when its writes or edges depend
+on a newly inserted row; creation IDs are not initialized at that point.
+
 ## Supported transformations
 
 The starting action determines its return contract. Create and edit actions

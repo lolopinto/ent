@@ -1346,10 +1346,6 @@ export class Orchestrator<
           // this.defaultFieldsByFieldName[k] = val;
         }
       }
-      if (transformed.changeset) {
-        const changeset = await transformed.changeset();
-        this.changesets.push(changeset);
-      }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
       if (this.actualOperation === WriteOperation.Insert) {
         // The SQL writer must insert, while typed Edit/Delete hooks retain
@@ -1360,6 +1356,13 @@ export class Orchestrator<
         this.existingEnt = transformed.existingEnt;
         // modify existing ent in builder. it's readonly in generated ents but doesn't apply here
         builder.existingEnt = transformed.existingEnt;
+      }
+      if (transformed.changeset) {
+        // Edge factories capture the source target when the callback builds
+        // its operations. Apply the transformation first so they use the new
+        // target or an insert placeholder instead of the original row.
+        const changeset = await transformed.changeset();
+        this.changesets.push(changeset);
       }
     }
     if (

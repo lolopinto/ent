@@ -364,6 +364,8 @@ export interface TransformedUpdateOperation<
   // Insert transformations clear the write target, even if one is supplied here.
   // Edit/Delete hooks retain their original builder.existingEnt.
   existingEnt?: T | null;
+  // Runs after applying the transformed operation and target, before defaults.
+  // Use builder references for new rows whose IDs are not initialized yet.
   changeset?(): Promise<Changeset> | Changeset;
 }
 

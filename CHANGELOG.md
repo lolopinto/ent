@@ -25,6 +25,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - reject Insert/Edit-to-Delete transformations before writes, preserving action return contracts; preserve explicit old-row edge removals and new-row inverse edges when an edit transforms into an insert (#2056).
 - skip conditional changesets, edges, and dependent observers when a transformed insert encounters an upsert conflict (#2056).
 - return the saved row's ID from `getEntID()` after an upsert conflict and keep automatic inverse edges for builder-valued fields consistent with that row (#2056).
+- apply transformed write targets before building transform-provided changesets, so their edges attach to the resulting row (#2056).
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - enforce custom-query privacy for rows and counts (#2049).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
