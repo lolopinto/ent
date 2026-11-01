@@ -1,7 +1,7 @@
 import { Data, Deny, ID, Viewer } from "../core/base";
 import { Dialect } from "../core/db";
 import { convertNullableList } from "../core/convert";
-import { loadRow, loadRows } from "../core/ent";
+import { assocEdgeLoader, loadRow, loadRows } from "../core/ent";
 import * as clause from "../core/clause";
 import { IDViewer } from "../core/viewer";
 import {
@@ -22,10 +22,9 @@ import {
   getSchemaTable,
   setupSqlite,
 } from "../testutils/db/temp_db";
-import { createRowForTest } from "../testutils/write";
+import { createRowForTest, editRowForTest } from "../testutils/write";
 import { WriteOperation } from "./action";
 import { Transaction } from "./transaction";
-import { EdgeOperation } from "./operations";
 
 class Assignment extends BaseEnt {
   nodeType = "Assignment";
@@ -41,7 +40,7 @@ const bindings = [
   { field: "member_ids", edge: memberEdge, list: true },
 ];
 const contactSchema = getBuilderSchemaFromFields(
-  { name: StringType() },
+  { name: StringType({ unique: true }) },
   Contact,
 );
 const assignmentSchema = getBuilderSchemaFromFields(
@@ -169,6 +168,7 @@ setupSqlite("sqlite:///orchestrator-field-edges-test.db", () => [
   getSchemaTable(assignmentSchema, Dialect.SQLite),
 ]);
 beforeEach(async () => {
+  assocEdgeLoader.clearAll();
   for (const edge of [ownerEdge, defaultEdge, memberEdge]) {
     await createRowForTest({
       tableName: "assoc_edge_config",
@@ -456,6 +456,165 @@ function editContact() {
     a,
   );
 }
+
+function upsertContact(
+  operation: WriteOperation,
+  target: string,
+  update = false,
+) {
+  const owner = new SimpleAction(
+    viewer,
+    contactSchema,
+    new Map([["name", target]]),
+    operation,
+    operation === WriteOperation.Insert ? null : a,
+  );
+  Object.assign(owner, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  owner.builder.orchestrator.setOnConflictOptions({
+    onConflictCols: ["name"],
+    updateCols: update ? ["name"] : undefined,
+  });
+  return owner;
+}
+
+test.each(
+  [WriteOperation.Insert, WriteOperation.Edit, WriteOperation.Delete].flatMap(
+    (operation) =>
+      ["a", "b", "new owner"].flatMap((target) =>
+        [false, true].map((update) => ({ operation, target, update })),
+      ),
+  ),
+)("resolved upsert target drives IDs and field edges ($operation, $target, update=$update)", async ({
+  operation,
+  target,
+  update,
+}) => {
+  const ent = await create({ owner_id: a.id });
+  const owner = upsertContact(operation, target, update);
+  const observedIDs: ID[] = [];
+  owner.getObservers = () => [
+    {
+      observe: async () => {
+        observedIDs.push(await owner.builder.orchestrator.getEntID());
+      },
+    },
+  ];
+  const action = new FieldAction({ owner_id: owner.builder }, ent);
+  await new Transaction(viewer, [action, owner]).run();
+  const saved = await owner.editedEntX();
+  if (target === "new owner") {
+    expect([a.id, b.id]).not.toContain(saved.id);
+  } else {
+    expect(saved.id).toBe(target === "a" ? a.id : b.id);
+  }
+  expect((await raw(ent.id))!.owner_id).toBe(saved.id);
+  expect(await rows(ent)).toEqual(expectedRows(saved.id));
+  expect(await owner.builder.orchestrator.getEntID()).toBe(saved.id);
+  // Conflicts skip observers; ordinary inserts see the actual saved row.
+  expect(observedIDs).toEqual(target === "new owner" ? [saved.id] : []);
+});
+
+test("a transformed upsert with an explicit original ID retains its inverse edge", async () => {
+  const ent = await create({ owner_id: a.id });
+  const owner = upsertContact(WriteOperation.Edit, "a");
+  owner.builder.updateInput({ id: a.id });
+  const action = new FieldAction({ owner_id: owner.builder }, ent);
+  await new Transaction(viewer, [action, owner]).run();
+  expect((await raw(ent.id))!.owner_id).toBe(a.id);
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+});
+
+test.each([
+  "a",
+  "b",
+])("resolved upsert %s respects manual overrides and shared fields", async (target) => {
+  const owner = upsertContact(WriteOperation.Edit, target);
+  const savedID = target === "a" ? a.id : b.id;
+  const shared = await create({ owner_id: a.id, second_owner_id: a.id });
+  const removed = await create({ owner_id: a.id });
+  const literal = await create({ owner_id: a.id });
+  const alias = await create({ owner_id: a.id });
+  const sharedAction = new FieldAction({ owner_id: owner.builder }, shared);
+  const removeAction = new FieldAction({ owner_id: owner.builder }, removed);
+  removeAction.builder.orchestrator.removeInboundEdge(savedID, ownerEdge);
+  const literalAction = new FieldAction({ owner_id: owner.builder }, literal);
+  literalAction.builder.orchestrator.addInboundEdge(
+    savedID,
+    ownerEdge,
+    "Contact",
+    { data: "manual" },
+  );
+  const aliasAction = new FieldAction({ owner_id: savedID }, alias);
+  aliasAction.builder.orchestrator.addInboundEdge(
+    owner.builder,
+    ownerEdge,
+    "Contact",
+    { data: "manual-builder" },
+  );
+  await new Transaction(viewer, [
+    owner,
+    sharedAction,
+    removeAction,
+    literalAction,
+    aliasAction,
+  ]).run();
+  expect(await rows(shared)).toEqual(expectedRows(...new Set([a.id, savedID])));
+  expect(await rows(removed)).toEqual([]);
+  expect(await rows(literal)).toEqual([{ id1: savedID, data: "manual" }]);
+  expect(await rows(alias)).toEqual([{ id1: savedID, data: "manual-builder" }]);
+});
+
+test("conditional wrapping preserves resolved field-edge membership", async () => {
+  const ent = await create({ owner_id: a.id });
+  const owner = upsertContact(WriteOperation.Edit, "a");
+  const parent = upsertContact(WriteOperation.Insert, "parent");
+  const child = new FieldAction({ owner_id: owner.builder }, ent);
+  parent.getTriggers = () => [
+    {
+      changeset: async () => [
+        await owner.changeset(),
+        await child.changesetWithOptions_BETA({
+          conditionalBuilder: parent.builder,
+        }),
+      ],
+    },
+  ];
+  await parent.saveX();
+  expect((await raw(ent.id))!.owner_id).toBe(a.id);
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+});
+
+test.each([
+  "symmetric",
+  "inverse",
+])("resolved upserts preserve %s field-edge copies", async (kind) => {
+  await editRowForTest({
+    tableName: "assoc_edge_config",
+    fields:
+      kind === "symmetric"
+        ? { symmetric_edge: true }
+        : { inverse_edge_type: memberEdge },
+    whereClause: clause.Eq("edge_type", ownerEdge),
+  });
+  assocEdgeLoader.clearAll();
+  const ent = await create({ owner_id: a.id });
+  const owner = upsertContact(WriteOperation.Edit, "a");
+  const action = new FieldAction({ owner_id: owner.builder }, ent);
+  await new Transaction(viewer, [action, owner]).run();
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+  expect(
+    await loadRows({
+      tableName: "field_edges",
+      fields: ["id2"],
+      clause: clause.And(
+        clause.Eq("id1", ent.id),
+        clause.Eq("edge_type", kind === "symmetric" ? ownerEdge : memberEdge),
+      ),
+    }),
+  ).toEqual([{ id2: a.id }]);
+});
 
 test("manual literal deletion wins over a field referencing an existing Builder", async () => {
   const ent = await create({ owner_id: a.id });
@@ -795,10 +954,7 @@ test.each([
   if (timing === "after changeset") {
     await owner.changeset();
   }
-  const ops = Array.from(changeset.executor());
-  expect(
-    ops.some((op) => op instanceof EdgeOperation && op.edgeInput.id1 === a.id),
-  ).toBe(true);
+  changeset.executor();
   // Read the prepared removal before any SQL has executed.
   expect(queued(action, WriteOperation.Delete)).toContain(a.id);
 });

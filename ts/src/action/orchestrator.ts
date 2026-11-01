@@ -287,7 +287,7 @@ export class Orchestrator<
   private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation<TEnt, TViewer> | null;
-  private noOpEntID: ID | undefined;
+  private resultOp: DataOperation<TEnt, TViewer> | undefined;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -329,8 +329,9 @@ export class Orchestrator<
   }
 
   async getEntID(): Promise<ID> {
-    if (this.noOpEntID !== undefined) {
-      return this.noOpEntID;
+    const resultID = this.resultOp?.returnedRow?.()?.[this.options.key];
+    if (resultID !== undefined && resultID !== null) {
+      return resultID;
     }
     // Preserve cheap ID reads for edits/deletes. Only validation initializes
     // their transforms; subsequent reads see the resulting write target.
@@ -445,6 +446,50 @@ export class Orchestrator<
         this.fieldEdgeInputs.get(fieldName)?.existingIDs ??
         [],
     });
+    const { inserts, removals } = this.fieldEdgeChanges(edgeType, endpointID);
+    for (const [op, desired] of [
+      [WriteOperation.Insert, inserts],
+      [WriteOperation.Delete, removals],
+    ] as const) {
+      const queued = this.edges.get(edgeType)?.get(op);
+      for (const [id, edge] of queued ?? []) {
+        if (!this.fieldEdgeSources.has(edge)) {
+          continue;
+        }
+        const contribution = desired.get(id);
+        if (contribution) {
+          this.fieldEdgeSources.set(edge, contribution.sources);
+        } else {
+          queued!.delete(id);
+        }
+      }
+      for (const [key, contribution] of desired) {
+        if (this.edges.get(edgeType)?.get(op)?.has(key)) {
+          continue;
+        }
+        const edge = new edgeInputData<TViewer>({
+          id: contribution.id,
+          edgeType,
+          nodeType,
+          direction: edgeDirection.inboundEdge,
+        });
+        this.fieldEdgeSources.set(edge, contribution.sources);
+        this.addEdge(edge, op);
+      }
+    }
+    // Record the IDs used for this membership calculation. A referenced
+    // transform can finish during validation, before edge operations are built.
+    if (referenceIDs) {
+      this.fieldEdgeReferenceIDs.set(edgeType, referenceIDs);
+    } else {
+      this.fieldEdgeReferenceIDs.delete(edgeType);
+    }
+  }
+
+  private fieldEdgeChanges(
+    edgeType: string,
+    endpointID: (id: ID | Builder<Ent, any>) => ID,
+  ) {
     type Contribution = { id: ID | Builder<Ent, any>; sources: Set<string> };
     const inserts = new Map<ID, Contribution>();
     const removals = new Map<ID, Contribution>();
@@ -508,43 +553,7 @@ export class Orchestrator<
         inserts.delete(key);
       }
     }
-    for (const [op, desired] of [
-      [WriteOperation.Insert, inserts],
-      [WriteOperation.Delete, removals],
-    ] as const) {
-      const queued = this.edges.get(edgeType)?.get(op);
-      for (const [id, edge] of queued ?? []) {
-        if (!this.fieldEdgeSources.has(edge)) {
-          continue;
-        }
-        const contribution = desired.get(id);
-        if (contribution) {
-          this.fieldEdgeSources.set(edge, contribution.sources);
-        } else {
-          queued!.delete(id);
-        }
-      }
-      for (const [key, contribution] of desired) {
-        if (this.edges.get(edgeType)?.get(op)?.has(key)) {
-          continue;
-        }
-        const edge = new edgeInputData<TViewer>({
-          id: contribution.id,
-          edgeType,
-          nodeType,
-          direction: edgeDirection.inboundEdge,
-        });
-        this.fieldEdgeSources.set(edge, contribution.sources);
-        this.addEdge(edge, op);
-      }
-    }
-    // Record the IDs used for this membership calculation. A referenced
-    // transform can finish during validation, before edge operations are built.
-    if (referenceIDs) {
-      this.fieldEdgeReferenceIDs.set(edgeType, referenceIDs);
-    } else {
-      this.fieldEdgeReferenceIDs.delete(edgeType);
-    }
+    return { inserts, removals };
   }
 
   addOutboundEdge<T2 extends Ent>(
@@ -805,14 +814,46 @@ export class Orchestrator<
       const [edges, conditionalEdge] = edgeInfo;
       const conditional = conditionalOverride || conditionalEdge;
       for (const [edgeType, m] of edges) {
+        let resolvedChanges:
+          | ReturnType<typeof this.fieldEdgeChanges>
+          | undefined;
         for (const [op, m2] of m) {
-          for (const [_, edge] of m2) {
+          for (const [key, edge] of m2) {
             let edgeOp = this.getEdgeOperation(edgeType, op, edge);
-            if (conditional) {
-              ops.push(new ConditionalOperation(edgeOp, conditionalBuilder));
-            } else {
-              ops.push(edgeOp);
-            }
+            // All node writes precede edges. Resolve builder aliases again
+            // here because an upsert can return a different ID after SQL runs.
+            // Only generated edges in groups containing builders need this.
+            const skipFieldEdge =
+              this.fieldEdgeSources.has(edge) &&
+              this.fieldEdgeReferenceIDs.has(edgeType)
+                ? (executor: Executor) => {
+                    resolvedChanges ??= this.fieldEdgeChanges(edgeType, (id) =>
+                      isBuilder(id)
+                        ? (executor.resolveValue(id.placeholderID)?.id ??
+                          getExistingEntForWrite(id)?.id ??
+                          id.placeholderID)
+                        : id,
+                    );
+                    const desired =
+                      op === WriteOperation.Insert
+                        ? resolvedChanges.inserts
+                        : resolvedChanges.removals;
+                    return !desired.has(key);
+                  }
+                : undefined;
+            const append = (operation: DataOperation<any, TViewer>) => {
+              if (skipFieldEdge) {
+                operation = new ConditionalOperation(operation, skipFieldEdge);
+              }
+              if (conditional) {
+                operation = new ConditionalOperation(
+                  operation,
+                  conditionalBuilder,
+                );
+              }
+              ops.push(operation);
+            };
+            append(edgeOp);
             const edgeData = edgeDatas.get(edgeType);
             if (!edgeData) {
               throw new Error(`could not load edge data for '${edgeType}'`);
@@ -821,24 +862,11 @@ export class Orchestrator<
             // doesn't support conditional edges
 
             if (edgeData.symmetricEdge) {
-              let symmetric: DataOperation<any, TViewer> =
-                edgeOp.symmetricEdge();
-              if (conditional) {
-                symmetric = new ConditionalOperation(
-                  symmetric,
-                  conditionalBuilder,
-                );
-              }
-              ops.push(symmetric);
+              append(edgeOp.symmetricEdge());
             }
 
             if (edgeData.inverseEdgeType) {
-              let inverse: DataOperation<any, TViewer> =
-                edgeOp.inverseEdge(edgeData);
-              if (conditional) {
-                inverse = new ConditionalOperation(inverse, conditionalBuilder);
-              }
-              ops.push(inverse);
+              append(edgeOp.inverseEdge(edgeData));
             }
           }
         }
@@ -1045,8 +1073,8 @@ export class Orchestrator<
   }
 
   private async validate(): Promise<Error[]> {
-    // A retry uses the transformed write target, not the prior no-op result.
-    this.noOpEntID = undefined;
+    // A retry uses the planned write target, not a prior no-op or conflict result.
+    this.resultOp = undefined;
     // existing ent required for edit or delete operations
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -1669,7 +1697,6 @@ export class Orchestrator<
         const existingEnt =
           this.existingEnt ?? this.options.builder.existingEnt;
         const op = new NoOperation(this.options.builder, existingEnt);
-        this.noOpEntID = existingEnt?.id;
         this.mainOp = op;
         ops = [op];
 
@@ -1692,6 +1719,7 @@ export class Orchestrator<
         conditionalOverride,
       );
     }
+    this.resultOp = ops[0];
 
     // TODO throw if we try and create a new changeset after previously creating one
 

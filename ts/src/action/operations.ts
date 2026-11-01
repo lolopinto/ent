@@ -967,14 +967,20 @@ export class ConditionalOperation<
 
   constructor(
     protected op: DataOperation<TEnt, TViewer>,
-    private conditionalBuilder: Builder<TEnt, TViewer>,
+    private condition:
+      | Builder<TEnt, TViewer>
+      | ((executor: Executor) => boolean),
   ) {
     this.builder = op.builder;
     this.placeholderID = op.placeholderID;
   }
 
   shortCircuit(executor: Executor): boolean {
-    this.shortCircuited = executor.builderOpChanged(this.conditionalBuilder);
+    this.shortCircuited =
+      (typeof this.condition === "function"
+        ? this.condition(executor)
+        : executor.builderOpChanged(this.condition)) ||
+      (this.op.shortCircuit?.(executor) ?? false);
     return this.shortCircuited;
   }
 

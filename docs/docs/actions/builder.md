@@ -92,13 +92,14 @@ The Builder can be used to update the value of fields in a trigger, [add](/docs/
 
 For an existing write target, a generated builder's `getEntID()` returns its
 current ID without running transformations, defaults, or field collection. After
-validation, it returns the transformed target's ID. When no existing target is
-available, it initializes fields and defaults to determine the ID. Circular ID
+validation, it returns the planned transformed target's ID. When no existing
+target is available, it initializes fields and defaults to determine the ID. Circular ID
 dependencies detected within the active initialization chain throw an error.
 
-After a silently denied Edit/Delete-to-Insert save, `getEntID()` returns the
-original entity's ID. A later validation or save retry uses the transformed write
-target again.
+After saving, `getEntID()` returns the resulting row's ID, including an existing
+row returned by an upsert conflict. After a silently denied Edit/Delete-to-Insert
+save, it returns the original entity's ID. A later validation or save retry uses
+the planned transformed write target again.
 
 A scalar ID read before a transformation does not change afterward. Pass the
 builder itself as a field value when another write should reference its final

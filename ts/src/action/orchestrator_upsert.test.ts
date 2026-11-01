@@ -377,6 +377,7 @@ function commonTests() {
       updateCols: update ? ["first_name"] : undefined,
     });
     const saved = await action.saveX();
+    expect(await action.builder.orchestrator.getEntID()).toBe(saved.id);
     expect(action.builder.operation).toBe(operation);
     expect(child.builder.operation).toBe(WriteOperation.Edit);
     expect(saved.data.first_name).toBe(
@@ -402,6 +403,41 @@ function commonTests() {
       await verifySchemaCount(UserSchemaExtended, 5);
       expect(observe).toHaveBeenCalledTimes(3);
     }
+  });
+
+  test("fresh validation resets a transformed upsert's result ID", async () => {
+    const original = await createUserAction(randomEmail()).saveX();
+    const email = randomEmail();
+    const target = await createUserAction(email).saveX();
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchemaExtended,
+      new Map([
+        ["FirstName", "Replacement"],
+        ["LastName", "Snow"],
+        ["account_status", "UNVERIFIED"],
+        ["EmailAddress", email],
+      ]),
+      WriteOperation.Edit,
+      original,
+    );
+    Object.assign(action, {
+      transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+    });
+    action.builder.orchestrator.setOnConflictOptions({
+      onConflictCols: ["email_address"],
+    });
+    expect(await action.builder.orchestrator.getEntID()).toBe(original.id);
+    await action.validX();
+    const proposedID = await action.builder.orchestrator.getEntID();
+    expect([original.id, target.id]).not.toContain(proposedID);
+    expect((await action.saveX()).id).toBe(target.id);
+    expect(await action.builder.orchestrator.getEntID()).toBe(target.id);
+    await action.validX();
+    expect(await action.builder.orchestrator.getEntID()).toBe(proposedID);
+    expect(action.builder.orchestrator.getExistingEntForWrite()).toBeNull();
+    expect((await action.saveX()).id).toBe(target.id);
+    expect(await action.builder.orchestrator.getEntID()).toBe(target.id);
   });
 
   test("no upsert. error ", async () => {

@@ -61,6 +61,9 @@ ID when writing the rows. See [Builder input in triggers](/docs/actions/triggers
 for an example, or use a [Transaction](/docs/actions/transactions) to coordinate
 independent actions.
 
-After field initialization, triggers and observers can read the transformed ID
-with `getEntID()`. See [Builder IDs and write targets](/docs/actions/builder#ids-and-write-targets)
+After field initialization, triggers can read the planned write ID with
+`getEntID()`. An upsert conflict can still change that ID when SQL runs. After
+saving, `getEntID()` returns the resulting row's ID, including an existing row
+returned by an upsert. Automatic inverse edges for builder-valued fields also
+use that final ID. See [Builder IDs and write targets](/docs/actions/builder#ids-and-write-targets)
 for accessor behavior.

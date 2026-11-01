@@ -2,7 +2,7 @@ import { ActionOperation, EntSchema, StringType } from "@snowtop/ent/schema";
 import { AlwaysAllowPrivacyPolicy } from "@snowtop/ent";
 
 export default new EntSchema({
-  fields: { name: StringType() },
+  fields: { name: StringType({ unique: true }) },
   defaultActionPrivacy: AlwaysAllowPrivacyPolicy,
   actions: [{ operation: ActionOperation.Mutations }],
   edges: [

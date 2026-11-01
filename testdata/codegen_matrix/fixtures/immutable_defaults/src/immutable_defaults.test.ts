@@ -5,6 +5,7 @@ import {
   LoggedOutViewer,
 } from "@snowtop/ent";
 import { SQLStatementOperation } from "@snowtop/ent/schema";
+import { Transaction } from "@snowtop/ent/action";
 import { Dialect } from "@snowtop/ent/core/db";
 import { loadEdges } from "@snowtop/ent/core/ent";
 import { createRowForTest } from "@snowtop/ent/testutils/write";
@@ -17,6 +18,7 @@ import {
 import { Document, User } from "./ent";
 import { EdgeType } from "./ent/generated/types";
 import { CreateUserActionBase } from "./ent/generated/user/actions/create_user_action_base";
+import { EditUserActionBase } from "./ent/generated/user/actions/edit_user_action_base";
 import { CreateDocumentActionBase } from "./ent/generated/document/actions/create_document_action_base";
 import { EditDocumentActionBase } from "./ent/generated/document/actions/edit_document_action_base";
 import { DeleteDocumentActionBase } from "./ent/generated/document/actions/delete_document_action_base";
@@ -53,9 +55,9 @@ beforeEach(async () => {
   }
 });
 
-async function createViewer() {
+async function createViewer(name = "Owner") {
   const user = await new CreateUserActionBase(new LoggedOutViewer(), {
-    name: "Owner",
+    name,
   }).saveX();
   return new IDViewer(user.id);
 }
@@ -163,7 +165,7 @@ test("constructor values take precedence; public immutable setters require overr
 
 test("constructor ownership still passes through action privacy", async () => {
   const viewer = await createViewer();
-  const other = await createViewer();
+  const other = await createViewer("Other");
   await expect(
     new CreateDocumentActionBase(viewer, {
       title: "Forged",
@@ -373,6 +375,27 @@ test("generated getEntID follows a silently denied save and a later insert retry
   expect(created.id).not.toBe(existing.id);
   expect(await action.builder.getEntID()).toBe(created.id);
   expect((await Document.loadX(viewer, existing.id)).title).toBe("Original");
+});
+
+test("generated builder IDs and inverse fields follow an upsert conflict result", async () => {
+  const viewer = await createViewer();
+  const user = await User.loadX(viewer, viewer.viewerID);
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+  }).saveX();
+  class EditAsCreate extends EditUserActionBase {
+    transformWrite() {
+      return { op: SQLStatementOperation.Insert };
+    }
+  }
+  const owner = new EditAsCreate(viewer, user, { name: user.name });
+  owner.builder.orchestrator.setOnConflictOptions({ onConflictCols: ["name"] });
+  const action = new EditDocumentActionBase(viewer, existing, {});
+  action.builder.overrideOwnerId(owner.builder);
+  await new Transaction(viewer, [action, owner]).run();
+  expect(await owner.builder.getEntID()).toBe(user.id);
+  expect((await action.builder.editedEntX()).ownerId).toBe(user.id);
+  await expectEdges(viewer, existing);
 });
 
 test("insert-to-edit rejects immutable edit defaults and preserves constructor input", async () => {
