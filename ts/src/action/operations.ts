@@ -1038,7 +1038,7 @@ export class ConditionalOperation<
 }
 
 // Node conditions must run in dependency order before descendants and edges,
-// including deletes that do not return an entity.
+// Conditional deletes use a no-op decision here and perform the deletion later.
 export class ConditionalNodeOperation<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,

@@ -37,7 +37,8 @@ If a delete action transforms into an insert or update, use
 
 A conditional delete changeset, including a Delete-to-Delete transformation,
 is skipped when its parent upsert conflicts. Its conditional descendants, edges,
-and observers are skipped too.
+and observers are skipped too. When the delete proceeds, descendant inserts and
+updates run before the physical deletion so triggers can clear foreign keys.
 
 ## Transforming to an insert
 

@@ -633,16 +633,13 @@ export class Orchestrator<
     // this assumes we have validated fields
     switch (this.actualOperation) {
       case WriteOperation.Delete:
-        const deleteOp = new DeleteNodeOperation(
+        return new DeleteNodeOperation(
           this.existingEnt!.id,
           this.options.builder,
           {
             tableName: this.options.tableName,
           },
         );
-        return conditionalBuilder
-          ? new ConditionalNodeOperation(deleteOp, conditionalBuilder)
-          : deleteOp;
       default:
         if (this.actualOperation === WriteOperation.Edit && !this.existingEnt) {
           throw new Error(
@@ -1728,9 +1725,25 @@ export class Orchestrator<
 
     let prepareOperations: (() => void) | undefined;
     if (processOps) {
-      ops = [
-        this.buildMainOp(conditionalOverride ? conditionalBuilder : undefined),
-      ];
+      const mainOp = this.buildMainOp(
+        conditionalOverride ? conditionalBuilder : undefined,
+      );
+      if (
+        conditionalOverride &&
+        this.actualOperation === WriteOperation.Delete
+      ) {
+        // Descendants need the skip decision before their node writes, but the
+        // physical delete must wait for those writes to clear foreign keys.
+        ops = [
+          new ConditionalNodeOperation(
+            new NoOperation(this.options.builder),
+            conditionalBuilder,
+          ),
+          new ConditionalOperation(mainOp, this.options.builder),
+        ];
+      } else {
+        ops = [mainOp];
+      }
 
       prepareOperations = await this.buildEdgeOps(
         ops,
