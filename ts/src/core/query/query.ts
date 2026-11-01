@@ -19,19 +19,6 @@ import {
   RowQueryFilter,
 } from "./pagination";
 
-export interface ConnectionQuery<TDest extends Ent, TEdge extends Data> {
-  queryEdges(): Promise<TEdge[]>;
-  queryEnts(): Promise<TDest[]>;
-  queryIDs(): Promise<ID[]>;
-  queryCount(): Promise<number>;
-  queryRawCount(): Promise<number>;
-  first(n: number, after?: string): ConnectionQuery<TDest, TEdge>;
-  last(n: number, before?: string): ConnectionQuery<TDest, TEdge>;
-  queryPageInfo(): Promise<PaginationInfo>;
-  getCursor(row: TEdge): string;
-  dataToID(edge: TEdge): ID;
-}
-
 export interface EdgeQuery<
   TSource extends Ent,
   TDest extends Ent,
