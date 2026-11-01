@@ -222,7 +222,7 @@ test("edit-to-insert keeps typed hook context and generated accessors use the ne
     revision: 7,
   });
   const earlyID = await action.builder.getEntID();
-  expect(earlyID).not.toBe(existing.id);
+  expect(earlyID).toBe(existing.id);
   await action.validX();
   expect(action.builder.orchestrator.getValidatedFields()).toMatchObject({
     owner_id: viewer.viewerID,
@@ -234,7 +234,7 @@ test("edit-to-insert keeps typed hook context and generated accessors use the ne
   const created = await action.saveX();
   expect(created.id).not.toBe(existing.id);
   expect(created.id).toBe(newID);
-  expect(created.id).toBe(earlyID);
+  expect(await action.builder.getEntID()).toBe(created.id);
   expect(created.revision).toBe(7);
   expect(hooks).toEqual([existing.id, existing.id, existing.id]);
   expect(created.syncValue).toBe("trigger insert");
@@ -295,11 +295,11 @@ test("delete-to-insert preserves non-null generated hook types and initializes n
   }
   const action = new DeleteAsCreate(viewer, existing);
   const earlyID = await action.builder.getEntID();
-  expect(earlyID).not.toBe(existing.id);
+  expect(earlyID).toBe(existing.id);
   await action.saveX();
   const created = await action.builder.editedEntX();
   expect(created.id).toBe(newID);
-  expect(created.id).toBe(earlyID);
+  expect(await action.builder.getEntID()).toBe(created.id);
   expect(hooks).toEqual([existing.id, existing.id, existing.id]);
   await expectEdges(viewer, created);
   await expectEdges(viewer, existing);

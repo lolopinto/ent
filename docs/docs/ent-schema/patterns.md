@@ -76,18 +76,18 @@ use the new write target instead. This also applies when a transform returns
 Insert for a builder that already has an existing entity. Relative numeric
 expressions require an update; use absolute values for an insert.
 
-`getEntID()` initializes the transformation and defaults even when called before
-validation. Hooks can use it to obtain the eventual row ID. Within
-`transformWrite`, use `builder.existingEnt.id` to read the original ID instead;
-the final write target is not known until the transformation returns. Edit
-defaults can read an existing target's ID. A creation default cannot await its
-own new write ID; this circular read fails with an error instead of hanging.
+For an existing write target, `getEntID()` returns its current ID without running
+transformations or defaults. After validation, it returns the transformed target's
+ID; triggers and observers can use it to obtain that ID. When no existing target
+is available, it initializes creation defaults. Circular ID dependencies between
+transforms or defaults fail with an error instead of hanging.
 
 After upgrading, regenerate builders with `tsent codegen --write-all` before
 using Edit/Delete-to-Insert transformations. Previously generated accessors read
 `builder.existingEnt` directly and can return the original row's values or ID.
 Custom builder accessors that need the current write target should use
-`builder.orchestrator.getExistingEntForWrite()`; it returns `null` for an insert.
+`getExistingEntForWrite(builder)`, imported from `@snowtop/ent/action`; it returns
+`null` for an insert and supports older custom builders.
 
 The API for Pattern looks like:
 

@@ -243,7 +243,7 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
   }
 
   {{if .GenerateGetIDInBuilder -}}
-    // Resolve the transformed write target before returning its ID.
+    // Return the current write target ID; existing targets do not initialize transforms.
     async getEntID() {
       return this.orchestrator.getEntID();
     }

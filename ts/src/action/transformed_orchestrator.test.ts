@@ -559,10 +559,10 @@ function commonTests() {
       action.builder.orchestrator.getEntID(),
       action.builder.orchestrator.getEntID(),
     ]);
-    expect(earlyID).not.toBe(existing.id);
+    expect(earlyID).toBe(existing.id);
     expect(concurrentID).toBe(earlyID);
     const created = await action.saveX();
-    expect(created.id).toBe(earlyID);
+    expect(await action.builder.orchestrator.getEntID()).toBe(created.id);
     expect(created.id).not.toBe(existing.id);
     expect(action.builder.existingEnt).toBe(existing);
     expect(action.builder.orchestrator.getExistingEntForWrite()).toBeNull();
@@ -571,6 +571,66 @@ function commonTests() {
     expect(editPolicy).not.toHaveBeenCalled();
     expect(createPolicy).toHaveBeenCalledTimes(1);
     expect(hooks).toEqual([existing.id, existing.id, existing.id]);
+  });
+
+  test.each([
+    WriteOperation.Edit,
+    WriteOperation.Delete,
+  ])("%s transformed to insert preserves the original on silent privacy denial", async (operation) => {
+    const existing = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      undefined,
+    ).saveX();
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new EntBuilderSchema(User, {
+        patterns: [new DeletedAtPattern()],
+        fields: { FirstName: StringType(), LastName: StringType() },
+      }),
+      new Map([
+        ["FirstName", "New"],
+        ["LastName", "Snow"],
+      ]),
+      operation,
+      existing,
+    );
+    Object.assign(action, {
+      transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+      getPrivacyPolicy: () => ({ rules: [{ apply: async () => Deny() }] }),
+      __failPrivacySilently: () => true,
+    });
+    await action.saveX();
+    expect((await action.editedEnt())?.id).toBe(existing.id);
+    expect((await action.editedEntX()).id).toBe(existing.id);
+    expect((await getNewLoader().load(existing.id))?.first_name).toBe("Jon");
+  });
+
+  test("an update can transform to a delete", async () => {
+    const existing = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      undefined,
+    ).saveX();
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new EntBuilderSchema(User, {
+        patterns: [new DeletedAtPattern()],
+        fields: { FirstName: StringType(), LastName: StringType() },
+      }),
+      new Map(),
+      WriteOperation.Edit,
+      existing,
+    );
+    Object.assign(action, {
+      transformWrite: () => ({ op: SQLStatementOperation.Delete }),
+    });
+    await (await action.changeset()).executor().execute();
+    expect(await getNewLoader().load(existing.id)).toBeNull();
   });
 
   test("delete -> update", async () => {

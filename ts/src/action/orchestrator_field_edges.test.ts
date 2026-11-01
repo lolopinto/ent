@@ -1,4 +1,4 @@
-import { Data, ID, Viewer } from "../core/base";
+import { Data, Deny, ID, Viewer } from "../core/base";
 import { Dialect } from "../core/db";
 import { convertNullableList } from "../core/convert";
 import { loadRow, loadRows } from "../core/ent";
@@ -24,6 +24,7 @@ import {
 } from "../testutils/db/temp_db";
 import { createRowForTest } from "../testutils/write";
 import { WriteOperation } from "./action";
+import { Transaction } from "./transaction";
 
 class Assignment extends BaseEnt {
   nodeType = "Assignment";
@@ -621,4 +622,83 @@ test("a trigger that empties an edit leaves defaulted fields and inverse edges u
   await action.saveX();
   expect(await raw(ent.id)).toEqual(before);
   expect(await rows(ent, defaultEdge)).toEqual(expectedRows(b.id));
+});
+
+test.each([
+  false,
+  true,
+])("early ID read preserves permissions on later input (early=%s)", async (earlyID) => {
+  const apply = jest.fn(async () => Deny());
+  const schema = getBuilderSchemaFromFields(
+    { name: StringType({ editPrivacyPolicy: { rules: [{ apply }] } }) },
+    Contact,
+  );
+  const action = new SimpleAction(
+    viewer,
+    schema,
+    new Map(),
+    WriteOperation.Edit,
+    a,
+  );
+  if (earlyID) {
+    expect(await action.builder.orchestrator.getEntID()).toBe(a.id);
+  }
+  action.builder.updateInput({ name: "Forbidden" });
+  await expect(action.saveX()).rejects.toThrow(/permission/);
+  expect(apply).toHaveBeenCalledTimes(1);
+  expect(
+    (await loadRow({
+      tableName: "contacts",
+      fields: ["name"],
+      clause: clause.Eq("id", a.id),
+    }))!.name,
+  ).toBe("a");
+});
+
+test.each(
+  ["insert", "retarget", "unchanged"].flatMap((transform) =>
+    ["none", "insert", "remove"].map((manual) => [transform, manual]),
+  ),
+)("field edges resolve a delayed %s transform with manual %s", async (transform, manual) => {
+  const ent = await create({ owner_id: a.id });
+  const owner = editContact();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  Object.assign(owner, {
+    transformWrite: async () => {
+      await gate;
+      return transform === "insert"
+        ? { op: SQLStatementOperation.Insert }
+        : transform === "retarget"
+          ? { op: SQLStatementOperation.Update, existingEnt: b }
+          : null;
+    },
+  });
+  const action = new FieldAction({ owner_id: owner.builder }, ent);
+  if (manual === "insert") {
+    action.builder.orchestrator.addInboundEdge(a.id, ownerEdge, "Contact", {
+      data: "manual",
+    });
+  } else if (manual === "remove") {
+    action.builder.orchestrator.removeInboundEdge(a.id, ownerEdge);
+  }
+  const changeset = action.changeset.bind(action);
+  action.changeset = async () => {
+    const result = await changeset();
+    release();
+    return result;
+  };
+  await new Transaction(viewer, [action, owner]).run();
+  const newOwner = await owner.editedEntX();
+  expect((await raw(ent.id))!.owner_id).toBe(newOwner.id);
+  const expected: { id1: ID; data: string | null }[] =
+    newOwner.id === a.id && manual !== "none" ? [] : expectedRows(newOwner.id);
+  if (manual === "insert") {
+    expected.push({ id1: a.id, data: "manual" });
+  }
+  expect(await rows(ent)).toEqual(
+    expected.sort((x, y) => String(x.id1).localeCompare(String(y.id1))),
+  );
 });

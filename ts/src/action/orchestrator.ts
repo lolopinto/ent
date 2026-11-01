@@ -13,6 +13,7 @@ import {
   loadEdgeDatas,
   applyPrivacyPolicyForRow,
   parameterizedQueryOptions,
+  AssocEdgeData,
   loadEdgeData,
 } from "../core/ent";
 import {
@@ -294,7 +295,6 @@ export class Orchestrator<
   private onConflict: CreateRowOptions["onConflict"] | undefined;
   private memoizedGetFields: () => Promise<fieldsInfo>;
   private fieldsInitializing = false;
-  private writeTargetResolved = false;
 
   constructor(
     private options: OrchestratorOptions<TEnt, TInput, TViewer, TExistingEnt>,
@@ -324,21 +324,19 @@ export class Orchestrator<
   }
 
   async getEntID(): Promise<ID> {
-    let id: ID | undefined;
-    if (this.fieldsInitializing && fieldInitialization.getStore()?.has(this)) {
-      if (!this.writeTargetResolved) {
-        throw new Error(
-          "cannot resolve the write ID during transformWrite; use builder.existingEnt.id for the original ID",
-        );
-      }
-      id = this.existingEnt?.id;
-      if (id === undefined || id === null) {
-        throw new Error("cannot resolve a new write ID from its own defaults");
-      }
-    } else {
-      const { editedData } = await this.memoizedGetFields();
-      id = this.existingEnt?.id ?? editedData[this.options.key];
+    // Preserve cheap ID reads for edits/deletes. Only validation initializes
+    // their transforms; subsequent reads see the resulting write target.
+    if (this.existingEnt) {
+      return this.existingEnt.id;
     }
+    if (this.fieldsInitializing && fieldInitialization.getStore()?.has(this)) {
+      throw new Error(
+        "cannot resolve a write ID through a circular transformation or default dependency",
+      );
+    }
+    const { editedData } = await this.memoizedGetFields();
+    const id =
+      this.getExistingEntForWrite()?.id ?? editedData[this.options.key];
     if (id === undefined || id === null) {
       throw new Error(
         "cannot resolve the write ID before its creation default has been evaluated",
@@ -712,8 +710,57 @@ export class Orchestrator<
     ops: DataOperation<any, TViewer>[],
     conditionalBuilder: Builder<TEnt, TViewer>,
     conditionalOverride: boolean,
-  ): Promise<void> {
+  ): Promise<(() => void) | undefined> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
+    const append = () =>
+      this.appendEdgeOps(
+        ops,
+        conditionalBuilder,
+        conditionalOverride,
+        edgeDatas,
+      );
+    const edgeStart = ops.length;
+    append();
+    const edgeCount = ops.length - edgeStart;
+    if (
+      !this.fieldEdgeInputs.size ||
+      !(
+        Array.from(this.fieldEdgeInputs.values()).some((field) =>
+          field.ids?.some(isBuilder),
+        ) ||
+        Array.from(this.edges.values()).some((operations) =>
+          Array.from(operations.values()).some((edges) =>
+            Array.from(edges.values()).some((edge) => isBuilder(edge.id)),
+          ),
+        )
+      )
+    ) {
+      return;
+    }
+    // A referenced builder may still be transforming while this changeset is
+    // built. Reconcile once all changesets are ready, without awaiting another
+    // builder during input collection or triggering its defaults early.
+    return () => {
+      for (const [name, field] of this.fieldEdgeInputs) {
+        this.__setFieldEdges(
+          name,
+          field.ids,
+          field.edgeType,
+          field.nodeType,
+          {},
+        );
+      }
+      ops.splice(edgeStart, edgeCount);
+      append();
+    };
+  }
+
+  private appendEdgeOps(
+    ops: DataOperation<any, TViewer>[],
+    conditionalBuilder: Builder<TEnt, TViewer>,
+    conditionalOverride: boolean,
+    edgeDatas: Map<string, AssocEdgeData>,
+  ): void {
     const edges: [EdgeMap<TViewer>, boolean][] = [
       [this.edges, false],
       [this.conditionalEdges, true],
@@ -870,7 +917,7 @@ export class Orchestrator<
         return WriteOperation.Edit;
       case SQLStatementOperation.Insert:
         return WriteOperation.Insert;
-      case SQLStatementOperation.Update:
+      case SQLStatementOperation.Delete:
         return WriteOperation.Delete;
       default:
         throw new Error("invalid path");
@@ -1241,7 +1288,6 @@ export class Orchestrator<
         builder.existingEnt = transformed.existingEnt;
       }
     }
-    this.writeTargetResolved = true;
     if (
       this.fieldEdgeInputs.size > 0 &&
       (initialOperation !== this.actualOperation ||
@@ -1574,7 +1620,10 @@ export class Orchestrator<
       const res = await this.valid();
       if (!res) {
         processOps = false;
-        const op = new NoOperation(this.options.builder, this.existingEnt);
+        const op = new NoOperation(
+          this.options.builder,
+          this.existingEnt ?? this.options.builder.existingEnt,
+        );
         this.mainOp = op;
         ops = [op];
 
@@ -1585,12 +1634,17 @@ export class Orchestrator<
       await this.validX();
     }
 
+    let prepareOperations: (() => void) | undefined;
     if (processOps) {
       ops = [
         this.buildMainOp(conditionalOverride ? conditionalBuilder : undefined),
       ];
 
-      await this.buildEdgeOps(ops, conditionalBuilder, conditionalOverride);
+      prepareOperations = await this.buildEdgeOps(
+        ops,
+        conditionalBuilder,
+        conditionalOverride,
+      );
     }
 
     // TODO throw if we try and create a new changeset after previously creating one
@@ -1607,6 +1661,7 @@ export class Orchestrator<
       this.dependencies,
       this.changesets,
       this.options,
+      prepareOperations,
     );
   }
 
@@ -1695,6 +1750,7 @@ export class EntChangeset<
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],
     private options?: OrchestratorOptions<TEnt, Data, TViewer>,
+    private prepareOperations?: () => void,
   ) {}
 
   static changesetFrom<
@@ -1817,6 +1873,9 @@ export class EntChangeset<
     if (this._executor) {
       return this._executor;
     }
+
+    this.prepareOperations?.();
+    this.prepareOperations = undefined;
 
     if (!this.changesets?.length) {
       // if we have dependencies but no changesets, we just need a simple
