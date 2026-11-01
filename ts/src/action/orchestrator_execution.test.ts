@@ -67,6 +67,34 @@ for (const dialect of [Dialect.SQLite, Dialect.Postgres]) {
       setupPostgres(tables);
     }
 
+    test("throwing rollback hooks cannot retain a rolled-back saved ID", async () => {
+      const target = await create("collision", { note: "before" }).saveX();
+      const action = create("collision", { note: "after" });
+      action.builder.orchestrator.setOnConflictOptions({
+        onConflictCols: ["name"],
+        updateCols: ["note"],
+      });
+      const changeset = (await action.changeset()) as EntChangeset<User>;
+      const planned = await getID(action);
+      expect(planned).not.toBe(target.id);
+      changeset.operations.unshift({
+        builder: action.builder,
+        performWrite: async () => {},
+        performWriteSync: () => {},
+        onRollback: () => {
+          throw new Error("rollback hook failed");
+        },
+      });
+      changeset.operations.push(failWrite(action));
+      await expect(changeset.executor().execute()).rejects.toThrow(
+        "write failed",
+      );
+      expect(await getID(action)).toBe(planned);
+      expect((await row("collision"))!.note).toBe("before");
+      // The database can still accept another write after cleanup.
+      await expect(create("after rollback").saveX()).resolves.toBeDefined();
+    });
+
     test.each([
       false,
       true,

@@ -372,6 +372,7 @@ export async function executeOperations(
   const rollbackOperations = new Set<DataOperation<Ent>>();
   let transactionStarted = false;
   let committed = false;
+  let releaseStarted = false;
   try {
     if (executor.preFetch) {
       await executor.preFetch(client, context);
@@ -425,24 +426,48 @@ export async function executeOperations(
     if (executor.postFetch) {
       await executor.postFetch(client, context);
     }
-    client.release();
+    releaseStarted = true;
+    await client.release();
   } catch (e) {
+    const cleanupErrors: { message: string; error: unknown }[] = [];
+    const rollbackRequired =
+      !committed && transactionStarted && !isSyncClient(client);
     // Invalidate before attempting ROLLBACK, which can itself fail. Once a
     // commit completes, postFetch/release failures must preserve saved IDs.
     if (!committed) {
       for (const operation of rollbackOperations) {
-        operation.onRollback?.();
+        try {
+          operation.onRollback?.();
+        } catch (error) {
+          cleanupErrors.push({ message: "rollback hook failed", error });
+        }
       }
     }
     try {
-      if (!committed && transactionStarted && !isSyncClient(client)) {
-        logQuery("ROLLBACK", []);
+      if (rollbackRequired) {
         await client.query("ROLLBACK");
       }
-    } finally {
-      client.release(e);
+    } catch (error) {
+      cleanupErrors.push({ message: "transaction rollback failed", error });
     }
-    log("error", e);
+    if (!releaseStarted) {
+      try {
+        await client.release(e);
+      } catch (error) {
+        cleanupErrors.push({ message: "client release failed", error });
+      }
+    }
+    // Report only after cleanup. Even a failing logger must not replace the
+    // original execution error.
+    try {
+      if (rollbackRequired) {
+        logQuery("ROLLBACK", []);
+      }
+      log("error", e);
+      for (const error of cleanupErrors) {
+        log("error", error);
+      }
+    } catch {}
     throw e;
   }
 

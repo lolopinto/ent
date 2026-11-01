@@ -22,6 +22,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- continue transaction cleanup and preserve the original write error when rollback hooks or cleanup operations fail (#2056).
 - select field permissions after write transformations and reconcile inverse edges against referenced builders' final write targets. Silent privacy denial skips transform-provided child changesets and preserves the original entity and its ID when an edit or delete transforms into an insert (#2056).
 - preserve explicit old-row edge removals and new-row inverse edges when an edit transforms into an insert, including removals when an upsert returns the original row (#2056).
 - skip conditional changesets, including deletes and their descendants, edges, and dependent observers when an insert encounters an upsert conflict, including transformed inserts; preserve trigger cleanup writes before physical deletion (#2056).
