@@ -1037,7 +1037,8 @@ export class ConditionalOperation<
   }
 }
 
-// separate because we need to implement createdEnt and we manually run those before edge/other operations in executors
+// Node conditions must run in dependency order before descendants and edges,
+// including deletes that do not return an entity.
 export class ConditionalNodeOperation<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
@@ -1050,10 +1051,7 @@ export class ConditionalNodeOperation<
   }
 
   updatedOperation(): UpdatedOperation<TEnt, TViewer> | null {
-    if (!this.op.updatedOperation) {
-      return null;
-    }
-    const ret = this.op.updatedOperation();
+    const ret = this.op.updatedOperation?.() ?? null;
     if (ret !== null) {
       return ret;
     }

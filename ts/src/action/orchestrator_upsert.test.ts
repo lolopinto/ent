@@ -405,6 +405,107 @@ function commonTests() {
     }
   });
 
+  test.each(
+    [false, true].flatMap((transform) =>
+      [false, true].flatMap((conflict) =>
+        [false, true].map((update) => ({ transform, conflict, update })),
+      ),
+    ),
+  )("conditional delete and descendants (transform=$transform, conflict=$conflict, update=$update)", async ({
+    transform,
+    conflict,
+    update,
+  }) => {
+    const victim = await createUserAction(randomEmail()).saveX();
+    const endpoint = await createUserAction(randomEmail()).saveX();
+    const seed = new SimpleAction(
+      victim.viewer,
+      UserSchemaExtended,
+      new Map(),
+      WriteOperation.Edit,
+      victim,
+    );
+    seed.builder.orchestrator.addOutboundEdge(endpoint.id, "edge", "User");
+    await seed.saveX();
+    const email = randomEmail();
+    if (conflict) {
+      await createUserAction(email).saveX();
+    }
+    const parent = createUserAction(email);
+    parent.builder.orchestrator.setOnConflictOptions({
+      onConflictCols: ["email_address"],
+      updateCols: update ? ["first_name"] : undefined,
+    });
+    const child = new SimpleAction(
+      victim.viewer,
+      UserSchemaExtended,
+      new Map(),
+      WriteOperation.Delete,
+      victim,
+    );
+    if (transform) {
+      Object.assign(child, {
+        transformWrite: () => ({ op: SQLStatementOperation.Delete }),
+      });
+    }
+    child.builder.orchestrator.removeOutboundEdge(endpoint.id, "edge");
+    const grandchildEmail = randomEmail();
+    const grandchild = createUserAction(grandchildEmail);
+    grandchild.builder.orchestrator.addOutboundEdge(
+      endpoint.id,
+      "edge",
+      "User",
+    );
+    const observe = jest.fn();
+    for (const action of [parent, child, grandchild]) {
+      action.getObservers = () => [{ observe }];
+    }
+    parent.getTriggers = () => [
+      {
+        changeset: () =>
+          child.changesetWithOptions_BETA({
+            conditionalBuilder: parent.builder,
+          }),
+      },
+    ];
+    child.getTriggers = () => [
+      {
+        changeset: () =>
+          grandchild.changesetWithOptions_BETA({
+            conditionalBuilder: child.builder,
+          }),
+      },
+    ];
+    await parent.saveX();
+    const original = await loadRow({
+      tableName: "user_extendeds",
+      fields: ["*"],
+      clause: clause.Eq("id", victim.id),
+    });
+    const nested = await loadRow({
+      tableName: "user_extendeds",
+      fields: ["*"],
+      clause: clause.Eq("email_address", grandchildEmail),
+    });
+    const originalEdges = await loadEdges({ id1: victim.id, edgeType: "edge" });
+    if (conflict) {
+      expect(original?.id).toBe(victim.id);
+      expect(nested).toBeNull();
+      expect(originalEdges.map((edge) => edge.id2)).toEqual([endpoint.id]);
+      expect(observe).not.toHaveBeenCalled();
+    } else {
+      expect(original).toBeNull();
+      expect(nested).not.toBeNull();
+      expect(originalEdges).toEqual([]);
+      expect(
+        (await loadEdges({ id1: nested!.id, edgeType: "edge" })).map(
+          (edge) => edge.id2,
+        ),
+      ).toEqual([endpoint.id]);
+      expect(observe).toHaveBeenCalledTimes(3);
+    }
+  });
+
   test("fresh validation resets a transformed upsert's result ID", async () => {
     const original = await createUserAction(randomEmail()).saveX();
     const email = randomEmail();

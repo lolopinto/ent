@@ -35,6 +35,10 @@ Delete actions retain their `Promise<void>` save contract after transformation.
 If a delete action transforms into an insert or update, use
 `builder.editedEntX()` after saving to read the resulting entity.
 
+A conditional delete changeset, including a Delete-to-Delete transformation,
+is skipped when its parent upsert conflicts. Its conditional descendants, edges,
+and observers are skipped too.
+
 ## Transforming to an insert
 
 Returning `SQLStatementOperation.Insert` clears the current write target and

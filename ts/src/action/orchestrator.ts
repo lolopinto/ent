@@ -633,13 +633,16 @@ export class Orchestrator<
     // this assumes we have validated fields
     switch (this.actualOperation) {
       case WriteOperation.Delete:
-        return new DeleteNodeOperation(
+        const deleteOp = new DeleteNodeOperation(
           this.existingEnt!.id,
           this.options.builder,
           {
             tableName: this.options.tableName,
           },
         );
+        return conditionalBuilder
+          ? new ConditionalNodeOperation(deleteOp, conditionalBuilder)
+          : deleteOp;
       default:
         if (this.actualOperation === WriteOperation.Edit && !this.existingEnt) {
           throw new Error(
