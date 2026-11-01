@@ -347,6 +347,34 @@ test("generated inverse insertion survives an explicit removal from the original
   expect(edges.map((edge) => edge.id2)).not.toContain(existing.id);
 });
 
+test("generated getEntID follows a silently denied save and a later insert retry", async () => {
+  const viewer = await createViewer();
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+  }).saveX();
+  let allowed = false;
+  class EditAsCreate extends EditDocumentActionBase {
+    transformWrite() {
+      return { op: SQLStatementOperation.Insert };
+    }
+    getPrivacyPolicy() {
+      return allowed ? super.getPrivacyPolicy() : AlwaysDenyPrivacyPolicy;
+    }
+    __failPrivacySilently() {
+      return true;
+    }
+  }
+  const action = new EditAsCreate(viewer, existing, { title: "Replacement" });
+  const unchanged = await action.saveX();
+  expect(unchanged.id).toBe(existing.id);
+  expect(await action.builder.getEntID()).toBe(unchanged.id);
+  allowed = true;
+  const created = await action.saveX();
+  expect(created.id).not.toBe(existing.id);
+  expect(await action.builder.getEntID()).toBe(created.id);
+  expect((await Document.loadX(viewer, existing.id)).title).toBe("Original");
+});
+
 test("insert-to-edit rejects immutable edit defaults and preserves constructor input", async () => {
   const viewer = await createViewer();
   const existing = await new CreateDocumentActionBase(viewer, {

@@ -597,15 +597,42 @@ function commonTests() {
       operation,
       existing,
     );
+    let allowed = false;
+    const triggerIDs: ID[] = [];
     Object.assign(action, {
       transformWrite: () => ({ op: SQLStatementOperation.Insert }),
-      getPrivacyPolicy: () => ({ rules: [{ apply: async () => Deny() }] }),
+      getPrivacyPolicy: () => ({
+        rules: [{ apply: async () => (allowed ? Allow() : Deny()) }],
+      }),
+      getTriggers: () => [
+        {
+          changeset: async () => {
+            triggerIDs.push(await action.builder.orchestrator.getEntID());
+          },
+        },
+      ],
       __failPrivacySilently: () => true,
     });
     await action.saveX();
     expect((await action.editedEnt())?.id).toBe(existing.id);
     expect((await action.editedEntX()).id).toBe(existing.id);
+    expect(await action.builder.orchestrator.getEntID()).toBe(existing.id);
     expect((await getNewLoader().load(existing.id))?.first_name).toBe("Jon");
+    expect(action.builder.orchestrator.getExistingEntForWrite()).toBeNull();
+    expect(triggerIDs).toEqual([]);
+    const candidateID = (await action.builder.orchestrator.getEditedData()).id;
+    expect(candidateID).not.toBe(existing.id);
+    expect(await getNewLoader().load(candidateID)).toBeNull();
+
+    allowed = true;
+    await action.validX();
+    expect(await action.builder.orchestrator.getEntID()).toBe(candidateID);
+    const created = await action.saveX();
+    expect(created.id).toBe(candidateID);
+    expect(await action.builder.orchestrator.getEntID()).toBe(created.id);
+    expect(triggerIDs).toEqual([candidateID, candidateID]);
+    expect((await getNewLoader().load(existing.id))?.first_name).toBe("Jon");
+    expect((await getNewLoader().load(created.id))?.first_name).toBe("New");
   });
 
   test.each(

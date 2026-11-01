@@ -64,6 +64,8 @@ export interface DataOperation<
 
   // optional to indicate that the operation should not be performed. used for conditional changesets/operations
   shortCircuit?(executor: Executor): boolean;
+  // Report a conflict or conditional skip of the planned write; return null
+  // when unchanged. builder.operation remains the original action type.
   updatedOperation?(): UpdatedOperation<TEnt, TViewer> | null;
   resolve?(executor: Executor): void; //throws?
 

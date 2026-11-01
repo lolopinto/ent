@@ -287,6 +287,7 @@ export class Orchestrator<
   private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation<TEnt, TViewer> | null;
+  private noOpEntID: ID | undefined;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -328,6 +329,9 @@ export class Orchestrator<
   }
 
   async getEntID(): Promise<ID> {
+    if (this.noOpEntID !== undefined) {
+      return this.noOpEntID;
+    }
     // Preserve cheap ID reads for edits/deletes. Only validation initializes
     // their transforms; subsequent reads see the resulting write target.
     if (this.existingEnt) {
@@ -1041,6 +1045,8 @@ export class Orchestrator<
   }
 
   private async validate(): Promise<Error[]> {
+    // A retry uses the transformed write target, not the prior no-op result.
+    this.noOpEntID = undefined;
     // existing ent required for edit or delete operations
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -1660,10 +1666,10 @@ export class Orchestrator<
       const res = await this.valid();
       if (!res) {
         processOps = false;
-        const op = new NoOperation(
-          this.options.builder,
-          this.existingEnt ?? this.options.builder.existingEnt,
-        );
+        const existingEnt =
+          this.existingEnt ?? this.options.builder.existingEnt;
+        const op = new NoOperation(this.options.builder, existingEnt);
+        this.noOpEntID = existingEnt?.id;
         this.mainOp = op;
         ops = [op];
 

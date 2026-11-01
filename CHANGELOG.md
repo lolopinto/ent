@@ -21,8 +21,9 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- select field permissions after write transformations and reconcile inverse edges against referenced builders' final write targets. Silent privacy denial preserves the original entity when an edit or delete transforms into an insert (#2056).
+- select field permissions after write transformations and reconcile inverse edges against referenced builders' final write targets. Silent privacy denial preserves the original entity and its ID when an edit or delete transforms into an insert (#2056).
 - reject Insert/Edit-to-Delete transformations before writes, preserving action return contracts; preserve explicit old-row edge removals and new-row inverse edges when an edit transforms into an insert (#2056).
+- skip conditional changesets, edges, and dependent observers when a transformed insert encounters an upsert conflict (#2056).
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - enforce custom-query privacy for rows and counts (#2049).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).

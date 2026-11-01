@@ -29,7 +29,7 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
-import { ConstraintType } from "../schema";
+import { ConstraintType, SQLStatementOperation } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import DB, { Dialect } from "../core/db";
 import { toDBColumnOrTable } from "../names/names";
@@ -303,6 +303,106 @@ function commonTests() {
       });
     },
   };
+
+  test.each(
+    [WriteOperation.Insert, WriteOperation.Edit, WriteOperation.Delete].flatMap(
+      (operation) =>
+        [false, true].flatMap((conflict) =>
+          [false, true].map((update) => ({ operation, conflict, update })),
+        ),
+    ),
+  )("$operation to insert conditional descendants (conflict=$conflict, update=$update)", async ({
+    operation,
+    conflict,
+    update,
+  }) => {
+    const original = await createUserAction(randomEmail()).saveX();
+    const childOriginal = await createUserAction(randomEmail()).saveX();
+    const email = randomEmail();
+    const target = conflict ? await createUserAction(email).saveX() : null;
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchemaExtended,
+      new Map([
+        ["FirstName", "Replacement"],
+        ["LastName", "Snow"],
+        ["account_status", "UNVERIFIED"],
+        ["EmailAddress", email],
+      ]),
+      operation,
+      operation === WriteOperation.Insert ? null : original,
+    );
+    const child = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchemaExtended,
+      new Map([
+        ["FirstName", "Child"],
+        ["LastName", "Snow"],
+        ["account_status", "UNVERIFIED"],
+        ["EmailAddress", randomEmail()],
+      ]),
+      WriteOperation.Edit,
+      childOriginal,
+    );
+    for (const transformed of [action, child]) {
+      Object.assign(transformed, {
+        transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+      });
+    }
+    const grandchild = createUserAction(randomEmail());
+    const observe = jest.fn();
+    for (const dependent of [action, child, grandchild]) {
+      dependent.getObservers = () => [{ observe }];
+    }
+    const conditionalChild = (
+      parent: SimpleAction<User>,
+      dependent: SimpleAction<User>,
+    ) => ({
+      async changeset() {
+        parent.builder.orchestrator.addOutboundEdge(
+          dependent.builder,
+          "uniqueEdge",
+          "User",
+          { conditional: true },
+        );
+        return dependent.changesetWithOptions_BETA({
+          conditionalBuilder: parent.builder,
+        });
+      },
+    });
+    action.getTriggers = () => [conditionalChild(action, child)];
+    child.getTriggers = () => [conditionalChild(child, grandchild)];
+    action.builder.orchestrator.setOnConflictOptions({
+      onConflictCols: ["email_address"],
+      updateCols: update ? ["first_name"] : undefined,
+    });
+    const saved = await action.saveX();
+    expect(action.builder.operation).toBe(operation);
+    expect(child.builder.operation).toBe(WriteOperation.Edit);
+    expect(saved.data.first_name).toBe(
+      conflict && !update ? "Jon" : "Replacement",
+    );
+    const edges = await loadEdges({ id1: saved.id, edgeType: "uniqueEdge" });
+    if (conflict) {
+      expect(saved.id).toBe(target!.id);
+      expect(edges).toEqual([]);
+      await verifySchemaCount(UserSchemaExtended, 3);
+      expect(observe).not.toHaveBeenCalled();
+    } else {
+      expect(saved.id).not.toBe(original.id);
+      const createdChild = await child.editedEntX();
+      const createdGrandchild = await grandchild.editedEntX();
+      expect(createdChild.id).not.toBe(childOriginal.id);
+      expect(edges.map((edge) => edge.id2)).toEqual([createdChild.id]);
+      expect(
+        (await loadEdges({ id1: createdChild.id, edgeType: "uniqueEdge" })).map(
+          (edge) => edge.id2,
+        ),
+      ).toEqual([createdGrandchild.id]);
+      await verifySchemaCount(UserSchemaExtended, 5);
+      expect(observe).toHaveBeenCalledTimes(3);
+    }
+  });
 
   test("no upsert. error ", async () => {
     const email = randomEmail();

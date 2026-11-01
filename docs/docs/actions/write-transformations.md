@@ -42,7 +42,9 @@ The original row is not updated or deleted. Edit/Delete hooks retain it through
 `builder.existingEnt`, while generated field accessors and automatic inverse
 edges use the new write target. Explicit edge removals still apply to the
 original row's edges and do not suppress the new row's automatic inverse edges.
-If privacy fails silently, `builder.editedEnt()` returns the original entity.
+If privacy fails silently, `builder.editedEnt()` returns the original entity and
+`builder.getEntID()` returns its ID. A later retry still follows the insert
+transformation.
 
 Relative numeric expressions require an update; use absolute values for an
 insert.
