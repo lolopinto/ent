@@ -85,6 +85,8 @@ export interface Executor
 }
 
 export interface Changeset {
+  // Build all participating changesets before requesting their executors.
+  // This prepares operations against referenced builders' final write targets.
   executor(): Executor;
   viewer: Viewer;
   placeholderID: ID;

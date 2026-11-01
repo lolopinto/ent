@@ -745,6 +745,28 @@ test.each([
 });
 
 test.each([
+  WriteOperation.Edit,
+  WriteOperation.Delete,
+])("%s to insert removes original owner edges without suppressing the new row's inverse", async (operation) => {
+  const ent = await create({ owner_id: a.id });
+  const action = new FieldAction(
+    { name: "replacement", owner_id: a.id },
+    ent,
+    operation,
+  );
+  Object.assign(action, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  action.builder.orchestrator.removeInboundEdge(a.id, ownerEdge);
+  const created = await action.saveX();
+  expect(created.id).not.toBe(ent.id);
+  expect((await raw(created.id))!.owner_id).toBe(a.id);
+  expect((await raw(ent.id))!.owner_id).toBe(a.id);
+  expect(await rows(ent)).toEqual([]);
+  expect(await rows(created)).toEqual(expectedRows(a.id));
+});
+
+test.each([
   "during validation",
   "after changeset",
 ])("manual builder aliases reconcile when their target changes %s", async (timing) => {

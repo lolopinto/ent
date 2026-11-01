@@ -286,7 +286,8 @@ features:
       A generated-app runtime fixture verifies immutable viewer, sync, and async
       creation defaults, constructor precedence, explicit overrides, generated
       accessors and non-null Edit/Delete hook types across insert transforms,
-      numeric action inputs, immutable guards, and inverse-edge wiring.
+      generated save rejection for unsupported delete transforms, numeric action
+      inputs, immutable guards, and inverse-edge wiring with explicit removals.
       Core default and privacy cases run in the package
       action suites via npm test.
     test_refs:

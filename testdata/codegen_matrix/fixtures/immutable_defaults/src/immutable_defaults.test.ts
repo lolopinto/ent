@@ -305,6 +305,48 @@ test("delete-to-insert preserves non-null generated hook types and initializes n
   await expectEdges(viewer, existing);
 });
 
+test("generated edit saveX rejects a delete transform before deleting its entity", async () => {
+  const viewer = await createViewer();
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+  }).saveX();
+  class EditAsDelete extends EditDocumentActionBase {
+    transformWrite() {
+      return { op: SQLStatementOperation.Delete };
+    }
+  }
+  await expect(new EditAsDelete(viewer, existing, {}).saveX()).rejects.toThrow(
+    /cannot transform an insert or edit action into a delete/,
+  );
+  expect((await Document.loadX(viewer, existing.id)).title).toBe("Original");
+  await expectEdges(viewer, existing);
+});
+
+test("generated inverse insertion survives an explicit removal from the original row", async () => {
+  const viewer = await createViewer();
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+  }).saveX();
+  class EditAsCreate extends EditDocumentActionBase {
+    transformWrite() {
+      return { op: SQLStatementOperation.Insert };
+    }
+  }
+  const action = new EditAsCreate(viewer, existing, { title: "Replacement" });
+  action.builder.orchestrator.removeInboundEdge(
+    viewer.viewerID,
+    EdgeType.UserToDocuments,
+  );
+  const created = await action.saveX();
+  expect(created.ownerId).toBe(viewer.viewerID);
+  await expectEdges(viewer, created);
+  const edges = await loadEdges({
+    id1: viewer.viewerID,
+    edgeType: EdgeType.UserToDocuments,
+  });
+  expect(edges.map((edge) => edge.id2)).not.toContain(existing.id);
+});
+
 test("insert-to-edit rejects immutable edit defaults and preserves constructor input", async () => {
   const viewer = await createViewer();
   const existing = await new CreateDocumentActionBase(viewer, {

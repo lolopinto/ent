@@ -487,7 +487,12 @@ export class Orchestrator<
       return endpoints;
     };
     const manualInserts = manualEndpoints(WriteOperation.Insert);
-    const manualRemovals = manualEndpoints(WriteOperation.Delete);
+    // Insert transforms remove explicit edges from the original row. Those
+    // removals cannot override inverse-edge insertions for the new row.
+    const manualRemovals =
+      this.actualOperation === WriteOperation.Insert
+        ? new Set<ID>()
+        : manualEndpoints(WriteOperation.Delete);
     for (const id of removals.keys()) {
       if (retained.has(id) || manualInserts.has(id)) {
         removals.delete(id);
@@ -1264,6 +1269,16 @@ export class Orchestrator<
       });
     }
     if (transformed) {
+      if (
+        transformed.op === SQLStatementOperation.Delete &&
+        this.options.operation !== WriteOperation.Delete
+      ) {
+        // Insert/edit saveX() promises an entity. Reject before building any
+        // dependent changesets instead of deleting and then failing to return it.
+        throw new Error(
+          "cannot transform an insert or edit action into a delete; use a delete action instead",
+        );
+      }
       if (sqlOp === SQLStatementOperation.Insert && sqlOp !== transformed.op) {
         if (!transformed.existingEnt) {
           throw new Error(
@@ -1771,6 +1786,11 @@ export class EntChangeset<
     private builder: Builder<TEnt, TViewer>,
     public readonly placeholderID: ID,
     private conditionalOverride: boolean,
+    /**
+     * Provisional operations until executor() prepares referenced write targets.
+     * After all participating changesets are built, iterate executor() to inspect
+     * prepared operations without executing SQL. Direct reads bypass preparation.
+     */
     public operations: DataOperation<any, TViewer>[],
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],

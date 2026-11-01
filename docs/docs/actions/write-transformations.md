@@ -11,7 +11,25 @@ precedence over the pattern's implementation.
 Transformations run before defaults and field permissions are selected. Returning
 `SQLStatementOperation.Update` with `existingEnt` targets that entity, including
 when the action started as an insert or as an edit of another row. Returning
-`SQLStatementOperation.Delete` deletes the target row.
+`SQLStatementOperation.Delete` is supported only for a delete action.
+
+## Supported transformations
+
+The starting action determines its return contract. Create and edit actions
+return an entity, so transforming them into a delete is rejected before any
+writes or transform-provided changesets are built. Use a delete action to delete
+a row. For these unsupported transformations, `saveX()` throws and `save()`
+returns `null`.
+
+| Starting action | Return `Insert` | Return `Update` | Return `Delete` |
+| --- | --- | --- | --- |
+| Create | Create a new row | Update the supplied `existingEnt` (required) | Rejected |
+| Edit | Create a new row | Update the current or supplied target | Rejected |
+| Delete | Create a new row | Update the current or supplied target | Delete the current or supplied target |
+
+Delete actions retain their `Promise<void>` save contract after transformation.
+If a delete action transforms into an insert or update, use
+`builder.editedEntX()` after saving to read the resulting entity.
 
 ## Transforming to an insert
 
@@ -23,8 +41,8 @@ the transform supplies an `existingEnt` along with `Insert`.
 The original row is not updated or deleted. Edit/Delete hooks retain it through
 `builder.existingEnt`, while generated field accessors and automatic inverse
 edges use the new write target. Explicit edge removals still apply to the
-original row's edges. If privacy fails silently, the action returns the original
-entity.
+original row's edges and do not suppress the new row's automatic inverse edges.
+If privacy fails silently, `builder.editedEnt()` returns the original entity.
 
 Relative numeric expressions require an update; use absolute values for an
 insert.

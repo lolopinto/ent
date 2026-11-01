@@ -608,7 +608,72 @@ function commonTests() {
     expect((await getNewLoader().load(existing.id))?.first_name).toBe("Jon");
   });
 
-  test("an update can transform to a delete", async () => {
+  test.each(
+    [WriteOperation.Insert, WriteOperation.Edit].flatMap((operation) =>
+      (["save", "saveX"] as const).map((method) => ({ operation, method })),
+    ),
+  )("$operation to delete does not write through $method", async ({
+    operation,
+    method,
+  }) => {
+    const existing = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Jon"],
+        ["LastName", "Snow"],
+      ]),
+      undefined,
+    ).saveX();
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      new EntBuilderSchema(User, {
+        fields: { FirstName: StringType(), LastName: StringType() },
+      }),
+      new Map(),
+      operation,
+      operation === WriteOperation.Edit ? existing : null,
+    );
+    const dependent = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Dependent"],
+        ["LastName", "Row"],
+      ]),
+      undefined,
+    ).saveX();
+    const child = new SimpleAction(
+      dependent.viewer,
+      new EntBuilderSchema(User, {
+        fields: { FirstName: StringType(), LastName: StringType() },
+      }),
+      new Map([["FirstName", "Changed"]]),
+      WriteOperation.Edit,
+      dependent,
+    );
+    const changeset = jest.fn(() => child.changeset());
+    const observer = jest.fn();
+    Object.assign(action, {
+      transformWrite: () => ({
+        op: SQLStatementOperation.Delete,
+        existingEnt: existing,
+        changeset,
+      }),
+      getObservers: () => [{ observe: observer }],
+    });
+    if (method === "saveX") {
+      await expect(action.saveX()).rejects.toThrow(
+        /cannot transform an insert or edit action into a delete/,
+      );
+    } else {
+      await expect(action.save()).resolves.toBeNull();
+    }
+    expect((await getNewLoader().load(existing.id))?.first_name).toBe("Jon");
+    expect((await getNewLoader().load(dependent.id))?.first_name).toBe(
+      "Dependent",
+    );
+    expect(changeset).not.toHaveBeenCalled();
+    expect(observer).not.toHaveBeenCalled();
+  });
+
+  test("a delete transformation can keep the delete operation", async () => {
     const existing = await getInsertUserAction(
       new Map([
         ["FirstName", "Jon"],
@@ -623,13 +688,13 @@ function commonTests() {
         fields: { FirstName: StringType(), LastName: StringType() },
       }),
       new Map(),
-      WriteOperation.Edit,
+      WriteOperation.Delete,
       existing,
     );
     Object.assign(action, {
       transformWrite: () => ({ op: SQLStatementOperation.Delete }),
     });
-    await (await action.changeset()).executor().execute();
+    await action.builder.saveX();
     expect(await getNewLoader().load(existing.id)).toBeNull();
   });
 
