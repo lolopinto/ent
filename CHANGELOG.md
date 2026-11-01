@@ -11,6 +11,8 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
+- `CustomClauseQuery` no longer extends `BaseEdgeQuery`; consumers relying on that inheritance or its protected state must migrate. Custom-clause subclasses now override `loadRawData(options)` instead of `loadRawData(infos, options)` (#2049).
+- custom-query privacy uses only an explicit constructor source; GraphQL connection parents do not supply an authorization source (#2049).
 - release `@snowtop/ent` 0.2.16 with the patched YAML parser and refreshed dependencies, and `@snowtop/ent-graphql-tests` 0.1.1 with patched Express; update examples and companion package pins to these releases (#2048).
 - escape JSON member names in query helpers; interpret `$`-prefixed SQLite member names literally instead of as paths (#2053).
 - release `auto_schema` 0.0.42 with Mako 1.4.3 to address template path traversal; update example images to Docker v0.3.14 (#2048).
@@ -19,8 +21,27 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 ### Fixed
 
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
+- enforce custom-query privacy for rows and counts (#2049).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 - bind entity IDs as parameters in Go UPDATE statements (#2052).
+
+### Planned removals in 0.3.0
+
+Remove these methods from `CustomClauseQuery` in 0.3.0 (#2049). They remain
+available until then. Migrate to the single-result methods without map-key
+lookups:
+
+| Method to remove | Replacement |
+| --- | --- |
+| `queryAllEdges()` | `queryEdges()` |
+| `queryAllIDs()` | `queryIDs()` |
+| `queryAllEnts()` | `queryEnts()` |
+| `queryAllCount()` | `queryCount()` |
+| `queryAllRawCount()` | `queryRawCount()` |
+| `paginationInfo()` | `await queryPageInfo()` |
+
+This removal is specific to `CustomClauseQuery`; `BaseEdgeQuery` continues to
+support grouped queries.
 
 ## [0.2.15]
 
