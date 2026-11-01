@@ -87,6 +87,7 @@ export class CustomClauseQuery<
 {
   private clause: Clause;
   private readonly source?: TSource;
+  private readonly resolvedCursorCol: string;
   private readonly pagination: QueryPagination<Data>;
   private filters: RowQueryFilter<Data>[] = [];
   private pageInfo?: PaginationInfo;
@@ -128,6 +129,7 @@ export class CustomClauseQuery<
     let cursorCol = options.primarySortColIsUnique
       ? primarySortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
+    this.resolvedCursorCol = cursorCol;
 
     this.pagination = new QueryPagination(
       {
@@ -171,9 +173,7 @@ export class CustomClauseQuery<
   }
 
   protected getCursorCol(): string {
-    return this.options.primarySortColIsUnique
-      ? (this.options.orderby?.[0].column ?? this.options.sortColumn ?? "id")
-      : (this.options.loadEntOptions.loaderFactory.options?.key ?? "id");
+    return this.resolvedCursorCol;
   }
 
   protected configureEdgeQueryableDataOptions(
@@ -327,6 +327,7 @@ export class CustomClauseQuery<
   }
 
   protected async loadEntsFromEdges(_id: ID, rows: Data[]): Promise<TDest[]> {
+    // Preserve the source-ID argument for existing subclass overrides.
     return applyPrivacyPolicyForRows(
       this.viewer,
       rows,

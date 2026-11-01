@@ -18,6 +18,19 @@ beforeAll(async () => {
 });
 afterAll(async () => db.afterAll());
 
+test("an empty sort column uses the same ID fallback when filtering in memory", async () => {
+  const q = new CustomClauseQuery(user.viewer, {
+    name: "empty-sort-column",
+    clause: Eq("id", user.id),
+    loadEntOptions: FakeUser.loaderOptions(),
+    sortColumn: "",
+    primarySortColIsUnique: true,
+  });
+  // This filter prevents the pagination filter from setting SQL ordering.
+  q.__addCustomFilterBETA({ filter: (_id, rows) => rows });
+  expect(await q.queryIDs()).toEqual([user.id]);
+});
+
 test.each([
   "global",
   "source",

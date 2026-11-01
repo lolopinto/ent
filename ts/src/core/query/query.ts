@@ -176,14 +176,8 @@ export abstract class BaseEdgeQuery<
   private addPaginationFilter(filter: RowQueryFilter<TEdge>) {
     this.filters.push({
       query: filter.query?.bind(filter),
-      filter: (id, edges) => {
-        const rows = filter.filter ? filter.filter(edges) : edges;
-        const pageInfo = filter.paginationInfo?.();
-        if (pageInfo) {
-          this.pagination.set(id, pageInfo);
-        }
-        return rows;
-      },
+      filter: (_id, edges) => (filter.filter ? filter.filter(edges) : edges),
+      paginationInfo: () => filter.paginationInfo?.(),
     });
   }
 

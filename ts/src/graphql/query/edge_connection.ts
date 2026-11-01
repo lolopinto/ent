@@ -1,9 +1,5 @@
 import { Data, Ent, ID, Viewer } from "../../core/base";
-import {
-  ConnectionQuery,
-  EdgeQuery,
-  PaginationInfo,
-} from "../../core/query/query";
+import { EdgeQuery, PaginationInfo } from "../../core/query/query";
 
 import { emptyPaginationInfo } from "../../core/query/pagination";
 
@@ -123,7 +119,7 @@ export class GraphQLEdgeConnection<
   }
 
   async queryTotalCount() {
-    return (await this.getConnectionQuery()).queryRawCount();
+    return (await this.query).queryRawCount();
   }
 
   async queryEdges() {
@@ -136,19 +132,28 @@ export class GraphQLEdgeConnection<
   // if nodes queried just return ents
   // unlikely to query nodes and pageInfo so we just load this separately for now
   async queryNodes() {
-    return (await this.getConnectionQuery()).queryEnts();
-  }
-
-  private async getConnectionQuery(): Promise<ConnectionQuery<Ent, TEdge>> {
-    return asConnectionQuery(await this.query, this.source?.id);
+    return (await this.query).queryEnts();
   }
 
   async queryPageInfo(): Promise<PaginationInfo> {
-    return (await this.getConnectionQuery()).queryPageInfo();
+    const query = await this.query;
+    if (query.queryPageInfo) {
+      return query.queryPageInfo();
+    }
+    // Support third-party EdgeQuery implementations with grouped page info.
+    await query.queryEdges();
+    const pages = query.paginationInfo();
+    if (this.source) {
+      return pages.get(this.source.id) ?? emptyPaginationInfo();
+    }
+    if (pages.size > 1) {
+      throw new Error("Query has more than one item yet no source was given");
+    }
+    return pages.values().next().value ?? emptyPaginationInfo();
   }
 
   private async queryData() {
-    const query = await this.getConnectionQuery();
+    const query = await this.query;
     const [edges, ents] = await Promise.all([
       // TODO need a test that this will only fetch edges once
       // and then fetch ents afterward
@@ -173,39 +178,4 @@ export class GraphQLEdgeConnection<
     }
     this.results = results;
   }
-}
-
-// Preserve the public EdgeQuery factory/.query/modifyQuery surface for existing
-// callers. Internally, a connection only reads one result and one page of it.
-// The map fallback supports third-party EdgeQuery implementations predating the
-// singular accessor; it never assigns an authorization source to a query.
-function asConnectionQuery<TSource extends Ent, TEdge extends Data>(
-  query: EdgeQuery<TSource, Ent, TEdge>,
-  parentID?: ID,
-): ConnectionQuery<Ent, TEdge> {
-  return {
-    queryEdges: () => query.queryEdges(),
-    queryEnts: () => query.queryEnts(),
-    queryIDs: () => query.queryIDs(),
-    queryCount: () => query.queryCount(),
-    queryRawCount: () => query.queryRawCount(),
-    dataToID: (row) => query.dataToID(row),
-    getCursor: (row) => query.getCursor(row),
-    first: (n, cursor) => asConnectionQuery(query.first(n, cursor), parentID),
-    last: (n, cursor) => asConnectionQuery(query.last(n, cursor), parentID),
-    queryPageInfo: async () => {
-      if (query.queryPageInfo) {
-        return query.queryPageInfo();
-      }
-      await query.queryEdges();
-      const pages = query.paginationInfo();
-      if (parentID !== undefined) {
-        return pages.get(parentID) ?? emptyPaginationInfo();
-      }
-      if (pages.size > 1) {
-        throw new Error("Query has more than one item yet no source was given");
-      }
-      return pages.values().next().value ?? emptyPaginationInfo();
-    },
-  };
 }

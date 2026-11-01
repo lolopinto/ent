@@ -11,6 +11,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
+- `CustomClauseQuery` no longer extends `BaseEdgeQuery`; consumers relying on that inheritance or its protected state must migrate. Custom-clause subclasses now override `loadRawData(options)` instead of `loadRawData(infos, options)` (#2049).
 - custom-query privacy uses only an explicit constructor source; GraphQL connection parents do not supply an authorization source (#2049).
 - release `@snowtop/ent` 0.2.16 with the patched YAML parser and refreshed dependencies, and `@snowtop/ent-graphql-tests` 0.1.1 with patched Express; update examples and companion package pins to these releases (#2048).
 - escape JSON member names in query helpers; interpret `$`-prefixed SQLite member names literally instead of as paths (#2053).
