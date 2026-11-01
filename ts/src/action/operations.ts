@@ -71,6 +71,8 @@ export interface DataOperation<
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
+  // Invalidate transaction-scoped results when a write does not commit.
+  onRollback?(): void;
 }
 
 export class DeleteNodeOperation<
@@ -1019,6 +1021,10 @@ export class ConditionalOperation<
       return this.op.updatedOperation();
     }
     return null;
+  }
+
+  onRollback(): void {
+    this.op.onRollback?.();
   }
 
   resolve(executor: Executor): void {

@@ -1751,7 +1751,14 @@ export class Orchestrator<
         conditionalOverride,
       );
     }
-    this.resultOp = ops[0];
+    const resultOp = (this.resultOp = ops[0]);
+    if (processOps && this.actualOperation !== WriteOperation.Delete) {
+      resultOp.onRollback = () => {
+        if (this.resultOp === resultOp) {
+          this.resultOp = undefined;
+        }
+      };
+    }
 
     // TODO throw if we try and create a new changeset after previously creating one
 
@@ -1764,8 +1771,8 @@ export class Orchestrator<
       this.options.builder.placeholderID,
       conditionalOverride,
       ops,
-      this.dependencies,
-      this.changesets,
+      processOps ? this.dependencies : new Map(),
+      processOps ? this.changesets : [],
       this.options,
       prepareOperations,
     );

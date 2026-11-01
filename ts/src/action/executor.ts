@@ -369,6 +369,9 @@ export async function executeOperations(
   const client = await DB.getInstance().getNewClient();
 
   const operations: DataOperation<Ent>[] = [];
+  const rollbackOperations = new Set<DataOperation<Ent>>();
+  let transactionStarted = false;
+  let committed = false;
   try {
     if (executor.preFetch) {
       await executor.preFetch(client, context);
@@ -379,6 +382,9 @@ export async function executeOperations(
         for (const operation of executor) {
           if (operation.shortCircuit && operation.shortCircuit(executor)) {
             continue;
+          }
+          if (operation.onRollback) {
+            rollbackOperations.add(operation);
           }
           if (trackOps) {
             operations.push(operation);
@@ -392,9 +398,13 @@ export async function executeOperations(
     } else {
       logQuery("BEGIN", []);
       await client.query("BEGIN");
+      transactionStarted = true;
       for (const operation of executor) {
         if (operation.shortCircuit && operation.shortCircuit(executor)) {
           continue;
+        }
+        if (operation.onRollback) {
+          rollbackOperations.add(operation);
         }
 
         if (trackOps) {
@@ -410,18 +420,28 @@ export async function executeOperations(
       logQuery("COMMIT", []);
       await client.query("COMMIT");
     }
+    committed = true;
 
     if (executor.postFetch) {
       await executor.postFetch(client, context);
     }
     client.release();
   } catch (e) {
-    if (!isSyncClient(client)) {
-      // TODO these changes break tests
-      logQuery("ROLLBACK", []);
-      await client.query("ROLLBACK");
+    // Invalidate before attempting ROLLBACK, which can itself fail. Once a
+    // commit completes, postFetch/release failures must preserve saved IDs.
+    if (!committed) {
+      for (const operation of rollbackOperations) {
+        operation.onRollback?.();
+      }
     }
-    client.release(e);
+    try {
+      if (!committed && transactionStarted && !isSyncClient(client)) {
+        logQuery("ROLLBACK", []);
+        await client.query("ROLLBACK");
+      }
+    } finally {
+      client.release(e);
+    }
     log("error", e);
     throw e;
   }

@@ -101,6 +101,10 @@ row returned by an upsert conflict. After a silently denied Edit/Delete-to-Inser
 save, it returns the original entity's ID. A later validation or save retry uses
 the planned transformed write target again.
 
+If the transaction rolls back, `getEntID()` returns the planned ID again. An
+error after a successful commit, such as a post-fetch or returned-entity privacy
+failure, does not undo the write or discard its saved ID.
+
 A scalar ID read before a transformation does not change afterward. Pass the
 builder itself as a field value when another write should reference its final
 row; see [Write transformations](/docs/actions/write-transformations#referencing-the-resulting-row).

@@ -57,6 +57,10 @@ If privacy fails silently, `builder.editedEnt()` returns the original entity and
 `builder.getEntID()` returns its ID. A later retry still follows the insert
 transformation.
 
+Silent denial also skips the transform-provided changeset and its descendants,
+including their observers. A later allowed retry can execute those prepared
+changesets. Other authorized actions in the same transaction still run.
+
 Relative numeric expressions require an update; use absolute values for an
 insert.
 

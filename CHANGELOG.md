@@ -11,6 +11,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Changed
 
+- make Insert/Edit-to-Delete transform rejections explicit before dependent changesets or writes; use a delete action instead (#2056).
 - transformations to insert create a new row while preserving the original entity in Edit/Delete hooks. Regenerate builders with `tsent codegen --write-all` to update field and ID accessors (#2056).
 - `CustomClauseQuery` no longer extends `BaseEdgeQuery`; consumers relying on that inheritance or its protected state must migrate. Custom-clause subclasses now override `loadRawData(options)` instead of `loadRawData(infos, options)` (#2049).
 - custom-query privacy uses only an explicit constructor source; GraphQL connection parents do not supply an authorization source (#2049).
@@ -21,10 +22,10 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- select field permissions after write transformations and reconcile inverse edges against referenced builders' final write targets. Silent privacy denial preserves the original entity and its ID when an edit or delete transforms into an insert (#2056).
-- reject Insert/Edit-to-Delete transformations before writes, preserving action return contracts; preserve explicit old-row edge removals and new-row inverse edges when an edit transforms into an insert, including removals when an upsert returns the original row (#2056).
+- select field permissions after write transformations and reconcile inverse edges against referenced builders' final write targets. Silent privacy denial skips transform-provided child changesets and preserves the original entity and its ID when an edit or delete transforms into an insert (#2056).
+- preserve explicit old-row edge removals and new-row inverse edges when an edit transforms into an insert, including removals when an upsert returns the original row (#2056).
 - skip conditional changesets, including deletes and their descendants, edges, and dependent observers when an insert encounters an upsert conflict, including transformed inserts; preserve trigger cleanup writes before physical deletion (#2056).
-- return the saved row's ID from `getEntID()` after an upsert conflict and keep automatic inverse edges for builder-valued fields consistent with that row (#2056).
+- return the saved row's ID from `getEntID()` after an upsert conflict, discard that ID override on rollback, and keep automatic inverse edges for builder-valued fields consistent with that row (#2056).
 - apply transformed write targets before building transform-provided changesets, so their edges attach to the resulting row (#2056).
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - enforce custom-query privacy for rows and counts (#2049).
