@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "./cache_utils";
 import {
   PrivacyPolicy,
   ID,
@@ -1202,7 +1203,9 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
       expect(ml.logs.length).toBe(ids.length);
       expect(ml.logs).toStrictEqual(
         ids.map((id) => ({
-          "ent-cache-hit": `idViewer:2:${opts.loaderFactory.name}:${id}`,
+          "ent-cache-hit": cacheDiagnosticKey(
+            `idViewer:2:${opts.loaderFactory.name}:${id}`,
+          ),
         })),
       );
     });
@@ -1242,7 +1245,9 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
       expect(ml.logs.length).toBe(6);
       expect(ml.logs.slice(0, 5)).toStrictEqual(
         even.map((id) => ({
-          "ent-cache-hit": `idViewer:2:${opts.loaderFactory.name}:${id}`,
+          "ent-cache-hit": cacheDiagnosticKey(
+            `idViewer:2:${opts.loaderFactory.name}:${id}`,
+          ),
         })),
       );
       expect(ml.logs[5].query).toMatch(/SELECT \* FROM users WHERE id IN/);
@@ -1280,7 +1285,9 @@ function commonTests(opts: LoadCustomEntOptions<User, Viewer, DataRow>) {
       expect(ml.logs.length).toBe(6);
       expect(ml.logs.slice(0, 5)).toStrictEqual(
         even.map((id) => ({
-          "ent-cache-hit": `idViewer:2:${opts.loaderFactory.name}:${id}`,
+          "ent-cache-hit": cacheDiagnosticKey(
+            `idViewer:2:${opts.loaderFactory.name}:${id}`,
+          ),
         })),
       );
       expect(ml.logs[5].query).toMatch(/SELECT \* FROM users WHERE id IN/);

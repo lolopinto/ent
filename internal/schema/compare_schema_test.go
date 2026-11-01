@@ -2,6 +2,7 @@ package schema_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/lolopinto/ent/ent"
@@ -4236,4 +4237,38 @@ func verifyChange(t *testing.T, expChange, change change.Change) {
 	assert.Equal(t, expChange.TSOnly, change.TSOnly)
 	assert.Equal(t, expChange.ExtraInfo, change.ExtraInfo)
 	assert.Equal(t, expChange.WriteAllForNode, change.WriteAllForNode)
+}
+
+func TestCompareFieldWriteRestrictions(t *testing.T) {
+	for _, property := range []string{"dbOnly", "immutable"} {
+		for _, pattern := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/pattern=%t", property, pattern), func(t *testing.T) {
+				build := func(enabled bool) *schema.Schema {
+					f := &input.Field{Name: "secret", Nullable: true, Type: &input.FieldType{DBType: input.String}, DBOnly: property == "dbOnly" && enabled, Immutable: property == "immutable" && enabled}
+					in := &input.Schema{Nodes: map[string]*input.Node{"User": {Fields: []*input.Field{{Name: "id", Type: &input.FieldType{DBType: input.UUID}, PrimaryKey: true}, f}}}}
+					if pattern {
+						f.PatternName = "restricted"
+						in.Nodes["User"].Patterns = []string{"restricted"}
+						in.Patterns = map[string]*input.Pattern{"restricted": {Name: "restricted", Fields: []*input.Field{f}}}
+					}
+					s, err := schema.ParseFromInputSchema(&codegenapi.DummyConfig{}, in, base.TypeScript)
+					require.NoError(t, err)
+					return s
+				}
+				for _, transition := range [][2]bool{{false, true}, {true, false}, {false, false}, {true, true}} {
+					changes, err := schema.CompareSchemas(build(transition[0]), build(transition[1]))
+					require.NoError(t, err)
+					if transition[0] == transition[1] {
+						require.Empty(t, changes)
+						continue
+					}
+					require.Contains(t, changes["User"], change.Change{Change: change.ModifyField, Name: "secret"})
+					require.Contains(t, changes["User"], change.Change{Change: change.ModifyNode, Name: "User", GraphQLName: "User"})
+					if pattern {
+						require.Contains(t, changes["restricted"], change.Change{Change: change.ModifyPattern, Name: "restricted"})
+					}
+				}
+			})
+		}
+	}
 }

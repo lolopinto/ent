@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "../cache_utils";
 import { TestContext } from "../../testutils/context/test_context";
 import { setLogLevels } from "../logger";
 import { MockLogs } from "../../testutils/mock_log";
@@ -658,7 +659,7 @@ function commonTests() {
     // cache hit for each id
     ml.logs.forEach((log, idx) => {
       expect(log).toStrictEqual({
-        "dataloader-cache-hit": ids[idx],
+        "dataloader-cache-hit": cacheDiagnosticKey(ids[idx]),
         tableName: "fake_events",
       });
     });
@@ -869,7 +870,7 @@ function commonTests() {
           limit: 1,
         });
         expect(log).toStrictEqual({
-          "cache-hit": cacheKey,
+          "cache-hit": cacheDiagnosticKey(cacheKey),
           tableName: "fake_events",
         });
         return;

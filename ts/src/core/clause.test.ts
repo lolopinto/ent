@@ -1,3 +1,4 @@
+import Database from "better-sqlite3";
 import { v1 } from "uuid";
 import * as clause from "./clause";
 import { loadConfig } from "./config";
@@ -1085,9 +1086,13 @@ describe("postgres", () => {
         keyInList === clause.JSONBKeyInList
           ? "jsonb_array_elements"
           : "json_array_elements";
+      const element =
+        keyInList === clause.JSONBKeyInList
+          ? "json_element"
+          : "json_element::jsonb";
       for (const idx of [1, 7]) {
         expect(cls.clause(idx, "c")).toBe(
-          `c.owner_id = $${idx} AND EXISTS (SELECT 1 FROM ${arrayFunction}(c.tags) AS json_element WHERE json_element ? $${idx + 1} AND json_element->>'value' = $${idx + 2}) AND (c.favorite = $${idx + 3} OR EXISTS (SELECT 1 FROM ${arrayFunction}(c.tags) AS json_element WHERE json_element ? $${idx + 4} AND json_element->>'value' = $${idx + 5})) AND c.archived = $${idx + 6}`,
+          `c.owner_id = $${idx} AND EXISTS (SELECT 1 FROM ${arrayFunction}(c.tags) AS json_element WHERE ${element} ? $${idx + 1} AND json_element->>'value' = $${idx + 2}) AND (c.favorite = $${idx + 3} OR EXISTS (SELECT 1 FROM ${arrayFunction}(c.tags) AS json_element WHERE ${element} ? $${idx + 4} AND json_element->>'value' = $${idx + 5})) AND c.archived = $${idx + 6}`,
         );
       }
       expect(cls.values()).toEqual([
@@ -2800,6 +2805,35 @@ describe("postgres", () => {
 });
 
 describe("sqlite", () => {
+  test.each([
+    "O'Brien",
+    "x' OR 1=1 --",
+    "back\\slash'quote",
+    "$.not.a.path",
+    'double"quote',
+    "雪☃",
+  ])("JSON member literals preserve %s", (key) => {
+    const db = new Database(":memory:");
+    try {
+      for (const fn of [
+        clause.JSONObjectFieldKeyAsText,
+        clause.JSONObjectFieldKeyASJSON,
+      ]) {
+        const expression = fn("?", key);
+        const row = db
+          .prepare(`SELECT ${expression} AS value`)
+          .get(JSON.stringify({ [key]: "matched" })) as { value: string };
+        expect(row.value).toBe(
+          fn === clause.JSONObjectFieldKeyASJSON
+            ? JSON.stringify("matched")
+            : "matched",
+        );
+      }
+    } finally {
+      db.close();
+    }
+  });
+
   beforeAll(() => {
     // specify dialect as sqlite
     const connStr = `sqlite:///`;

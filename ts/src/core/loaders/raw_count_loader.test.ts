@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "../cache_utils";
 import { RawCountLoader, RawCountLoaderFactory } from "./raw_count_loader";
 import { v4 as uuidv4 } from "uuid";
 
@@ -103,7 +104,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     // This is not the best
     expect(ml.logs[1]).toStrictEqual({
-      "dataloader-cache-hit": user.id,
+      "dataloader-cache-hit": cacheDiagnosticKey(user.id),
       tableName: "fake_contacts",
     });
 
@@ -134,7 +135,7 @@ function commonTests() {
     expect(ml.logs.length).toBe(2);
     // This is not the best
     expect(ml.logs[1]).toStrictEqual({
-      "dataloader-cache-hit": id,
+      "dataloader-cache-hit": cacheDiagnosticKey(id),
       tableName: "fake_contacts",
     });
     ml.verifyNoErrors();
@@ -427,7 +428,7 @@ function verifyGroupedCacheHit(ids: ID[]) {
   // cache hit for each id
   ml.logs.forEach((log, idx) => {
     expect(log).toStrictEqual({
-      "dataloader-cache-hit": ids[idx],
+      "dataloader-cache-hit": cacheDiagnosticKey(ids[idx]),
       tableName: "fake_contacts",
     });
   });

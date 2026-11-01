@@ -1057,3 +1057,45 @@ test("join on multiple", async () => {
   const contact_infos2 = r.rows;
   expect(contact_infos).toStrictEqual(contact_infos2);
 });
+
+test.each([
+  "O'Brien",
+  "x' = 'x' OR true --",
+  "back\\slash'quote",
+  "雪☃",
+])("JSON member helpers treat %s as data", async (key) => {
+  const client = tdb.getPostgresClient();
+  for (const standard of ["on", "off"]) {
+    await client.query(`SET standard_conforming_strings = ${standard}`);
+    try {
+      for (const fn of [
+        clause.JSONObjectFieldKeyASJSON,
+        clause.JSONObjectFieldKeyAsText,
+      ]) {
+        const expression = fn("$1::jsonb", key);
+        const result = await client.query(`SELECT ${expression} AS value`, [
+          JSON.stringify({ [key]: "matched" }),
+        ]);
+        expect(result.rows).toEqual([{ value: "matched" }]);
+      }
+      for (const [fn, type] of [
+        [clause.JSONBKeyInList, "jsonb"],
+        [clause.JSONKeyInList, "json"],
+      ] as const) {
+        const predicate = fn(`$1::${type}`, key, "matched");
+        const result = await client.query(
+          `SELECT ${predicate.clause(2)} AS matched`,
+          [JSON.stringify([{ [key]: "matched" }]), ...predicate.values()],
+        );
+        expect(result.rows).toEqual([{ matched: true }]);
+        const absent = await client.query(
+          `SELECT ${predicate.clause(2)} AS matched`,
+          [JSON.stringify([{ other: "matched" }]), ...predicate.values()],
+        );
+        expect(absent.rows).toEqual([{ matched: false }]);
+      }
+    } finally {
+      await client.query("SET standard_conforming_strings = on");
+    }
+  }
+});

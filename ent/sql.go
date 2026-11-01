@@ -144,12 +144,12 @@ func (s *sqlBuilder) buildUpdateQuery() (string, []interface{}, error) {
 	}
 
 	query := fmt.Sprintf(
-		"UPDATE %s SET %s WHERE %s = '%s' RETURNING *",
+		"UPDATE %s SET %s WHERE %s = ? RETURNING *",
 		s.tableName,
 		strings.Join(valsString, ", "),
 		getPrimaryKeyForObj(s.existingEnt),
-		s.existingEnt.GetID(),
 	)
+	vals = append(vals, s.existingEnt.GetID())
 	return query, vals, nil
 }
 

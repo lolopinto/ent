@@ -235,6 +235,7 @@ func (s *Step) processPattern(processor *codegen.Processor, pattern *schema.Patt
 			case change.AddPattern, change.ModifyPattern:
 				if pattern.HasMixin() {
 					opts.writeMixin = true
+					opts.writeMixinBase = true
 				}
 				if pattern.HasBuilder() {
 					opts.writeBuilder = true

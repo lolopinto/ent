@@ -50,6 +50,16 @@ function getEffectiveOptions(
   };
 }
 
+function getBatchConfiguration(options: EdgeQueryableDataOptions = {}) {
+  const effective = getEffectiveOptions(options);
+  return {
+    limit: effective.limit,
+    orderby: getOrderByKey(effective.orderby ?? getDefaultOrderBy()),
+    disableTransformations: effective.disableTransformations,
+    clause: effective.clause?.instanceKey(),
+  };
+}
+
 function createLoader<T extends AssocEdge>(
   options: EdgeQueryableDataOptions,
   edgeType: string,
@@ -125,7 +135,10 @@ function createLoader<T extends AssocEdge>(
       return result;
     },
     loaderOptions,
-    edgeData.edgeTable,
+    {
+      tableName: edgeData.edgeTable,
+      identity: () => getBatchConfiguration(options),
+    },
   );
 }
 
@@ -240,7 +253,10 @@ export class AssocDirectEdgeLoader<T extends AssocEdge>
           tableName: edgeData.edgeTable,
         }),
       },
-      edgeData.edgeTable,
+      {
+        tableName: edgeData.edgeTable,
+        identity: () => getBatchConfiguration(this.options),
+      },
     );
     return this.loader;
   }

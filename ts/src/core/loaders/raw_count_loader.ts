@@ -63,7 +63,7 @@ export function createCountDataLoader<K extends any>(
   const loaderName = options.groupCol
     ? `rawCountLoader:${options.tableName}:${options.groupCol}`
     : options.clause
-      ? `rawCountLoader:${options.tableName}:${options.clause.instanceKey()}`
+      ? `rawCountLoader:${options.tableName}:clause`
       : `rawCountLoader:${options.tableName}`;
   const loaderOptions: DataLoader.Options<K, number> = {
     maxBatchSize: getLoaderMaxBatchSize(),
@@ -119,7 +119,14 @@ export function createCountDataLoader<K extends any>(
       return result;
     },
     loaderOptions,
-    options.tableName,
+    {
+      tableName: options.tableName,
+      identity: () => ({
+        groupCol: options.groupCol,
+        groupColType: options.groupColType || "uuid",
+        clause: options.clause?.instanceKey(),
+      }),
+    },
   );
 }
 

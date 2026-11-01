@@ -1,3 +1,4 @@
+import { cacheDiagnosticKey } from "./cache_utils";
 import {
   Context,
   CreateRowOptions,
@@ -42,7 +43,7 @@ import {
   InstrumentedDataLoader,
   getLoaderMaxBatchSize,
 } from "./loaders/loader";
-import { log, logEnabled, logTrace } from "./logger";
+import { log, logIf, logEnabled, logTrace } from "./logger";
 import {
   OrderBy,
   buildQueryData,
@@ -64,9 +65,9 @@ class entCacheMap<TViewer extends Viewer, TEnt extends Ent<TViewer>> {
     const ret = this.m.get(id);
     if (this.logEnabled && ret) {
       const key = getEntKey(this.viewer, id, this.options);
-      log("cache", {
-        "ent-cache-hit": key,
-      });
+      logIf("cache", () => ({
+        "ent-cache-hit": cacheDiagnosticKey(key),
+      }));
     }
     return ret;
   }
@@ -151,12 +152,23 @@ export function getEntLoaderPrivacyConcurrencyLimit() {
   return entLoaderPrivacyConcurrencyLimit;
 }
 
+function missingEntError<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
+  options: LoadEntOptions<TEnt, TViewer>,
+): Error {
+  const factory = options.loaderFactory;
+  // Any lookup value, including an ID, may be sensitive. Omit it and identify
+  // clause-specific factories without exposing the secret-bearing factory name.
+  return new Error(
+    `${factory.options.tableName}:${factory.options.key}: couldn't find row for supplied value (lookup ${cacheDiagnosticKey(factory.name)})`,
+  );
+}
+
 function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
   viewer: TViewer,
   options: LoadEntOptions<TEnt, TViewer>,
   map: entCacheMap<TViewer, TEnt>,
 ): DataLoader<ID, TEnt | ErrorWrapper> {
-  const loaderName = `entLoader:${options.loaderFactory.name}`;
+  const loaderName = `entLoader:${options.loaderFactory.options.tableName}:${options.loaderFactory.options.key}`;
   const tableName = options.loaderFactory.options?.tableName;
   // share the cache across loaders even if we create a new instance
   const loaderOptions: DataLoader.Options<any, any> = {
@@ -180,7 +192,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       return mapWithConcurrency(
         rows,
         getEntLoaderPrivacyConcurrencyLimit(),
-        async (row, idx) => {
+        async (row) => {
           // db error
           if (rowIsError(row)) {
             if (row instanceof Error) {
@@ -190,16 +202,7 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
             return new Error(row.message);
           }
           if (!row) {
-            if (tableName) {
-              return new ErrorWrapper(
-                new Error(
-                  `couldn't find row for value ${keys[idx]} in table ${tableName}`,
-                ),
-              );
-            }
-            return new ErrorWrapper(
-              new Error(`couldn't find row for value ${keys[idx]}`),
-            );
+            return new ErrorWrapper(missingEntError(options));
           }
 
           const r = await applyPrivacyPolicyForRowImpl(viewer, options, row);
@@ -211,7 +214,11 @@ function createEntLoader<TEnt extends Ent<TViewer>, TViewer extends Viewer>(
       );
     },
     loaderOptions,
-    tableName,
+    {
+      tableName,
+      identity: () =>
+        `ent-loader:${viewer.instanceKey()}:${options.loaderFactory.name}`,
+    },
   );
 }
 
@@ -391,10 +398,7 @@ export async function loadEntXViaKey<
     .createLoader(viewer.context)
     .load(key);
   if (!row) {
-    // todo make this better
-    throw new Error(
-      `${options.loaderFactory.name}: couldn't find row for value ${key}`,
-    );
+    throw missingEntError(options);
   }
   const r = await applyPrivacyPolicyForRowAndStoreInEntLoader(
     viewer,
@@ -867,7 +871,7 @@ export async function loadRowX(options: LoadRowOptions): Promise<Data> {
     throw new Error(
       `couldn't find row for query ${options.clause.clause(
         1,
-      )} with values ${options.clause.values()}`,
+      )} with values ${options.clause.logValues()}`,
     );
   }
   return result;
@@ -1328,7 +1332,6 @@ function encodeCursorPayload(json: string): string {
 export function decodeCursorPayload(encoded: string): string {
   return Buffer.from(encoded, "base64").toString("utf8");
 }
-
 
 // TODO eventually update this for sortCol time unique keys
 export function getCursor(opts: cursorOptions) {

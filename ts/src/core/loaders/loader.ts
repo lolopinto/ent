@@ -1,6 +1,7 @@
+import { cacheDiagnosticKey, stableStringify } from "../cache_utils";
 import DataLoader from "dataloader";
 import { Loader, LoaderFactory, Context, DataOptions } from "../base";
-import { log, logEnabled } from "../logger";
+import { logIf, logEnabled } from "../logger";
 import { getOnDataLoaderBatch, getOnDataLoaderCacheHit } from "../metrics";
 
 const DEFAULT_MAX_BATCH_SIZE = 1000;
@@ -49,7 +50,10 @@ export function getLoader<K, V>(
 ): Loader<K, V> {
   // just create a new one every time if no context cache
   if (!context?.cache) {
-    log("debug", `new loader created for ${factory.name}`);
+    logIf(
+      "debug",
+      () => `new loader created for ${cacheDiagnosticKey(factory.name)}`,
+    );
     return create();
   }
 
@@ -64,7 +68,7 @@ export function getCustomLoader<K, V>(
 ): Loader<K, V> {
   // just create a new one every time if no context cache
   if (!context?.cache) {
-    log("debug", `new loader created for ${key}`);
+    logIf("debug", () => `new loader created for ${cacheDiagnosticKey(key)}`);
     return create();
   }
 
@@ -102,7 +106,7 @@ function instrumentCacheMap<K, V>(
         if (hook) {
           hook({
             tableName,
-            key: cacheKeyFn ? cacheKeyFn(key) : key,
+            key: cacheDiagnosticKey(cacheKeyFn ? cacheKeyFn(key) : key),
           });
         }
       }
@@ -120,31 +124,66 @@ function instrumentCacheMap<K, V>(
   };
 }
 
+export type LoaderIdentity =
+  | string
+  | Record<string, string | number | boolean | null | undefined>;
+
+export type LoaderMetricsOptions<K> = {
+  tableName?: string;
+  cacheKeyFn?: (key: K) => unknown;
+  // Full logical configuration, never emitted directly. Returning undefined
+  // omits loaderId when no stable logical identity is available.
+  identity?: () => LoaderIdentity | undefined;
+};
+
+// Encode and hash the configuration supplied by each loader. The constructor
+// below computes this lazily and memoizes the result per loader instance.
+function batchIdentity(
+  loaderName: string,
+  options: LoaderMetricsOptions<unknown>,
+) {
+  const configuration = options.identity ? options.identity() : loaderName;
+  return configuration === undefined
+    ? {}
+    : {
+        loaderId: cacheDiagnosticKey(
+          stableStringify({ loaderName, configuration }),
+        ),
+      };
+}
+
 export class InstrumentedDataLoader<K, V> extends DataLoader<K, V> {
   constructor(
+    // Callers must supply a stable label without query values or other sensitive
+    // data: it is emitted without redaction.
     loaderName: string,
     batchLoadFn: BatchLoadFn<K, V>,
     options: DataLoader.Options<K, V>,
-    tableName?: string,
+    metricsOrTableName?: LoaderMetricsOptions<K> | string,
+    // Legacy positional argument, used only when metricsOrTableName is a string
+    // or undefined. With an options object, set its cacheKeyFn instead; this
+    // positional argument is ignored.
     cacheKeyFn?: (key: K) => unknown,
   ) {
+    const metrics =
+      typeof metricsOrTableName === "string" || metricsOrTableName === undefined
+        ? { tableName: metricsOrTableName, cacheKeyFn }
+        : metricsOrTableName;
+    let identity: { loaderId?: string } | undefined;
     const wrappedBatchFn: BatchLoadFn<K, V> = async (keys) => {
       if (keys.length) {
         const hook = getOnDataLoaderBatch();
         if (hook) {
-          hook({
-            loaderName,
-            batchSize: keys.length,
-          });
+          identity ??= batchIdentity(loaderName, metrics);
+          hook({ loaderName, ...identity, batchSize: keys.length });
         }
       }
       return batchLoadFn(keys);
     };
-
     const cacheMap = instrumentCacheMap(
       options.cacheMap,
-      tableName,
-      cacheKeyFn,
+      metrics.tableName,
+      metrics.cacheKeyFn,
     );
     const loaderOptions =
       cacheMap === options.cacheMap ? options : { ...options, cacheMap };
@@ -239,14 +278,11 @@ export class CacheMap<K, V> implements CacheMapLike<K, V> {
   get(key: K) {
     const ret = this.m.get(key);
     if (ret) {
-      // should this be debug?
-      // might be a lot?
-      // TODO this is not the best log format
-      // was designed for ObjectLoader time. Now we have different needs e.g. count, assoc etc
-      log("cache", {
-        "dataloader-cache-hit": key,
+      // Keep cache keys opaque: raw keys can contain sensitive lookup values.
+      logIf("cache", () => ({
+        "dataloader-cache-hit": cacheDiagnosticKey(key),
         tableName: this.options.tableName,
-      });
+      }));
     }
     return ret;
   }
