@@ -46,6 +46,7 @@ const contactSchema = getBuilderSchemaFromFields(
 const assignmentSchema = getBuilderSchemaFromFields(
   {
     name: StringType(),
+    conflict_key: StringType({ nullable: true, unique: true }),
     owner_id: UUIDType({ nullable: true, disableUserEditable: true }),
     second_owner_id: UUIDType({ nullable: true, disableUserEditable: true }),
     default_owner_id: UUIDType({
@@ -923,6 +924,72 @@ test.each([
   expect((await raw(ent.id))!.owner_id).toBe(a.id);
   expect(await rows(ent)).toEqual([]);
   expect(await rows(created)).toEqual(expectedRows(a.id));
+});
+
+test.each(
+  [WriteOperation.Edit, WriteOperation.Delete].flatMap((operation) =>
+    ["original", "other", "new"].flatMap((target) =>
+      [false, true].map((update) => ({ operation, target, update })),
+    ),
+  ),
+)("source upsert preserves manual removals ($operation, $target, update=$update)", async ({
+  operation,
+  target,
+  update,
+}) => {
+  const original = await create({ conflict_key: "original", owner_id: a.id });
+  const other =
+    target === "other"
+      ? await create({ conflict_key: "other", owner_id: a.id })
+      : undefined;
+  const action = new FieldAction(
+    { name: "replacement", conflict_key: target, owner_id: a.id },
+    original,
+    operation,
+  );
+  Object.assign(action, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  action.builder.orchestrator.setOnConflictOptions({
+    onConflictCols: ["conflict_key"],
+    updateCols: update ? ["owner_id"] : undefined,
+  });
+  action.builder.orchestrator.removeInboundEdge(a.id, ownerEdge);
+  const saved = await action.saveX();
+  if (target === "original") {
+    expect(saved.id).toBe(original.id);
+  } else if (other) {
+    expect(saved.id).toBe(other.id);
+  } else {
+    expect(saved.id).not.toBe(original.id);
+  }
+  expect((await raw(saved.id))!.owner_id).toBe(a.id);
+  expect(await rows(original)).toEqual([]);
+  if (target !== "original") {
+    expect(await rows(saved)).toEqual(expectedRows(a.id));
+  }
+});
+
+test("an explicit original insert ID keeps manual edge removal precedence", async () => {
+  const original = await create({ conflict_key: "original", owner_id: a.id });
+  const action = new FieldAction(
+    {
+      id: original.id,
+      name: "replacement",
+      conflict_key: "original",
+      owner_id: a.id,
+    },
+    original,
+  );
+  Object.assign(action, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  action.builder.orchestrator.setOnConflictOptions({
+    onConflictCols: ["conflict_key"],
+  });
+  action.builder.orchestrator.removeInboundEdge(a.id, ownerEdge);
+  expect((await action.saveX()).id).toBe(original.id);
+  expect(await rows(original)).toEqual([]);
 });
 
 test.each([

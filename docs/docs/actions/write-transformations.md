@@ -49,7 +49,9 @@ the transform supplies an `existingEnt` along with `Insert`.
 The original row is not updated or deleted. Edit/Delete hooks retain it through
 `builder.existingEnt`, while generated field accessors and automatic inverse
 edges use the new write target. Explicit edge removals still apply to the
-original row's edges and do not suppress the new row's automatic inverse edges.
+original row's edges and do not suppress a different row's automatic inverse
+edges. If an upsert returns the original row, explicit removals take precedence
+over automatic inverse-edge insertions on that row.
 If privacy fails silently, `builder.editedEnt()` returns the original entity and
 `builder.getEntID()` returns its ID. A later retry still follows the insert
 transformation.

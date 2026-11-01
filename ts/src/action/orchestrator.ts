@@ -489,6 +489,7 @@ export class Orchestrator<
   private fieldEdgeChanges(
     edgeType: string,
     endpointID: (id: ID | Builder<Ent, any>) => ID,
+    removalsTargetSource = this.actualOperation !== WriteOperation.Insert,
   ) {
     type Contribution = { id: ID | Builder<Ent, any>; sources: Set<string> };
     const inserts = new Map<ID, Contribution>();
@@ -536,12 +537,11 @@ export class Orchestrator<
       return endpoints;
     };
     const manualInserts = manualEndpoints(WriteOperation.Insert);
-    // Insert transforms remove explicit edges from the original row. Those
-    // removals cannot override inverse-edge insertions for the new row.
-    const manualRemovals =
-      this.actualOperation === WriteOperation.Insert
-        ? new Set<ID>()
-        : manualEndpoints(WriteOperation.Delete);
+    // Insert transforms remove explicit edges from the original row. They
+    // override automatic insertions only if an upsert returns that same row.
+    const manualRemovals = removalsTargetSource
+      ? manualEndpoints(WriteOperation.Delete)
+      : new Set<ID>();
     for (const id of removals.keys()) {
       if (retained.has(id) || manualInserts.has(id)) {
         removals.delete(id);
@@ -817,25 +817,38 @@ export class Orchestrator<
       const [edges, conditionalEdge] = edgeInfo;
       const conditional = conditionalOverride || conditionalEdge;
       for (const [edgeType, m] of edges) {
+        const originalSourceID = this.options.builder.existingEnt?.id;
+        const sourceMayMatchRemovalTarget =
+          this.actualOperation === WriteOperation.Insert &&
+          this.onConflict !== undefined &&
+          originalSourceID !== undefined &&
+          (m.get(WriteOperation.Delete)?.size ?? 0) > 0;
         let resolvedChanges:
           | ReturnType<typeof this.fieldEdgeChanges>
           | undefined;
         for (const [op, m2] of m) {
           for (const [key, edge] of m2) {
             let edgeOp = this.getEdgeOperation(edgeType, op, edge);
-            // All node writes precede edges. Resolve builder aliases again
-            // here because an upsert can return a different ID after SQL runs.
-            // Only generated edges in groups containing builders need this.
+            // All node writes precede edges. An upsert can change a referenced
+            // endpoint or return the original source of an explicit removal.
             const skipFieldEdge =
               this.fieldEdgeSources.has(edge) &&
-              this.fieldEdgeReferenceIDs.has(edgeType)
+              (this.fieldEdgeReferenceIDs.has(edgeType) ||
+                sourceMayMatchRemovalTarget)
                 ? (executor: Executor) => {
-                    resolvedChanges ??= this.fieldEdgeChanges(edgeType, (id) =>
-                      isBuilder(id)
-                        ? (executor.resolveValue(id.placeholderID)?.id ??
-                          getExistingEntForWrite(id)?.id ??
-                          id.placeholderID)
-                        : id,
+                    resolvedChanges ??= this.fieldEdgeChanges(
+                      edgeType,
+                      (id) =>
+                        isBuilder(id)
+                          ? (executor.resolveValue(id.placeholderID)?.id ??
+                            getExistingEntForWrite(id)?.id ??
+                            id.placeholderID)
+                          : id,
+                      this.actualOperation !== WriteOperation.Insert ||
+                        (originalSourceID !== undefined &&
+                          executor.resolveValue(
+                            this.options.builder.placeholderID,
+                          )?.id === originalSourceID),
                     );
                     const desired =
                       op === WriteOperation.Insert
