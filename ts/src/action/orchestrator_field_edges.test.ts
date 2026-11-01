@@ -1,7 +1,7 @@
-import { Data, ID, Viewer } from "../core/base";
+import { Data, Deny, ID, Viewer } from "../core/base";
 import { Dialect } from "../core/db";
 import { convertNullableList } from "../core/convert";
-import { loadRow, loadRows } from "../core/ent";
+import { assocEdgeLoader, loadRow, loadRows } from "../core/ent";
 import * as clause from "../core/clause";
 import { IDViewer } from "../core/viewer";
 import {
@@ -22,8 +22,9 @@ import {
   getSchemaTable,
   setupSqlite,
 } from "../testutils/db/temp_db";
-import { createRowForTest } from "../testutils/write";
+import { createRowForTest, editRowForTest } from "../testutils/write";
 import { WriteOperation } from "./action";
+import { Transaction } from "./transaction";
 
 class Assignment extends BaseEnt {
   nodeType = "Assignment";
@@ -39,12 +40,13 @@ const bindings = [
   { field: "member_ids", edge: memberEdge, list: true },
 ];
 const contactSchema = getBuilderSchemaFromFields(
-  { name: StringType() },
+  { name: StringType({ unique: true }) },
   Contact,
 );
 const assignmentSchema = getBuilderSchemaFromFields(
   {
     name: StringType(),
+    conflict_key: StringType({ nullable: true, unique: true }),
     owner_id: UUIDType({ nullable: true, disableUserEditable: true }),
     second_owner_id: UUIDType({ nullable: true, disableUserEditable: true }),
     default_owner_id: UUIDType({
@@ -96,7 +98,8 @@ class FieldAction extends SimpleAction<Assignment> {
     options.editedFields = async () => {
       const fields = await editedFields();
       for (const binding of bindings) {
-        const stored = builder.existingEnt?.data[binding.field];
+        const stored =
+          builder.orchestrator.getExistingEntForWrite()?.data[binding.field];
         orchestrator.__setFieldEdges(
           binding.field,
           ids(fields.get(binding.field)),
@@ -166,6 +169,7 @@ setupSqlite("sqlite:///orchestrator-field-edges-test.db", () => [
   getSchemaTable(assignmentSchema, Dialect.SQLite),
 ]);
 beforeEach(async () => {
+  assocEdgeLoader.clearAll();
   for (const edge of [ownerEdge, defaultEdge, memberEdge]) {
     await createRowForTest({
       tableName: "assoc_edge_config",
@@ -307,6 +311,37 @@ test("delete transformed to edit retracts generated removals before triggers", a
   expect(await rows(ent)).toEqual(expectedRows(a.id));
 });
 
+test.each([
+  WriteOperation.Edit,
+  WriteOperation.Delete,
+])("%s transformed to insert preserves old memberships and creates new ones", async (operation) => {
+  const ent = await create({ owner_id: a.id, default_owner_id: b.id });
+  const action = new FieldAction(
+    { name: "new assignment", owner_id: c.id },
+    ent,
+    operation,
+  );
+  action.builder.orchestrator.__getOptions().action!.transformWrite = () => ({
+    op: SQLStatementOperation.Insert,
+  });
+  action.getTriggers = () => [
+    {
+      changeset: () => {
+        expect(action.builder.existingEnt).toBe(ent);
+        expect(action.builder.orchestrator.getExistingEntForWrite()).toBeNull();
+        expect(queued(action, WriteOperation.Delete)).toEqual([]);
+        expect(queued(action, WriteOperation.Delete, defaultEdge)).toEqual([]);
+      },
+    },
+  ];
+  const created = await action.saveX();
+  expect(created.id).not.toBe(ent.id);
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+  expect(await rows(ent, defaultEdge)).toEqual(expectedRows(b.id));
+  expect(await rows(created)).toEqual(expectedRows(c.id));
+  expect(await rows(created, defaultEdge)).toEqual(expectedRows(a.id));
+});
+
 test("create transformed to edit refreshes stored memberships before defaults and triggers", async () => {
   const ent = await create({ default_owner_id: b.id });
   const action = new FieldAction({ name: "edited" });
@@ -422,6 +457,165 @@ function editContact() {
     a,
   );
 }
+
+function upsertContact(
+  operation: WriteOperation,
+  target: string,
+  update = false,
+) {
+  const owner = new SimpleAction(
+    viewer,
+    contactSchema,
+    new Map([["name", target]]),
+    operation,
+    operation === WriteOperation.Insert ? null : a,
+  );
+  Object.assign(owner, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  owner.builder.orchestrator.setOnConflictOptions({
+    onConflictCols: ["name"],
+    updateCols: update ? ["name"] : undefined,
+  });
+  return owner;
+}
+
+test.each(
+  [WriteOperation.Insert, WriteOperation.Edit, WriteOperation.Delete].flatMap(
+    (operation) =>
+      ["a", "b", "new owner"].flatMap((target) =>
+        [false, true].map((update) => ({ operation, target, update })),
+      ),
+  ),
+)("resolved upsert target drives IDs and field edges ($operation, $target, update=$update)", async ({
+  operation,
+  target,
+  update,
+}) => {
+  const ent = await create({ owner_id: a.id });
+  const owner = upsertContact(operation, target, update);
+  const observedIDs: ID[] = [];
+  owner.getObservers = () => [
+    {
+      observe: async () => {
+        observedIDs.push(await owner.builder.orchestrator.getEntID());
+      },
+    },
+  ];
+  const action = new FieldAction({ owner_id: owner.builder }, ent);
+  await new Transaction(viewer, [action, owner]).run();
+  const saved = await owner.editedEntX();
+  if (target === "new owner") {
+    expect([a.id, b.id]).not.toContain(saved.id);
+  } else {
+    expect(saved.id).toBe(target === "a" ? a.id : b.id);
+  }
+  expect((await raw(ent.id))!.owner_id).toBe(saved.id);
+  expect(await rows(ent)).toEqual(expectedRows(saved.id));
+  expect(await owner.builder.orchestrator.getEntID()).toBe(saved.id);
+  // Conflicts skip observers; ordinary inserts see the actual saved row.
+  expect(observedIDs).toEqual(target === "new owner" ? [saved.id] : []);
+});
+
+test("a transformed upsert with an explicit original ID retains its inverse edge", async () => {
+  const ent = await create({ owner_id: a.id });
+  const owner = upsertContact(WriteOperation.Edit, "a");
+  owner.builder.updateInput({ id: a.id });
+  const action = new FieldAction({ owner_id: owner.builder }, ent);
+  await new Transaction(viewer, [action, owner]).run();
+  expect((await raw(ent.id))!.owner_id).toBe(a.id);
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+});
+
+test.each([
+  "a",
+  "b",
+])("resolved upsert %s respects manual overrides and shared fields", async (target) => {
+  const owner = upsertContact(WriteOperation.Edit, target);
+  const savedID = target === "a" ? a.id : b.id;
+  const shared = await create({ owner_id: a.id, second_owner_id: a.id });
+  const removed = await create({ owner_id: a.id });
+  const literal = await create({ owner_id: a.id });
+  const alias = await create({ owner_id: a.id });
+  const sharedAction = new FieldAction({ owner_id: owner.builder }, shared);
+  const removeAction = new FieldAction({ owner_id: owner.builder }, removed);
+  removeAction.builder.orchestrator.removeInboundEdge(savedID, ownerEdge);
+  const literalAction = new FieldAction({ owner_id: owner.builder }, literal);
+  literalAction.builder.orchestrator.addInboundEdge(
+    savedID,
+    ownerEdge,
+    "Contact",
+    { data: "manual" },
+  );
+  const aliasAction = new FieldAction({ owner_id: savedID }, alias);
+  aliasAction.builder.orchestrator.addInboundEdge(
+    owner.builder,
+    ownerEdge,
+    "Contact",
+    { data: "manual-builder" },
+  );
+  await new Transaction(viewer, [
+    owner,
+    sharedAction,
+    removeAction,
+    literalAction,
+    aliasAction,
+  ]).run();
+  expect(await rows(shared)).toEqual(expectedRows(...new Set([a.id, savedID])));
+  expect(await rows(removed)).toEqual([]);
+  expect(await rows(literal)).toEqual([{ id1: savedID, data: "manual" }]);
+  expect(await rows(alias)).toEqual([{ id1: savedID, data: "manual-builder" }]);
+});
+
+test("conditional wrapping preserves resolved field-edge membership", async () => {
+  const ent = await create({ owner_id: a.id });
+  const owner = upsertContact(WriteOperation.Edit, "a");
+  const parent = upsertContact(WriteOperation.Insert, "parent");
+  const child = new FieldAction({ owner_id: owner.builder }, ent);
+  parent.getTriggers = () => [
+    {
+      changeset: async () => [
+        await owner.changeset(),
+        await child.changesetWithOptions_BETA({
+          conditionalBuilder: parent.builder,
+        }),
+      ],
+    },
+  ];
+  await parent.saveX();
+  expect((await raw(ent.id))!.owner_id).toBe(a.id);
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+});
+
+test.each([
+  "symmetric",
+  "inverse",
+])("resolved upserts preserve %s field-edge copies", async (kind) => {
+  await editRowForTest({
+    tableName: "assoc_edge_config",
+    fields:
+      kind === "symmetric"
+        ? { symmetric_edge: true }
+        : { inverse_edge_type: memberEdge },
+    whereClause: clause.Eq("edge_type", ownerEdge),
+  });
+  assocEdgeLoader.clearAll();
+  const ent = await create({ owner_id: a.id });
+  const owner = upsertContact(WriteOperation.Edit, "a");
+  const action = new FieldAction({ owner_id: owner.builder }, ent);
+  await new Transaction(viewer, [action, owner]).run();
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+  expect(
+    await loadRows({
+      tableName: "field_edges",
+      fields: ["id2"],
+      clause: clause.And(
+        clause.Eq("id1", ent.id),
+        clause.Eq("edge_type", kind === "symmetric" ? ownerEdge : memberEdge),
+      ),
+    }),
+  ).toEqual([{ id2: a.id }]);
+});
 
 test("manual literal deletion wins over a field referencing an existing Builder", async () => {
   const ent = await create({ owner_id: a.id });
@@ -589,4 +783,245 @@ test("a trigger that empties an edit leaves defaulted fields and inverse edges u
   await action.saveX();
   expect(await raw(ent.id)).toEqual(before);
   expect(await rows(ent, defaultEdge)).toEqual(expectedRows(b.id));
+});
+
+test.each([
+  false,
+  true,
+])("early ID read preserves permissions on later input (early=%s)", async (earlyID) => {
+  const apply = jest.fn(async () => Deny());
+  const schema = getBuilderSchemaFromFields(
+    { name: StringType({ editPrivacyPolicy: { rules: [{ apply }] } }) },
+    Contact,
+  );
+  const action = new SimpleAction(
+    viewer,
+    schema,
+    new Map(),
+    WriteOperation.Edit,
+    a,
+  );
+  if (earlyID) {
+    expect(await action.builder.orchestrator.getEntID()).toBe(a.id);
+  }
+  action.builder.updateInput({ name: "Forbidden" });
+  await expect(action.saveX()).rejects.toThrow(/permission/);
+  expect(apply).toHaveBeenCalledTimes(1);
+  expect(
+    (await loadRow({
+      tableName: "contacts",
+      fields: ["name"],
+      clause: clause.Eq("id", a.id),
+    }))!.name,
+  ).toBe("a");
+});
+
+test.each(
+  ["insert", "retarget", "unchanged"].flatMap((transform) =>
+    ["none", "insert", "remove"].map((manual) => [transform, manual]),
+  ),
+)("field edges resolve a delayed %s transform with manual %s", async (transform, manual) => {
+  const ent = await create({ owner_id: a.id });
+  const owner = editContact();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  Object.assign(owner, {
+    transformWrite: async () => {
+      await gate;
+      return transform === "insert"
+        ? { op: SQLStatementOperation.Insert }
+        : transform === "retarget"
+          ? { op: SQLStatementOperation.Update, existingEnt: b }
+          : null;
+    },
+  });
+  const action = new FieldAction({ owner_id: owner.builder }, ent);
+  if (manual === "insert") {
+    action.builder.orchestrator.addInboundEdge(a.id, ownerEdge, "Contact", {
+      data: "manual",
+    });
+  } else if (manual === "remove") {
+    action.builder.orchestrator.removeInboundEdge(a.id, ownerEdge);
+  }
+  const changeset = action.changeset.bind(action);
+  action.changeset = async () => {
+    const result = await changeset();
+    release();
+    return result;
+  };
+  await new Transaction(viewer, [action, owner]).run();
+  const newOwner = await owner.editedEntX();
+  expect((await raw(ent.id))!.owner_id).toBe(newOwner.id);
+  const expected: { id1: ID; data: string | null }[] =
+    newOwner.id === a.id && manual !== "none" ? [] : expectedRows(newOwner.id);
+  if (manual === "insert") {
+    expected.push({ id1: a.id, data: "manual" });
+  }
+  expect(await rows(ent)).toEqual(
+    expected.sort((x, y) => String(x.id1).localeCompare(String(y.id1))),
+  );
+});
+
+test.each([
+  "unchanged",
+  "unrelated",
+])("%s manual builder edges do not rebuild field edge operations", async (scenario) => {
+  const ent = await create({ owner_id: a.id });
+  const owner = editContact();
+  if (scenario === "unrelated") {
+    Object.assign(owner, {
+      transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+    });
+  }
+  const action = new FieldAction({ name: "changed" }, ent);
+  const edgeType = scenario === "unrelated" ? "manual-edge" : ownerEdge;
+  if (scenario === "unrelated") {
+    await createRowForTest({
+      tableName: "assoc_edge_config",
+      fields: {
+        edge_type: edgeType,
+        edge_name: edgeType,
+        edge_table: "field_edges",
+        symmetric_edge: false,
+        inverse_edge_type: null,
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+    });
+  }
+  action.builder.orchestrator.addInboundEdge(
+    owner.builder,
+    edgeType,
+    "Contact",
+  );
+  const changeset = await action.builder.orchestrator.build();
+  const before = Array.from(changeset.operations);
+  await owner.changeset();
+  const after = Array.from(changeset.executor());
+  expect(after).toHaveLength(before.length);
+  after.forEach((op, i) => expect(op).toBe(before[i]));
+});
+
+test.each([
+  WriteOperation.Edit,
+  WriteOperation.Delete,
+])("%s to insert removes original owner edges without suppressing the new row's inverse", async (operation) => {
+  const ent = await create({ owner_id: a.id });
+  const action = new FieldAction(
+    { name: "replacement", owner_id: a.id },
+    ent,
+    operation,
+  );
+  Object.assign(action, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  action.builder.orchestrator.removeInboundEdge(a.id, ownerEdge);
+  const created = await action.saveX();
+  expect(created.id).not.toBe(ent.id);
+  expect((await raw(created.id))!.owner_id).toBe(a.id);
+  expect((await raw(ent.id))!.owner_id).toBe(a.id);
+  expect(await rows(ent)).toEqual([]);
+  expect(await rows(created)).toEqual(expectedRows(a.id));
+});
+
+test.each(
+  [WriteOperation.Edit, WriteOperation.Delete].flatMap((operation) =>
+    ["original", "other", "new"].flatMap((target) =>
+      [false, true].map((update) => ({ operation, target, update })),
+    ),
+  ),
+)("source upsert preserves manual removals ($operation, $target, update=$update)", async ({
+  operation,
+  target,
+  update,
+}) => {
+  const original = await create({ conflict_key: "original", owner_id: a.id });
+  const other =
+    target === "other"
+      ? await create({ conflict_key: "other", owner_id: a.id })
+      : undefined;
+  const action = new FieldAction(
+    { name: "replacement", conflict_key: target, owner_id: a.id },
+    original,
+    operation,
+  );
+  Object.assign(action, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  action.builder.orchestrator.setOnConflictOptions({
+    onConflictCols: ["conflict_key"],
+    updateCols: update ? ["owner_id"] : undefined,
+  });
+  action.builder.orchestrator.removeInboundEdge(a.id, ownerEdge);
+  const saved = await action.saveX();
+  if (target === "original") {
+    expect(saved.id).toBe(original.id);
+  } else if (other) {
+    expect(saved.id).toBe(other.id);
+  } else {
+    expect(saved.id).not.toBe(original.id);
+  }
+  expect((await raw(saved.id))!.owner_id).toBe(a.id);
+  expect(await rows(original)).toEqual([]);
+  if (target !== "original") {
+    expect(await rows(saved)).toEqual(expectedRows(a.id));
+  }
+});
+
+test("an explicit original insert ID keeps manual edge removal precedence", async () => {
+  const original = await create({ conflict_key: "original", owner_id: a.id });
+  const action = new FieldAction(
+    {
+      id: original.id,
+      name: "replacement",
+      conflict_key: "original",
+      owner_id: a.id,
+    },
+    original,
+  );
+  Object.assign(action, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  action.builder.orchestrator.setOnConflictOptions({
+    onConflictCols: ["conflict_key"],
+  });
+  action.builder.orchestrator.removeInboundEdge(a.id, ownerEdge);
+  expect((await action.saveX()).id).toBe(original.id);
+  expect(await rows(original)).toEqual([]);
+});
+
+test.each([
+  "during validation",
+  "after changeset",
+])("manual builder aliases reconcile when their target changes %s", async (timing) => {
+  const ent = await create({ owner_id: a.id });
+  const owner = editContact();
+  const action = new FieldAction({ owner_id: b.id }, ent);
+  action.builder.orchestrator.addInboundEdge(
+    owner.builder,
+    ownerEdge,
+    "Contact",
+    { data: "manual" },
+  );
+  Object.assign(owner, {
+    transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+  });
+  if (timing === "during validation") {
+    action.getValidators = () => [
+      {
+        validate: async () => {
+          await owner.changeset();
+        },
+      },
+    ];
+  }
+  const changeset = await action.builder.build();
+  if (timing === "after changeset") {
+    await owner.changeset();
+  }
+  changeset.executor();
+  // Read the prepared removal before any SQL has executed.
+  expect(queued(action, WriteOperation.Delete)).toContain(a.id);
 });

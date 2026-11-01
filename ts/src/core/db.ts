@@ -633,7 +633,7 @@ interface ExecResult {
 }
 
 export interface Client extends Queryer {
-  release(err?: Error | boolean): void;
+  release(err?: Error | boolean): void | Promise<void>;
 }
 
 export interface SyncClient extends Client, SyncQueryer {

@@ -29,7 +29,7 @@ import {
   setupSqlite,
   Table,
 } from "../testutils/db/temp_db";
-import { ConstraintType } from "../schema";
+import { ConstraintType, SQLStatementOperation } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import DB, { Dialect } from "../core/db";
 import { toDBColumnOrTable } from "../names/names";
@@ -303,6 +303,243 @@ function commonTests() {
       });
     },
   };
+
+  test.each(
+    [WriteOperation.Insert, WriteOperation.Edit, WriteOperation.Delete].flatMap(
+      (operation) =>
+        [false, true].flatMap((conflict) =>
+          [false, true].map((update) => ({ operation, conflict, update })),
+        ),
+    ),
+  )("$operation to insert conditional descendants (conflict=$conflict, update=$update)", async ({
+    operation,
+    conflict,
+    update,
+  }) => {
+    const original = await createUserAction(randomEmail()).saveX();
+    const childOriginal = await createUserAction(randomEmail()).saveX();
+    const email = randomEmail();
+    const target = conflict ? await createUserAction(email).saveX() : null;
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchemaExtended,
+      new Map([
+        ["FirstName", "Replacement"],
+        ["LastName", "Snow"],
+        ["account_status", "UNVERIFIED"],
+        ["EmailAddress", email],
+      ]),
+      operation,
+      operation === WriteOperation.Insert ? null : original,
+    );
+    const child = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchemaExtended,
+      new Map([
+        ["FirstName", "Child"],
+        ["LastName", "Snow"],
+        ["account_status", "UNVERIFIED"],
+        ["EmailAddress", randomEmail()],
+      ]),
+      WriteOperation.Edit,
+      childOriginal,
+    );
+    for (const transformed of [action, child]) {
+      Object.assign(transformed, {
+        transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+      });
+    }
+    const grandchild = createUserAction(randomEmail());
+    const observe = jest.fn();
+    for (const dependent of [action, child, grandchild]) {
+      dependent.getObservers = () => [{ observe }];
+    }
+    const conditionalChild = (
+      parent: SimpleAction<User>,
+      dependent: SimpleAction<User>,
+    ) => ({
+      async changeset() {
+        parent.builder.orchestrator.addOutboundEdge(
+          dependent.builder,
+          "uniqueEdge",
+          "User",
+          { conditional: true },
+        );
+        return dependent.changesetWithOptions_BETA({
+          conditionalBuilder: parent.builder,
+        });
+      },
+    });
+    action.getTriggers = () => [conditionalChild(action, child)];
+    child.getTriggers = () => [conditionalChild(child, grandchild)];
+    action.builder.orchestrator.setOnConflictOptions({
+      onConflictCols: ["email_address"],
+      updateCols: update ? ["first_name"] : undefined,
+    });
+    const saved = await action.saveX();
+    expect(await action.builder.orchestrator.getEntID()).toBe(saved.id);
+    expect(action.builder.operation).toBe(operation);
+    expect(child.builder.operation).toBe(WriteOperation.Edit);
+    expect(saved.data.first_name).toBe(
+      conflict && !update ? "Jon" : "Replacement",
+    );
+    const edges = await loadEdges({ id1: saved.id, edgeType: "uniqueEdge" });
+    if (conflict) {
+      expect(saved.id).toBe(target!.id);
+      expect(edges).toEqual([]);
+      await verifySchemaCount(UserSchemaExtended, 3);
+      expect(observe).not.toHaveBeenCalled();
+    } else {
+      expect(saved.id).not.toBe(original.id);
+      const createdChild = await child.editedEntX();
+      const createdGrandchild = await grandchild.editedEntX();
+      expect(createdChild.id).not.toBe(childOriginal.id);
+      expect(edges.map((edge) => edge.id2)).toEqual([createdChild.id]);
+      expect(
+        (await loadEdges({ id1: createdChild.id, edgeType: "uniqueEdge" })).map(
+          (edge) => edge.id2,
+        ),
+      ).toEqual([createdGrandchild.id]);
+      await verifySchemaCount(UserSchemaExtended, 5);
+      expect(observe).toHaveBeenCalledTimes(3);
+    }
+  });
+
+  test.each(
+    [false, true].flatMap((transform) =>
+      [false, true].flatMap((conflict) =>
+        [false, true].map((update) => ({ transform, conflict, update })),
+      ),
+    ),
+  )("conditional delete and descendants (transform=$transform, conflict=$conflict, update=$update)", async ({
+    transform,
+    conflict,
+    update,
+  }) => {
+    const victim = await createUserAction(randomEmail()).saveX();
+    const endpoint = await createUserAction(randomEmail()).saveX();
+    const seed = new SimpleAction(
+      victim.viewer,
+      UserSchemaExtended,
+      new Map(),
+      WriteOperation.Edit,
+      victim,
+    );
+    seed.builder.orchestrator.addOutboundEdge(endpoint.id, "edge", "User");
+    await seed.saveX();
+    const email = randomEmail();
+    if (conflict) {
+      await createUserAction(email).saveX();
+    }
+    const parent = createUserAction(email);
+    parent.builder.orchestrator.setOnConflictOptions({
+      onConflictCols: ["email_address"],
+      updateCols: update ? ["first_name"] : undefined,
+    });
+    const child = new SimpleAction(
+      victim.viewer,
+      UserSchemaExtended,
+      new Map(),
+      WriteOperation.Delete,
+      victim,
+    );
+    if (transform) {
+      Object.assign(child, {
+        transformWrite: () => ({ op: SQLStatementOperation.Delete }),
+      });
+    }
+    child.builder.orchestrator.removeOutboundEdge(endpoint.id, "edge");
+    const grandchildEmail = randomEmail();
+    const grandchild = createUserAction(grandchildEmail);
+    grandchild.builder.orchestrator.addOutboundEdge(
+      endpoint.id,
+      "edge",
+      "User",
+    );
+    const observe = jest.fn();
+    for (const action of [parent, child, grandchild]) {
+      action.getObservers = () => [{ observe }];
+    }
+    parent.getTriggers = () => [
+      {
+        changeset: () =>
+          child.changesetWithOptions_BETA({
+            conditionalBuilder: parent.builder,
+          }),
+      },
+    ];
+    child.getTriggers = () => [
+      {
+        changeset: () =>
+          grandchild.changesetWithOptions_BETA({
+            conditionalBuilder: child.builder,
+          }),
+      },
+    ];
+    await parent.saveX();
+    const original = await loadRow({
+      tableName: "user_extendeds",
+      fields: ["*"],
+      clause: clause.Eq("id", victim.id),
+    });
+    const nested = await loadRow({
+      tableName: "user_extendeds",
+      fields: ["*"],
+      clause: clause.Eq("email_address", grandchildEmail),
+    });
+    const originalEdges = await loadEdges({ id1: victim.id, edgeType: "edge" });
+    if (conflict) {
+      expect(original?.id).toBe(victim.id);
+      expect(nested).toBeNull();
+      expect(originalEdges.map((edge) => edge.id2)).toEqual([endpoint.id]);
+      expect(observe).not.toHaveBeenCalled();
+    } else {
+      expect(original).toBeNull();
+      expect(nested).not.toBeNull();
+      expect(originalEdges).toEqual([]);
+      expect(
+        (await loadEdges({ id1: nested!.id, edgeType: "edge" })).map(
+          (edge) => edge.id2,
+        ),
+      ).toEqual([endpoint.id]);
+      expect(observe).toHaveBeenCalledTimes(3);
+    }
+  });
+
+  test("fresh validation resets a transformed upsert's result ID", async () => {
+    const original = await createUserAction(randomEmail()).saveX();
+    const email = randomEmail();
+    const target = await createUserAction(email).saveX();
+    const action = new SimpleAction(
+      new LoggedOutViewer(),
+      UserSchemaExtended,
+      new Map([
+        ["FirstName", "Replacement"],
+        ["LastName", "Snow"],
+        ["account_status", "UNVERIFIED"],
+        ["EmailAddress", email],
+      ]),
+      WriteOperation.Edit,
+      original,
+    );
+    Object.assign(action, {
+      transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+    });
+    action.builder.orchestrator.setOnConflictOptions({
+      onConflictCols: ["email_address"],
+    });
+    expect(await action.builder.orchestrator.getEntID()).toBe(original.id);
+    await action.validX();
+    const proposedID = await action.builder.orchestrator.getEntID();
+    expect([original.id, target.id]).not.toContain(proposedID);
+    expect((await action.saveX()).id).toBe(target.id);
+    expect(await action.builder.orchestrator.getEntID()).toBe(target.id);
+    await action.validX();
+    expect(await action.builder.orchestrator.getEntID()).toBe(proposedID);
+    expect(action.builder.orchestrator.getExistingEntForWrite()).toBeNull();
+    expect((await action.saveX()).id).toBe(target.id);
+    expect(await action.builder.orchestrator.getEntID()).toBe(target.id);
+  });
 
   test("no upsert. error ", async () => {
     const email = randomEmail();

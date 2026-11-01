@@ -66,6 +66,10 @@ This is available in the `@snowtop/ent-soft-delete` npm package. Code is availab
 
 ## API
 
+A pattern can customize writes with `transformWrite`. See
+[Write transformations](/docs/actions/write-transformations) for operation,
+permission, and persistence behavior shared by patterns and actions.
+
 The API for Pattern looks like:
 
 ```ts

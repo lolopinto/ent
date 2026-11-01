@@ -1,3 +1,4 @@
+import { getExistingEntForWrite } from "./action";
 import {
   ID,
   Data,
@@ -12,6 +13,7 @@ import {
   loadEdgeDatas,
   applyPrivacyPolicyForRow,
   parameterizedQueryOptions,
+  AssocEdgeData,
   loadEdgeData,
 } from "../core/ent";
 import {
@@ -53,6 +55,11 @@ import { Trigger } from "./action";
 import * as clause from "../core/clause";
 import { isPromise } from "util/types";
 import { RawQueryOperation } from "./operations";
+import { AsyncLocalStorage } from "async_hooks";
+
+// Distinguish a recursive ID read in a default/transform from an independent
+// caller that must wait for the same field initialization to finish.
+const fieldInitialization = new AsyncLocalStorage<Set<object>>();
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
@@ -260,6 +267,10 @@ export class Orchestrator<
   private edgeSet: Set<string> = new Set<string>();
   private edges: EdgeMap<TViewer> = new Map();
   private fieldEdgeSources = new WeakMap<edgeInputData<TViewer>, Set<string>>();
+  private fieldEdgeReferenceIDs = new Map<
+    string,
+    ReadonlyMap<Builder<Ent, any>, ID>
+  >();
   private fieldEdgeInputs = new Map<
     string,
     {
@@ -276,6 +287,7 @@ export class Orchestrator<
   private dependencies: Map<ID, Builder<TEnt>> = new Map();
   private fieldsToResolve: string[] = [];
   private mainOp: DataOperation<TEnt, TViewer> | null;
+  private resultOp: DataOperation<TEnt, TViewer> | undefined;
   viewer: Viewer;
   private defaultFieldsByFieldName: Data = {};
   private defaultFieldsByTSName: Data = {};
@@ -283,10 +295,11 @@ export class Orchestrator<
   // btw the beginning op and the transformed one we end up using
   private actualOperation: WriteOperation;
   // same with existingEnt. can transform so we wanna know what we started with and now where we are.
-  private existingEnt: TExistingEnt;
+  private existingEnt: TEnt | null;
   private disableTransformations: boolean;
   private onConflict: CreateRowOptions["onConflict"] | undefined;
   private memoizedGetFields: () => Promise<fieldsInfo>;
+  private fieldsInitializing = false;
 
   constructor(
     private options: OrchestratorOptions<TEnt, TInput, TViewer, TExistingEnt>,
@@ -294,7 +307,51 @@ export class Orchestrator<
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
-    this.memoizedGetFields = memoizeNoArgs(this.getFieldsInfo.bind(this));
+    this.memoizedGetFields = memoizeNoArgs(() =>
+      fieldInitialization.run(
+        new Set([...(fieldInitialization.getStore() ?? []), this]),
+        async () => {
+          this.fieldsInitializing = true;
+          try {
+            return await this.getFieldsInfo();
+          } finally {
+            this.fieldsInitializing = false;
+          }
+        },
+      ),
+    );
+  }
+
+  // Unlike builder.existingEnt (which remains valid for typed Edit/Delete
+  // hooks), this is null when the transformed operation creates a new row.
+  getExistingEntForWrite(): TEnt | null {
+    return this.existingEnt;
+  }
+
+  async getEntID(): Promise<ID> {
+    const resultID = this.resultOp?.returnedRow?.()?.[this.options.key];
+    if (resultID !== undefined && resultID !== null) {
+      return resultID;
+    }
+    // Preserve cheap ID reads for edits/deletes. Only validation initializes
+    // their transforms; subsequent reads see the resulting write target.
+    if (this.existingEnt) {
+      return this.existingEnt.id;
+    }
+    if (this.fieldsInitializing && fieldInitialization.getStore()?.has(this)) {
+      throw new Error(
+        "cannot resolve a write ID through a circular transformation or default dependency",
+      );
+    }
+    const { editedData } = await this.memoizedGetFields();
+    const id =
+      this.getExistingEntForWrite()?.id ?? editedData[this.options.key];
+    if (id === undefined || id === null) {
+      throw new Error(
+        "cannot resolve the write ID before its creation default has been evaluated",
+      );
+    }
+    return id;
   }
 
   // don't type this because we don't care
@@ -371,8 +428,15 @@ export class Orchestrator<
   ) {
     // Existing builders and literal IDs can refer to the same database row.
     // Use placeholder IDs as queue keys so unsaved builders remain dependencies.
-    const endpointID = (id: ID | Builder<Ent, any>): ID =>
-      isBuilder(id) ? (id.existingEnt?.id ?? id.placeholderID) : id;
+    let referenceIDs: Map<Builder<Ent, any>, ID> | undefined;
+    const endpointID = (id: ID | Builder<Ent, any>): ID => {
+      if (!isBuilder(id)) {
+        return id;
+      }
+      const target = getExistingEntForWrite(id)?.id ?? id.placeholderID;
+      (referenceIDs ??= new Map()).set(id, target);
+      return target;
+    };
     this.fieldEdgeInputs.set(fieldName, {
       edgeType,
       nodeType,
@@ -382,6 +446,51 @@ export class Orchestrator<
         this.fieldEdgeInputs.get(fieldName)?.existingIDs ??
         [],
     });
+    const { inserts, removals } = this.fieldEdgeChanges(edgeType, endpointID);
+    for (const [op, desired] of [
+      [WriteOperation.Insert, inserts],
+      [WriteOperation.Delete, removals],
+    ] as const) {
+      const queued = this.edges.get(edgeType)?.get(op);
+      for (const [id, edge] of queued ?? []) {
+        if (!this.fieldEdgeSources.has(edge)) {
+          continue;
+        }
+        const contribution = desired.get(id);
+        if (contribution) {
+          this.fieldEdgeSources.set(edge, contribution.sources);
+        } else {
+          queued!.delete(id);
+        }
+      }
+      for (const [key, contribution] of desired) {
+        if (this.edges.get(edgeType)?.get(op)?.has(key)) {
+          continue;
+        }
+        const edge = new edgeInputData<TViewer>({
+          id: contribution.id,
+          edgeType,
+          nodeType,
+          direction: edgeDirection.inboundEdge,
+        });
+        this.fieldEdgeSources.set(edge, contribution.sources);
+        this.addEdge(edge, op);
+      }
+    }
+    // Record the IDs used for this membership calculation. A referenced
+    // transform can finish during validation, before edge operations are built.
+    if (referenceIDs) {
+      this.fieldEdgeReferenceIDs.set(edgeType, referenceIDs);
+    } else {
+      this.fieldEdgeReferenceIDs.delete(edgeType);
+    }
+  }
+
+  private fieldEdgeChanges(
+    edgeType: string,
+    endpointID: (id: ID | Builder<Ent, any>) => ID,
+    removalsTargetSource = this.actualOperation !== WriteOperation.Insert,
+  ) {
     type Contribution = { id: ID | Builder<Ent, any>; sources: Set<string> };
     const inserts = new Map<ID, Contribution>();
     const removals = new Map<ID, Contribution>();
@@ -428,7 +537,11 @@ export class Orchestrator<
       return endpoints;
     };
     const manualInserts = manualEndpoints(WriteOperation.Insert);
-    const manualRemovals = manualEndpoints(WriteOperation.Delete);
+    // Insert transforms remove explicit edges from the original row. They
+    // override automatic insertions only if an upsert returns that same row.
+    const manualRemovals = removalsTargetSource
+      ? manualEndpoints(WriteOperation.Delete)
+      : new Set<ID>();
     for (const id of removals.keys()) {
       if (retained.has(id) || manualInserts.has(id)) {
         removals.delete(id);
@@ -440,36 +553,7 @@ export class Orchestrator<
         inserts.delete(key);
       }
     }
-    for (const [op, desired] of [
-      [WriteOperation.Insert, inserts],
-      [WriteOperation.Delete, removals],
-    ] as const) {
-      const queued = this.edges.get(edgeType)?.get(op);
-      for (const [id, edge] of queued ?? []) {
-        if (!this.fieldEdgeSources.has(edge)) {
-          continue;
-        }
-        const contribution = desired.get(id);
-        if (contribution) {
-          this.fieldEdgeSources.set(edge, contribution.sources);
-        } else {
-          queued!.delete(id);
-        }
-      }
-      for (const [key, contribution] of desired) {
-        if (this.edges.get(edgeType)?.get(op)?.has(key)) {
-          continue;
-        }
-        const edge = new edgeInputData<TViewer>({
-          id: contribution.id,
-          edgeType,
-          nodeType,
-          direction: edgeDirection.inboundEdge,
-        });
-        this.fieldEdgeSources.set(edge, contribution.sources);
-        this.addEdge(edge, op);
-      }
-    }
+    return { inserts, removals };
   }
 
   addOutboundEdge<T2 extends Ent>(
@@ -563,7 +647,7 @@ export class Orchestrator<
           );
         }
         if (
-          this.options.expressions &&
+          this.options.expressions?.size &&
           this.actualOperation !== WriteOperation.Edit
         ) {
           throw new Error(
@@ -662,8 +746,64 @@ export class Orchestrator<
     ops: DataOperation<any, TViewer>[],
     conditionalBuilder: Builder<TEnt, TViewer>,
     conditionalOverride: boolean,
-  ): Promise<void> {
+  ): Promise<(() => void) | undefined> {
     const edgeDatas = await loadEdgeDatas(...Array.from(this.edgeSet.values()));
+    const append = () =>
+      this.appendEdgeOps(
+        ops,
+        conditionalBuilder,
+        conditionalOverride,
+        edgeDatas,
+      );
+    const edgeStart = ops.length;
+    append();
+    const edgeCount = ops.length - edgeStart;
+    if (!this.fieldEdgeReferenceIDs.size) {
+      return;
+    }
+    const references = new Map(this.fieldEdgeReferenceIDs);
+    // A referenced builder may still be transforming while this changeset is
+    // built. Reconcile once all changesets are ready, without awaiting another
+    // builder during input collection or triggering its defaults early.
+    return () => {
+      const changedEdgeTypes = new Set<string>();
+      for (const [edgeType, ids] of references) {
+        for (const [builder, id] of ids) {
+          if (
+            (getExistingEntForWrite(builder)?.id ?? builder.placeholderID) !==
+            id
+          ) {
+            changedEdgeTypes.add(edgeType);
+            break;
+          }
+        }
+      }
+      if (!changedEdgeTypes.size) {
+        return;
+      }
+      for (const [name, field] of this.fieldEdgeInputs) {
+        if (!changedEdgeTypes.has(field.edgeType)) {
+          continue;
+        }
+        this.__setFieldEdges(
+          name,
+          field.ids,
+          field.edgeType,
+          field.nodeType,
+          {},
+        );
+      }
+      ops.splice(edgeStart, edgeCount);
+      append();
+    };
+  }
+
+  private appendEdgeOps(
+    ops: DataOperation<any, TViewer>[],
+    conditionalBuilder: Builder<TEnt, TViewer>,
+    conditionalOverride: boolean,
+    edgeDatas: Map<string, AssocEdgeData>,
+  ): void {
     const edges: [EdgeMap<TViewer>, boolean][] = [
       [this.edges, false],
       [this.conditionalEdges, true],
@@ -674,14 +814,59 @@ export class Orchestrator<
       const [edges, conditionalEdge] = edgeInfo;
       const conditional = conditionalOverride || conditionalEdge;
       for (const [edgeType, m] of edges) {
+        const originalSourceID = this.options.builder.existingEnt?.id;
+        const sourceMayMatchRemovalTarget =
+          this.actualOperation === WriteOperation.Insert &&
+          this.onConflict !== undefined &&
+          originalSourceID !== undefined &&
+          (m.get(WriteOperation.Delete)?.size ?? 0) > 0;
+        let resolvedChanges:
+          | ReturnType<typeof this.fieldEdgeChanges>
+          | undefined;
         for (const [op, m2] of m) {
-          for (const [_, edge] of m2) {
+          for (const [key, edge] of m2) {
             let edgeOp = this.getEdgeOperation(edgeType, op, edge);
-            if (conditional) {
-              ops.push(new ConditionalOperation(edgeOp, conditionalBuilder));
-            } else {
-              ops.push(edgeOp);
-            }
+            // All node writes precede edges. An upsert can change a referenced
+            // endpoint or return the original source of an explicit removal.
+            const skipFieldEdge =
+              this.fieldEdgeSources.has(edge) &&
+              (this.fieldEdgeReferenceIDs.has(edgeType) ||
+                sourceMayMatchRemovalTarget)
+                ? (executor: Executor) => {
+                    resolvedChanges ??= this.fieldEdgeChanges(
+                      edgeType,
+                      (id) =>
+                        isBuilder(id)
+                          ? (executor.resolveValue(id.placeholderID)?.id ??
+                            getExistingEntForWrite(id)?.id ??
+                            id.placeholderID)
+                          : id,
+                      this.actualOperation !== WriteOperation.Insert ||
+                        (originalSourceID !== undefined &&
+                          executor.resolveValue(
+                            this.options.builder.placeholderID,
+                          )?.id === originalSourceID),
+                    );
+                    const desired =
+                      op === WriteOperation.Insert
+                        ? resolvedChanges.inserts
+                        : resolvedChanges.removals;
+                    return !desired.has(key);
+                  }
+                : undefined;
+            const append = (operation: DataOperation<any, TViewer>) => {
+              if (skipFieldEdge) {
+                operation = new ConditionalOperation(operation, skipFieldEdge);
+              }
+              if (conditional) {
+                operation = new ConditionalOperation(
+                  operation,
+                  conditionalBuilder,
+                );
+              }
+              ops.push(operation);
+            };
+            append(edgeOp);
             const edgeData = edgeDatas.get(edgeType);
             if (!edgeData) {
               throw new Error(`could not load edge data for '${edgeType}'`);
@@ -690,24 +875,11 @@ export class Orchestrator<
             // doesn't support conditional edges
 
             if (edgeData.symmetricEdge) {
-              let symmetric: DataOperation<any, TViewer> =
-                edgeOp.symmetricEdge();
-              if (conditional) {
-                symmetric = new ConditionalOperation(
-                  symmetric,
-                  conditionalBuilder,
-                );
-              }
-              ops.push(symmetric);
+              append(edgeOp.symmetricEdge());
             }
 
             if (edgeData.inverseEdgeType) {
-              let inverse: DataOperation<any, TViewer> =
-                edgeOp.inverseEdge(edgeData);
-              if (conditional) {
-                inverse = new ConditionalOperation(inverse, conditionalBuilder);
-              }
-              ops.push(inverse);
+              append(edgeOp.inverseEdge(edgeData));
             }
           }
         }
@@ -820,7 +992,7 @@ export class Orchestrator<
         return WriteOperation.Edit;
       case SQLStatementOperation.Insert:
         return WriteOperation.Insert;
-      case SQLStatementOperation.Update:
+      case SQLStatementOperation.Delete:
         return WriteOperation.Delete;
       default:
         throw new Error("invalid path");
@@ -875,6 +1047,17 @@ export class Orchestrator<
     // future optimization: can get schemaFields to memoize based on different values
     const schemaFields = getFields(this.options.schema);
 
+    const editedFields = await this.options.editedFields();
+
+    let { data: editedData, userDefinedKeys } =
+      await this.getFieldsWithDefaultValues(
+        builder,
+        schemaFields,
+        editedFields,
+        action,
+      );
+
+    // Write transformations determine which field permissions apply.
     // also future optimization, no need to go through the list of fields multiple times
     let editPrivacyFields = new Map<string, PrivacyPolicy>();
     switch (this.actualOperation) {
@@ -893,16 +1076,6 @@ export class Orchestrator<
         break;
     }
 
-    const editedFields = await this.options.editedFields();
-
-    let { data: editedData, userDefinedKeys } =
-      await this.getFieldsWithDefaultValues(
-        builder,
-        schemaFields,
-        editedFields,
-        action,
-      );
-
     return {
       editedData,
       editedFields,
@@ -913,6 +1086,8 @@ export class Orchestrator<
   }
 
   private async validate(): Promise<Error[]> {
+    // A retry uses the planned write target, not a prior no-op or conflict result.
+    this.resultOp = undefined;
     // existing ent required for edit or delete operations
     switch (this.actualOperation) {
       case WriteOperation.Delete:
@@ -1141,6 +1316,16 @@ export class Orchestrator<
       });
     }
     if (transformed) {
+      if (
+        transformed.op === SQLStatementOperation.Delete &&
+        this.options.operation !== WriteOperation.Delete
+      ) {
+        // Insert/edit saveX() promises an entity. Reject before building any
+        // dependent changesets instead of deleting and then failing to return it.
+        throw new Error(
+          "cannot transform an insert or edit action into a delete; use a delete action instead",
+        );
+      }
       if (sqlOp === SQLStatementOperation.Insert && sqlOp !== transformed.op) {
         if (!transformed.existingEnt) {
           throw new Error(
@@ -1174,16 +1359,23 @@ export class Orchestrator<
           // this.defaultFieldsByFieldName[k] = val;
         }
       }
-      if (transformed.changeset) {
-        const changeset = await transformed.changeset();
-        this.changesets.push(changeset);
-      }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
-      if (transformed.existingEnt) {
-        // @ts-ignore
+      if (this.actualOperation === WriteOperation.Insert) {
+        // The SQL writer must insert, while typed Edit/Delete hooks retain
+        // their existing entity. Generated accessors and runtime edges consult
+        // getExistingEntForWrite() for the nullable persistence target.
+        this.existingEnt = null;
+      } else if (transformed.existingEnt) {
         this.existingEnt = transformed.existingEnt;
         // modify existing ent in builder. it's readonly in generated ents but doesn't apply here
         builder.existingEnt = transformed.existingEnt;
+      }
+      if (transformed.changeset) {
+        // Edge factories capture the source target when the callback builds
+        // its operations. Apply the transformation first so they use the new
+        // target or an insert placeholder instead of the original row.
+        const changeset = await transformed.changeset();
+        this.changesets.push(changeset);
       }
     }
     if (
@@ -1518,7 +1710,9 @@ export class Orchestrator<
       const res = await this.valid();
       if (!res) {
         processOps = false;
-        const op = new NoOperation(this.options.builder, this.existingEnt);
+        const existingEnt =
+          this.existingEnt ?? this.options.builder.existingEnt;
+        const op = new NoOperation(this.options.builder, existingEnt);
         this.mainOp = op;
         ops = [op];
 
@@ -1529,12 +1723,41 @@ export class Orchestrator<
       await this.validX();
     }
 
+    let prepareOperations: (() => void) | undefined;
     if (processOps) {
-      ops = [
-        this.buildMainOp(conditionalOverride ? conditionalBuilder : undefined),
-      ];
+      const mainOp = this.buildMainOp(
+        conditionalOverride ? conditionalBuilder : undefined,
+      );
+      if (
+        conditionalOverride &&
+        this.actualOperation === WriteOperation.Delete
+      ) {
+        // Descendants need the skip decision before their node writes, but the
+        // physical delete must wait for those writes to clear foreign keys.
+        ops = [
+          new ConditionalNodeOperation(
+            new NoOperation(this.options.builder),
+            conditionalBuilder,
+          ),
+          new ConditionalOperation(mainOp, this.options.builder),
+        ];
+      } else {
+        ops = [mainOp];
+      }
 
-      await this.buildEdgeOps(ops, conditionalBuilder, conditionalOverride);
+      prepareOperations = await this.buildEdgeOps(
+        ops,
+        conditionalBuilder,
+        conditionalOverride,
+      );
+    }
+    const resultOp = (this.resultOp = ops[0]);
+    if (processOps && this.actualOperation !== WriteOperation.Delete) {
+      resultOp.onRollback = () => {
+        if (this.resultOp === resultOp) {
+          this.resultOp = undefined;
+        }
+      };
     }
 
     // TODO throw if we try and create a new changeset after previously creating one
@@ -1548,9 +1771,10 @@ export class Orchestrator<
       this.options.builder.placeholderID,
       conditionalOverride,
       ops,
-      this.dependencies,
-      this.changesets,
+      processOps ? this.dependencies : new Map(),
+      processOps ? this.changesets : [],
       this.options,
+      prepareOperations,
     );
   }
 
@@ -1635,10 +1859,16 @@ export class EntChangeset<
     private builder: Builder<TEnt, TViewer>,
     public readonly placeholderID: ID,
     private conditionalOverride: boolean,
+    /**
+     * Provisional operations until executor() prepares referenced write targets.
+     * After all participating changesets are built, iterate executor() to inspect
+     * prepared operations without executing SQL. Direct reads bypass preparation.
+     */
     public operations: DataOperation<any, TViewer>[],
     public dependencies?: Map<ID, Builder<Ent>>,
     public changesets?: Changeset[],
     private options?: OrchestratorOptions<TEnt, Data, TViewer>,
+    private prepareOperations?: () => void,
   ) {}
 
   static changesetFrom<
@@ -1761,6 +1991,9 @@ export class EntChangeset<
     if (this._executor) {
       return this._executor;
     }
+
+    this.prepareOperations?.();
+    this.prepareOperations = undefined;
 
     if (!this.changesets?.length) {
       // if we have dependencies but no changesets, we just need a simple

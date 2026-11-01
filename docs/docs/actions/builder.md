@@ -87,3 +87,38 @@ Each Action has an instance of this Builder and the Builder does the heavy lifti
 Each [Trigger](/docs/actions/triggers), [Validator](/docs/actions/validators), and [Observer](/docs/actions/observers) is passed an instance of the Builder.
 
 The Builder can be used to update the value of fields in a trigger, [add](/docs/actions/triggers#update-builder) or remove edges or passed in as [input](/docs/actions/triggers#input) to other fields.
+
+## IDs and write targets
+
+For an existing write target, a generated builder's `getEntID()` returns its
+current ID without running transformations, defaults, or field collection. After
+validation, it returns the planned transformed target's ID. When no existing
+target is available, it initializes fields and defaults to determine the ID. Circular ID
+dependencies detected within the active initialization chain throw an error.
+
+After saving, `getEntID()` returns the resulting row's ID, including an existing
+row returned by an upsert conflict. After a silently denied Edit/Delete-to-Insert
+save, it returns the original entity's ID. A later validation or save retry uses
+the planned transformed write target again.
+
+If the transaction rolls back, `getEntID()` returns the planned ID again. An
+error after a successful commit, such as a post-fetch or returned-entity privacy
+failure, does not undo the write or discard its saved ID.
+
+A scalar ID read before a transformation does not change afterward. Pass the
+builder itself as a field value when another write should reference its final
+row; see [Write transformations](/docs/actions/write-transformations#referencing-the-resulting-row).
+
+For Edit/Delete-to-Insert transformations, `builder.existingEnt` remains the
+original entity for hooks. To read the current persistence target in a custom
+builder accessor, use:
+
+```ts
+import { getExistingEntForWrite } from "@snowtop/ent/action";
+
+const existing = getExistingEntForWrite(builder);
+```
+
+The helper returns `null` for an insert and supports older custom builders that
+do not expose the orchestrator method. Generated field accessors use the current
+write target when a field has no input value.

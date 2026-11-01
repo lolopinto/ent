@@ -57,7 +57,10 @@ The matrix catalog lives in `features.yml`.
 - `immutable_defaults` also runs fixture-local Jest tests against actual generated
   builders and local Ent source, using a temporary SQLite database. It verifies
   immutable creation defaults, constructor precedence, explicit overrides, action
-  hooks, immutable guards across transformed operations, and inverse-edge wiring.
+  non-null Edit/Delete hook context, new write-target accessors across insert
+  transforms, generated save rejection for unsupported delete transforms, numeric
+  action inputs, immutable guards, and inverse-edge wiring with explicit removals
+  and builder references resolved through upsert conflicts.
   Core default and privacy coverage lives in
   `ts/src/action/{orchestrator,transformed_orchestrator}.test.ts`
   and runs with `cd ts && npm test`; that command does not run the codegen matrix.
