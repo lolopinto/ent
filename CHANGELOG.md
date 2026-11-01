@@ -24,6 +24,24 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).
 - bind entity IDs as parameters in Go UPDATE statements (#2052).
 
+### Planned removals in 0.3.0
+
+Remove these methods from `CustomClauseQuery` in 0.3.0 (#2049). They remain
+available until then. Migrate to the single-result methods without map-key
+lookups:
+
+| Method to remove | Replacement |
+| --- | --- |
+| `queryAllEdges()` | `queryEdges()` |
+| `queryAllIDs()` | `queryIDs()` |
+| `queryAllEnts()` | `queryEnts()` |
+| `queryAllCount()` | `queryCount()` |
+| `queryAllRawCount()` | `queryRawCount()` |
+| `paginationInfo()` | `await queryPageInfo()` |
+
+This removal is specific to `CustomClauseQuery`; `BaseEdgeQuery` continues to
+support grouped queries.
+
 ## [0.2.15]
 
 ### Changed

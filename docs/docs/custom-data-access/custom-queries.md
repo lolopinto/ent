@@ -257,9 +257,7 @@ class AccountTodosQuery extends CustomClauseQuery<Todo, Viewer, Account> {
 Destination-entity privacy additionally applies when loading entities.
 Raw rows, IDs, and counts authorize the query as a whole; they do not evaluate
 each destination entity's policy. `queryPageInfo()` returns pagination for the
-single result list. Legacy `queryAll*` and `paginationInfo()` maps remain
-available with the explicit source ID, or `1` for a global query, as their key.
-That compatibility key is never used for authorization.
+single result list.
 
 Query instances cache authorization and results, including rejected promises.
 After a policy throws, create a new query instance to retry.

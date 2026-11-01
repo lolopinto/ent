@@ -255,6 +255,7 @@ export class CustomClauseQuery<
   }
 
   async queryAllRawCount(): Promise<Map<ID, number>> {
+    // TODO(0.3.0): Remove this method; use queryRawCount instead.
     throw new Error(`queryAllRawCount doesn't make sense in CustomClauseQuery`);
   }
 
@@ -353,6 +354,8 @@ export class CustomClauseQuery<
     return this.pageInfo ?? emptyPaginationInfo();
   }
 
+  // TODO(0.3.0): Remove queryAllEdges, queryAllIDs, queryAllEnts,
+  // queryAllCount, and paginationInfo; see CHANGELOG.md's planned removals.
   // Keep the public grouped APIs as adapters for existing consumers. Their
   // keys identify output only; they are never supplied to a privacy policy.
   private compatibilityKey(): ID {
