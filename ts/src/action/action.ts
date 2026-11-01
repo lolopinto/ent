@@ -20,8 +20,7 @@ export { WriteOperation };
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
 
-interface BuilderOrchestrator<TEnt extends Ent> {
-  getExistingEntForWrite?(): TEnt | null;
+interface BuilderOrchestrator {
   __getOptions(): {
     fieldInfo: FieldInfoMap;
   };
@@ -44,18 +43,7 @@ export interface Builder<
   // TODO TInput in Builder
   getInput(): Data;
   // TODO full orchestrator...
-  orchestrator: BuilderOrchestrator<TEnt>;
-}
-
-// Runtime write targets can differ from the entity available to action hooks.
-// The fallback preserves custom builders that implement the older interface.
-export function getExistingEntForWrite<
-  TEnt extends Ent<TViewer>,
-  TViewer extends Viewer,
->(builder: Builder<TEnt, TViewer, any>): TEnt | null {
-  return builder.orchestrator.getExistingEntForWrite
-    ? builder.orchestrator.getExistingEntForWrite()
-    : builder.existingEnt;
+  orchestrator: BuilderOrchestrator;
 }
 
 // PS: this is a private API subject to change

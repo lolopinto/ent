@@ -21,11 +21,10 @@
     const value = {{if .UpdateInput}}input.{{$tsFieldName}}{{else}}result.get("{{$field.FieldName}}"){{end}};
     {{if not .UpdateInput -}}
       let existingIDs: {{useTypeImport "ID"}}[] = [];
-      const existingEnt = this.orchestrator.getExistingEntForWrite();
-      if (existingEnt) {
+      if (this.existingEnt) {
         {{if or ($field.HasAsyncAccessor $cfg) $field.HasFieldPrivacy -}}
           // Load stored IDs for inverse edges even when field privacy hides the values.
-          const rawData = await {{$node}}.loadRawData(existingEnt.id, this.viewer.context);
+          const rawData = await {{$node}}.loadRawData(this.existingEnt.id, this.viewer.context);
           const stored = rawData?.{{$field.GetDbColName}};
           {{if $isList -}}
             {{reserveImport .Package.PackagePath "convertNullableList"}}
@@ -34,7 +33,7 @@
             existingIDs = stored == null ? [] : [stored];
           {{end -}}
         {{else -}}
-          const stored = existingEnt.{{$tsFieldName}};
+          const stored = this.existingEnt.{{$tsFieldName}};
           {{if $isList -}}
             existingIDs = stored ?? [];
           {{else -}}
@@ -243,9 +242,16 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
   }
 
   {{if .GenerateGetIDInBuilder -}}
-    // Resolve the transformed write target before returning its ID.
+    // this returns the id of the existing ent or the id of the ent that's being created
     async getEntID() {
-      return this.orchestrator.getEntID();
+      if (this.existingEnt) {
+        return this.existingEnt.id;
+      }
+      const edited = await this.orchestrator.getEditedData();
+      if (!edited.id) {
+        throw new Error(`couldn't get the id field. should have been set by 'defaultValueOnCreate'`);
+      }
+      return edited.id;
     }
   {{ end -}}
 
@@ -323,7 +329,7 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
 
   {{range $field := .FieldInfo.GetEditableFieldsInBuilder}}
     {{$tsFieldName := $field.TsBuilderFieldName -}}
-    // Get the input value or the current write target, which may differ from the entity in action hooks.
+    // get value of {{$field.FieldName}}. Retrieves it from the input if specified or takes it from existingEnt
     {{ if $field.Private $cfg -}}
       {{/** hmm not ideal for these accessors to not work...*/ -}}
       {{$field.GetNewFieldValueName}}(): {{$field.TsBuilderUnionType $cfg}} | undefined{
@@ -335,14 +341,13 @@ implements {{useTypeImport "Builder"}}<{{$node}}, {{$viewerType}}, TExistingEnt>
           return this.input.{{$tsFieldName}}
         }
 
-        const existingEnt = this.orchestrator.getExistingEntForWrite();
         {{if $field.Nullable}}
-          return existingEnt?.{{$tsFieldName}} ?? null;
+          return this.existingEnt?.{{$tsFieldName}} ?? null;
         {{ else -}}
-          if (!existingEnt) {
+          if (!this.existingEnt) {
             throw new Error('no value to return for `{{$tsFieldName}}` since not in input and no existingEnt');
           }
-          return existingEnt.{{$tsFieldName}};
+          return this.existingEnt.{{$tsFieldName}};
         {{end -}}
       }
     {{end -}}

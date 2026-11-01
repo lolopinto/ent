@@ -1,4 +1,3 @@
-import { getExistingEntForWrite } from "./action";
 import {
   ID,
   Data,
@@ -54,11 +53,6 @@ import { Trigger } from "./action";
 import * as clause from "../core/clause";
 import { isPromise } from "util/types";
 import { RawQueryOperation } from "./operations";
-import { AsyncLocalStorage } from "async_hooks";
-
-// Distinguish a recursive ID read in a default/transform from an independent
-// caller that must wait for the same field initialization to finish.
-const fieldInitialization = new AsyncLocalStorage<Set<object>>();
 
 type MaybeNull<T extends Ent> = T | null;
 type TMaybleNullableEnt<T extends Ent> = T | MaybeNull<T>;
@@ -289,12 +283,10 @@ export class Orchestrator<
   // btw the beginning op and the transformed one we end up using
   private actualOperation: WriteOperation;
   // same with existingEnt. can transform so we wanna know what we started with and now where we are.
-  private existingEnt: TEnt | null;
+  private existingEnt: TExistingEnt;
   private disableTransformations: boolean;
   private onConflict: CreateRowOptions["onConflict"] | undefined;
   private memoizedGetFields: () => Promise<fieldsInfo>;
-  private fieldsInitializing = false;
-  private writeTargetResolved = false;
 
   constructor(
     private options: OrchestratorOptions<TEnt, TInput, TViewer, TExistingEnt>,
@@ -302,49 +294,7 @@ export class Orchestrator<
     this.viewer = options.viewer;
     this.actualOperation = this.options.operation;
     this.existingEnt = this.options.builder.existingEnt;
-    this.memoizedGetFields = memoizeNoArgs(() =>
-      fieldInitialization.run(
-        new Set([...(fieldInitialization.getStore() ?? []), this]),
-        async () => {
-          this.fieldsInitializing = true;
-          try {
-            return await this.getFieldsInfo();
-          } finally {
-            this.fieldsInitializing = false;
-          }
-        },
-      ),
-    );
-  }
-
-  // Unlike builder.existingEnt (which remains valid for typed Edit/Delete
-  // hooks), this is null when the transformed operation creates a new row.
-  getExistingEntForWrite(): TEnt | null {
-    return this.existingEnt;
-  }
-
-  async getEntID(): Promise<ID> {
-    let id: ID | undefined;
-    if (this.fieldsInitializing && fieldInitialization.getStore()?.has(this)) {
-      if (!this.writeTargetResolved) {
-        throw new Error(
-          "cannot resolve the write ID during transformWrite; use builder.existingEnt.id for the original ID",
-        );
-      }
-      id = this.existingEnt?.id;
-      if (id === undefined || id === null) {
-        throw new Error("cannot resolve a new write ID from its own defaults");
-      }
-    } else {
-      const { editedData } = await this.memoizedGetFields();
-      id = this.existingEnt?.id ?? editedData[this.options.key];
-    }
-    if (id === undefined || id === null) {
-      throw new Error(
-        "cannot resolve the write ID before its creation default has been evaluated",
-      );
-    }
-    return id;
+    this.memoizedGetFields = memoizeNoArgs(this.getFieldsInfo.bind(this));
   }
 
   // don't type this because we don't care
@@ -422,7 +372,7 @@ export class Orchestrator<
     // Existing builders and literal IDs can refer to the same database row.
     // Use placeholder IDs as queue keys so unsaved builders remain dependencies.
     const endpointID = (id: ID | Builder<Ent, any>): ID =>
-      isBuilder(id) ? (getExistingEntForWrite(id)?.id ?? id.placeholderID) : id;
+      isBuilder(id) ? (id.existingEnt?.id ?? id.placeholderID) : id;
     this.fieldEdgeInputs.set(fieldName, {
       edgeType,
       nodeType,
@@ -613,7 +563,7 @@ export class Orchestrator<
           );
         }
         if (
-          this.options.expressions?.size &&
+          this.options.expressions &&
           this.actualOperation !== WriteOperation.Edit
         ) {
           throw new Error(
@@ -925,17 +875,6 @@ export class Orchestrator<
     // future optimization: can get schemaFields to memoize based on different values
     const schemaFields = getFields(this.options.schema);
 
-    const editedFields = await this.options.editedFields();
-
-    let { data: editedData, userDefinedKeys } =
-      await this.getFieldsWithDefaultValues(
-        builder,
-        schemaFields,
-        editedFields,
-        action,
-      );
-
-    // Write transformations determine which field permissions apply.
     // also future optimization, no need to go through the list of fields multiple times
     let editPrivacyFields = new Map<string, PrivacyPolicy>();
     switch (this.actualOperation) {
@@ -953,6 +892,16 @@ export class Orchestrator<
         );
         break;
     }
+
+    const editedFields = await this.options.editedFields();
+
+    let { data: editedData, userDefinedKeys } =
+      await this.getFieldsWithDefaultValues(
+        builder,
+        schemaFields,
+        editedFields,
+        action,
+      );
 
     return {
       editedData,
@@ -1230,18 +1179,13 @@ export class Orchestrator<
         this.changesets.push(changeset);
       }
       this.actualOperation = this.getWriteOpForSQLStamentOp(transformed.op);
-      if (this.actualOperation === WriteOperation.Insert) {
-        // The SQL writer must insert, while typed Edit/Delete hooks retain
-        // their existing entity. Generated accessors and runtime edges consult
-        // getExistingEntForWrite() for the nullable persistence target.
-        this.existingEnt = null;
-      } else if (transformed.existingEnt) {
+      if (transformed.existingEnt) {
+        // @ts-ignore
         this.existingEnt = transformed.existingEnt;
         // modify existing ent in builder. it's readonly in generated ents but doesn't apply here
         builder.existingEnt = transformed.existingEnt;
       }
     }
-    this.writeTargetResolved = true;
     if (
       this.fieldEdgeInputs.size > 0 &&
       (initialOperation !== this.actualOperation ||

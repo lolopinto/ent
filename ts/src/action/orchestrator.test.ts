@@ -79,12 +79,7 @@ import {
 } from "../core/convert";
 import { v4 } from "uuid";
 import { NumberOps } from "./relative_value";
-import {
-  StructType,
-  StructTypeAsList,
-  BooleanType,
-  SQLStatementOperation,
-} from "../schema";
+import { StructType, StructTypeAsList, BooleanType } from "../schema";
 import { randomEmail } from "../testutils/db/value";
 import { toDBColumnOrTable } from "../names/names";
 
@@ -3068,62 +3063,6 @@ function commonTests() {
   });
 
   describe("expressions", () => {
-    test.each([
-      false,
-      true,
-    ])("edit transformed to insert with relative expression: %s", async (relative) => {
-      const viewer = new LoggedOutViewer();
-      const user = await new SimpleAction(
-        viewer,
-        UserWithBalanceSchema,
-        new Map<string, any>([
-          ["first_name", "Jon"],
-          ["last_name", "Snow"],
-          ["balance", 10],
-        ]),
-        WriteOperation.Insert,
-        null,
-      ).saveX();
-      const expressions = new Map<string, clause.Clause>();
-      if (relative) {
-        expressions.set(
-          "balance",
-          NumberOps.addNumber(50).sqlExpression("balance"),
-        );
-      }
-      const action = new SimpleAction(
-        viewer,
-        UserWithBalanceSchema,
-        new Map<string, any>([
-          ["first_name", "New"],
-          ["last_name", "Snow"],
-          ["balance", 50],
-        ]),
-        WriteOperation.Edit,
-        user,
-        expressions,
-      );
-      Object.assign(action, {
-        transformWrite: () => ({ op: SQLStatementOperation.Insert }),
-      });
-      if (relative) {
-        await expect(action.saveX()).rejects.toThrow(
-          /expressions are only supported in edit operations/,
-        );
-      } else {
-        const created = await action.saveX();
-        expect(created.id).not.toBe(user.id);
-        expect(created.data.balance).toBe(50);
-      }
-      expect(
-        await loadRows({
-          tableName: "user_with_balances",
-          fields: ["balance"],
-          clause: clause.Eq("id", user.id),
-        }),
-      ).toEqual([{ balance: 10 }]);
-    });
-
     test("add expression", async () => {
       const action = new SimpleAction(
         new LoggedOutViewer(),
