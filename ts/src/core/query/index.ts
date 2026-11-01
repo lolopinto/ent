@@ -1,6 +1,4 @@
-export {
-  BaseEdgeQuery,
-} from "./query";
+export { BaseEdgeQuery } from "./query";
 export type { EdgeQuery, EdgeQueryFilter, PaginationInfo } from "./query";
 export { AssocEdgeQueryBase } from "./assoc_query";
 export type { EdgeQuerySource } from "./assoc_query";

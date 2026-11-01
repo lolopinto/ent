@@ -225,6 +225,45 @@ export class Account extends AccountBase {
 
 To fetch a query that isn't source based or that's global to your database e.g. all closed todos in the last day, instead of using `CustomEdgeQueryBase` above, you can use `CustomClauseQuery`. This can also be exposed as a GraphQL [Connection](https://graphql.org/learn/pagination/#complete-connection-model) that follows the [Relay Spec](https://relay.dev/graphql/connections.htm).
 
+### Query privacy and source reuse
+
+Override `getPrivacyPolicy()` to authorize a `CustomClauseQuery`. Denial returns
+empty results and zero counts, including a GraphQL connection's total count,
+without fetching rows. The policy receives only the optional `source` passed
+to the query constructor. Without that option, it receives `undefined`, even
+when a GraphQL connection has a parent entity. This source is fixed for the
+query instance; wrapping it in a connection never changes authorization.
+
+If a policy needs a source, pass it explicitly and create a query for each
+authorization context:
+
+```ts
+class AccountTodosQuery extends CustomClauseQuery<Todo, Viewer, Account> {
+  constructor(viewer: Viewer, account: Account) {
+    super(viewer, {
+      source: account,
+      loadEntOptions: Todo.loaderOptions(),
+      clause: query.Eq("creator_id", account.id),
+      name: "account_todos",
+    });
+  }
+
+  getPrivacyPolicy() {
+    return accountTodosPrivacyPolicy;
+  }
+}
+```
+
+Destination-entity privacy additionally applies when loading entities.
+Raw rows, IDs, and counts authorize the query as a whole; they do not evaluate
+each destination entity's policy. `queryPageInfo()` returns pagination for the
+single result list.
+
+Query instances cache authorization and results, including rejected promises.
+After a policy throws, create a new query instance to retry.
+
+### Example
+
 ```ts
 
   @gqlQuery({ 
