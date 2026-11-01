@@ -96,7 +96,8 @@ class FieldAction extends SimpleAction<Assignment> {
     options.editedFields = async () => {
       const fields = await editedFields();
       for (const binding of bindings) {
-        const stored = builder.existingEnt?.data[binding.field];
+        const stored =
+          builder.orchestrator.getExistingEntForWrite()?.data[binding.field];
         orchestrator.__setFieldEdges(
           binding.field,
           ids(fields.get(binding.field)),
@@ -305,6 +306,37 @@ test("delete transformed to edit retracts generated removals before triggers", a
   await action.saveX();
   expect((await raw(ent.id))!.name).toBe("retained");
   expect(await rows(ent)).toEqual(expectedRows(a.id));
+});
+
+test.each([
+  WriteOperation.Edit,
+  WriteOperation.Delete,
+])("%s transformed to insert preserves old memberships and creates new ones", async (operation) => {
+  const ent = await create({ owner_id: a.id, default_owner_id: b.id });
+  const action = new FieldAction(
+    { name: "new assignment", owner_id: c.id },
+    ent,
+    operation,
+  );
+  action.builder.orchestrator.__getOptions().action!.transformWrite = () => ({
+    op: SQLStatementOperation.Insert,
+  });
+  action.getTriggers = () => [
+    {
+      changeset: () => {
+        expect(action.builder.existingEnt).toBe(ent);
+        expect(action.builder.orchestrator.getExistingEntForWrite()).toBeNull();
+        expect(queued(action, WriteOperation.Delete)).toEqual([]);
+        expect(queued(action, WriteOperation.Delete, defaultEdge)).toEqual([]);
+      },
+    },
+  ];
+  const created = await action.saveX();
+  expect(created.id).not.toBe(ent.id);
+  expect(await rows(ent)).toEqual(expectedRows(a.id));
+  expect(await rows(ent, defaultEdge)).toEqual(expectedRows(b.id));
+  expect(await rows(created)).toEqual(expectedRows(c.id));
+  expect(await rows(created, defaultEdge)).toEqual(expectedRows(a.id));
 });
 
 test("create transformed to edit refreshes stored memberships before defaults and triggers", async () => {
