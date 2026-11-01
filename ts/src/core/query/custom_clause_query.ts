@@ -1,6 +1,7 @@
 import {
   Data,
   EdgeQueryableDataOptions,
+  EdgeQueryableDataOptionsConfigureLoader,
   Ent,
   ID,
   LoadEntOptions,
@@ -15,10 +16,17 @@ import {
   loadRow,
   loadRows,
 } from "../ent";
-import { AlwaysAllowPrivacyPolicy } from "../privacy";
+import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
+import { memoizeNoArgs } from "../memoize";
 import { OrderBy } from "../query_impl";
 
-import { BaseEdgeQuery, IDInfo } from "./query";
+import { EdgeQuery, EdgeQueryFilter } from "./query";
+import {
+  emptyPaginationInfo,
+  PaginationInfo,
+  QueryPagination,
+  RowQueryFilter,
+} from "./pagination";
 
 export interface CustomClauseQueryOptions<
   TDest extends Ent<TViewer>,
@@ -52,9 +60,11 @@ export interface CustomClauseQueryOptions<
   joinBETA?: QueryDataOptions["join"];
 }
 
-function getClause<TDest extends Ent<TViewer>, TViewer extends Viewer = Viewer>(
-  opts: CustomClauseQueryOptions<TDest, TViewer>,
-) {
+function getClause<
+  TDest extends Ent<TViewer>,
+  TViewer extends Viewer,
+  TSource extends Ent<TViewer> | undefined,
+>(opts: CustomClauseQueryOptions<TDest, TViewer, TSource>) {
   let cls = opts.clause;
   if (opts.disableTransformations) {
     return cls;
@@ -73,14 +83,23 @@ export class CustomClauseQuery<
   TDest extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
   TSource extends Ent<TViewer> | undefined = undefined,
-> extends BaseEdgeQuery<any, TDest, Data> {
+> implements EdgeQuery<Ent, TDest, Data>
+{
   private clause: Clause;
-  private source?: TSource;
-  private privacyStarted = false;
+  private readonly source?: TSource;
+  private readonly pagination: QueryPagination<Data>;
+  private filters: RowQueryFilter<Data>[] = [];
+  private pageInfo?: PaginationInfo;
+  private limitAdded = false;
+  private rowsStarted = false;
+  private rowsLoaded = false;
+  private defaultOptions?: EdgeQueryableDataOptionsConfigureLoader;
+  private readonly authorize: () => Promise<boolean>;
+  private readonly loadEdges: () => Promise<Data[]>;
 
   constructor(
     public viewer: TViewer,
-    private options: CustomClauseQueryOptions<TDest, TViewer>,
+    private options: CustomClauseQueryOptions<TDest, TViewer, TSource>,
   ) {
     let orderby: OrderBy;
     let primarySortCol: string;
@@ -110,45 +129,83 @@ export class CustomClauseQuery<
       ? primarySortCol
       : options.loadEntOptions.loaderFactory.options?.key || "id";
 
-    super(viewer, {
-      orderby,
-      cursorCol,
-      joinBETA: options.joinBETA,
-      fieldOptions: options.loadEntOptions,
-    });
+    this.pagination = new QueryPagination(
+      {
+        orderby,
+        cursorCol,
+        joinBETA: options.joinBETA,
+        fieldOptions: options.loadEntOptions,
+      },
+      (row) => this.getCursor(row),
+    );
     this.clause = getClause(options);
     this.source = options.source;
+    this.authorize = memoizeNoArgs(async () =>
+      applyPrivacyPolicy(this.viewer, this.getPrivacyPolicy(), this.source),
+    );
+    this.loadEdges = memoizeNoArgs(this.loadEdgesImpl.bind(this));
   }
 
-  __maybeSetSource(src: TSource) {
-    if (this.source === src || (src && this.source?.id === src.id)) {
-      return;
-    }
-    // Only a custom policy depends on the source, so only it must not be
-    // evaluated against one source and then served for another.
-    if (!this.hasCustomPrivacy()) {
-      if (this.source) {
-        console.warn("source already set to something else");
-      } else {
-        this.source = src;
-      }
-      return;
-    }
-    if (this.source) {
-      throw new Error(
-        "cannot change source of a custom query with a privacy policy; create a new query per source",
-      );
-    }
-    if (this.privacyStarted) {
-      throw new Error(
-        "cannot change source after query privacy evaluation; create a new query per source",
-      );
-    }
-    this.source = src;
+  getPrivacyPolicy() {
+    return AlwaysAllowPrivacyPolicy;
   }
 
-  private hasCustomPrivacy() {
-    return this.getPrivacyPolicy() !== AlwaysAllowPrivacyPolicy;
+  first(n: number, after?: string): this {
+    this.assertRowsNotStarted("first");
+    this.limitAdded = true;
+    this.filters.push(this.pagination.first(n, after));
+    return this;
+  }
+
+  last(n: number, before?: string): this {
+    this.assertRowsNotStarted("last");
+    this.limitAdded = true;
+    this.filters.push(this.pagination.last(n, before));
+    return this;
+  }
+
+  private assertRowsNotStarted(method: string) {
+    if (this.rowsStarted) {
+      throw new Error(`cannot call ${method} after query is dispatched`);
+    }
+  }
+
+  protected getCursorCol(): string {
+    return this.options.primarySortColIsUnique
+      ? (this.options.orderby?.[0].column ?? this.options.sortColumn ?? "id")
+      : (this.options.loadEntOptions.loaderFactory.options?.key ?? "id");
+  }
+
+  protected configureEdgeQueryableDataOptions(
+    options: EdgeQueryableDataOptionsConfigureLoader,
+  ) {
+    this.defaultOptions = options;
+  }
+
+  protected getDefaultEdgeQueryOptions() {
+    return this.defaultOptions;
+  }
+
+  protected __assertNoFiltersBETA(name: string) {
+    if (this.filters.length) {
+      throw new Error(`${name} must be the first filter called`);
+    }
+  }
+
+  // Adapter for the legacy source-keyed filter API. Query execution itself
+  // has one row list and never manufactures a source for authorization.
+  __addCustomFilterBETA(filter: EdgeQueryFilter<Data>) {
+    this.assertRowsNotStarted("__addCustomFilterBETA");
+    this.filters.push({
+      fetch: filter.fetch?.bind(filter),
+      query: filter.query?.bind(filter),
+      filter: filter.filter
+        ? (rows) => filter.filter!(this.compatibilityKey(), rows)
+        : undefined,
+      paginationInfo: filter.paginationInfo
+        ? () => filter.paginationInfo!(this.compatibilityKey())
+        : undefined,
+    });
   }
 
   async sourceEnt(_id: ID) {
@@ -160,11 +217,8 @@ export class CustomClauseQuery<
   }
 
   async queryRawCount(): Promise<number> {
-    if (this.hasCustomPrivacy()) {
-      const [info] = await this.genIDInfosToFetch();
-      if (info.invalidated) {
-        return 0;
-      }
+    if (!(await this.authorize())) {
+      return 0;
     }
 
     // sqlite needs as count otherwise it returns count(1)
@@ -204,21 +258,42 @@ export class CustomClauseQuery<
     throw new Error(`queryAllRawCount doesn't make sense in CustomClauseQuery`);
   }
 
-  protected async loadRawIDs(addID: (src: ID | Ent) => void): Promise<void> {
-    this.privacyStarted = true;
-    // A global query still has one policy evaluation, without a source Ent.
-    addID(this.source ?? 1);
+  private async loadEdgesImpl(): Promise<Data[]> {
+    if (!this.limitAdded) {
+      this.first(getDefaultLimit());
+    }
+    this.rowsStarted = true;
+    if (!(await this.authorize())) {
+      this.rowsLoaded = true;
+      return [];
+    }
+    let options: EdgeQueryableDataOptions = { ...this.defaultOptions };
+    for (const filter of this.filters) {
+      if (!filter.query) {
+        break;
+      }
+      if (filter.fetch) {
+        throw new Error(
+          "a filter that augments the query cannot currently fetch",
+        );
+      }
+      options = await filter.query(options);
+    }
+    let rows = await this.loadRawData(options);
+    for (const filter of this.filters) {
+      await filter.fetch?.();
+    }
+    for (const filter of this.filters) {
+      rows = filter.filter ? filter.filter(rows) : rows;
+      this.pageInfo = filter.paginationInfo?.() ?? this.pageInfo;
+    }
+    this.rowsLoaded = true;
+    return rows;
   }
 
   protected async loadRawData(
-    infos: IDInfo[],
     options: EdgeQueryableDataOptions,
-  ) {
-    const [info] = infos;
-    if (info.invalidated) {
-      this.edges.set(info.id, []);
-      return;
-    }
+  ): Promise<Data[]> {
     if (!options.orderby) {
       options.orderby = [
         {
@@ -243,19 +318,66 @@ export class CustomClauseQuery<
       distinct: this.options.joinBETA !== undefined,
     });
 
-    this.edges.set(info.id, rows);
+    return rows;
   }
 
   dataToID(edge: Data): ID {
     return edge.id;
   }
 
-  protected async loadEntsFromEdges(id: ID, rows: Data[]): Promise<TDest[]> {
+  protected async loadEntsFromEdges(_id: ID, rows: Data[]): Promise<TDest[]> {
     return applyPrivacyPolicyForRows(
       this.viewer,
       rows,
       this.options.loadEntOptions,
     );
+  }
+
+  readonly queryEdges = async (): Promise<Data[]> => this.loadEdges();
+
+  readonly queryIDs = async (): Promise<ID[]> =>
+    (await this.loadEdges()).map((row) => this.dataToID(row));
+
+  readonly queryCount = async (): Promise<number> =>
+    (await this.loadEdges()).length;
+
+  readonly queryEnts = async (): Promise<TDest[]> =>
+    this.loadEntsFromEdges(this.compatibilityKey(), await this.loadEdges());
+
+  getCursor(row: Data): string {
+    return this.pagination.getCursor(row);
+  }
+
+  async queryPageInfo(): Promise<PaginationInfo> {
+    await this.loadEdges();
+    return this.pageInfo ?? emptyPaginationInfo();
+  }
+
+  // Keep the public grouped APIs as adapters for existing consumers. Their
+  // keys identify output only; they are never supplied to a privacy policy.
+  private compatibilityKey(): ID {
+    return this.source?.id ?? 1;
+  }
+
+  readonly queryAllEdges = async (): Promise<Map<ID, Data[]>> =>
+    new Map([[this.compatibilityKey(), await this.queryEdges()]]);
+
+  readonly queryAllIDs = async (): Promise<Map<ID, ID[]>> =>
+    new Map([[this.compatibilityKey(), await this.queryIDs()]]);
+
+  readonly queryAllEnts = async (): Promise<Map<ID, TDest[]>> =>
+    new Map([[this.compatibilityKey(), await this.queryEnts()]]);
+
+  readonly queryAllCount = async (): Promise<Map<ID, number>> =>
+    new Map([[this.compatibilityKey(), await this.queryCount()]]);
+
+  paginationInfo(): Map<ID, PaginationInfo> {
+    if (!this.rowsLoaded) {
+      throw new Error("cannot call paginationInfo until query is dispatched");
+    }
+    return this.pageInfo
+      ? new Map([[this.compatibilityKey(), this.pageInfo]])
+      : new Map();
   }
 
   __getOptions() {

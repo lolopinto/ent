@@ -1,5 +1,5 @@
 import { Builder, WriteOperation } from "../action";
-import { Executor } from "../action/action";
+import { Executor, getExistingEntForWrite } from "../action/action";
 import {
   Context,
   CreateRowOptions,
@@ -795,9 +795,10 @@ export class EdgeOperation<TViewer extends Viewer = Viewer>
     let srcType: string;
 
     let srcPlaceholder = false;
-    if (srcBuilder.existingEnt) {
-      srcIDVal = srcBuilder.existingEnt.id;
-      srcType = srcBuilder.existingEnt.nodeType;
+    const existingEnt = getExistingEntForWrite(srcBuilder);
+    if (existingEnt) {
+      srcIDVal = existingEnt.id;
+      srcType = existingEnt.nodeType;
     } else {
       srcPlaceholder = true;
       // get placeholder.
@@ -905,13 +906,14 @@ export class EdgeOperation<TViewer extends Viewer = Viewer>
     id1: ID,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation<TViewer> {
-    if (!builder.existingEnt) {
+    const existingEnt = getExistingEntForWrite(builder);
+    if (!existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }
     const edge: AssocEdgeInput = {
       id1: id1,
       edgeType: edgeType,
-      id2: builder.existingEnt!.id,
+      id2: existingEnt.id,
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
       disableTransformations: options?.disableTransformations,
@@ -930,13 +932,14 @@ export class EdgeOperation<TViewer extends Viewer = Viewer>
     id2: ID,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation<TViewer> {
-    if (!builder.existingEnt) {
+    const existingEnt = getExistingEntForWrite(builder);
+    if (!existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }
     const edge: AssocEdgeInput = {
       id2: id2,
       edgeType: edgeType,
-      id1: builder.existingEnt!.id,
+      id1: existingEnt.id,
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
       disableTransformations: options?.disableTransformations,

@@ -229,21 +229,40 @@ To fetch a query that isn't source based or that's global to your database e.g. 
 
 Override `getPrivacyPolicy()` to authorize a `CustomClauseQuery`. Denial returns
 empty results and zero counts, including a GraphQL connection's total count,
-without fetching rows. A global query evaluates the policy without a source;
-a source-bound GraphQL connection passes its parent entity to the policy.
-Destination-entity privacy still applies when loading entities. Counts authorize
-the query as a whole; they do not evaluate each destination entity's policy.
+without fetching rows. The policy receives only the optional `source` passed
+to the query constructor. Without that option, it receives `undefined`, even
+when a GraphQL connection has a parent entity. This source is fixed for the
+query instance; wrapping it in a connection never changes authorization.
 
-Create a separate query instance for each source when using a custom privacy
-policy. Binding an instance to a different source throws, even before its first
-read. Another entity instance with the same ID can reuse the original binding.
-Once authorization starts on a global query, it cannot be bound to a source.
-Queries using the default `AlwaysAllowPrivacyPolicy` retain their existing
-source-binding behavior.
+If a policy needs a source, pass it explicitly and create a query for each
+authorization context:
+
+```ts
+class AccountTodosQuery extends CustomClauseQuery<Todo, Viewer, Account> {
+  constructor(viewer: Viewer, account: Account) {
+    super(viewer, {
+      source: account,
+      loadEntOptions: Todo.loaderOptions(),
+      clause: query.Eq("creator_id", account.id),
+      name: "account_todos",
+    });
+  }
+
+  getPrivacyPolicy() {
+    return accountTodosPrivacyPolicy;
+  }
+}
+```
+
+Destination-entity privacy additionally applies when loading entities.
+Raw rows, IDs, and counts authorize the query as a whole; they do not evaluate
+each destination entity's policy. `queryPageInfo()` returns pagination for the
+single result list. Legacy `queryAll*` and `paginationInfo()` maps remain
+available with the explicit source ID, or `1` for a global query, as their key.
+That compatibility key is never used for authorization.
 
 Query instances cache authorization and results, including rejected promises.
-After a policy throws, create a new query instance to retry; do not reuse or
-rebind the failed instance.
+After a policy throws, create a new query instance to retry.
 
 ### Example
 

@@ -361,7 +361,8 @@ export interface TransformedUpdateOperation<
   data?: Data;
 
   // Supply the target ent when transforming an insert into an update.
-  // Insert transformations clear the existing ent, even if one is supplied here.
+  // Insert transformations clear the write target, even if one is supplied here.
+  // Edit/Delete hooks retain their original builder.existingEnt.
   existingEnt?: T | null;
   changeset?(): Promise<Changeset> | Changeset;
 }

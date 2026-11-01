@@ -1,6 +1,11 @@
-import { CustomClauseQuery } from "../../core/query";
 import { Data, Ent, ID, Viewer } from "../../core/base";
-import { EdgeQuery, PaginationInfo } from "../../core/query/query";
+import {
+  ConnectionQuery,
+  EdgeQuery,
+  PaginationInfo,
+} from "../../core/query/query";
+
+import { emptyPaginationInfo } from "../../core/query/pagination";
 
 // TODO getCursor...
 export interface GraphQLEdge<T extends Data> {
@@ -58,29 +63,12 @@ export class GraphQLEdgeConnection<
   ) {
     this.viewer = viewer;
 
-    async function resolveQuery(
-      query: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>,
-      source: TSource | undefined,
-    ) {
-      const resolved = await query;
-
-      // To have pagination correctly work with CustomClauseQuery in GraphQL contexts, we need to
-      // pass the source to the query so that we can set the page info correctly
-      // See https://github.com/lolopinto/ent/issues/1836 for full details of how this breaks down
-      if (resolved instanceof CustomClauseQuery && source !== undefined) {
-        resolved.__maybeSetSource(source);
-      }
-      return resolved;
-    }
-
     let query: MaybePromise<EdgeQuery<TSource, Ent, TEdge>>;
-    let source: TSource | undefined;
 
     if (typeof arg2 === "function") {
       query = arg2(this.viewer);
     } else {
       this.source = arg2;
-      source = arg2;
     }
     if (typeof arg3 === "function") {
       query = arg3(this.viewer, this.source!);
@@ -88,7 +76,7 @@ export class GraphQLEdgeConnection<
       this.args = arg3;
     }
 
-    this.query = Promise.resolve(resolveQuery(query!, source));
+    this.query = Promise.resolve(query!);
 
     if (args !== undefined) {
       this.args = args;
@@ -135,7 +123,7 @@ export class GraphQLEdgeConnection<
   }
 
   async queryTotalCount() {
-    return (await this.query).queryRawCount();
+    return (await this.getConnectionQuery()).queryRawCount();
   }
 
   async queryEdges() {
@@ -148,35 +136,19 @@ export class GraphQLEdgeConnection<
   // if nodes queried just return ents
   // unlikely to query nodes and pageInfo so we just load this separately for now
   async queryNodes() {
-    return (await this.query).queryEnts();
+    return (await this.getConnectionQuery()).queryEnts();
   }
 
-  private defaultPageInfo() {
-    return {
-      hasNextPage: false,
-      hasPreviousPage: false,
-      startCursor: "",
-      endCursor: "",
-    };
+  private async getConnectionQuery(): Promise<ConnectionQuery<Ent, TEdge>> {
+    return asConnectionQuery(await this.query, this.source?.id);
   }
 
   async queryPageInfo(): Promise<PaginationInfo> {
-    await this.queryData();
-    const paginationInfo = (await this.query).paginationInfo();
-    if (this.source !== undefined) {
-      return paginationInfo.get(this.source.id) || this.defaultPageInfo();
-    }
-    if (paginationInfo.size > 1) {
-      throw new Error(`Query mas more than one item yet no source was given`);
-    }
-    for (const [_, value] of paginationInfo) {
-      return value;
-    }
-    return this.defaultPageInfo();
+    return (await this.getConnectionQuery()).queryPageInfo();
   }
 
   private async queryData() {
-    const query = await this.query;
+    const query = await this.getConnectionQuery();
     const [edges, ents] = await Promise.all([
       // TODO need a test that this will only fetch edges once
       // and then fetch ents afterward
@@ -201,4 +173,39 @@ export class GraphQLEdgeConnection<
     }
     this.results = results;
   }
+}
+
+// Preserve the public EdgeQuery factory/.query/modifyQuery surface for existing
+// callers. Internally, a connection only reads one result and one page of it.
+// The map fallback supports third-party EdgeQuery implementations predating the
+// singular accessor; it never assigns an authorization source to a query.
+function asConnectionQuery<TSource extends Ent, TEdge extends Data>(
+  query: EdgeQuery<TSource, Ent, TEdge>,
+  parentID?: ID,
+): ConnectionQuery<Ent, TEdge> {
+  return {
+    queryEdges: () => query.queryEdges(),
+    queryEnts: () => query.queryEnts(),
+    queryIDs: () => query.queryIDs(),
+    queryCount: () => query.queryCount(),
+    queryRawCount: () => query.queryRawCount(),
+    dataToID: (row) => query.dataToID(row),
+    getCursor: (row) => query.getCursor(row),
+    first: (n, cursor) => asConnectionQuery(query.first(n, cursor), parentID),
+    last: (n, cursor) => asConnectionQuery(query.last(n, cursor), parentID),
+    queryPageInfo: async () => {
+      if (query.queryPageInfo) {
+        return query.queryPageInfo();
+      }
+      await query.queryEdges();
+      const pages = query.paginationInfo();
+      if (parentID !== undefined) {
+        return pages.get(parentID) ?? emptyPaginationInfo();
+      }
+      if (pages.size > 1) {
+        throw new Error("Query has more than one item yet no source was given");
+      }
+      return pages.values().next().value ?? emptyPaginationInfo();
+    },
+  };
 }

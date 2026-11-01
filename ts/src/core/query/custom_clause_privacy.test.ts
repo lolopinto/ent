@@ -36,10 +36,8 @@ test.each([
     name: "denied-users",
     clause: Eq("id", user.id),
     loadEntOptions: FakeUser.loaderOptions(),
+    source: mode === "global" ? undefined : user,
   });
-  if (mode === "source") {
-    q.__maybeSetSource(user);
-  }
   const connection =
     mode === "connection"
       ? new GraphQLEdgeConnection(user.viewer, user, () => q, { first: 1 })
@@ -89,135 +87,87 @@ test("allowed custom query retains normal rows, counts and entity privacy", asyn
   expect(apply).toHaveBeenCalledTimes(1);
 });
 
-test("a count cannot authorize a query subsequently bound to another source", async () => {
-  const apply = jest.fn(async (_v: Viewer, source?: Ent) =>
-    source ? Deny() : Allow(),
-  );
-  class SourceQuery extends CustomClauseQuery<FakeUser, Viewer, FakeUser> {
+test.each([
+  true,
+  false,
+])("GraphQL parents do not become authorization sources (allow=%s)", async (allowed) => {
+  const other = await createTestUser();
+  const apply = jest.fn(async (_viewer: Viewer, source?: Ent) => {
+    expect(source).toBeUndefined();
+    return allowed ? Allow() : Deny();
+  });
+  class GlobalQuery extends CustomClauseQuery<FakeUser> {
     getPrivacyPolicy() {
       return { rules: [{ apply }] };
     }
   }
-  const q = new SourceQuery(user.viewer, {
-    name: "source-users",
+  const q = new GlobalQuery(user.viewer, {
+    name: "global-under-parents",
     clause: Eq("id", user.id),
     loadEntOptions: FakeUser.loaderOptions(),
   });
+  // Start authorization before either async connection factory resolves.
   const count = q.queryRawCount();
-  // Binding is unsafe even while the original policy decision is in flight.
-  expect(() => q.__maybeSetSource(user)).toThrow("cannot change source");
-  expect(await count).toBe(1);
-  const connection = new GraphQLEdgeConnection(user.viewer, user, () => q);
-  await expect(connection.queryTotalCount()).rejects.toThrow(
-    "cannot change source",
+  const connections = [user, other].map(
+    (parent) => new GraphQLEdgeConnection(user.viewer, parent, async () => q),
   );
+  expect(
+    await Promise.all([count, ...connections.map((c) => c.queryTotalCount())]),
+  ).toEqual([allowed ? 1 : 0, allowed ? 1 : 0, allowed ? 1 : 0]);
   expect(apply).toHaveBeenCalledTimes(1);
 });
 
-test("an evaluated query can retain its original source", async () => {
-  const q = new CustomClauseQuery<FakeUser, Viewer, FakeUser>(user.viewer, {
-    name: "same-source-users",
+test("explicit authorization source is independent of the GraphQL parent and options mutation", async () => {
+  const other = await createTestUser();
+  const apply = jest.fn(async (_viewer: Viewer, source?: Ent) => {
+    expect(source).toBe(user);
+    return Allow();
+  });
+  class SourceQuery extends CustomClauseQuery<FakeUser, Viewer, FakeUser> {
+    getPrivacyPolicy() {
+      return { rules: [{ apply }] };
+    }
+  }
+  const options = {
+    name: "explicit-source-users",
     clause: Eq("id", user.id),
     loadEntOptions: FakeUser.loaderOptions(),
-  });
-  q.__maybeSetSource(user);
-  expect(await q.queryRawCount()).toBe(1);
-  const connection = new GraphQLEdgeConnection(user.viewer, user, () => q);
+    source: user,
+  };
+  const q = new SourceQuery(user.viewer, options);
+  options.source = other;
+  const connection = new GraphQLEdgeConnection(
+    user.viewer,
+    other,
+    async () => q,
+  );
   expect(await connection.queryTotalCount()).toBe(1);
+  expect(await q.queryAllIDs()).toEqual(new Map([[user.id, [user.id]]]));
+  expect(await q.sourceEnt(other.id)).toBe(user);
+  expect(apply).toHaveBeenCalledTimes(1);
 });
 
-test("a policy query cannot be served for a source it was not built for", async () => {
-  const other = await createTestUser();
+test("count, rows and page info share one query-policy decision", async () => {
   const apply = jest.fn(async () => Allow());
-  class SourceQuery extends CustomClauseQuery<FakeUser, Viewer, FakeUser> {
+  class AllowedQuery extends CustomClauseQuery<FakeUser> {
     getPrivacyPolicy() {
       return { rules: [{ apply }] };
     }
   }
-  const q = new SourceQuery(user.viewer, {
-    name: "bound-users",
+  const q = new AllowedQuery(user.viewer, {
+    name: "concurrent-policy-users",
     clause: Eq("id", user.id),
     loadEntOptions: FakeUser.loaderOptions(),
-  });
-  q.__maybeSetSource(other);
-  const connection = new GraphQLEdgeConnection(user.viewer, user, () => q);
-  await expect(connection.queryTotalCount()).rejects.toThrow(
-    "cannot change source",
-  );
-  expect(apply).not.toHaveBeenCalled();
-});
-
-test("connections cannot share a source-dependent allow decision before privacy starts", async () => {
-  const other = await createTestUser();
-  const apply = jest.fn(async (_viewer: Viewer, source?: Ent) =>
-    source?.id === user.id ? Allow() : Deny(),
-  );
-  class SourceQuery extends CustomClauseQuery<FakeUser, Viewer, FakeUser> {
-    getPrivacyPolicy() {
-      return { rules: [{ apply }] };
-    }
-  }
-  const makeQuery = () =>
-    new SourceQuery(user.viewer, {
-      name: "shared-source-users",
-      clause: Eq("id", user.id),
-      loadEntOptions: FakeUser.loaderOptions(),
-    });
-  const separate = new GraphQLEdgeConnection(user.viewer, other, makeQuery);
-  expect(await separate.queryTotalCount()).toBe(0);
-  apply.mockClear();
-
-  const shared = makeQuery();
-  const allowed = new GraphQLEdgeConnection(user.viewer, user, () => shared);
-  const denied = new GraphQLEdgeConnection(user.viewer, other, () => shared);
-  const results = await Promise.allSettled([
-    allowed.queryTotalCount(),
-    denied.queryTotalCount(),
+  }).first(1);
+  const [count, ids, page] = await Promise.all([
+    q.queryRawCount(),
+    q.queryIDs(),
+    q.queryPageInfo(),
   ]);
-  expect(results[0]).toEqual({ status: "fulfilled", value: 1 });
-  expect(results[1]).toMatchObject({
-    status: "rejected",
-    reason: new Error(
-      "cannot change source of a custom query with a privacy policy; create a new query per source",
-    ),
-  });
+  expect(count).toBe(1);
+  expect(ids).toEqual([user.id]);
+  expect(page.hasNextPage).toBe(false);
   expect(apply).toHaveBeenCalledTimes(1);
-  expect(apply).toHaveBeenCalledWith(user.viewer, user);
-});
-
-test("an evaluated policy query accepts another instance of its source", async () => {
-  class SourceQuery extends CustomClauseQuery<FakeUser, Viewer, FakeUser> {
-    getPrivacyPolicy() {
-      return { rules: [{ apply: async () => Allow() }] };
-    }
-  }
-  const q = new SourceQuery(user.viewer, {
-    name: "reloaded-source-users",
-    clause: Eq("id", user.id),
-    loadEntOptions: FakeUser.loaderOptions(),
-  });
-  q.__maybeSetSource(user);
-  expect(await q.queryRawCount()).toBe(1);
-  const reloaded = new FakeUser(user.viewer, user.data);
-  expect(reloaded).not.toBe(user);
-  const connection = new GraphQLEdgeConnection(user.viewer, reloaded, () => q);
-  expect(await connection.queryTotalCount()).toBe(1);
-});
-
-test("a query without a policy can be counted and then bound", async () => {
-  const q = new CustomClauseQuery<FakeUser, Viewer, FakeUser>(user.viewer, {
-    name: "unprotected-users",
-    clause: Eq("id", user.id),
-    loadEntOptions: FakeUser.loaderOptions(),
-  });
-  const getPolicy = jest.spyOn(q, "getPrivacyPolicy");
-  expect(await q.queryRawCount()).toBe(1);
-  const connection = new GraphQLEdgeConnection(user.viewer, user, () => q, {
-    first: 1,
-  });
-  expect(await connection.queryTotalCount()).toBe(1);
-  expect(await connection.queryEdges()).toHaveLength(1);
-  expect(getPolicy).toHaveBeenCalled();
 });
 
 test("a failed privacy evaluation stays closed; retry with a new query", async () => {
@@ -248,7 +198,6 @@ test("a failed privacy evaluation stays closed; retry with a new query", async (
       { status: "rejected", reason: failure },
       { status: "rejected", reason: failure },
     ]);
-    expect(() => q.__maybeSetSource(user)).toThrow("cannot change source");
     await expect(q.queryRawCount()).rejects.toBe(failure);
     await expect(q.queryEdges()).rejects.toBe(failure);
     expect(apply).toHaveBeenCalledTimes(1);
@@ -258,4 +207,29 @@ test("a failed privacy evaluation stays closed; retry with a new query", async (
   }
   expect(await makeQuery().queryRawCount()).toBe(1);
   expect(apply).toHaveBeenCalledTimes(2);
+});
+
+test("synchronous policy construction failures are shared by counts and rows", async () => {
+  const failure = new Error("policy construction failed");
+  const getPolicy = jest
+    .fn()
+    .mockImplementationOnce(() => {
+      throw failure;
+    })
+    .mockReturnValue({ rules: [{ apply: async () => Deny() }] });
+  class BrokenQuery extends CustomClauseQuery<FakeUser> {
+    getPrivacyPolicy() {
+      return getPolicy();
+    }
+  }
+  const q = new BrokenQuery(user.viewer, {
+    name: "broken-policy-users",
+    clause: Eq("id", user.id),
+    loadEntOptions: FakeUser.loaderOptions(),
+  });
+  await expect(q.queryRawCount()).rejects.toBe(failure);
+  await expect(q.queryRawCount()).rejects.toBe(failure);
+  await expect(q.queryEdges()).rejects.toBe(failure);
+  await expect(q.queryPageInfo()).rejects.toBe(failure);
+  expect(getPolicy).toHaveBeenCalledTimes(1);
 });

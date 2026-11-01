@@ -285,12 +285,16 @@ features:
     rationale: >
       A generated-app runtime fixture verifies immutable viewer, sync, and async
       creation defaults, constructor precedence, explicit overrides, generated
-      accessors/hooks, immutable guards across transformed operations, and
-      inverse-edge wiring. Core default and privacy cases run in the package
+      accessors and non-null Edit/Delete hook types across insert transforms,
+      numeric action inputs, immutable guards, and inverse-edge wiring.
+      Core default and privacy cases run in the package
       action suites via npm test.
     test_refs:
       - ts/src/action/orchestrator.test.ts
       - ts/src/action/transformed_orchestrator.test.ts
+      - ts/src/action/orchestrator_field_edges.test.ts
+      - ts/src/action/write_target_id.test.ts
+      - internal/tscode/builder_write_target_test.go
   - id: schema.nodes
     owns: [input.Schema.Nodes, input.Node.Fields]
     mode: explicit

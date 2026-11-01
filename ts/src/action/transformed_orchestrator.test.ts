@@ -526,19 +526,51 @@ function commonTests() {
       operation,
       existing,
     );
+    action.builder.orchestrator.__getOptions().expressions = new Map();
+    const hooks: ID[] = [];
     Object.assign(action, {
+      getTriggers: () => [
+        {
+          changeset: (builder) => {
+            hooks.push(builder.existingEnt.id);
+          },
+        },
+      ],
+      getValidators: () => [
+        {
+          validate: (builder) => {
+            hooks.push(builder.existingEnt.id);
+          },
+        },
+      ],
+      getObservers: () => [
+        {
+          observe: (builder) => {
+            hooks.push(builder.existingEnt.id);
+          },
+        },
+      ],
       transformWrite: () => ({
         op: SQLStatementOperation.Insert,
         existingEnt: existing,
       }),
     });
+    const [earlyID, concurrentID] = await Promise.all([
+      action.builder.orchestrator.getEntID(),
+      action.builder.orchestrator.getEntID(),
+    ]);
+    expect(earlyID).not.toBe(existing.id);
+    expect(concurrentID).toBe(earlyID);
     const created = await action.saveX();
+    expect(created.id).toBe(earlyID);
     expect(created.id).not.toBe(existing.id);
-    expect(action.builder.existingEnt).toBeNull();
+    expect(action.builder.existingEnt).toBe(existing);
+    expect(action.builder.orchestrator.getExistingEntForWrite()).toBeNull();
     expect((await getNewLoader().load(created.id))?.first_name).toBe("Aegon");
     expect((await getNewLoader().load(existing.id))?.first_name).toBe("Jon");
     expect(editPolicy).not.toHaveBeenCalled();
     expect(createPolicy).toHaveBeenCalledTimes(1);
+    expect(hooks).toEqual([existing.id, existing.id, existing.id]);
   });
 
   test("delete -> update", async () => {

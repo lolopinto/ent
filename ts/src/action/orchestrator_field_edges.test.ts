@@ -96,7 +96,8 @@ class FieldAction extends SimpleAction<Assignment> {
     options.editedFields = async () => {
       const fields = await editedFields();
       for (const binding of bindings) {
-        const stored = builder.existingEnt?.data[binding.field];
+        const stored =
+          builder.orchestrator.getExistingEntForWrite()?.data[binding.field];
         orchestrator.__setFieldEdges(
           binding.field,
           ids(fields.get(binding.field)),
@@ -323,7 +324,8 @@ test.each([
   action.getTriggers = () => [
     {
       changeset: () => {
-        expect(action.builder.existingEnt).toBeNull();
+        expect(action.builder.existingEnt).toBe(ent);
+        expect(action.builder.orchestrator.getExistingEntForWrite()).toBeNull();
         expect(queued(action, WriteOperation.Delete)).toEqual([]);
         expect(queued(action, WriteOperation.Delete, defaultEdge)).toEqual([]);
       },

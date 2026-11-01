@@ -1,5 +1,6 @@
 import {
   AlwaysDenyPrivacyPolicy,
+  ID,
   IDViewer,
   LoggedOutViewer,
 } from "@snowtop/ent";
@@ -18,6 +19,7 @@ import { EdgeType } from "./ent/generated/types";
 import { CreateUserActionBase } from "./ent/generated/user/actions/create_user_action_base";
 import { CreateDocumentActionBase } from "./ent/generated/document/actions/create_document_action_base";
 import { EditDocumentActionBase } from "./ent/generated/document/actions/edit_document_action_base";
+import { DeleteDocumentActionBase } from "./ent/generated/document/actions/delete_document_action_base";
 import DocumentSchema from "./schema/document_schema";
 import UserSchema from "./schema/user_schema";
 
@@ -170,11 +172,14 @@ test("constructor ownership still passes through action privacy", async () => {
   ).rejects.toThrow(/permission/);
 });
 
-test("edit-to-insert initializes defaults while keeping public immutable setters guarded", async () => {
+test("edit-to-insert keeps typed hook context and generated accessors use the new write target", async () => {
   const viewer = await createViewer();
   const existing = await new CreateDocumentActionBase(viewer, {
     title: "Original",
+    revision: 11,
   }).saveX();
+  const hooks: ID[] = [];
+  let newID: ID | undefined;
   class EditAsCreate extends EditDocumentActionBase {
     transformWrite() {
       return { op: SQLStatementOperation.Insert };
@@ -182,9 +187,31 @@ test("edit-to-insert initializes defaults while keeping public immutable setters
     getTriggers() {
       return [
         {
-          changeset: (builder: this["builder"]) => {
+          changeset: async (builder: this["builder"]) => {
+            hooks.push(builder.existingEnt.id);
+            newID = await builder.getEntID();
+            expect(newID).not.toBe(existing.id);
+            expect(builder.getNewRevisionValue()).toBe(7);
             expect(builder.getNewOwnerIdValue()).toBe(viewer.viewerID);
             builder.overrideSyncValue(" TRIGGER INSERT ");
+          },
+        },
+      ];
+    }
+    getValidators() {
+      return [
+        {
+          validate: (builder: this["builder"]) => {
+            hooks.push(builder.existingEnt.id);
+          },
+        },
+      ];
+    }
+    getObservers() {
+      return [
+        {
+          observe: (builder: this["builder"]) => {
+            hooks.push(builder.existingEnt.id);
           },
         },
       ];
@@ -192,15 +219,24 @@ test("edit-to-insert initializes defaults while keeping public immutable setters
   }
   const action = new EditAsCreate(viewer, existing, {
     title: "Transformed insert",
+    revision: 7,
   });
+  const earlyID = await action.builder.getEntID();
+  expect(earlyID).not.toBe(existing.id);
   await action.validX();
   expect(action.builder.orchestrator.getValidatedFields()).toMatchObject({
     owner_id: viewer.viewerID,
     sync_value: "trigger insert",
     async_value: "async",
   });
+  expect(hooks).toEqual([existing.id, existing.id]);
+  hooks.length = 0;
   const created = await action.saveX();
   expect(created.id).not.toBe(existing.id);
+  expect(created.id).toBe(newID);
+  expect(created.id).toBe(earlyID);
+  expect(created.revision).toBe(7);
+  expect(hooks).toEqual([existing.id, existing.id, existing.id]);
   expect(created.syncValue).toBe("trigger insert");
   await expectEdges(viewer, created);
   await expectEdges(viewer, existing);
@@ -208,6 +244,65 @@ test("edit-to-insert initializes defaults while keeping public immutable setters
   expect(() => action.builder.updateInput({ syncValue: "forbidden" })).toThrow(
     /overrideSyncValue/,
   );
+});
+
+test("delete-to-insert preserves non-null generated hook types and initializes new field accessors", async () => {
+  const viewer = await createViewer();
+  const existing = await new CreateDocumentActionBase(viewer, {
+    title: "Original",
+    revision: 11,
+  }).saveX();
+  const hooks: ID[] = [];
+  let newID: ID | undefined;
+  class DeleteAsCreate extends DeleteDocumentActionBase {
+    transformWrite() {
+      return {
+        op: SQLStatementOperation.Insert,
+        data: { title: "Replacement" },
+      };
+    }
+    getTriggers() {
+      return [
+        {
+          changeset: async (builder: this["builder"]) => {
+            hooks.push(builder.existingEnt.id);
+            newID = await builder.getEntID();
+            expect(newID).not.toBe(existing.id);
+            expect(builder.getNewTitleValue()).toBe("Replacement");
+            expect(builder.getNewRevisionValue()).toBe(0);
+          },
+        },
+      ];
+    }
+    getValidators() {
+      return [
+        {
+          validate: (builder: this["builder"]) => {
+            hooks.push(builder.existingEnt.id);
+          },
+        },
+      ];
+    }
+    getObservers() {
+      return [
+        {
+          observe: (builder: this["builder"]) => {
+            hooks.push(builder.existingEnt.id);
+          },
+        },
+      ];
+    }
+  }
+  const action = new DeleteAsCreate(viewer, existing);
+  const earlyID = await action.builder.getEntID();
+  expect(earlyID).not.toBe(existing.id);
+  await action.saveX();
+  const created = await action.builder.editedEntX();
+  expect(created.id).toBe(newID);
+  expect(created.id).toBe(earlyID);
+  expect(hooks).toEqual([existing.id, existing.id, existing.id]);
+  await expectEdges(viewer, created);
+  await expectEdges(viewer, existing);
 });
 
 test("insert-to-edit rejects immutable edit defaults and preserves constructor input", async () => {

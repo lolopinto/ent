@@ -6,15 +6,31 @@ import {
   Ent,
   ID,
   PrivacyPolicy,
-  QueryableDataOptions,
-  SelectBaseDataOptions,
   Viewer,
 } from "../base";
-import * as clause from "../clause";
-import { decodeCursorPayload, getCursor, getDefaultLimit } from "../ent";
+import { getDefaultLimit } from "../ent";
 import { AlwaysAllowPrivacyPolicy, applyPrivacyPolicy } from "../privacy";
 import { memoizeNoArgs } from "../memoize";
-import { OrderBy, orderByHasExpressions, reverseOrderBy } from "../query_impl";
+import {
+  emptyPaginationInfo,
+  PaginationInfo,
+  QueryPagination,
+  QueryPaginationOptions,
+  RowQueryFilter,
+} from "./pagination";
+
+export interface ConnectionQuery<TDest extends Ent, TEdge extends Data> {
+  queryEdges(): Promise<TEdge[]>;
+  queryEnts(): Promise<TDest[]>;
+  queryIDs(): Promise<ID[]>;
+  queryCount(): Promise<number>;
+  queryRawCount(): Promise<number>;
+  first(n: number, after?: string): ConnectionQuery<TDest, TEdge>;
+  last(n: number, before?: string): ConnectionQuery<TDest, TEdge>;
+  queryPageInfo(): Promise<PaginationInfo>;
+  getCursor(row: TEdge): string;
+  dataToID(edge: TEdge): ID;
+}
 
 export interface EdgeQuery<
   TSource extends Ent,
@@ -40,6 +56,8 @@ export interface EdgeQuery<
   last(n: number, before?: string): EdgeQuery<TSource, TDest, TEdge>;
 
   paginationInfo(): Map<ID, PaginationInfo>;
+  // Optional for existing third-party implementations of EdgeQuery.
+  queryPageInfo?(): Promise<PaginationInfo>;
   getCursor(row: TEdge): string;
   dataToID(edge: TEdge): ID;
 
@@ -79,299 +97,8 @@ export interface EdgeQueryFilter<T extends Data> {
   paginationInfo?(id: ID): PaginationInfo | undefined;
 }
 
-export interface PaginationInfo {
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
-  startCursor: string;
-  endCursor: string;
-}
-
-// TODO can we generalize EdgeQuery to support any clause
-function assertPositive(n: number) {
-  if (n < 0) {
-    throw new Error("cannot use a negative number");
-  }
-}
-
-interface validCursorOptions {
-  keys: string[];
-}
-
-export type CursorKeyValues = [key: string, value: string | number | null][];
-
-function translateCursorToKeyValues(
-  cursor: string,
-  opts: validCursorOptions,
-): CursorKeyValues {
-  const { keys } = opts;
-  const decoded = decodeCursorPayload(cursor);
-  let cursorData: CursorKeyValues = [];
-  try {
-    cursorData = JSON.parse(decoded);
-  } catch (error) {
-    throw new Error(`Bad cursor format ${cursor} passed`);
-  }
-  // invalid or unknown cursor. nothing to do here.
-  // we should have the same number of parts as keys
-  if (cursorData.length !== keys.length) {
-    throw new Error(`invalid cursor ${cursor} passed`);
-  }
-  return cursorData;
-}
-
-interface FilterOptions<T extends Data> {
-  limit: number;
-  query: BaseEdgeQuery<Ent, Ent, T>;
-  cursorCol: string;
-  orderby: OrderBy;
-
-  cursorKeys: string[];
-
-  // fieldOptions used to query field values
-  // used for alias
-  fieldOptions?: SelectBaseDataOptions;
-}
-
-interface FirstFilterOptions<T extends Data> extends FilterOptions<T> {
-  after?: string;
-}
-
-interface LastFilterOptions<T extends Data> extends FilterOptions<T> {
-  before?: string;
-}
-
-const orderbyRegex = new RegExp(/([0-9a-z_]+)[ ]?([0-9a-z_]+)?/i);
-
-class FirstFilter<T extends Data> implements EdgeQueryFilter<T> {
-  /**
-   * The offset is the value of the last key in the cursor, which is the primary key for the table
-   */
-  private offset: string | number | undefined;
-  private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
-  private pageMap: Map<ID, PaginationInfo> = new Map();
-  private usedQuery = false;
-  private cursorKeyValues: CursorKeyValues = [];
-
-  constructor(private options: FirstFilterOptions<T>) {
-    assertPositive(options.limit);
-
-    if (options.after) {
-      this.cursorKeyValues = translateCursorToKeyValues(options.after, {
-        keys: options.cursorKeys,
-      });
-      this.offset =
-        this.cursorKeyValues[this.cursorKeyValues.length - 1][1] ?? undefined;
-    }
-    this.edgeQuery = options.query;
-  }
-
-  private setPageMap(ret: T[], id: ID, hasNextPage: boolean) {
-    this.pageMap.set(id, {
-      hasNextPage,
-      // hasPreviousPage always false even if there's a previous page because
-      // we shouldn't be querying in both directions at the same
-      hasPreviousPage: false,
-      startCursor: this.edgeQuery.getCursor(ret[0]),
-      endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
-    });
-  }
-
-  filter(id: ID, edges: T[]): T[] {
-    if (edges.length > this.options.limit) {
-      //  we need a way to know where the cursor is and if we used it and if not need to do this in TypeScript and not in SQL
-      // so can't filter from 0 but specific item
-
-      // if we used the query or we're querying the first N, slice from 0
-      if (this.usedQuery || !this.offset) {
-        const ret = edges.slice(0, this.options.limit);
-        this.setPageMap(ret, id, true);
-        return ret;
-      } else if (this.offset) {
-        const ret: T[] = [];
-        let found = false;
-        let i = 0;
-        let hasNextPage = false;
-        for (const edge of edges) {
-          const id = edge[this.options.cursorCol];
-          if (id === this.offset) {
-            // found!
-            found = true;
-            hasNextPage = true;
-            continue;
-          }
-          if (found) {
-            ret.push(edge);
-            if (ret.length === this.options.limit) {
-              if (i === ret.length - 1) {
-                hasNextPage = false;
-              }
-              break;
-            }
-          }
-          i++;
-        }
-        if (hasNextPage && ret.length < this.options.limit) {
-          hasNextPage = false;
-        }
-        if (ret.length) {
-          this.setPageMap(ret, id, hasNextPage);
-        }
-        return ret;
-      }
-    }
-    // TODO: in the future, when we have caching for edges
-    // we'll want to hit that cache instead of passing the limit down to the
-    // SQL query so we'll need a way to indicate whether this is done in SQL or not
-    // and then the slice will always happen
-    // so we'd need a way to indicate whether this is done in sql or not
-    return edges;
-  }
-
-  async query(
-    options: EdgeQueryableDataOptions,
-  ): Promise<EdgeQueryableDataOptions> {
-    this.usedQuery = true;
-
-    // we fetch an extra one to see if we're at the end
-    options.limit = this.options.limit + 1;
-
-    const orderBy = this.options.orderby;
-
-    if (this.offset) {
-      if (orderByHasExpressions(orderBy)) {
-        throw new Error(
-          "cursor pagination does not support computed order expressions",
-        );
-      }
-      const keyValuePairs: { [key: string]: string | number | null } = {};
-      for (const [key, value] of this.cursorKeyValues) {
-        keyValuePairs[key] = value;
-      }
-      options.clause = clause.AndOptional(
-        options.clause,
-        clause.PaginationUnboundColsQuery(
-          orderBy.map((orderBy) => ({
-            sortCol: orderBy.column,
-            sortValue: keyValuePairs[orderBy.column],
-            direction: orderBy.direction,
-            nullsPlacement: orderBy.nullsPlacement,
-            overrideAlias: orderBy.alias,
-          })),
-        ),
-      );
-    }
-
-    options.orderby = orderBy;
-    return options;
-  }
-
-  // TODO?
-  paginationInfo(id: ID): PaginationInfo | undefined {
-    return this.pageMap.get(id);
-  }
-}
-
-// TODO LastFilter same behavior as FirstFilter
-// TODO can we share so we don't keep needing to change in both
-class LastFilter<T extends Data> implements EdgeQueryFilter<T> {
-  /**
-   * The offset is the value of the last key in the cursor, which is the primary key for the table
-   */
-  private offset: string | number | undefined;
-  private pageMap: Map<ID, PaginationInfo> = new Map();
-  private edgeQuery: BaseEdgeQuery<Ent, Ent, T>;
-  private cursorKeyValues: CursorKeyValues = [];
-
-  constructor(private options: LastFilterOptions<T>) {
-    assertPositive(options.limit);
-
-    if (options.before) {
-      this.cursorKeyValues = translateCursorToKeyValues(options.before, {
-        keys: options.cursorKeys,
-      });
-      this.offset =
-        this.cursorKeyValues[this.cursorKeyValues.length - 1][1] ?? undefined;
-    }
-    this.edgeQuery = options.query;
-  }
-
-  filter(id: ID, edges: T[]): T[] {
-    let ret: T[] = [];
-    if (this.offset) {
-      // we have an extra one, get rid of it. we only got it to see if hasPreviousPage = true
-      if (edges.length > this.options.limit) {
-        ret = edges.slice(0, edges.length - 1);
-      } else {
-        // done in SQL. nothing to do here.
-        ret = edges;
-      }
-    } else {
-      ret = edges.slice(0, this.options.limit);
-    }
-
-    if (edges.length > this.options.limit) {
-      this.pageMap.set(id, {
-        hasPreviousPage: true,
-        // hasNextPage always false even if there's a next page because
-        // we shouldn't be querying in both directions at the same
-        hasNextPage: false,
-        startCursor: this.edgeQuery.getCursor(ret[0]),
-        endCursor: this.edgeQuery.getCursor(ret[ret.length - 1]),
-      });
-    }
-    return ret;
-  }
-
-  async query(
-    options: EdgeQueryableDataOptions,
-  ): Promise<EdgeQueryableDataOptions> {
-    // we fetch an extra one to see if we're at the end
-    options.limit = this.options.limit + 1;
-
-    // we also sort cursor col in same direction. (direction doesn't matter)
-    const orderBy = reverseOrderBy(this.options.orderby);
-
-    if (this.offset) {
-      if (orderByHasExpressions(orderBy)) {
-        throw new Error(
-          "cursor pagination does not support computed order expressions",
-        );
-      }
-      const keyValuePairs: { [key: string]: string | number | null } = {};
-      for (const [key, value] of this.cursorKeyValues) {
-        keyValuePairs[key] = value;
-      }
-      options.clause = clause.AndOptional(
-        options.clause,
-        clause.PaginationUnboundColsQuery(
-          orderBy.map((orderBy) => ({
-            sortCol: orderBy.column,
-            sortValue: keyValuePairs[orderBy.column],
-            direction: orderBy.direction,
-            nullsPlacement: orderBy.nullsPlacement,
-            overrideAlias: orderBy.alias,
-          })),
-        ),
-      );
-    }
-    options.orderby = orderBy;
-
-    return options;
-  }
-
-  paginationInfo(id: ID): PaginationInfo | undefined {
-    return this.pageMap.get(id);
-  }
-}
-
-export interface EdgeQueryOptions {
-  cursorCol: string;
-  cursorColIsDate?: boolean;
-  orderby: OrderBy;
-  joinBETA?: NonNullable<QueryableDataOptions["join"]>;
-  // field options used to query field values
-  fieldOptions?: SelectBaseDataOptions;
-}
+export type { PaginationInfo, CursorKeyValues } from "./pagination";
+export type EdgeQueryOptions = QueryPaginationOptions;
 
 export abstract class BaseEdgeQuery<
   TSource extends Ent,
@@ -391,34 +118,17 @@ export abstract class BaseEdgeQuery<
   // if the column we're sorting by is not unique e.g. created_at, we add a secondary sort column which is used in the cursor
   // to break ties and ensure that we can paginate correctly
   protected cursorCol: string;
-  private edgeQueryOptions: EdgeQueryOptions;
+  private cursorPagination: QueryPagination<TEdge>;
   private limitAdded = false;
-  private cursorKeys: string[] = [];
 
   constructor(
     public viewer: Viewer,
     options: EdgeQueryOptions,
   ) {
-    // we also sort cursor col in same direction. (direction doesn't matter)
-    const orderBy = [...options.orderby];
-    if (
-      !options.orderby.some((orderBy) => orderBy.column === options.cursorCol)
-    ) {
-      orderBy.push({
-        column: options.cursorCol,
-        direction: orderBy?.[0].direction || "DESC",
-      });
-    }
-    orderBy.forEach((o) => {
-      o.alias =
-        o.alias ??
-        (options.fieldOptions?.disableFieldsAlias
-          ? undefined
-          : (options.fieldOptions?.fieldsAlias ?? options.fieldOptions?.alias));
-    });
-    this.edgeQueryOptions = { ...options, orderby: orderBy };
+    this.cursorPagination = new QueryPagination(options, (row) =>
+      this.getCursor(row),
+    );
     this.cursorCol = options.cursorCol;
-    this.cursorKeys = orderBy.map((orderBy) => orderBy.column);
 
     this.memoizedloadEdges = memoizeNoArgs(this.loadEdges.bind(this));
     this.genIDInfosToFetch = memoizeNoArgs(
@@ -440,17 +150,7 @@ export abstract class BaseEdgeQuery<
   first(n: number, after?: string): this {
     this.limitAdded = true;
     this.assertQueryNotDispatched("first");
-    this.filters.push(
-      new FirstFilter({
-        limit: n,
-        after,
-        cursorCol: this.cursorCol,
-        cursorKeys: this.cursorKeys,
-        orderby: this.edgeQueryOptions.orderby,
-        query: this,
-        fieldOptions: this.edgeQueryOptions.fieldOptions,
-      }),
-    );
+    this.addPaginationFilter(this.cursorPagination.first(n, after));
     return this;
   }
 
@@ -469,18 +169,28 @@ export abstract class BaseEdgeQuery<
   last(n: number, before?: string): this {
     this.limitAdded = true;
     this.assertQueryNotDispatched("last");
-    this.filters.push(
-      new LastFilter({
-        limit: n,
-        before,
-        cursorCol: this.cursorCol,
-        cursorKeys: this.cursorKeys,
-        orderby: this.edgeQueryOptions.orderby,
-        query: this,
-        fieldOptions: this.edgeQueryOptions.fieldOptions,
-      }),
-    );
+    this.addPaginationFilter(this.cursorPagination.last(n, before));
     return this;
+  }
+
+  private addPaginationFilter(filter: RowQueryFilter<TEdge>) {
+    this.filters.push({
+      query: filter.query?.bind(filter),
+      filter: (id, edges) => {
+        const rows = filter.filter ? filter.filter(edges) : edges;
+        const pageInfo = filter.paginationInfo?.();
+        if (pageInfo) {
+          this.pagination.set(id, pageInfo);
+        }
+        return rows;
+      },
+    });
+  }
+
+  async queryPageInfo(): Promise<PaginationInfo> {
+    await this.querySingleEdge("queryPageInfo");
+    const [id] = this.edges.keys();
+    return this.pagination.get(id) ?? emptyPaginationInfo();
   }
 
   private async querySingleEdge(method: string): Promise<TEdge[]> {
@@ -712,10 +422,7 @@ export abstract class BaseEdgeQuery<
   }
 
   getCursor(row: TEdge): string {
-    return getCursor({
-      row,
-      cursorKeys: this.cursorKeys,
-    });
+    return this.cursorPagination.getCursor(row);
   }
 }
 

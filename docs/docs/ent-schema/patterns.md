@@ -67,11 +67,27 @@ This is available in the `@snowtop/ent-soft-delete` npm package. Code is availab
 ## API
 
 Write transformations select field permissions and defaults for the resulting
-operation. Returning `SQLStatementOperation.Insert` clears the existing entity
-from the builder and creates a new row. Supply all required input fields that
-do not have creation defaults; fields from the original row are not copied.
-The original row remains unchanged. This also applies when a transform returns
-Insert for a builder that already has an existing entity.
+operation. Returning `SQLStatementOperation.Insert` clears the current write
+target and creates a new row. Supply all required input fields that do not have
+creation defaults; fields from the original row are not copied. The original
+row remains unchanged, and Edit/Delete hooks can still read it through
+`builder.existingEnt`. Generated field accessors, `getEntID()`, and inverse edges
+use the new write target instead. This also applies when a transform returns
+Insert for a builder that already has an existing entity. Relative numeric
+expressions require an update; use absolute values for an insert.
+
+`getEntID()` initializes the transformation and defaults even when called before
+validation. Hooks can use it to obtain the eventual row ID. Within
+`transformWrite`, use `builder.existingEnt.id` to read the original ID instead;
+the final write target is not known until the transformation returns. Edit
+defaults can read an existing target's ID. A creation default cannot await its
+own new write ID; this circular read fails with an error instead of hanging.
+
+After upgrading, regenerate builders with `tsent codegen --write-all` before
+using Edit/Delete-to-Insert transformations. Previously generated accessors read
+`builder.existingEnt` directly and can return the original row's values or ID.
+Custom builder accessors that need the current write target should use
+`builder.orchestrator.getExistingEntForWrite()`; it returns `null` for an insert.
 
 The API for Pattern looks like:
 
