@@ -40,6 +40,21 @@ def _more_indexes(metadata, predicate, count):
 
 
 class TestPostgresComparisonPlanning:
+    @pytest.mark.parametrize("available", [(), ("cube",), ("earthdistance",), ("cube", "earthdistance")])
+    def test_snapshot_preserves_declared_order_with_incomplete_dependencies(self, available):
+        extensions = [
+            compare._normalize_db_extension({"name": "cube", "install_schema": "public"}),
+            compare._normalize_db_extension({"name": "earthdistance"}),
+            compare._normalize_db_extension({"name": "plpgsql"}),
+        ]
+        connection = Mock()
+        connection.execute.return_value = [
+            (name, "1.0", "1.0", ["cube"] if name == "earthdistance" else [])
+            for name in available
+        ]
+        planned = compare._plan_snapshot_extension_ops(connection, extensions, {})
+        assert [op.extension["name"] for op in planned] == ["plpgsql", "cube", "earthdistance"]
+
     def test_snapshot_siblings_keep_the_same_order_across_catalog_plans(self):
         names = ["child_z", "child_a", "Parent"]
         extensions = [compare._normalize_db_extension({"name": name}) for name in names]

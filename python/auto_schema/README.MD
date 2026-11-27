@@ -32,7 +32,7 @@ Partial indexes are supported via `postgresql_where=sa.text(...)` and `sqlite_wh
 
 ## Replaying PostgreSQL extension snapshots
 
-`auto_schema --all_sql` includes Ent-managed extensions in `schema.sql` even when the comparison database already has them. Replay installs declared prerequisites first. Extension-owned tables are allowed in the comparison database, but their ownership does not predict which objects a fresh extension installation will create. Validate the generated SQL by replaying it on a disposable target with the required external prerequisites; object-name conflicts are reported during replay.
+`auto_schema --all_sql` includes Ent-managed extensions in `schema.sql` even when the comparison database already has them. It preserves declaration order while moving known prerequisites first. When the comparison server lacks an extension package or the requested version's dependency metadata, declare that extension after its prerequisites. Extension-owned tables are allowed in the comparison database, but their ownership does not predict which objects a fresh extension installation will create. Validate the generated SQL by replaying it on a disposable target with the required external prerequisites; object-name conflicts are reported during replay.
 
 Application tables created by the snapshot start with their declared seed rows. Explicit seeds for physical tables provisioned outside the snapshot retain the existing comparison-based insert, update, and delete behavior; the comparison database must represent those tables and their initial data. Writable views retain insert-only seeding, preserving existing rows.
 

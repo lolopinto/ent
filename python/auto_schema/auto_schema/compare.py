@@ -223,14 +223,31 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
         version = ext["version"] or names.get(name)
         prerequisites[name] = version_requires.get((name, version), ())
 
-    # Register sibling edges in declaration order, independent of the query plan.
-    dependencies = TopologicalSorter({name: () for name in resolved})
+    dependencies = {}
     for name, requires in prerequisites.items():
-        dependencies.add(name, *(dep for dep in requires if dep in resolved))
+        dependencies[name] = [dep for dep in requires if dep in resolved]
         ext = resolved[name]
         if "plpgsql" in resolved and name != "plpgsql" and (ext["version"] or ext["install_schema"]):
-            dependencies.add(name, "plpgsql")
-    return [ops.CreateExtensionOp(resolved[name]) for name in dependencies.static_order()]
+            dependencies[name].append("plpgsql")
+    TopologicalSorter(dependencies).prepare()  # Reject cycles before walking.
+
+    # Visit declarations in order, moving only their known prerequisites ahead.
+    # Emitting whole ready batches can move an unknown dependent before its
+    # declared prerequisite while that prerequisite waits for e.g. plpgsql.
+    ordered = []
+    visited = set()
+
+    def visit(name):
+        if name in visited:
+            return
+        for prerequisite in dependencies[name]:
+            visit(prerequisite)
+        visited.add(name)
+        ordered.append(ops.CreateExtensionOp(resolved[name]))
+
+    for name in resolved:
+        visit(name)
+    return ordered
 
 
 @comparators.dispatch_for("schema")
@@ -401,6 +418,11 @@ def _create_tuple_key(row, pkeys):
 
 def _snapshot_seed_tables(autogen_context, upgrade_ops):
     connection = autogen_context.connection
+    # Reflection owns eligibility: in particular, system catalogs and temporary
+    # tables must not become reconciliation targets merely because they resolve.
+    table_names = autogen_context.inspector.get_table_names()
+    if not table_names:
+        return set()
     # Use the active path, not dialect.default_schema_name, which can be cached
     # before dev-schema setup. Unqualified CREATE TABLE uses current_schema().
     default_schema, search_path = connection.execute(sa.text(
@@ -410,14 +432,15 @@ def _snapshot_seed_tables(autogen_context, upgrade_ops):
         (op.schema or default_schema, op.table_name)
         for op in upgrade_ops.ops if isinstance(op, alembicops.CreateTableOp)
     }
-    # Match ordinary reflection's real-table semantics. Visibility also excludes
-    # physical tables hidden by views, which retain insert-only seeding.
+    # Resolve only eligible real tables. Visibility also excludes physical tables
+    # hidden by views, which retain insert-only seeding.
     baseline_tables = connection.execute(sa.text("""
         SELECT n.nspname, c.relname
         FROM pg_catalog.pg_class c
         JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
-        WHERE c.relkind IN ('r', 'p') AND pg_catalog.pg_table_is_visible(c.oid)
-    """))
+        WHERE c.relname = ANY(CAST(:table_names AS text[]))
+          AND pg_catalog.pg_table_is_visible(c.oid)
+    """), {"table_names": table_names})
     tables = set()
     for table_schema, table_name in baseline_tables:
         for schema in search_path:

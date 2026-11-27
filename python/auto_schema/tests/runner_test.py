@@ -3,6 +3,7 @@ from auto_schema.change_type import ChangeType
 import pytest
 import os
 import shutil
+from unittest.mock import patch
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -3064,6 +3065,68 @@ class TestPostgresRunner(BaseTestRunner):
         r.all_sql(file=path)
         r.connection.exec_driver_sql(path.read_text())
         assert r.compute_changes() == []
+
+    def test_schema_sql_replays_without_extension_dependency_metadata(self, new_test_runner, tmp_path):
+        metadata = _db_extension_metadata(name="cube", install_schema="public")
+        metadata.info["db_extensions"]["public"].extend([
+            {"name": "earthdistance"}, {"name": "plpgsql"},
+        ])
+        r = new_test_runner(metadata)
+        path = tmp_path / "schema.sql"
+        execute = sa.engine.Connection.execute
+
+        def without_package_metadata(connection, statement, *args, **kwargs):
+            # Model a comparison server without these packages; replay uses a
+            # server that has them. Catalog absence must not scramble the order.
+            if "FROM pg_catalog.pg_available_extensions a" in str(statement):
+                return iter(())
+            return execute(connection, statement, *args, **kwargs)
+
+        with patch.object(sa.engine.Connection, "execute", without_package_metadata):
+            r.all_sql(file=path)
+        r.connection.exec_driver_sql(path.read_text())
+        assert r.compute_changes() == []
+
+    @pytest.mark.parametrize("name", ["pg_database", "pg_class"])
+    def test_schema_sql_does_not_reconcile_system_catalog_seeds(self, new_test_runner, tmp_path, name):
+        metadata = sa.MetaData()
+        sa.Table(name, metadata, sa.Column("oid", sa.Integer, primary_key=True), schema="app")
+        metadata.info["data"] = {"public": {name: {"pkeys": ["oid"], "rows": []}}}
+        r = new_test_runner(metadata)
+        r.connection.exec_driver_sql("CREATE SCHEMA app")
+        r.connection.commit()
+        # Planning may read catalog metadata, but must never reconcile its rows.
+        # Keep the entire comparison connection read-only, including a failing test.
+        r.args = {**r.args, "engine": r.engine.url.update_query_dict({
+            "options": "-csearch_path=public,app -cdefault_transaction_read_only=on",
+        })}
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path, database=r.engine.url.database)
+        sql = path.read_text()
+        assert f"CREATE TABLE app.{name}" in sql
+        assert f"DELETE FROM {name}" not in sql
+        assert f"UPDATE {name}" not in sql
+
+    def test_schema_sql_does_not_reconcile_temporary_seed_tables(self, new_test_runner, tmp_path):
+        metadata = sa.MetaData()
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer, primary_key=True), schema="app")
+        metadata.info["data"] = {"public": {"lookup": {"pkeys": ["id"], "rows": []}}}
+        r = new_test_runner(metadata)
+
+        def temporary_table(connection):
+            # all_sql opens its own connection; give that comparison connection
+            # a temporary table which ordinary reflection deliberately ignores.
+            connection.exec_driver_sql("CREATE TEMP TABLE lookup (id int PRIMARY KEY)")
+            connection.exec_driver_sql("INSERT INTO lookup VALUES (1)")
+            connection.commit()
+
+        sa.event.listen(sa.engine.Engine, "engine_connect", temporary_table)
+        try:
+            path = tmp_path / "schema.sql"
+            r.all_sql(file=path)
+        finally:
+            sa.event.remove(sa.engine.Engine, "engine_connect", temporary_table)
+        assert "DELETE FROM lookup" not in path.read_text()
 
     def test_schema_sql_extension_spelling_in_turkish_locale(self, new_test_runner, tmp_path):
         r = new_test_runner(_db_extension_metadata(name="CITEXT"))
