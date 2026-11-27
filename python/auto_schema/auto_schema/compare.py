@@ -410,13 +410,17 @@ def compare_data(autogen_context, upgrade_ops, schemas):
     db_metadata = sa.MetaData()
     if not snapshot:
         db_metadata.reflect(autogen_context.inspector.bind)
+    # Seed operations and row lookup use unqualified names. Match that contract
+    # so an explicit CreateTableOp.schema cannot hide a newly created table.
     created_tables = {
-        (op.schema or autogen_context.dialect.default_schema_name, op.table_name)
+        op.table_name
         for op in upgrade_ops.ops if isinstance(op, alembicops.CreateTableOp)
     }
+    # Match ordinary reflection's real-table semantics. has_table() also accepts
+    # writable views, which previously received inserts without reconciliation.
+    baseline_tables = set(autogen_context.inspector.get_table_names()) if snapshot else set()
 
     for sch in schemas:
-        table_schema = sch or autogen_context.dialect.default_schema_name
         sch = _get_schema_key(sch)
 
         if not sch in data:
@@ -444,12 +448,13 @@ def compare_data(autogen_context, upgrade_ops, schemas):
                 # if an incidental extension member shares their name. Tables
                 # provisioned outside the snapshot retain seed reconciliation.
                 table_exists = (
-                    (table_schema, table_name) not in created_tables
-                    and autogen_context.inspector.has_table(table_name)
+                    table_name not in created_tables
+                    and table_name in baseline_tables
                 )
             if not table_exists:
-                upgrade_ops.ops.append(ops.AddRowsOp(
-                    table_name, pkeys, rows))
+                if rows:
+                    upgrade_ops.ops.append(ops.AddRowsOp(
+                        table_name, pkeys, rows))
             else:
                 _compare_db_values(autogen_context, upgrade_ops,
                                    table_name, pkeys, data_rows)

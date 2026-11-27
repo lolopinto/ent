@@ -34,7 +34,9 @@ Partial indexes are supported via `postgresql_where=sa.text(...)` and `sqlite_wh
 
 `auto_schema --all_sql` includes Ent-managed extensions in `schema.sql` even when the comparison database already has them. Replay installs declared prerequisites first. Extension-owned tables are allowed in the comparison database, but their ownership does not predict which objects a fresh extension installation will create. Validate the generated SQL by replaying it on a disposable target with the required external prerequisites; object-name conflicts are reported during replay.
 
-Application tables created by the snapshot start with their declared seed rows. Explicit seeds for tables provisioned outside the snapshot retain the existing comparison-based insert, update, and delete behavior; the comparison database must represent those externally provisioned tables and their initial data.
+Application tables created by the snapshot start with their declared seed rows. Explicit seeds for physical tables provisioned outside the snapshot retain the existing comparison-based insert, update, and delete behavior; the comparison database must represent those tables and their initial data. Writable views retain insert-only seeding, preserving existing rows.
+
+This baseline requirement also applies to tables supplied by Ent-managed extensions. To override extension-supplied rows, use `--empty_database` to select a comparison database with the matching extension version and install schema already provisioned, including representative initial data. A fully empty comparison database cannot derive updates or deletions to those rows.
 
 Declare any required `version` or `installSchema` in `dbExtensions`. Generated extension statements run before retained custom SQL, so a later `CREATE EXTENSION IF NOT EXISTS` skips its install options. Create any custom install schema before replay. If retained revisions also create the schema or extension, use `CREATE SCHEMA IF NOT EXISTS` and `CREATE EXTENSION IF NOT EXISTS` in those revisions. Use `auto_schema --progressive_sql` when installation depends on the original migration order.
 

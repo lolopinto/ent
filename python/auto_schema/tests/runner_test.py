@@ -3132,6 +3132,74 @@ class TestPostgresRunner(BaseTestRunner):
         if member_schema == "public":
             assert target.connection.exec_driver_sql("SELECT id FROM lookup").scalars().all() == [1]
 
+    @pytest.mark.parametrize("dev_schema", [False, True])
+    def test_schema_sql_seeds_qualified_tables(self, new_test_runner, tmp_path, dev_schema):
+        metadata = _db_extension_metadata(name="hstore", install_schema="public")
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer, primary_key=True), schema="app")
+        metadata.info["data"] = {"public": {"lookup": {
+            "pkeys": ["id"], "rows": [{"id": 1}],
+        }}}
+        args = {"db_schema": "app", "db_schema_include_public": False} if dev_schema else None
+        r = new_test_runner(metadata, args_override=args)
+        if not dev_schema:
+            # The comparison connection must use the same multi-schema path.
+            r.args = {**r.args, "engine": r.engine.url.update_query_dict({
+                "options": "-csearch_path=public,app",
+            })}
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        clean_sql = path.read_text()
+
+        r.connection.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS app")
+        r.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA public")
+        r.connection.exec_driver_sql("CREATE TABLE app.lookup (id int PRIMARY KEY)")
+        r.connection.exec_driver_sql("INSERT INTO app.lookup VALUES (1)")
+        r.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE app.lookup")
+        r.connection.commit()
+        r.all_sql(file=path, database=r.engine.url.database)
+        populated_sql = path.read_text()
+
+        target = new_test_runner(metadata, new_database=True, args_override=args)
+        target.connection.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS app")
+        if not dev_schema:
+            target.connection.exec_driver_sql("SET search_path TO public, app")
+        target.connection.exec_driver_sql(populated_sql)
+        assert target.connection.exec_driver_sql("SELECT id FROM app.lookup").scalars().all() == [1]
+        assert populated_sql == clean_sql
+
+    @pytest.mark.parametrize("seed_rows", [[], [{"srid": 3, "auth_name": "new"}]])
+    def test_schema_sql_preserves_rows_behind_seed_view(self, new_test_runner, tmp_path, seed_rows):
+        metadata = _db_extension_metadata(name="hstore", provisioned_by="external", install_schema="gis")
+        # Model an externally provisioned PostGIS table exposed through a writable
+        # view, using stock Postgres so preservation is covered in normal CI.
+        sa.Table("spatial_ref_sys", metadata,
+                 sa.Column("srid", sa.Integer, primary_key=True), sa.Column("auth_name", sa.Text))
+        metadata.info["data"] = {"public": {"spatial_ref_sys": {
+            "pkeys": ["srid"], "rows": seed_rows,
+        }}}
+        r = new_test_runner(metadata)
+        target = new_test_runner(metadata, new_database=True)
+        for provisioned in (r, target):
+            provisioned.connection.exec_driver_sql("CREATE SCHEMA gis")
+            provisioned.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA gis")
+            provisioned.connection.exec_driver_sql(
+                "CREATE TABLE gis.spatial_ref_sys (srid int PRIMARY KEY, auth_name text)")
+            provisioned.connection.exec_driver_sql(
+                "INSERT INTO gis.spatial_ref_sys VALUES (1, 'keep'), (2, 'also keep')")
+            provisioned.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE gis.spatial_ref_sys")
+            provisioned.connection.exec_driver_sql(
+                "CREATE VIEW public.spatial_ref_sys AS SELECT * FROM gis.spatial_ref_sys")
+            provisioned.connection.commit()
+
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path, database=r.engine.url.database)
+        target.connection.exec_driver_sql(path.read_text())
+        assert target.connection.exec_driver_sql(
+            "SELECT srid, auth_name FROM gis.spatial_ref_sys ORDER BY srid"
+        ).all() == [(1, "keep"), (2, "also keep")] + [
+            (row["srid"], row["auth_name"]) for row in seed_rows
+        ]
+
     def test_schema_sql_reconciles_externally_provisioned_seed_rows(self, new_test_runner, tmp_path):
         metadata = _db_extension_metadata(name="hstore", provisioned_by="external")
         # spatial_ref_sys is excluded from Ent's table DDL. Model its external
