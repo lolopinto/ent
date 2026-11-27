@@ -204,17 +204,20 @@ def _plan_extension_ops(autogen_context):
           ON version.name = available.name
          AND version.version = COALESCE(wanted.version, available.default_version)
     """), {"names": list(by_name), "versions": [versions[name] for name in by_name]})
-    graph = TopologicalSorter({name: () for name in by_name})
+    prerequisites = {name: [] for name in by_name}
     for name, requires in rows:
-        graph.add(name, *(dep for dep in requires or () if dep in by_name))
+        prerequisites[name].extend(dep for dep in requires or () if dep in by_name)
     # PostgreSQL normally preinstalls plpgsql. If the schema itself provides
     # it, install it before another extension's replay-time DO block needs it.
     if "plpgsql" in by_name:
         for op in extension_ops:
             if isinstance(op, ops.CreateExtensionOp) and op.reconcile_existing:
                 if op.extension["name"] != "plpgsql":
-                    graph.add(op.extension["name"], "plpgsql")
-    return [op for name in graph.static_order() for op in by_name[name]]
+                    prerequisites[op.extension["name"]].append("plpgsql")
+    if autogen_context.opts.get("ent_from_scratch"):
+        # Replay uses the same edges when custom SQL separates installations.
+        autogen_context.migration_context.opts["ent_extension_prerequisites"] = prerequisites
+    return [op for name in TopologicalSorter(prerequisites).static_order() for op in by_name[name]]
 
 
 @comparators.dispatch_for("schema")

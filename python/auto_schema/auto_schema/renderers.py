@@ -145,7 +145,8 @@ def render_drop_enum_op(autogen_context: AutogenContext, op: ops.DropEnumOp) -> 
 # hmm not sure why we need this. there's probably an easier way to do this that doesn't require this...
 @renderers.dispatch_for(ops.OurCreateCheckConstraintOp)
 def render_check_constraint(autogen_context: AutogenContext, op: ops.OurCreateCheckConstraintOp) -> str:
-    return f"op.create_check_constraint('{op.constraint_name}', '{op.table_name}', '{op.condition}')"
+    schema = f", schema={op.schema!r}" if op.schema is not None else ""
+    return f"op.create_check_constraint({op.constraint_name!r}, {op.table_name!r}, {str(op.condition)!r}{schema})"
 
 
 def _render_kw_args(d):

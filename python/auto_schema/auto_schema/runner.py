@@ -2,9 +2,10 @@ from argparse import Namespace
 import io
 import json
 import os
-import asyncio
 import sys
 from contextlib import contextmanager
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from collections.abc import Mapping
 from alembic.operations import Operations
 from uuid import UUID
@@ -33,11 +34,11 @@ from . import config
 from . import ops
 from . import migration_ordering
 from . import renderers
+from . import replay
 from . import compare
 from . import ops_impl
 from . import csv
 from .schema_item import CustomSQLAlchemyType
-from .util.os import delete_py_files
 
 
 def _normalize_generated_file_text(contents: str) -> str:
@@ -537,7 +538,7 @@ class Runner(object):
             # For some reason, the default rendering is not doing this correctly, so we need to
             # customize the rendering so that this is handled correctly and it adds the sa.text part
             if isinstance(item, TextClause):
-                return f"sa.text('{item.text}')"
+                return f"sa.text({item.text!r})"
             if isinstance(item, UUID):
                 # quote as string so it's rendered correctly
                 return f"'{str(item)}'"
@@ -717,11 +718,10 @@ class Runner(object):
         
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
 
-        self._include_custom_sql(migrations.upgrade_ops, connection)
-        self._include_custom_sql(migrations.downgrade_ops, connection)
+        self._include_custom_sql(migrations.upgrade_ops, mc)
+        self._include_custom_sql(migrations.downgrade_ops, mc)
 
-        # delete existing files
-        asyncio.run(delete_py_files(location))
+        originals = [Path(rev.path) for rev in self.cmd.get_script_directory().walk_revisions()]
 
         message = message or "all the things"
         command_args = dict(
@@ -734,11 +734,6 @@ class Runner(object):
             version_path=None,
             rev_id=revision,
             depends_on=None,
-        )
-        revision_context = RevisionContext(
-            self.cmd.alembic_cfg,
-            self.cmd.get_script_directory(),
-            command_args,
         )
         migration_script = alembicops.MigrationScript(
             rev_id=revision,
@@ -762,60 +757,29 @@ class Runner(object):
             mc, autogenerate=False,
             opts=opts,
         )
-        revision_context._last_autogen_context = autogen_context
-
         migration_script._needs_render = True
+        # Render and load the replacement before removing any revisions. A
+        # custom operation can support offline SQL but lack a Python renderer.
+        with TemporaryDirectory(dir=self.schema_path) as staging:
+            directory = self.cmd.get_script_directory()
+            directory.version_locations = [staging]
+            revision_context = RevisionContext(self.cmd.alembic_cfg, directory, command_args)
+            revision_context._last_autogen_context = autogen_context
+            script = revision_context._to_script(migration_script)
+            target = Path(location) / Path(script.path).name
+            os.replace(script.path, target)
+            for original in originals:
+                if original.resolve() != target.resolve():
+                    original.unlink()
 
-        # writes the file and we can do something with the script if we want but we don't need to
-        revision_context._to_script(migration_script)
-        
-
-    def _include_custom_sql(self, generated, connection):
+    def _include_custom_sql(self, generated, mc):
         """Place opaque custom SQL on the same side of table DDL as in history."""
-        upgrade = isinstance(generated, alembicops.UpgradeOps)
         metadata = self.metadata.info
         include = metadata.get("custom_sql_include", {}).get("public", [])
         exclude = metadata.get("custom_sql_exclude", {}).get("public", [])
-        revisions = list(self.cmd.get_script_directory().walk_revisions())
-        if upgrade:
-            revisions.reverse()
+        revisions = reversed(list(self.cmd.get_script_directory().walk_revisions()))
 
-        history = []
-        buffer = io.StringIO()
-        mc = MigrationContext.configure(
-            connection=connection,
-            opts={**Runner.get_opts(), "as_sql": True, "output_buffer": buffer},
-        )
-        with Operations.context(mc) as operations:
-            invoke = operations.invoke
-
-            def record(op):
-                if isinstance(op, anchors) or (
-                    isinstance(op, alembicops.AlterColumnOp) and op.modify_server_default is not False
-                ):
-                    history.append((op, None))
-                elif keep_custom and isinstance(op, (ops.ExecuteSQL, alembicops.ExecuteSQLOp)):
-                    history.append((op, rev.revision))
-                return invoke(op)
-
-            operations.invoke = record
-            for rev in revisions:
-                keep_custom = rev.revision in include if include else rev.revision not in exclude
-                start = len(history)
-                if upgrade or not keep_custom:
-                    anchors = (alembicops.CreateTableOp, alembicops.AddColumnOp)
-                    rev.module.upgrade()
-                    if not upgrade:
-                        # Excluded custom downgrades can be irreversible. Use
-                        # the corresponding upgrade's DDL positions in reverse.
-                        history[start:] = reversed(history[start:])
-                else:
-                    anchors = (alembicops.DropTableOp, alembicops.DropColumnOp)
-                    rev.module.downgrade()
-                buffer.seek(0)
-                buffer.truncate()
-
-        return migration_ordering.interleave_custom_sql(generated, history, self.metadata, connection.dialect.name)
+        return replay.interleave(generated, revisions, self.metadata, mc, include, exclude)
 
     def _check_empty_database(self, connection):
         inspector = sa.inspect(connection)
@@ -920,7 +884,7 @@ class Runner(object):
             # create alembic table to start
             mc2._version.create(bind=mc2.connection)
 
-            headers = self._include_custom_sql(migrations.upgrade_ops, connection)
+            headers = self._include_custom_sql(migrations.upgrade_ops, mc)
             for op in migrations.upgrade_ops.ops:
                 if op in headers:
                     buffer.write(f"-- custom sql for rev {headers[op]}\n")

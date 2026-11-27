@@ -8,7 +8,6 @@ of the reversed operations. Keep both directions here as new operations arise.
 Edge-config cleanup is a pre-drop exception to the normal trailing data phase.
 """
 
-import copy
 import uuid
 
 import alembic.operations.ops as alembicops
@@ -194,91 +193,3 @@ def order_downgrade(downgrade_ops):
     first = guards + schema_moves
     if first:
         downgrade_ops.ops[:] = first + [op for op in downgrade_ops.ops if op not in first]
-
-
-def interleave_custom_sql(generated, history, metadata, dialect):
-    """Retain custom SQL boundaries around the tables that survive a squash."""
-    upgrade = isinstance(generated, alembicops.UpgradeOps)
-    # Plan both directions in creation order. A custom teardown that historically
-    # followed DROP TABLE then lands on the prerequisite side of that table.
-    custom = []
-    table_phase = {}
-    default_phases = {}
-    for op, revision in history if upgrade else reversed(history):
-        if revision is not None:
-            custom.append((op, revision))
-            continue
-        key = (op.schema, op.table_name)
-        if isinstance(op, (alembicops.CreateTableOp, alembicops.DropTableOp)):
-            table_phase[key] = len(custom)
-            default_phases[key] = {}
-        elif isinstance(op, alembicops.AddColumnOp):
-            default_phases.setdefault(key, {})[op.column.name] = len(custom)
-        else:
-            default_phases.setdefault(key, {})[op.column_name] = len(custom)
-    if not custom:
-        return {}
-
-    tables = {(t.schema, t.name): t for t in metadata.sorted_tables}
-    # A later revision may have added an FK between two existing tables. Its
-    # inline form in the snapshot needs the referenced table first.
-    creation_phase = table_phase.copy()
-    for key, table in reversed(tables.items()):
-        for fk in table.foreign_keys:
-            parent = (fk.column.table.schema, fk.column.table.name)
-            table_phase[parent] = min(table_phase.get(key, 0), table_phase.get(parent, 0))
-
-    phases = [[] for _ in range(len(custom) + 1)]
-    last_table_phase = 0
-    for op in generated.ops if upgrade else reversed(generated.ops):
-        if not isinstance(op, _TABLE_DDL):
-            # Type setup precedes tables, seed/edge data follows them.
-            phases[last_table_phase].append(op)
-            continue
-        key = (op.schema, op.table_name)
-        phase = table_phase.get(key, 0)
-        last_table_phase = max(phase, last_table_phase)
-        if dialect == "postgresql" and isinstance(op, (alembicops.CreateTableOp, alembicops.DropTableOp)):
-            positions = default_phases.get(key, {})
-            delayed = set()
-            for col in tables[key].c:
-                position = positions.get(col.name, creation_phase.get(key, 0))
-                if position > phase and isinstance(col.server_default, sa.DefaultClause):
-                    delayed.add(col.name)
-                    phases[position].append(alembicops.AlterColumnOp(
-                        op.table_name, col.name, schema=op.schema, existing_type=col.type,
-                        modify_server_default=col.server_default if upgrade else None,
-                    ))
-                    last_table_phase = max(position, last_table_phase)
-            if delayed and upgrade:
-                op = _create_table_without_defaults(op, delayed)
-        phases[phase].append(op)
-
-    ordered = []
-    headers = {}
-    previous_revision = None
-    for i, phase_ops in enumerate(phases):
-        ordered.extend(phase_ops)
-        if i < len(custom):
-            op, revision = custom[i]
-            if phase_ops or revision != previous_revision:
-                headers[op] = revision
-            ordered.append(op)
-            previous_revision = revision
-    generated.ops[:] = ordered if upgrade else reversed(ordered)
-    return headers
-
-
-def _create_table_without_defaults(create, delayed):
-    # These defaults were added after custom SQL (e.g. CREATE SEQUENCE) and
-    # have their own ALTER COLUMN operations. Keep shared metadata untouched.
-    create = copy.copy(create)
-    columns = []
-    for col in create.columns:
-        if isinstance(col, sa.Column) and col.name in delayed:
-            col = col._copy()
-            col.server_default = None
-            col.autoincrement = False
-        columns.append(col)
-    create.columns = columns
-    return create
