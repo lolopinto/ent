@@ -75,6 +75,8 @@ def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, A
 def _get_extension_ops(
     metadata_extensions: list[dict[str, Any]],
     db_extensions: dict[str, dict[str, Any]],
+    *,
+    from_scratch: bool,
 ) -> list[ops.MigrateOpInterface]:
     extension_ops = []
     for extension in metadata_extensions:
@@ -83,15 +85,15 @@ def _get_extension_ops(
         db_extension = db_extensions.get(name.lower())
         version = extension.get("version")
         install_schema = extension.get("install_schema")
-        if db_extension is None:
-            if not ent_provisioned:
-                raise ValueError(
-                    f'required externally provisioned db extension "{name}" is not installed'
-                )
-            extension_ops.append(
-                ops.CreateExtensionOp(extension)
-            )
+        # Fresh installs must create every Ent-managed extension, even when the
+        # comparison database inherited it from its PostgreSQL image or template.
+        if ent_provisioned and (from_scratch or db_extension is None):
+            extension_ops.append(ops.CreateExtensionOp(extension))
             continue
+        if db_extension is None:
+            raise ValueError(
+                f'required externally provisioned db extension "{name}" is not installed'
+            )
 
         if version is not None and db_extension.get("version") != version:
             if not ent_provisioned:
@@ -178,7 +180,10 @@ def _plan_extension_ops(autogen_context):
         raise ValueError("db extensions are only supported for postgres")
 
     db_extensions = _get_db_extensions(autogen_context)
-    return _get_extension_ops(metadata_extensions, db_extensions)
+    return _get_extension_ops(
+        metadata_extensions, db_extensions,
+        from_scratch=autogen_context.opts.get("ent_from_scratch", False),
+    )
 
 
 @comparators.dispatch_for("schema")
@@ -290,6 +295,8 @@ def _dialect_name(autogen_context: AutogenContext) -> str:
 
 # why isn't this just metadata.sorted_tables?
 def _table_exists(autogen_context: AutogenContext):
+    if autogen_context.opts.get("ent_from_scratch"):
+        return False
     dialect_map = {
         'sqlite': _execute_sqlite_dialect,
         'postgresql': _execute_postgres_dialect,
@@ -345,6 +352,13 @@ def _create_tuple_key(row, pkeys):
     return tuple(l)
 
 
+def _reflect_app_metadata(autogen_context):
+    metadata = sa.MetaData()
+    if not autogen_context.opts.get("ent_from_scratch"):
+        metadata.reflect(autogen_context.inspector.bind)
+    return metadata
+
+
 @ comparators.dispatch_for('schema', priority=DispatchPriority.LAST)
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
@@ -352,9 +366,7 @@ def compare_data(autogen_context, upgrade_ops, schemas):
 
     data = autogen_context.metadata.info.setdefault("data", {})
 
-    inspector = autogen_context.inspector
-    db_metadata = sa.MetaData()
-    db_metadata.reflect(inspector.bind)
+    db_metadata = _reflect_app_metadata(autogen_context)
 
     for sch in schemas:
         sch = _get_schema_key(sch)
@@ -439,10 +451,7 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
 
 @ comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
 def compare_schema(autogen_context, upgrade_ops, schemas):
-    inspector = autogen_context.inspector
-
-    db_metadata = sa.MetaData()
-    db_metadata.reflect(inspector.bind)
+    db_metadata = _reflect_app_metadata(autogen_context)
 
     # TODO schema not being used
     # https://github.com/lolopinto/ent/issues/123

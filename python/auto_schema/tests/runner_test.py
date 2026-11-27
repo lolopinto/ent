@@ -3019,6 +3019,56 @@ class TestPostgresRunner(BaseTestRunner):
         r2 = new_test_runner(metadata, r)
         assert r2.compute_changes() == []
 
+    @pytest.mark.parametrize("owner", ["ent", "external"])
+    def test_all_sql_with_preinstalled_extension(
+        self, new_test_runner, tmp_path, owner,
+    ):
+        # PostgreSQL preinstalls plpgsql in the default comparison database.
+        metadata = _db_extension_metadata(
+            name="plpgsql", provisioned_by=owner, install_schema="pg_catalog", version="1.0",
+        )
+        r = new_test_runner(metadata)
+        assert r.compute_changes() == []
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        sql = path.read_text()
+        extension_sql = [line for line in sql.splitlines() if "EXTENSION" in line]
+        if owner == "ent":
+            assert extension_sql == [
+                """CREATE EXTENSION IF NOT EXISTS "plpgsql" WITH SCHEMA "pg_catalog" VERSION '1.0';"""
+            ]
+            r.connection.execute(sa.text("DROP EXTENSION plpgsql"))
+        else:
+            assert extension_sql == []
+        r.connection.exec_driver_sql(sql)
+        assert r.compute_changes() == []
+
+    def test_squash_all_replays_preinstalled_extension(self, new_test_runner):
+        metadata = _db_extension_metadata(name="plpgsql")
+        metadata.info["db_extensions"]["public"].append({"name": "hstore"})
+        sa.Table(
+            "settings", metadata,
+            sa.Column("attrs", schema_item.CustomSQLAlchemyType("hstore")),
+        )
+        r = new_test_runner(metadata)
+        installed = sa.text("SELECT extname FROM pg_extension WHERE extname IN ('plpgsql', 'hstore')")
+
+        r.run()
+        testingutils.create_custom_revision(
+            r, "add settings views", 2,
+            'op.execute_sql("CREATE VIEW settings_view AS SELECT attrs FROM settings")\n'
+            '    op.execute_sql("CREATE VIEW current_settings AS SELECT * FROM settings_view")',
+            'op.execute_sql("DROP VIEW current_settings")\n'
+            '    op.execute_sql("DROP VIEW settings_view")',
+        )
+        r.upgrade()
+        r.squash_all()
+        r.downgrade("base", delete_files=False)
+        assert r.connection.scalars(installed).all() == []
+        r.upgrade()
+        assert set(r.connection.scalars(installed)) == {"plpgsql", "hstore"}
+        assert r.compute_changes() == []
+
     def test_external_db_extension_requires_installed_extension(
         self, new_test_runner
     ):

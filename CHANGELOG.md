@@ -20,6 +20,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
+- Preserve `CREATE EXTENSION` for Ent-managed PostgreSQL extensions in `schema.sql` and squashed migrations when the comparison database already has those extensions installed.
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - enforce custom-query privacy for rows and counts (#2049).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).

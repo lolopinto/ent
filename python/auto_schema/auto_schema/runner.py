@@ -723,14 +723,9 @@ class Runner(object):
         (custom_sql_upgrade_ops, custom_sql_downgrade_ops) = self._get_custom_sql(connection, dialect, as_ops=True)
         migrations.upgrade_ops.ops.extend(custom_sql_upgrade_ops)
 
-        # in practice, shouldn't care about downgrade at this point since if you're doing this, you're past the point
-        # of no return but doing it anyway for tests and completeness
-        # reverse downgrade_ops
-        migrations.downgrade_ops.ops.reverse()
-        # reverse custom_sql
-        custom_sql_downgrade_ops.reverse()
-        # add reversed custom sql since we add them last
-        migrations.downgrade_ops.ops.extend(custom_sql_downgrade_ops)
+        # Undo custom SQL before dropping the tables and extensions it can use.
+        # Alembic already put the generated drops in dependency order.
+        migrations.downgrade_ops.ops[:0] = custom_sql_downgrade_ops
         
         # delete existing files
         asyncio.run(delete_py_files(location))
@@ -880,9 +875,9 @@ class Runner(object):
 
                     # run downgrade, capture what's being changed via the dispatcher and see if it's custom sql                        
                     rev.module.downgrade()
-                    for op in last_ops:
-                        if is_custom_op(op):
-                            downgrade_ops.append(op)
+                    # Undo newer revisions first, preserving the order written
+                    # in each revision's downgrade function.
+                    downgrade_ops[:0] = [op for op in last_ops if is_custom_op(op)]
 
                 last_ops = []
 
@@ -893,6 +888,33 @@ class Runner(object):
 
         return custom_sql_buffer
     
+    def _check_empty_database(self, connection):
+        inspector = sa.inspect(connection)
+        schema = self.schema_name or None
+        table_names = set(inspector.get_table_names(schema=schema))
+        table_names.difference_update(Runner.exclude_tables().split(','))
+        if table_names and connection.dialect.name == "postgresql":
+            # Extensions such as PostGIS ship their own tables. Match the same
+            # namespace (or visible relation) that the inspector just checked.
+            members = connection.execute(sa.text("""
+                SELECT rel.relname
+                FROM pg_catalog.pg_depend AS dep
+                JOIN pg_catalog.pg_class AS rel ON rel.oid = dep.objid
+                JOIN pg_catalog.pg_namespace AS ns ON ns.oid = rel.relnamespace
+                WHERE dep.classid = 'pg_catalog.pg_class'::regclass
+                  AND dep.refclassid = 'pg_catalog.pg_extension'::regclass
+                  AND dep.deptype = 'e'
+                  AND CASE WHEN CAST(:schema AS text) IS NULL
+                           THEN pg_catalog.pg_table_is_visible(rel.oid)
+                           ELSE ns.nspname = :schema END
+            """), {"schema": schema}).scalars()
+            table_names.difference_update(members)
+        if table_names:
+            raise Exception(
+                "to compare from base tables, cannot have any tables in database. "
+                f"have {len(table_names)}"
+            )
+
     def migrations_against_empty(self, database=''):
         dialect = self.connection.dialect.name
 
@@ -916,20 +938,17 @@ class Runner(object):
                 ),
             )
 
-        inspector = sa.inspect(connection)
-        table_names = inspector.get_table_names(schema=self.schema_name or None)
-        excluded_tables = set(Runner.exclude_tables().split(','))
-        table_names = [name for name in table_names if name not in excluded_tables]
-        if len(table_names) != 0:
-            raise Exception(
-                "to compare from base tables, cannot have any tables in database. "
-                f"have {len(table_names)}"
-            )
+        self._check_empty_database(connection)
+
+        # Only extension and bookkeeping tables can remain. Alembic's name
+        # filter applies to reflection, so it still creates all metadata tables.
+        def include_name(name, type_, parent_names):
+            return type_ != "table" and Runner.include_name(name, type_, parent_names)
 
         mc = MigrationContext.configure(
             connection=connection,
             dialect_name=dialect,
-            opts=Runner.get_opts(),
+            opts={**Runner.get_opts(), "ent_from_scratch": True, "include_name": include_name},
         )
         with Runner.dev_schema_compare_search_path(connection):
             migrations = produce_migrations(mc, self.metadata)
