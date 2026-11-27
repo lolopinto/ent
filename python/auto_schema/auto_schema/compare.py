@@ -180,43 +180,48 @@ def _plan_extension_ops(autogen_context):
 
     db_extensions = _get_db_extensions(autogen_context)
     if autogen_context.opts.get("ent_schema_sql"):
-        # A snapshot installs managed extensions and validates external ones.
-        metadata_extensions = _order_snapshot_extensions(
+        return _plan_snapshot_extension_ops(
             autogen_context.connection, metadata_extensions, db_extensions
         )
-        for ext in metadata_extensions:
-            if _is_ent_provisioned(ext):
-                db_extensions.pop(ext["name"].lower(), None)
     return _get_extension_ops(metadata_extensions, db_extensions)
 
 
-def _order_snapshot_extensions(connection, extensions, installed):
-    # PostgreSQL's control files describe prerequisites even on a clean server.
-    managed = {ext["name"]: ext for ext in extensions if _is_ent_provisioned(ext)}
+def _plan_snapshot_extension_ops(connection, extensions, installed):
+    # External declarations use the ordinary installation, version and schema checks.
+    external = [ext for ext in extensions if not _is_ent_provisioned(ext)]
+    _get_extension_ops(external, installed)
+    managed = [ext for ext in extensions if _is_ent_provisioned(ext)]
     if not managed:
-        return extensions
-    catalog = {name: {} for name in managed}
+        return []
+
+    # Fold catalog names in Python just as we do for installed extensions.
+    # PostgreSQL lower(text) depends on the comparison database's locale.
     rows = connection.execute(sa.text("""
-        SELECT wanted.name, a.name, v.requires
-        FROM unnest(CAST(:names AS text[]), CAST(:versions AS text[])) AS wanted(name, version)
-        JOIN pg_catalog.pg_available_extensions a ON lower(a.name) = lower(wanted.name)
+        SELECT a.name, a.default_version, v.version, v.requires
+        FROM pg_catalog.pg_available_extensions a
         LEFT JOIN pg_catalog.pg_available_extension_versions v
-          ON v.name = a.name AND v.version = COALESCE(wanted.version, a.default_version)
-    """), {"names": list(managed), "versions": [ext["version"] for ext in managed.values()]})
-    for declared, actual, requires in rows:
-        catalog[declared][actual] = requires or ()
+          ON v.name = a.name
+         AND (v.version = a.default_version OR v.version = ANY(CAST(:versions AS text[])))
+    """), {"versions": [ext["version"] for ext in managed if ext["version"]]})
+    catalog = {}
+    version_requires = {}
+    for actual, default_version, version, requires in rows:
+        catalog.setdefault(actual.lower(), {})[actual] = default_version
+        version_requires[actual, version] = requires or ()
 
     resolved = {}
     prerequisites = {}
-    for declared, ext in managed.items():
-        names = catalog[declared]
+    for ext in managed:
+        declared = ext["name"]
+        names = catalog.get(declared.lower(), {})
         if existing := installed.get(declared.lower()):
-            names.setdefault(existing["name"], ())
+            names.setdefault(existing["name"], None)
         if declared not in names and len(names) > 1:
             raise ValueError(f'ambiguous db extension "{declared}": use its exact catalog spelling')
         name = declared if declared in names else next(iter(names), declared)
         resolved[name] = {**ext, "name": name}
-        prerequisites[name] = names.get(name, ())
+        version = ext["version"] or names.get(name)
+        prerequisites[name] = version_requires.get((name, version), ())
 
     # Register sibling edges in declaration order, independent of the query plan.
     dependencies = TopologicalSorter({name: () for name in resolved})
@@ -225,9 +230,7 @@ def _order_snapshot_extensions(connection, extensions, installed):
         ext = resolved[name]
         if "plpgsql" in resolved and name != "plpgsql" and (ext["version"] or ext["install_schema"]):
             dependencies.add(name, "plpgsql")
-    return [resolved[name] for name in dependencies.static_order()] + [
-        ext for ext in extensions if not _is_ent_provisioned(ext)
-    ]
+    return [ops.CreateExtensionOp(resolved[name]) for name in dependencies.static_order()]
 
 
 @comparators.dispatch_for("schema")

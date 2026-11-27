@@ -3065,6 +3065,54 @@ class TestPostgresRunner(BaseTestRunner):
         r.connection.exec_driver_sql(path.read_text())
         assert r.compute_changes() == []
 
+    def test_schema_sql_extension_spelling_in_turkish_locale(self, new_test_runner, tmp_path):
+        r = new_test_runner(_db_extension_metadata(name="CITEXT"))
+        if r.engine.dialect.server_version_info < (15,) or not r.connection.exec_driver_sql(
+            "SELECT EXISTS (SELECT FROM pg_collation WHERE collprovider = 'i')"
+        ).scalar_one():
+            pytest.skip("per-database ICU locales require PostgreSQL 15+ with ICU")
+
+        database = conftest.randomDB()
+        path = tmp_path / "schema.sql"
+        with r.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as admin:
+            admin.exec_driver_sql(f"CREATE DATABASE {database} TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'tr'")
+            baseline = sa.create_engine(r.engine.url.set(database=database))
+            try:
+                r.all_sql(file=path, database=database)
+                clean = path.read_text()
+                with baseline.begin() as conn:
+                    assert conn.exec_driver_sql("SELECT lower('CITEXT')").scalar_one() == "cıtext"
+                    conn.exec_driver_sql("CREATE EXTENSION citext")
+                r.all_sql(file=path, database=database)
+                assert path.read_text() == clean
+                assert 'CREATE EXTENSION IF NOT EXISTS "citext"' in clean
+                r.connection.exec_driver_sql(clean)
+                assert r.compute_changes() == []
+            finally:
+                baseline.dispose()
+                admin.exec_driver_sql(f"DROP DATABASE {database}")
+
+    @pytest.mark.parametrize("member_schema", ["public", "addons"])
+    def test_schema_sql_rejects_extension_table_collision(self, new_test_runner, tmp_path, member_schema):
+        metadata = _db_extension_metadata(name="hstore")
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer), schema="app")
+        r = new_test_runner(metadata)
+        r.connection.exec_driver_sql("CREATE SCHEMA addons")
+        r.connection.exec_driver_sql("CREATE EXTENSION hstore")
+        r.connection.exec_driver_sql(f"CREATE TABLE {member_schema}.lookup (id int)")
+        r.connection.exec_driver_sql(f"ALTER EXTENSION hstore ADD TABLE {member_schema}.lookup")
+        r.connection.commit()
+
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path, database=r.engine.url.database)
+        original = path.read_text()
+        assert "CREATE TABLE app.lookup" in original
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer),
+                 schema=None if member_schema == "public" else member_schema)
+        with pytest.raises(ValueError, match=rf'"{member_schema}"\."lookup", owned by extension "hstore"'):
+            r.all_sql(file=path, database=r.engine.url.database)
+        assert path.read_text() == original
+
     def test_external_db_extension_requires_installed_extension(
         self, new_test_runner
     ):
@@ -3076,6 +3124,8 @@ class TestPostgresRunner(BaseTestRunner):
             match='required externally provisioned db extension "pgcrypto" is not installed',
         ):
             r.compute_changes()
+        with pytest.raises(ValueError, match="externally provisioned db extension"):
+            r.all_sql(database=r.engine.url.database)
 
     def test_db_extension_version_mismatch_creates_update_op(
         self, new_test_runner, empty_metadata

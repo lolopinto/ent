@@ -43,17 +43,19 @@ class TestPostgresComparisonPlanning:
     def test_snapshot_siblings_keep_the_same_order_across_catalog_plans(self):
         names = ["child_z", "child_a", "Parent"]
         extensions = [compare._normalize_db_extension({"name": name}) for name in names]
+        extensions[0]["version"] = "2"
         rows = [
-            ("child_z", "child_z", ["Parent"]),
-            ("child_a", "child_a", ["Parent"]),
-            ("Parent", "Parent", []),
-            ("Parent", "parent", []),
+            ("child_z", "1", "1", []),
+            ("child_z", "1", "2", ["Parent"]),
+            ("child_a", "1", "1", ["Parent"]),
+            ("Parent", "1", "1", []),
+            ("parent", "1", "1", []),
         ]
         connection = Mock()
         for catalog_order in (rows, rows[::-1]):
             connection.execute.return_value = catalog_order
-            ordered = compare._order_snapshot_extensions(connection, extensions, {})
-            assert [ext["name"] for ext in ordered] == ["Parent", "child_z", "child_a"]
+            planned = compare._plan_snapshot_extension_ops(connection, extensions, {})
+            assert [op.extension["name"] for op in planned] == ["Parent", "child_z", "child_a"]
 
     @pytest.mark.parametrize("index_count", [1, 12])
     @pytest.mark.parametrize("install_extension", [False, True])

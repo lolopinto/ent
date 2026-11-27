@@ -32,8 +32,8 @@ Partial indexes are supported via `postgresql_where=sa.text(...)` and `sqlite_wh
 
 ## Replaying PostgreSQL extension snapshots
 
-`auto_schema --all_sql` includes Ent-managed extensions in `schema.sql` even when the comparison database already has them. Replay installs declared prerequisites before their dependents.
+`auto_schema --all_sql` includes Ent-managed extensions in `schema.sql` even when the comparison database already has them. Replay installs declared prerequisites first. If the snapshot would create a table that an installed extension owns in the comparison database, generation reports the table and extension. A clean comparison database has no ownership records for an extension it has yet to install.
 
-If a custom migration also installs a managed extension, use `CREATE EXTENSION IF NOT EXISTS` because the generated extension statement runs first. For an existing revision whose only custom SQL installs the extension, you can exclude its revision ID with `databaseMigration.customSQLExclude` in `ent.yml`. This skips all custom SQL in that revision. A nonempty `customSQLInclude` list takes precedence.
+Declare any required `version` or `installSchema` in `dbExtensions`. Generated extension statements run before retained custom SQL, so a later `CREATE EXTENSION IF NOT EXISTS` skips its install options. Create any custom install schema before replay. If retained revisions also create the schema or extension, use `CREATE SCHEMA IF NOT EXISTS` and `CREATE EXTENSION IF NOT EXISTS` in those revisions. Use `auto_schema --progressive_sql` when installation depends on the original migration order.
 
-If a managed extension declares `version` or `installSchema`, replay checks the installed extension in a PL/pgSQL block. The target database needs `plpgsql` and the replay role needs `USAGE` on that language, even when the extension already matches. Changing the version or schema requires extension ownership. Create any custom install schema before replay.
+If a managed extension declares `version` or `installSchema`, replay checks the installed extension in a PL/pgSQL block. The target database needs `plpgsql` and the replay role needs `USAGE` on that language, even when the extension already matches. Changing the version or schema requires extension ownership.
