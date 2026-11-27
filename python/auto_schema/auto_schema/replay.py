@@ -229,7 +229,11 @@ def interleave(generated, revisions, metadata, mc, include, exclude):
                 op, phases, pos.seeds[key], table_phase.get(key, 0), upgrade
             )
         elif isinstance(op, (ops.AddEdgesOp, ops.RemoveEdgesOp, ops.ModifyEdgeOp)):
-            phases[table_phase.get((op.schema, "assoc_edge_config"), 0)].append(op)
+            # Edge declarations use "public" for a schema-less metadata table.
+            key = (op.schema, "assoc_edge_config")
+            if key not in tables:
+                key = (None, "assoc_edge_config")
+            phases[table_phase.get(key, 0)].append(op)
         else:
             phases[0].append(op)
 

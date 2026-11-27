@@ -3230,6 +3230,19 @@ class TestPostgresRunner(BaseTestRunner):
         r.run()
         self._assert_replay_value(r, new_test_runner, tmp_path, "SELECT name FROM role_snapshot", "reader")
 
+    def test_replay_seeds_edge_config_after_table_creation(
+        self, new_test_runner, tmp_path, metadata_with_one_edge,
+    ):
+        r = new_test_runner(metadata_with_one_edge)
+        testingutils.create_custom_revision(
+            r, "before edge config", 1, 'op.execute("SELECT 1")', 'op.execute("SELECT 1")',
+        )
+        r.upgrade()
+        r.run()
+        self._assert_replay_value(
+            r, new_test_runner, tmp_path, "SELECT count(*) FROM assoc_edge_config", 1,
+        )
+
     def test_replay_extension_in_custom_schema(self, new_test_runner, tmp_path):
         metadata = sa.MetaData()
         r = new_test_runner(metadata)
