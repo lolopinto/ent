@@ -159,14 +159,6 @@ Each entry supports the following options:
 
 Use `provisionedBy: "external"` for hosted Postgres setups where `CREATE EXTENSION` is not allowed but the extension is already present. Ent will not try to install or move it, and `auto_schema` will fail if the required extension, version, or install schema is missing.
 
-### Replaying `schema.sql`
-
-The PostgreSQL snapshot includes Ent-managed extensions even when the comparison database already has them. It uses their catalog names and installs declared prerequisites before their dependents.
-
-Custom SQL from migrations runs after the generated extension statements. If a custom revision also installs a managed extension, use `CREATE EXTENSION IF NOT EXISTS` so both statements can run. For an existing revision whose only custom SQL installs the extension, you can list its revision ID under `databaseMigration.customSQLExclude` in `ent.yml`. This excludes all custom SQL in that revision. A nonempty `customSQLInclude` list takes precedence.
-
-If an Ent-managed extension declares `version` or `installSchema`, the snapshot runs a PL/pgSQL block to check the installed extension before altering it. The target database must have `plpgsql` installed and the replay role needs `USAGE` on that language, even when the extension already matches. Changing its version or schema requires extension ownership. Create any custom install schema before replay.
-
 ## Putting it all together
 
 1. Create a `GlobalSchema` file (either at `src/schema/__global__schema.ts` or whatever you set as `globalSchemaPath`).
