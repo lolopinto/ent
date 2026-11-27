@@ -181,33 +181,51 @@ def _plan_extension_ops(autogen_context):
     db_extensions = _get_db_extensions(autogen_context)
     if autogen_context.opts.get("ent_schema_sql"):
         # A snapshot installs managed extensions and validates external ones.
+        metadata_extensions = _order_snapshot_extensions(
+            autogen_context.connection, metadata_extensions, db_extensions
+        )
         for ext in metadata_extensions:
             if _is_ent_provisioned(ext):
                 db_extensions.pop(ext["name"].lower(), None)
-        metadata_extensions = _order_snapshot_extensions(autogen_context.connection, metadata_extensions)
     return _get_extension_ops(metadata_extensions, db_extensions)
 
 
-def _order_snapshot_extensions(connection, extensions):
+def _order_snapshot_extensions(connection, extensions, installed):
     # PostgreSQL's control files describe prerequisites even on a clean server.
     managed = {ext["name"]: ext for ext in extensions if _is_ent_provisioned(ext)}
-    if len(managed) < 2:
+    if not managed:
         return extensions
-    dependencies = TopologicalSorter({name: () for name in managed})
+    catalog = {name: {} for name in managed}
     rows = connection.execute(sa.text("""
-        SELECT v.name, v.requires
+        SELECT wanted.name, a.name, v.requires
         FROM unnest(CAST(:names AS text[]), CAST(:versions AS text[])) AS wanted(name, version)
-        JOIN pg_catalog.pg_available_extensions a ON a.name = wanted.name
-        JOIN pg_catalog.pg_available_extension_versions v
+        JOIN pg_catalog.pg_available_extensions a ON lower(a.name) = lower(wanted.name)
+        LEFT JOIN pg_catalog.pg_available_extension_versions v
           ON v.name = a.name AND v.version = COALESCE(wanted.version, a.default_version)
     """), {"names": list(managed), "versions": [ext["version"] for ext in managed.values()]})
-    for name, requires in rows:
-        dependencies.add(name, *(dep for dep in requires or () if dep in managed))
-    if "plpgsql" in managed:
-        for name, ext in managed.items():
-            if name != "plpgsql" and (ext["version"] or ext["install_schema"]):
-                dependencies.add(name, "plpgsql")
-    return [managed[name] for name in dependencies.static_order()] + [
+    for declared, actual, requires in rows:
+        catalog[declared][actual] = requires or ()
+
+    resolved = {}
+    prerequisites = {}
+    for declared, ext in managed.items():
+        names = catalog[declared]
+        if existing := installed.get(declared.lower()):
+            names.setdefault(existing["name"], ())
+        if declared not in names and len(names) > 1:
+            raise ValueError(f'ambiguous db extension "{declared}": use its exact catalog spelling')
+        name = declared if declared in names else next(iter(names), declared)
+        resolved[name] = {**ext, "name": name}
+        prerequisites[name] = names.get(name, ())
+
+    # Register sibling edges in declaration order, independent of the query plan.
+    dependencies = TopologicalSorter({name: () for name in resolved})
+    for name, requires in prerequisites.items():
+        dependencies.add(name, *(dep for dep in requires if dep in resolved))
+        ext = resolved[name]
+        if "plpgsql" in resolved and name != "plpgsql" and (ext["version"] or ext["install_schema"]):
+            dependencies.add(name, "plpgsql")
+    return [resolved[name] for name in dependencies.static_order()] + [
         ext for ext in extensions if not _is_ent_provisioned(ext)
     ]
 

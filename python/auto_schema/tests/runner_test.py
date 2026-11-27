@@ -3020,7 +3020,7 @@ class TestPostgresRunner(BaseTestRunner):
         assert r2.compute_changes() == []
 
     def test_schema_sql_with_preinstalled_extensions(self, new_test_runner, tmp_path):
-        metadata = _db_extension_metadata(name="hstore", install_schema="addons", version="1.8")
+        metadata = _db_extension_metadata(name="Hstore", install_schema="addons", version="1.8")
         metadata.info["db_extensions"]["public"].append({"name": "plpgsql", "provisioned_by": "external"})
         sa.Table("settings", metadata, sa.Column("attrs", schema_item.CustomSQLAlchemyType("addons.hstore")))
         r = new_test_runner(metadata)
@@ -3057,8 +3057,8 @@ class TestPostgresRunner(BaseTestRunner):
 
     def test_schema_sql_installs_extension_prerequisites_first(self, new_test_runner, tmp_path):
         # Both extensions ship with PostgreSQL. Declare the dependent first.
-        metadata = _db_extension_metadata(name="earthdistance")
-        metadata.info["db_extensions"]["public"].append({"name": "cube"})
+        metadata = _db_extension_metadata(name="EarthDistance")
+        metadata.info["db_extensions"]["public"].append({"name": "CUBE"})
         r = new_test_runner(metadata)
         path = tmp_path / "schema.sql"
         r.all_sql(file=path)

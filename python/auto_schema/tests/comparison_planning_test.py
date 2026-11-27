@@ -1,6 +1,6 @@
 from collections import Counter
 from contextlib import contextmanager
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from alembic.autogenerate import produce_migrations
 
 import pytest
@@ -40,6 +40,21 @@ def _more_indexes(metadata, predicate, count):
 
 
 class TestPostgresComparisonPlanning:
+    def test_snapshot_siblings_keep_the_same_order_across_catalog_plans(self):
+        names = ["child_z", "child_a", "Parent"]
+        extensions = [compare._normalize_db_extension({"name": name}) for name in names]
+        rows = [
+            ("child_z", "child_z", ["Parent"]),
+            ("child_a", "child_a", ["Parent"]),
+            ("Parent", "Parent", []),
+            ("Parent", "parent", []),
+        ]
+        connection = Mock()
+        for catalog_order in (rows, rows[::-1]):
+            connection.execute.return_value = catalog_order
+            ordered = compare._order_snapshot_extensions(connection, extensions, {})
+            assert [ext["name"] for ext in ordered] == ["Parent", "child_z", "child_a"]
+
     @pytest.mark.parametrize("index_count", [1, 12])
     @pytest.mark.parametrize("install_extension", [False, True])
     def test_extension_discovery_is_once_per_run_and_fresh_after_upgrade(
