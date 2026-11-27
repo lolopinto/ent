@@ -3,7 +3,6 @@ from auto_schema.change_type import ChangeType
 import pytest
 import os
 import shutil
-from unittest.mock import patch
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -3059,33 +3058,31 @@ class TestPostgresRunner(BaseTestRunner):
     def test_schema_sql_installs_extension_prerequisites_first(self, new_test_runner, tmp_path):
         # Both extensions ship with PostgreSQL. Declare the dependent first.
         metadata = _db_extension_metadata(name="EarthDistance")
-        metadata.info["db_extensions"]["public"].append({"name": "CUBE"})
+        metadata.info["db_extensions"]["public"].extend([
+            {"name": "CUBE", "install_schema": "public"}, {"name": "plpgsql"},
+        ])
         r = new_test_runner(metadata)
         path = tmp_path / "schema.sql"
         r.all_sql(file=path)
         r.connection.exec_driver_sql(path.read_text())
         assert r.compute_changes() == []
 
-    def test_schema_sql_replays_without_extension_dependency_metadata(self, new_test_runner, tmp_path):
-        metadata = _db_extension_metadata(name="cube", install_schema="public")
-        metadata.info["db_extensions"]["public"].extend([
-            {"name": "earthdistance"}, {"name": "plpgsql"},
-        ])
-        r = new_test_runner(metadata)
+    @pytest.mark.parametrize("extension,version,error", [
+        ("ent_missing_extension", None, 'extension "ent_missing_extension" is not available'),
+        ("hstore", "0.0", 'extension "hstore" version "0.0"'),
+    ])
+    def test_schema_sql_rejects_missing_extension_metadata_without_replacing_output(
+        self, new_test_runner, tmp_path, capsys, extension, version, error,
+    ):
+        r = new_test_runner(_db_extension_metadata(name=extension, version=version))
         path = tmp_path / "schema.sql"
-        execute = sa.engine.Connection.execute
-
-        def without_package_metadata(connection, statement, *args, **kwargs):
-            # Model a comparison server without these packages; replay uses a
-            # server that has them. Catalog absence must not scramble the order.
-            if "FROM pg_catalog.pg_available_extensions a" in str(statement):
-                return iter(())
-            return execute(connection, statement, *args, **kwargs)
-
-        with patch.object(sa.engine.Connection, "execute", without_package_metadata):
+        path.write_text("previous snapshot\n")
+        with pytest.raises(ValueError, match=error):
             r.all_sql(file=path)
-        r.connection.exec_driver_sql(path.read_text())
-        assert r.compute_changes() == []
+        assert path.read_text() == "previous snapshot\n"
+        with pytest.raises(ValueError, match=error):
+            r.all_sql()
+        assert capsys.readouterr().out == ""
 
     @pytest.mark.parametrize("name", ["pg_database", "pg_class"])
     def test_schema_sql_does_not_reconcile_system_catalog_seeds(self, new_test_runner, tmp_path, name):

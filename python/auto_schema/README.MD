@@ -32,7 +32,11 @@ Partial indexes are supported via `postgresql_where=sa.text(...)` and `sqlite_wh
 
 ## Replaying PostgreSQL extension snapshots
 
-`auto_schema --all_sql` includes Ent-managed extensions in `schema.sql` even when the comparison database already has them. It preserves declaration order while moving known prerequisites first. When the comparison server lacks an extension package or the requested version's dependency metadata, declare that extension after its prerequisites. Extension-owned tables are allowed in the comparison database, but their ownership does not predict which objects a fresh extension installation will create. Validate the generated SQL by replaying it on a disposable target with the required external prerequisites; object-name conflicts are reported during replay.
+`auto_schema --all_sql` includes Ent-managed extensions in `schema.sql` even when the comparison database already has them, and orders them using PostgreSQL's dependency metadata.
+
+The PostgreSQL instance hosting the comparison database must have the package files and dependency metadata for each Ent-managed extension's requested version, or its default version when none is specified. The extensions do not need to be enabled with `CREATE EXTENSION` in the comparison database. Generation fails if a package or version's metadata is unavailable; install the matching extension package on that PostgreSQL instance before generating the snapshot. An empty comparison database on the same instance shares its available extension packages.
+
+Extension-owned tables are allowed in the comparison database, but their ownership does not predict which objects a fresh extension installation will create. Validate the generated SQL by replaying it on a disposable target with the required external prerequisites; object-name conflicts are reported during replay.
 
 Application tables created by the snapshot start with their declared seed rows. Explicit seeds for physical tables provisioned outside the snapshot retain the existing comparison-based insert, update, and delete behavior; the comparison database must represent those tables and their initial data. Writable views retain insert-only seeding, preserving existing rows.
 

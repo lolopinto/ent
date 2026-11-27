@@ -1,5 +1,6 @@
 from collections import Counter
 from contextlib import contextmanager
+from itertools import permutations
 from unittest.mock import Mock, patch
 from alembic.autogenerate import produce_migrations
 
@@ -40,20 +41,59 @@ def _more_indexes(metadata, predicate, count):
 
 
 class TestPostgresComparisonPlanning:
-    @pytest.mark.parametrize("available", [(), ("cube",), ("earthdistance",), ("cube", "earthdistance")])
-    def test_snapshot_preserves_declared_order_with_incomplete_dependencies(self, available):
-        extensions = [
-            compare._normalize_db_extension({"name": "cube", "install_schema": "public"}),
-            compare._normalize_db_extension({"name": "earthdistance"}),
-            compare._normalize_db_extension({"name": "plpgsql"}),
-        ]
+    @pytest.mark.parametrize("rows,version,installed,error", [
+        ([], None, False, 'extension "example" is not available'),
+        ([], "2", False, 'extension "example" is not available'),
+        ([], None, True, 'extension "example" is not available'),
+        ([("example", "1", None, None)], None, False, 'version "1"'),
+        ([("example", "1", "1", None)], "2", True, 'version "2"'),
+        ([("example", None, None, None)], None, False, 'default version'),
+    ])
+    def test_snapshot_requires_extension_dependency_metadata(self, rows, version, installed, error):
+        extension = compare._normalize_db_extension({"name": "example", "version": version})
+        connection = Mock()
+        connection.execute.return_value = rows
+        existing = {"example": {"name": "example", "version": version or "1"}} if installed else {}
+        with pytest.raises(ValueError, match=error) as exc:
+            compare._plan_snapshot_extension_ops(connection, [extension], existing)
+        assert "comparison PostgreSQL instance" in str(exc.value)
+        assert "install" in str(exc.value)
+
+    def test_snapshot_rejects_missing_metadata_in_a_dependency_chain(self):
+        extensions = [compare._normalize_db_extension({"name": name})
+                      for name in ("dependent", "base", "missing")]
         connection = Mock()
         connection.execute.return_value = [
-            (name, "1.0", "1.0", ["cube"] if name == "earthdistance" else [])
-            for name in available
+            ("dependent", "1", "1", ["missing"]), ("base", "1", "1", None),
+        ]
+        with pytest.raises(ValueError, match='extension "missing" is not available'):
+            compare._plan_snapshot_extension_ops(connection, extensions, {})
+
+    @pytest.mark.parametrize("names", list(permutations(("leaf", "middle", "base"))))
+    def test_snapshot_orders_complete_dependency_chains_independently_of_declaration_order(self, names):
+        extensions = [compare._normalize_db_extension({"name": name}) for name in names]
+        connection = Mock()
+        connection.execute.return_value = [
+            ("leaf", "1", "1", ["middle"]), ("middle", "1", "1", ["base"]),
+            ("base", "1", "1", None),
         ]
         planned = compare._plan_snapshot_extension_ops(connection, extensions, {})
-        assert [op.extension["name"] for op in planned] == ["plpgsql", "cube", "earthdistance"]
+        assert [op.extension["name"] for op in planned] == ["base", "middle", "leaf"]
+
+    def test_snapshot_accepts_explicit_version_without_a_default(self):
+        extension = compare._normalize_db_extension({"name": "example", "version": "1"})
+        connection = Mock()
+        connection.execute.return_value = [("example", None, "1", None)]
+        planned = compare._plan_snapshot_extension_ops(connection, [extension], {})
+        assert [op.extension for op in planned] == [extension]
+
+    def test_snapshot_external_extensions_do_not_require_package_metadata(self):
+        extension = compare._normalize_db_extension({"name": "example", "provisioned_by": "external"})
+        connection = Mock()
+        assert compare._plan_snapshot_extension_ops(
+            connection, [extension], {"example": {"name": "example", "version": "1"}},
+        ) == []
+        connection.execute.assert_not_called()
 
     def test_snapshot_siblings_keep_the_same_order_across_catalog_plans(self):
         names = ["child_z", "child_a", "Parent"]

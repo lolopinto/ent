@@ -207,47 +207,45 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
     version_requires = {}
     for actual, default_version, version, requires in rows:
         catalog.setdefault(actual.lower(), {})[actual] = default_version
-        version_requires[actual, version] = requires or ()
+        if version is not None:
+            # A present version with NULL requires has no prerequisites. A
+            # missing version row has unknown prerequisites and must fail below.
+            version_requires[actual, version] = requires or ()
 
     resolved = {}
     prerequisites = {}
     for ext in managed:
         declared = ext["name"]
         names = catalog.get(declared.lower(), {})
-        if existing := installed.get(declared.lower()):
-            names.setdefault(existing["name"], None)
+        if not names:
+            version_hint = f' providing version "{ext["version"]}"' if ext["version"] else ""
+            raise ValueError(
+                f'cannot generate schema.sql: db extension "{declared}" is not available '
+                'on the comparison PostgreSQL instance; '
+                f'install its extension package{version_hint} on that instance'
+            )
         if declared not in names and len(names) > 1:
             raise ValueError(f'ambiguous db extension "{declared}": use its exact catalog spelling')
-        name = declared if declared in names else next(iter(names), declared)
+        name = declared if declared in names else next(iter(names))
+        version = ext["version"] or names[name]
+        if (name, version) not in version_requires:
+            version_label = f'version "{version}"' if version is not None else "default version"
+            raise ValueError(
+                f'cannot generate schema.sql: dependency metadata for db extension "{name}" '
+                f'{version_label} is not available on the comparison PostgreSQL instance; '
+                'install an extension package providing that version on that instance'
+            )
         resolved[name] = {**ext, "name": name}
-        version = ext["version"] or names.get(name)
-        prerequisites[name] = version_requires.get((name, version), ())
+        prerequisites[name] = version_requires[name, version]
 
-    dependencies = {}
+    # Register all nodes before their edges to keep ordering deterministic.
+    dependencies = TopologicalSorter({name: () for name in resolved})
     for name, requires in prerequisites.items():
-        dependencies[name] = [dep for dep in requires if dep in resolved]
+        dependencies.add(name, *(dep for dep in requires if dep in resolved))
         ext = resolved[name]
         if "plpgsql" in resolved and name != "plpgsql" and (ext["version"] or ext["install_schema"]):
-            dependencies[name].append("plpgsql")
-    TopologicalSorter(dependencies).prepare()  # Reject cycles before walking.
-
-    # Visit declarations in order, moving only their known prerequisites ahead.
-    # Emitting whole ready batches can move an unknown dependent before its
-    # declared prerequisite while that prerequisite waits for e.g. plpgsql.
-    ordered = []
-    visited = set()
-
-    def visit(name):
-        if name in visited:
-            return
-        for prerequisite in dependencies[name]:
-            visit(prerequisite)
-        visited.add(name)
-        ordered.append(ops.CreateExtensionOp(resolved[name]))
-
-    for name in resolved:
-        visit(name)
-    return ordered
+            dependencies.add(name, "plpgsql")
+    return [ops.CreateExtensionOp(resolved[name]) for name in dependencies.static_order()]
 
 
 @comparators.dispatch_for("schema")
