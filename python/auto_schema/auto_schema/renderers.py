@@ -240,7 +240,8 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
 def render_create_db_extension(
     autogen_context: AutogenContext, op: ops.CreateExtensionOp
 ) -> str:
-    return f"op.create_db_extension({_render_db_extension(op.extension)})"
+    reconcile = ", reconcile_existing=True" if op.reconcile_existing else ""
+    return f"op.create_db_extension({_render_db_extension(op.extension)}{reconcile})"
 
 
 @renderers.dispatch_for(ops.DropExtensionOp)

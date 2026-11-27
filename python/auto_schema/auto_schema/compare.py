@@ -3,6 +3,7 @@ import pprint
 import re
 import uuid
 from dataclasses import dataclass, field
+from graphlib import TopologicalSorter
 from typing import Any
 
 import alembic.operations.ops as alembicops
@@ -88,7 +89,8 @@ def _get_extension_ops(
         # Fresh installs must create every Ent-managed extension, even when the
         # comparison database inherited it from its PostgreSQL image or template.
         if ent_provisioned and (from_scratch or db_extension is None):
-            extension_ops.append(ops.CreateExtensionOp(extension))
+            reconcile = from_scratch and (version is not None or install_schema is not None)
+            extension_ops.append(ops.CreateExtensionOp(extension, reconcile_existing=reconcile))
             continue
         if db_extension is None:
             raise ValueError(
@@ -180,10 +182,39 @@ def _plan_extension_ops(autogen_context):
         raise ValueError("db extensions are only supported for postgres")
 
     db_extensions = _get_db_extensions(autogen_context)
-    return _get_extension_ops(
+    extension_ops = _get_extension_ops(
         metadata_extensions, db_extensions,
         from_scratch=autogen_context.opts.get("ent_from_scratch", False),
     )
+    by_name = {}
+    for op in extension_ops:
+        name = op.extension["name"] if isinstance(op, ops.CreateExtensionOp) else op.extension_name
+        by_name.setdefault(name, []).append(op)
+    if len(by_name) < 2:
+        return extension_ops
+
+    # Control files declare prerequisites even when the comparison database
+    # has neither extension installed. Pins can select different requirements.
+    versions = {ext["name"]: ext["version"] for ext in metadata_extensions}
+    rows = autogen_context.connection.execute(sa.text("""
+        SELECT available.name, version.requires
+        FROM unnest(CAST(:names AS text[]), CAST(:versions AS text[])) AS wanted(name, version)
+        JOIN pg_catalog.pg_available_extensions AS available ON available.name = wanted.name
+        JOIN pg_catalog.pg_available_extension_versions AS version
+          ON version.name = available.name
+         AND version.version = COALESCE(wanted.version, available.default_version)
+    """), {"names": list(by_name), "versions": [versions[name] for name in by_name]})
+    graph = TopologicalSorter({name: () for name in by_name})
+    for name, requires in rows:
+        graph.add(name, *(dep for dep in requires or () if dep in by_name))
+    # PostgreSQL normally preinstalls plpgsql. If the schema itself provides
+    # it, install it before another extension's replay-time DO block needs it.
+    if "plpgsql" in by_name:
+        for op in extension_ops:
+            if isinstance(op, ops.CreateExtensionOp) and op.reconcile_existing:
+                if op.extension["name"] != "plpgsql":
+                    graph.add(op.extension["name"], "plpgsql")
+    return [op for name in graph.static_order() for op in by_name[name]]
 
 
 @comparators.dispatch_for("schema")

@@ -26,6 +26,8 @@ def _quote_ident(val: str) -> str:
 
 
 def _quote_literal(val: str) -> str:
+    if "\\" in val:
+        return "E'" + val.replace("\\", "\\\\").replace("'", "''") + "'"
     return "'" + val.replace("'", "''") + "'"
 
 
@@ -273,7 +275,8 @@ def create_db_extension(
     operations: ops.Operations, operation: ops.CreateExtensionOp
 ):
     extension = operation.extension
-    stmt = f"CREATE EXTENSION IF NOT EXISTS {_quote_ident(extension['name'])}"
+    name = _quote_ident(extension["name"])
+    stmt = f"CREATE EXTENSION IF NOT EXISTS {name}"
     with_clauses = []
     if (install_schema := extension.get("install_schema")) is not None:
         with_clauses.append(f"SCHEMA {_quote_ident(install_schema)}")
@@ -281,7 +284,39 @@ def create_db_extension(
         with_clauses.append(f"VERSION {_quote_literal(version)}")
     if with_clauses:
         stmt = f"{stmt} WITH {' '.join(with_clauses)}"
-    operations.get_bind().execute(sa.text(stmt))
+    if operation.reconcile_existing and with_clauses:
+        # IF NOT EXISTS skips VERSION and SCHEMA on preinstalled extensions.
+        # Test the replay target, which may differ from the generation server.
+        checks = []
+        if version is not None:
+            target = _quote_literal(version)
+            checks.append(
+                f"    IF installed.extversion <> {target} THEN\n"
+                f"        ALTER EXTENSION {name} UPDATE TO {target};\n    END IF;"
+            )
+        if install_schema is not None:
+            checks.append(
+                f"    IF installed.nspname <> {_quote_literal(install_schema)} THEN\n"
+                f"        ALTER EXTENSION {name} SET SCHEMA {_quote_ident(install_schema)};\n    END IF;"
+            )
+        body = (
+            "DECLARE installed record;\nBEGIN\n"
+            "    SELECT e.extversion, n.nspname INTO STRICT installed\n"
+            "    FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace\n"
+            f"    WHERE e.extname = {_quote_literal(extension['name'])};\n"
+            + "\n".join(checks) + "\nEND"
+        )
+        tag = "ent"
+        while f"${tag}$" in body:
+            tag += "_"
+        stmt += f";\n\nDO ${tag}$\n{body}\n${tag}$"
+    # All identifiers and literals have been quoted for PostgreSQL. TextClause
+    # would reinterpret colons as binds and escape percent signs in offline SQL.
+    context = operations.get_context()
+    if context.as_sql:
+        context.impl.static_output(stmt + ";")
+    else:
+        operations.get_bind().exec_driver_sql(stmt, execution_options={"no_parameters": True})
 
 
 @Operations.implementation_for(ops.DropExtensionOp)

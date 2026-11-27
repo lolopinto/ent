@@ -3032,7 +3032,7 @@ class TestPostgresRunner(BaseTestRunner):
         path = tmp_path / "schema.sql"
         r.all_sql(file=path)
         sql = path.read_text()
-        extension_sql = [line for line in sql.splitlines() if "EXTENSION" in line]
+        extension_sql = [line for line in sql.splitlines() if line.startswith("CREATE EXTENSION")]
         if owner == "ent":
             assert extension_sql == [
                 """CREATE EXTENSION IF NOT EXISTS "plpgsql" WITH SCHEMA "pg_catalog" VERSION '1.0';"""
@@ -3041,6 +3041,68 @@ class TestPostgresRunner(BaseTestRunner):
         else:
             assert extension_sql == []
         r.connection.exec_driver_sql(sql)
+        assert r.compute_changes() == []
+
+    @pytest.mark.parametrize("output", ["schema.sql", "squash"])
+    def test_fresh_install_reconciles_target_extension(self, new_test_runner, tmp_path, output):
+        metadata = _db_extension_metadata(name="hstore", install_schema="addons", version="1.8")
+        sa.Table("settings", metadata, sa.Column("attrs", schema_item.CustomSQLAlchemyType("addons.hstore")))
+        r = new_test_runner(metadata)
+        r.connection.exec_driver_sql("CREATE SCHEMA addons")
+        r.connection.commit()
+
+        if output == "squash":
+            r.run()
+            r.squash_all()
+            r.downgrade("base", delete_files=False)
+        else:
+            path = tmp_path / "schema.sql"
+            r.all_sql(file=path)
+
+        r.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA public VERSION '1.4'")
+        r.connection.commit()
+        if output == "squash":
+            r.upgrade()
+        else:
+            r.connection.exec_driver_sql(path.read_text())
+
+        assert r.connection.exec_driver_sql(
+            "SELECT extversion, extnamespace::regnamespace::text FROM pg_extension WHERE extname = 'hstore'"
+        ).one() == ("1.8", "addons")
+        assert r.compute_changes() == []
+
+    def test_extension_prerequisite_order(self, new_test_runner, tmp_path):
+        # Intentionally declare the dependent first. Both ship with PostgreSQL.
+        metadata = _db_extension_metadata(name="earthdistance")
+        metadata.info["db_extensions"]["public"].append({"name": "cube"})
+        r = new_test_runner(metadata)
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        sql = path.read_text()
+        r.connection.exec_driver_sql(sql)
+        assert r.compute_changes() == []
+        r.connection.rollback()
+
+        r.run()
+        r.squash_all()
+        r.downgrade("base", delete_files=False)
+        assert r.connection.exec_driver_sql(
+            "SELECT extname FROM pg_extension WHERE extname IN ('cube', 'earthdistance')"
+        ).all() == []
+        r.upgrade()
+        assert r.compute_changes() == []
+
+    def test_fresh_install_quotes_reconciliation_schema(self, new_test_runner, tmp_path):
+        schema = """Add'on "$ent$" :schema%\\dir"""
+        metadata = _db_extension_metadata(name="hstore", install_schema=schema)
+        metadata.info["db_extensions"]["public"].append({"name": "plpgsql"})
+        r = new_test_runner(metadata)
+        r.connection.execute(sa.schema.CreateSchema(schema))
+        r.connection.exec_driver_sql("CREATE EXTENSION hstore")
+        r.connection.exec_driver_sql("DROP EXTENSION plpgsql")
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        r.connection.exec_driver_sql(path.read_text(), execution_options={"no_parameters": True})
         assert r.compute_changes() == []
 
     def test_squash_all_replays_preinstalled_extension(self, new_test_runner):
@@ -3068,6 +3130,44 @@ class TestPostgresRunner(BaseTestRunner):
         r.upgrade()
         assert set(r.connection.scalars(installed)) == {"plpgsql", "hstore"}
         assert r.compute_changes() == []
+
+    @pytest.mark.parametrize("existing_tickets", [False, True])
+    def test_custom_sequence_and_view_replay(self, new_test_runner, tmp_path, existing_tickets):
+        metadata = sa.MetaData()
+        if existing_tickets:
+            sa.Table("tickets", metadata, sa.Column("id", sa.Integer))
+        r = new_test_runner(metadata)
+        r.run()
+        testingutils.create_custom_revision(
+            r, "create ticket sequence", len(testingutils.get_version_files(r)) + 1,
+            'op.execute_sql("CREATE SEQUENCE ticket_seq")',
+            'op.execute_sql("DROP SEQUENCE ticket_seq")',
+        )
+        r.upgrade()
+        sa.Table(
+            "tickets", metadata,
+            sa.Column("number", sa.Integer, server_default=sa.text("nextval('ticket_seq'::regclass)")),
+            extend_existing=True,
+        )
+        r.run()
+        testingutils.create_custom_revision(
+            r, "add ticket view", len(testingutils.get_version_files(r)) + 1,
+            'op.execute_sql("CREATE VIEW ticket_numbers AS SELECT number FROM tickets")',
+            'op.execute_sql("DROP VIEW ticket_numbers")',
+        )
+        r.upgrade()
+        r.squash_all()
+        r.downgrade("base", delete_files=False)
+        r.upgrade()
+        assert r.connection.exec_driver_sql("INSERT INTO tickets DEFAULT VALUES RETURNING number").scalar_one() == 1
+        r.connection.commit()
+
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        fresh = new_test_runner(metadata, new_database=True)
+        fresh.connection.exec_driver_sql(path.read_text())
+        fresh.connection.exec_driver_sql("INSERT INTO tickets DEFAULT VALUES")
+        assert fresh.connection.exec_driver_sql("SELECT number FROM ticket_numbers").scalar_one() == 1
 
     def test_external_db_extension_requires_installed_extension(
         self, new_test_runner

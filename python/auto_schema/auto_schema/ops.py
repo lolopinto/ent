@@ -50,12 +50,13 @@ class CreateExtensionOp(MigrateOpInterface):
 
     """Create a database extension."""
 
-    def __init__(self, extension: dict[str, Any]):
+    def __init__(self, extension: dict[str, Any], *, reconcile_existing=False):
         self.extension = _normalize_db_extension(extension)
+        self.reconcile_existing = reconcile_existing
 
     @classmethod
-    def create_db_extension(cls, operations, extension, **kw):
-        op = cls(extension)
+    def create_db_extension(cls, operations, extension, *, reconcile_existing=False, **kw):
+        op = cls(extension, reconcile_existing=reconcile_existing)
         return operations.invoke(op)
 
     def reverse(self):

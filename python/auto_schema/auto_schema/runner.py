@@ -7,13 +7,10 @@ import sys
 from contextlib import contextmanager
 from collections.abc import Mapping
 from alembic.operations import Operations
-from alembic.util.langhelpers import Dispatcher
 from uuid import UUID
-from functools import wraps
 
 from .diff import Diff
 from .clause_text import get_clause_text
-from .clearable_string_io import ClearableStringIO
 import sqlalchemy as sa
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.engine.url import make_url
@@ -720,13 +717,9 @@ class Runner(object):
         
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
 
-        (custom_sql_upgrade_ops, custom_sql_downgrade_ops) = self._get_custom_sql(connection, dialect, as_ops=True)
-        migrations.upgrade_ops.ops.extend(custom_sql_upgrade_ops)
+        self._include_custom_sql(migrations.upgrade_ops, connection)
+        self._include_custom_sql(migrations.downgrade_ops, connection)
 
-        # Undo custom SQL before dropping the tables and extensions it can use.
-        # Alembic already put the generated drops in dependency order.
-        migrations.downgrade_ops.ops[:0] = custom_sql_downgrade_ops
-        
         # delete existing files
         asyncio.run(delete_py_files(location))
 
@@ -777,117 +770,53 @@ class Runner(object):
         revision_context._to_script(migration_script)
         
 
-    def _get_custom_sql(self, connection, dialect, as_buffer=False, as_ops=False) -> io.StringIO | tuple[list[alembicops.MigrateOperation], list[alembicops.MigrateOperation]]:
-        if not as_ops ^ as_buffer:
-            raise ValueError("must specify either as_buffer or as_ops")
+    def _include_custom_sql(self, generated, connection):
+        """Place opaque custom SQL on the same side of table DDL as in history."""
+        upgrade = isinstance(generated, alembicops.UpgradeOps)
+        metadata = self.metadata.info
+        include = metadata.get("custom_sql_include", {}).get("public", [])
+        exclude = metadata.get("custom_sql_exclude", {}).get("public", [])
+        revisions = list(self.cmd.get_script_directory().walk_revisions())
+        if upgrade:
+            revisions.reverse()
 
-        custom_sql_include_all = config.metadata.info.setdefault('custom_sql_include', {})
-        custom_sql_exclude_all= config.metadata.info.setdefault('custom_sql_exclude', {})
-        custom_sql_include_list = custom_sql_include_all.setdefault('public', [])
-        custom_sql_exclude_list = custom_sql_exclude_all.setdefault('public', [])
-        
-        custom_sql_include = None
-        custom_sql_exclude = None
-        
-        if len(custom_sql_include_list) > 0:
-            custom_sql_include = set(custom_sql_include_list)
-        if len(custom_sql_exclude_list) > 0:
-            custom_sql_exclude = set(custom_sql_exclude_list)
-            
-        def is_custom_op(obj: ops.ExecuteSQL):
-            return isinstance(obj, ops.ExecuteSQL) or isinstance(obj, alembicops.ExecuteSQLOp)
-
-        def include_rev(name: str):
-            if custom_sql_include is not None:
-                return name in custom_sql_include
-            if custom_sql_exclude is not None:
-                return name not in custom_sql_exclude
-            return True
-     
-
-        script_directory = self.cmd.get_script_directory()
-        revs = script_directory.walk_revisions()
-        
-        # this is cleared after each upgrade
-        temp_buffer = ClearableStringIO()
-
-        opts = Runner.get_opts()
-        opts['as_sql'] = True
-        opts['output_buffer'] = temp_buffer
+        history = []
+        buffer = io.StringIO()
         mc = MigrationContext.configure(
             connection=connection,
-            dialect_name=dialect,
-            opts=opts,
+            opts={**Runner.get_opts(), "as_sql": True, "output_buffer": buffer},
         )
-        
-        custom_sql_buffer = io.StringIO()
+        with Operations.context(mc) as operations:
+            invoke = operations.invoke
 
-        # monkey patch the Dispatcher.dispatch method to know what's being changed/dispatched
-        # for each upgrade path, we'll know what the last object was and can make decisions based on that
-        
-        last_ops = []
+            def record(op):
+                if isinstance(op, anchors) or (
+                    isinstance(op, alembicops.AlterColumnOp) and op.modify_server_default is not False
+                ):
+                    history.append((op, None))
+                elif keep_custom and isinstance(op, (ops.ExecuteSQL, alembicops.ExecuteSQLOp)):
+                    history.append((op, rev.revision))
+                return invoke(op)
 
-        def my_decorator(func):
-            @wraps(func)
-            def wrapper(self, *args, **kwargs):
-                nonlocal last_ops
-                last_ops.append(args[0])
-                return func(self, *args, **kwargs)  
-            return wrapper   
-            
-        Dispatcher.dispatch = my_decorator(Dispatcher.dispatch)
-
-        # order is flipped, it goes from most recent to oldest
-        # we want to go from oldest -> most recent 
-        revs = list(revs)
-        revs.reverse()
-
-        upgrade_ops = []
-        downgrade_ops = []
-        with Operations.context(mc):
-            for rev in revs:
-                # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
-                rev.module.upgrade()
-
-                header_written = False
-                if include_rev(rev.revision):
-                    # the number of ops should match the number of sql chunks written
-                    # may eventually have ops that do more than 1 sql write and need to handle this differently???
-                    assert len(last_ops) == temp_buffer.chunk_len()
-
-                    for i in range(len(last_ops)):
-                        op = last_ops[i]
-                        if is_custom_op(op):
-                            if as_buffer:
-                                chunk = temp_buffer.get_chunk(i)
-                                if not header_written:
-                                    custom_sql_buffer.write(f"-- custom sql for rev {rev.revision}\n")
-                                    header_written = True
-                                    
-                                # only write if chunk is custom op 
-                                custom_sql_buffer.write(chunk)
-
-                            if as_ops:
-                                upgrade_ops.append(op)
-
-                    last_ops = []
-
-
-                    # run downgrade, capture what's being changed via the dispatcher and see if it's custom sql                        
+            operations.invoke = record
+            for rev in revisions:
+                keep_custom = rev.revision in include if include else rev.revision not in exclude
+                start = len(history)
+                if upgrade or not keep_custom:
+                    anchors = (alembicops.CreateTableOp, alembicops.AddColumnOp)
+                    rev.module.upgrade()
+                    if not upgrade:
+                        # Excluded custom downgrades can be irreversible. Use
+                        # the corresponding upgrade's DDL positions in reverse.
+                        history[start:] = reversed(history[start:])
+                else:
+                    anchors = (alembicops.DropTableOp, alembicops.DropColumnOp)
                     rev.module.downgrade()
-                    # Undo newer revisions first, preserving the order written
-                    # in each revision's downgrade function.
-                    downgrade_ops[:0] = [op for op in last_ops if is_custom_op(op)]
+                buffer.seek(0)
+                buffer.truncate()
 
-                last_ops = []
+        return migration_ordering.interleave_custom_sql(generated, history, self.metadata, connection.dialect.name)
 
-                temp_buffer.clear()
-        
-        if as_ops:
-            return (upgrade_ops, downgrade_ops)
-
-        return custom_sql_buffer
-    
     def _check_empty_database(self, connection):
         inspector = sa.inspect(connection)
         schema = self.schema_name or None
@@ -991,15 +920,11 @@ class Runner(object):
             # create alembic table to start
             mc2._version.create(bind=mc2.connection)
 
+            headers = self._include_custom_sql(migrations.upgrade_ops, connection)
             for op in migrations.upgrade_ops.ops:
+                if op in headers:
+                    buffer.write(f"-- custom sql for rev {headers[op]}\n")
                 invoke(op)
-
-            custom_sql_buffer = self._get_custom_sql(connection, dialect, as_buffer=True)
-
-            # add custom sql at the end
-            custom_sql = custom_sql_buffer.getvalue()
-            custom_sql_buffer.close()
-            buffer.write(custom_sql)
             sql = _normalize_generated_file_text(buffer.getvalue())
         finally:
             # restore this
