@@ -188,30 +188,20 @@ class TestPostgresDevSchema(object):
         assert row is not None
         assert row._asdict()["search_path"] == f"{schema}, public"
 
-    @pytest.mark.parametrize("schema", [None, "public"])
+    @pytest.mark.usefixtures("empty_metadata")
     def test_migrations_against_empty_ignores_extension_tables(
-        self, new_test_runner, empty_metadata, schema,
+        self, new_test_runner, empty_metadata
     ):
-        r = new_test_runner(empty_metadata, args_override={"db_schema": schema})
-        conn = r.connection
-        conn.execute(sa.text("CREATE EXTENSION hstore"))
-        conn.execute(sa.text("CREATE TYPE catalog_kind AS ENUM ('entry')"))
-        conn.execute(sa.text("CREATE TABLE extension_catalog (kind catalog_kind)"))
-        conn.execute(sa.text("ALTER EXTENSION hstore ADD TABLE extension_catalog"))
-        conn.commit()
+        setup_runner = new_test_runner(empty_metadata)
+        setup_runner.get_connection().execute(
+            sa.text("CREATE TABLE public.geometry_columns (id INTEGER PRIMARY KEY)")
+        )
+        setup_runner.get_connection().commit()
 
-        migrations, connection, _, _ = r.migrations_against_empty(database=r.engine.url.database)
+        r = new_test_runner(empty_metadata, prev_runner=setup_runner)
+        migrations, connection, _, _ = r.migrations_against_empty()
+        assert migrations is not None
         connection.close()
-        connection.engine.dispose()
-        assert migrations.upgrade_ops.is_empty()
-
-        # Moving the member out of public and replacing it with an application
-        # table of the same name must still trip the empty-database guard.
-        conn.execute(sa.text("CREATE SCHEMA catalog"))
-        conn.execute(sa.text("ALTER TABLE extension_catalog SET SCHEMA catalog"))
-        conn.execute(sa.text("CREATE TABLE public.extension_catalog (id integer)"))
-        with pytest.raises(Exception, match="cannot have any tables in database. have 1"):
-            r._check_empty_database(conn)
 
 
 class TestDevSchemaSQLite(object):

@@ -284,7 +284,11 @@ def create_db_extension(
         with_clauses.append(f"VERSION {_quote_literal(version)}")
     if with_clauses:
         stmt = f"{stmt} WITH {' '.join(with_clauses)}"
-    if operation.reconcile_existing and with_clauses:
+    context = operations.get_context()
+    if not context.opts.get("ent_schema_sql"):
+        operations.get_bind().execute(sa.text(stmt))
+        return
+    if with_clauses:
         # IF NOT EXISTS skips VERSION and SCHEMA on preinstalled extensions.
         # Test the replay target, which may differ from the generation server.
         checks = []
@@ -310,13 +314,7 @@ def create_db_extension(
         while f"${tag}$" in body:
             tag += "_"
         stmt += f";\n\nDO ${tag}$\n{body}\n${tag}$"
-    # All identifiers and literals have been quoted for PostgreSQL. TextClause
-    # would reinterpret colons as binds and escape percent signs in offline SQL.
-    context = operations.get_context()
-    if context.as_sql:
-        context.impl.static_output(stmt + ";")
-    else:
-        operations.get_bind().exec_driver_sql(stmt, execution_options={"no_parameters": True})
+    context.impl.static_output(stmt + ";")
 
 
 @Operations.implementation_for(ops.DropExtensionOp)

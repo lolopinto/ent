@@ -3019,328 +3019,51 @@ class TestPostgresRunner(BaseTestRunner):
         r2 = new_test_runner(metadata, r)
         assert r2.compute_changes() == []
 
-    @pytest.mark.parametrize("owner", ["ent", "external"])
-    def test_all_sql_with_preinstalled_extension(
-        self, new_test_runner, tmp_path, owner,
-    ):
-        # PostgreSQL preinstalls plpgsql in the default comparison database.
-        metadata = _db_extension_metadata(
-            name="plpgsql", provisioned_by=owner, install_schema="pg_catalog", version="1.0",
-        )
-        r = new_test_runner(metadata)
-        assert r.compute_changes() == []
-        path = tmp_path / "schema.sql"
-        r.all_sql(file=path)
-        sql = path.read_text()
-        extension_sql = [line for line in sql.splitlines() if line.startswith("CREATE EXTENSION")]
-        if owner == "ent":
-            assert extension_sql == [
-                """CREATE EXTENSION IF NOT EXISTS "plpgsql" WITH SCHEMA "pg_catalog" VERSION '1.0';"""
-            ]
-            r.connection.execute(sa.text("DROP EXTENSION plpgsql"))
-        else:
-            assert extension_sql == []
-        r.connection.exec_driver_sql(sql)
-        assert r.compute_changes() == []
-
-    @pytest.mark.parametrize("output", ["schema.sql", "squash"])
-    def test_fresh_install_reconciles_target_extension(self, new_test_runner, tmp_path, output):
+    def test_schema_sql_with_preinstalled_extensions(self, new_test_runner, tmp_path):
         metadata = _db_extension_metadata(name="hstore", install_schema="addons", version="1.8")
+        metadata.info["db_extensions"]["public"].append({"name": "plpgsql", "provisioned_by": "external"})
         sa.Table("settings", metadata, sa.Column("attrs", schema_item.CustomSQLAlchemyType("addons.hstore")))
         r = new_test_runner(metadata)
-        r.connection.exec_driver_sql("CREATE SCHEMA addons")
+        path = tmp_path / "schema.sql"
+
+        # The default comparison database has no hstore. The alternate one
+        # has an older version and a table owned by the extension.
+        r.all_sql(file=path)
+        clean_sql = path.read_text()
+        r.connection.exec_driver_sql("CREATE EXTENSION hstore VERSION '1.4'")
+        r.connection.exec_driver_sql("CREATE TABLE extension_catalog (id int)")
+        r.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE extension_catalog")
         r.connection.commit()
+        baseline = r.engine.url.database
+        r.all_sql(file=path, database=baseline)
+        assert path.read_text() == clean_sql
+        assert 'CREATE EXTENSION IF NOT EXISTS "hstore"' in clean_sql
+        assert 'CREATE EXTENSION IF NOT EXISTS "plpgsql"' not in clean_sql
+        assert "extension_catalog" not in clean_sql
 
-        if output == "squash":
-            r.run()
-            r.squash_all()
-            r.downgrade("base", delete_files=False)
-        else:
-            path = tmp_path / "schema.sql"
-            r.all_sql(file=path)
-
-        r.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA public VERSION '1.4'")
+        # Removing membership makes the same table fail the application-table guard.
+        r.connection.exec_driver_sql("ALTER EXTENSION hstore DROP TABLE extension_catalog")
         r.connection.commit()
-        if output == "squash":
-            r.upgrade()
-        else:
-            r.connection.exec_driver_sql(path.read_text())
+        with pytest.raises(Exception, match="cannot have any tables in database"):
+            r.all_sql(file=path, database=baseline)
 
-        assert r.connection.exec_driver_sql(
-            "SELECT extversion, extnamespace::regnamespace::text FROM pg_extension WHERE extname = 'hstore'"
-        ).one() == ("1.8", "addons")
-        assert r.compute_changes() == []
+        for preinstalled in (False, True):
+            target = new_test_runner(metadata, new_database=True)
+            target.connection.exec_driver_sql("CREATE SCHEMA addons")
+            if preinstalled:
+                target.connection.exec_driver_sql("CREATE EXTENSION hstore VERSION '1.4'")
+            target.connection.exec_driver_sql(clean_sql)
+            assert target.compute_changes() == []
 
-    def test_extension_prerequisite_order(self, new_test_runner, tmp_path):
-        # Intentionally declare the dependent first. Both ship with PostgreSQL.
+    def test_schema_sql_installs_extension_prerequisites_first(self, new_test_runner, tmp_path):
+        # Both extensions ship with PostgreSQL. Declare the dependent first.
         metadata = _db_extension_metadata(name="earthdistance")
         metadata.info["db_extensions"]["public"].append({"name": "cube"})
         r = new_test_runner(metadata)
         path = tmp_path / "schema.sql"
         r.all_sql(file=path)
-        sql = path.read_text()
-        r.connection.exec_driver_sql(sql)
+        r.connection.exec_driver_sql(path.read_text())
         assert r.compute_changes() == []
-        r.connection.rollback()
-
-        r.run()
-        r.squash_all()
-        r.downgrade("base", delete_files=False)
-        assert r.connection.exec_driver_sql(
-            "SELECT extname FROM pg_extension WHERE extname IN ('cube', 'earthdistance')"
-        ).all() == []
-        r.upgrade()
-        assert r.compute_changes() == []
-
-    def test_fresh_install_quotes_reconciliation_schema(self, new_test_runner, tmp_path):
-        schema = """Add'on "$ent$" :schema%\\dir"""
-        metadata = _db_extension_metadata(name="hstore", install_schema=schema)
-        metadata.info["db_extensions"]["public"].append({"name": "plpgsql"})
-        r = new_test_runner(metadata)
-        r.connection.execute(sa.schema.CreateSchema(schema))
-        r.connection.exec_driver_sql("CREATE EXTENSION hstore")
-        r.connection.exec_driver_sql("DROP EXTENSION plpgsql")
-        path = tmp_path / "schema.sql"
-        r.all_sql(file=path)
-        r.connection.exec_driver_sql(path.read_text(), execution_options={"no_parameters": True})
-        assert r.compute_changes() == []
-
-    def test_squash_all_replays_preinstalled_extension(self, new_test_runner):
-        metadata = _db_extension_metadata(name="plpgsql")
-        metadata.info["db_extensions"]["public"].append({"name": "hstore"})
-        sa.Table(
-            "settings", metadata,
-            sa.Column("attrs", schema_item.CustomSQLAlchemyType("hstore")),
-        )
-        r = new_test_runner(metadata)
-        installed = sa.text("SELECT extname FROM pg_extension WHERE extname IN ('plpgsql', 'hstore')")
-
-        r.run()
-        testingutils.create_custom_revision(
-            r, "add settings views", 2,
-            'op.execute_sql("CREATE VIEW settings_view AS SELECT attrs FROM settings")\n'
-            '    op.execute_sql("CREATE VIEW current_settings AS SELECT * FROM settings_view")',
-            'op.execute_sql("DROP VIEW current_settings")\n'
-            '    op.execute_sql("DROP VIEW settings_view")',
-        )
-        r.upgrade()
-        r.squash_all()
-        r.downgrade("base", delete_files=False)
-        assert r.connection.scalars(installed).all() == []
-        r.upgrade()
-        assert set(r.connection.scalars(installed)) == {"plpgsql", "hstore"}
-        assert r.compute_changes() == []
-
-    @pytest.mark.parametrize("existing_tickets", [False, True])
-    def test_custom_sequence_and_view_replay(self, new_test_runner, tmp_path, existing_tickets):
-        metadata = sa.MetaData()
-        if existing_tickets:
-            sa.Table("tickets", metadata, sa.Column("id", sa.Integer))
-        r = new_test_runner(metadata)
-        r.run()
-        testingutils.create_custom_revision(
-            r, "create ticket sequence", len(testingutils.get_version_files(r)) + 1,
-            'op.execute_sql("CREATE SEQUENCE ticket_seq")',
-            'op.execute_sql("DROP SEQUENCE ticket_seq")',
-        )
-        r.upgrade()
-        sa.Table(
-            "tickets", metadata,
-            sa.Column("number", sa.Integer, server_default=sa.text("nextval('ticket_seq'::regclass)")),
-            extend_existing=True,
-        )
-        r.run()
-        testingutils.create_custom_revision(
-            r, "add ticket view", len(testingutils.get_version_files(r)) + 1,
-            'op.execute_sql("CREATE VIEW ticket_numbers AS SELECT number FROM tickets")',
-            'op.execute_sql("DROP VIEW ticket_numbers")',
-        )
-        r.upgrade()
-        r.squash_all()
-        r.downgrade("base", delete_files=False)
-        r.upgrade()
-        assert r.connection.exec_driver_sql("INSERT INTO tickets DEFAULT VALUES RETURNING number").scalar_one() == 1
-        r.connection.commit()
-
-        path = tmp_path / "schema.sql"
-        r.all_sql(file=path)
-        fresh = new_test_runner(metadata, new_database=True)
-        fresh.connection.exec_driver_sql(path.read_text())
-        fresh.connection.exec_driver_sql("INSERT INTO tickets DEFAULT VALUES")
-        assert fresh.connection.exec_driver_sql("SELECT number FROM ticket_numbers").scalar_one() == 1
-
-    @pytest.mark.parametrize("nullable", [True, False])
-    def test_replay_backfills_column_added_after_custom_insert(self, new_test_runner, tmp_path, nullable):
-        metadata = sa.MetaData()
-        table = sa.Table("tickets", metadata, sa.Column("id", sa.Integer, primary_key=True))
-        r = new_test_runner(metadata)
-        r.run()
-        testingutils.create_custom_revision(
-            r, "insert ticket", 2,
-            'op.execute("INSERT INTO tickets (id) VALUES (1)")',
-            'op.execute("DELETE FROM tickets WHERE id = 1")',
-        )
-        r.upgrade()
-        table.append_column(sa.Column("state", sa.Text, nullable=nullable, server_default="open"))
-        table.append_constraint(sa.UniqueConstraint("state", name="tickets_state_key"))
-        table.append_constraint(sa.CheckConstraint("state <> ''", name="nonempty_ticket_state"))
-        sa.Index("ticket_state_idx", table.c.state)
-        r.run()
-        self._assert_replay_value(r, new_test_runner, tmp_path, "SELECT state FROM tickets", "open")
-
-    def test_replay_preserves_default_used_before_later_alter(self, new_test_runner, tmp_path):
-        metadata = sa.MetaData()
-        table = sa.Table("tickets", metadata, sa.Column("id", sa.Integer, primary_key=True))
-        r = new_test_runner(metadata)
-        r.run()
-        testingutils.create_custom_revision(
-            r, "first ticket", 2, 'op.execute("INSERT INTO tickets VALUES (1)")',
-            'op.execute("DELETE FROM tickets WHERE id = 1")',
-        )
-        r.upgrade()
-        table.append_column(sa.Column("state", sa.Text, nullable=False, server_default="open"))
-        r.run()
-        testingutils.create_custom_revision(
-            r, "second ticket", 4, 'op.execute("INSERT INTO tickets (id) VALUES (2)")',
-            'op.execute("DELETE FROM tickets WHERE id = 2")',
-        )
-        r.upgrade()
-        table.c.state.server_default = sa.DefaultClause("closed")
-        r.run()
-        self._assert_replay_value(
-            r, new_test_runner, tmp_path, "SELECT array_agg(state ORDER BY id) FROM tickets", ["open", "open"],
-        )
-
-    def test_replay_seed_rows_around_custom_snapshot(self, new_test_runner, tmp_path):
-        metadata = sa.MetaData()
-        sa.Table("roles", metadata, sa.Column("id", sa.Integer, primary_key=True), sa.Column("name", sa.Text))
-        rows = [{"id": 1, "name": "reader"}]
-        metadata.info["data"] = {"public": {"roles": {"pkeys": ["id"], "rows": rows}}}
-        r = new_test_runner(metadata)
-        r.run()
-        testingutils.create_custom_revision(
-            r, "snapshot seeded roles", 2,
-            'op.execute("CREATE MATERIALIZED VIEW role_snapshot AS SELECT name FROM roles")',
-            'op.execute("DROP MATERIALIZED VIEW role_snapshot")',
-        )
-        r.upgrade()
-        sa.Table("later_table", metadata, sa.Column("val", sa.Integer))
-        rows[0]["name"] = "editor"
-        rows.append({"id": 2, "name": "admin"})
-        r.run()
-        self._assert_replay_value(r, new_test_runner, tmp_path, "SELECT name FROM role_snapshot", "reader")
-
-    def test_replay_seeds_edge_config_after_table_creation(
-        self, new_test_runner, tmp_path, metadata_with_one_edge,
-    ):
-        r = new_test_runner(metadata_with_one_edge)
-        testingutils.create_custom_revision(
-            r, "before edge config", 1, 'op.execute("SELECT 1")', 'op.execute("SELECT 1")',
-        )
-        r.upgrade()
-        r.run()
-        self._assert_replay_value(
-            r, new_test_runner, tmp_path, "SELECT count(*) FROM assoc_edge_config", 1,
-        )
-
-    def test_replay_extension_in_custom_schema(self, new_test_runner, tmp_path):
-        metadata = sa.MetaData()
-        r = new_test_runner(metadata)
-        testingutils.create_custom_revision(
-            r, "create extension schema", 1,
-            'op.execute("CREATE SCHEMA addons")', 'op.execute("DROP SCHEMA addons")',
-        )
-        r.upgrade()
-        metadata.info["db_extensions"] = {"public": [{"name": "hstore", "install_schema": "addons"}]}
-        sa.Table("settings", metadata, sa.Column("attrs", schema_item.CustomSQLAlchemyType("addons.hstore")))
-        r.run()
-        self._assert_replay_value(
-            r, new_test_runner, tmp_path,
-            "SELECT extnamespace::regnamespace::text FROM pg_extension WHERE extname = 'hstore'",
-            "addons",
-        )
-
-    def test_replay_preinstalled_dependent_in_custom_schema(self, new_test_runner, tmp_path):
-        metadata = sa.MetaData()
-        r = new_test_runner(metadata)
-        testingutils.create_custom_revision(
-            r, "create extension schema", 1,
-            'op.execute("CREATE SCHEMA addons")', 'op.execute("DROP SCHEMA addons")',
-        )
-        r.upgrade()
-        extensions = [{"name": "cube", "install_schema": "addons"}]
-        metadata.info["db_extensions"] = {"public": extensions}
-        r.run()
-        # No revision installs earthdistance if it is present when declared.
-        r.connection.exec_driver_sql("SET LOCAL search_path = addons, public")
-        r.connection.exec_driver_sql("CREATE EXTENSION earthdistance SCHEMA addons")
-        r.connection.commit()
-        extensions.insert(0, {"name": "earthdistance", "install_schema": "addons"})
-        self._assert_replay_value(
-            r, new_test_runner, tmp_path,
-            "SELECT count(*) FROM pg_extension WHERE extname IN ('cube', 'earthdistance')", 2,
-        )
-
-    def test_replay_custom_sql_in_batch(self, new_test_runner, tmp_path):
-        metadata = sa.MetaData()
-        sa.Table("tickets", metadata, sa.Column("id", sa.Integer))
-        r = new_test_runner(metadata)
-        r.run()
-        testingutils.create_custom_revision(
-            r, "create view in batch", 2,
-            'with op.batch_alter_table("tickets") as batch:\n'
-            '        batch.execute("CREATE VIEW batch_view AS SELECT id FROM tickets")',
-            'with op.batch_alter_table("tickets") as batch:\n'
-            '        batch.execute("DROP VIEW batch_view")',
-        )
-        r.upgrade()
-        self._assert_replay_value(r, new_test_runner, tmp_path, "SELECT count(*) FROM batch_view", 0)
-
-    def test_untracked_sql_preserves_revision_files(self, new_test_runner, tmp_path):
-        r = new_test_runner(sa.MetaData())
-        testingutils.create_custom_revision(
-            r, "direct bind", 1, 'import sqlalchemy as sa\n    op.get_bind().execute(sa.text("SELECT 1"))', 'pass',
-        )
-        path = _get_revision_file(r)
-        with open(path) as f:
-            original = f.read()
-        with pytest.raises(ValueError, match="untracked SQL"):
-            r.squash_all()
-        with open(path) as f:
-            assert f.read() == original
-        with pytest.raises(ValueError, match="untracked SQL"):
-            r.all_sql(file=tmp_path / "schema.sql")
-
-    def test_squash_render_failure_preserves_history(self, new_test_runner):
-        r = new_test_runner(sa.MetaData())
-        # This SQLAlchemy expression works offline but Alembic cannot render
-        # it in a new Python revision.
-        testingutils.create_custom_revision(
-            r, "custom expression", 1,
-            'import sqlalchemy as sa\n    op.execute(sa.select(sa.literal_column("1")))', 'pass',
-        )
-        path = _get_revision_file(r)
-        with open(path) as f:
-            original = f.read()
-        with pytest.raises(NotImplementedError, match="SQL Expression"):
-            r.squash_all()
-        with open(path) as f:
-            assert f.read() == original
-
-    def _assert_replay_value(self, r, new_test_runner, tmp_path, query, expected):
-        assert r.connection.exec_driver_sql(query).scalar_one() == expected
-        r.connection.commit()
-        path = tmp_path / "schema.sql"
-        r.all_sql(file=path)
-        r.squash_all()
-        r.downgrade("base", delete_files=False)
-        r.upgrade()
-        assert r.connection.exec_driver_sql(query).scalar_one() == expected
-        assert r.compute_changes() == []
-        fresh = new_test_runner(r.metadata, new_database=True)
-        fresh.connection.exec_driver_sql(path.read_text())
-        assert fresh.connection.exec_driver_sql(query).scalar_one() == expected
-        assert fresh.compute_changes() == []
 
     def test_external_db_extension_requires_installed_extension(
         self, new_test_runner

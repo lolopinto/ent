@@ -2,16 +2,18 @@ from argparse import Namespace
 import io
 import json
 import os
+import asyncio
 import sys
 from contextlib import contextmanager
-from pathlib import Path
-from tempfile import TemporaryDirectory
 from collections.abc import Mapping
 from alembic.operations import Operations
+from alembic.util.langhelpers import Dispatcher
 from uuid import UUID
+from functools import wraps
 
 from .diff import Diff
 from .clause_text import get_clause_text
+from .clearable_string_io import ClearableStringIO
 import sqlalchemy as sa
 from sqlalchemy.sql.elements import TextClause
 from sqlalchemy.engine.url import make_url
@@ -34,11 +36,11 @@ from . import config
 from . import ops
 from . import migration_ordering
 from . import renderers
-from . import replay
 from . import compare
 from . import ops_impl
 from . import csv
 from .schema_item import CustomSQLAlchemyType
+from .util.os import delete_py_files
 
 
 def _normalize_generated_file_text(contents: str) -> str:
@@ -538,7 +540,7 @@ class Runner(object):
             # For some reason, the default rendering is not doing this correctly, so we need to
             # customize the rendering so that this is handled correctly and it adds the sa.text part
             if isinstance(item, TextClause):
-                return f"sa.text({item.text!r})"
+                return f"sa.text('{item.text}')"
             if isinstance(item, UUID):
                 # quote as string so it's rendered correctly
                 return f"'{str(item)}'"
@@ -718,10 +720,20 @@ class Runner(object):
         
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
 
-        self._include_custom_sql(migrations.upgrade_ops, mc)
-        self._include_custom_sql(migrations.downgrade_ops, mc)
+        (custom_sql_upgrade_ops, custom_sql_downgrade_ops) = self._get_custom_sql(connection, dialect, as_ops=True)
+        migrations.upgrade_ops.ops.extend(custom_sql_upgrade_ops)
 
-        originals = [Path(rev.path) for rev in self.cmd.get_script_directory().walk_revisions()]
+        # in practice, shouldn't care about downgrade at this point since if you're doing this, you're past the point
+        # of no return but doing it anyway for tests and completeness
+        # reverse downgrade_ops
+        migrations.downgrade_ops.ops.reverse()
+        # reverse custom_sql
+        custom_sql_downgrade_ops.reverse()
+        # add reversed custom sql since we add them last
+        migrations.downgrade_ops.ops.extend(custom_sql_downgrade_ops)
+        
+        # delete existing files
+        asyncio.run(delete_py_files(location))
 
         message = message or "all the things"
         command_args = dict(
@@ -734,6 +746,11 @@ class Runner(object):
             version_path=None,
             rev_id=revision,
             depends_on=None,
+        )
+        revision_context = RevisionContext(
+            self.cmd.alembic_cfg,
+            self.cmd.get_script_directory(),
+            command_args,
         )
         migration_script = alembicops.MigrationScript(
             rev_id=revision,
@@ -757,60 +774,126 @@ class Runner(object):
             mc, autogenerate=False,
             opts=opts,
         )
+        revision_context._last_autogen_context = autogen_context
+
         migration_script._needs_render = True
-        # Render and load the replacement before removing any revisions. A
-        # custom operation can support offline SQL but lack a Python renderer.
-        with TemporaryDirectory(dir=self.schema_path) as staging:
-            directory = self.cmd.get_script_directory()
-            directory.version_locations = [staging]
-            revision_context = RevisionContext(self.cmd.alembic_cfg, directory, command_args)
-            revision_context._last_autogen_context = autogen_context
-            script = revision_context._to_script(migration_script)
-            target = Path(location) / Path(script.path).name
-            os.replace(script.path, target)
-            for original in originals:
-                if original.resolve() != target.resolve():
-                    original.unlink()
 
-    def _include_custom_sql(self, generated, mc):
-        """Place opaque custom SQL on the same side of table DDL as in history."""
-        metadata = self.metadata.info
-        include = metadata.get("custom_sql_include", {}).get("public", [])
-        exclude = metadata.get("custom_sql_exclude", {}).get("public", [])
-        revisions = reversed(list(self.cmd.get_script_directory().walk_revisions()))
+        # writes the file and we can do something with the script if we want but we don't need to
+        revision_context._to_script(migration_script)
+        
 
-        return replay.interleave(generated, revisions, self.metadata, mc, include, exclude)
+    def _get_custom_sql(self, connection, dialect, as_buffer=False, as_ops=False) -> io.StringIO | tuple[list[alembicops.MigrateOperation], list[alembicops.MigrateOperation]]:
+        if not as_ops ^ as_buffer:
+            raise ValueError("must specify either as_buffer or as_ops")
 
-    def _check_empty_database(self, connection):
-        inspector = sa.inspect(connection)
-        schema = self.schema_name or None
-        table_names = set(inspector.get_table_names(schema=schema))
-        table_names.difference_update(Runner.exclude_tables().split(','))
-        if table_names and connection.dialect.name == "postgresql":
-            # Extensions such as PostGIS ship their own tables. Match the same
-            # namespace (or visible relation) that the inspector just checked.
-            members = connection.execute(sa.text("""
-                SELECT rel.relname
-                FROM pg_catalog.pg_depend AS dep
-                JOIN pg_catalog.pg_class AS rel ON rel.oid = dep.objid
-                JOIN pg_catalog.pg_namespace AS ns ON ns.oid = rel.relnamespace
-                WHERE dep.classid = 'pg_catalog.pg_class'::regclass
-                  AND dep.refclassid = 'pg_catalog.pg_extension'::regclass
-                  AND dep.deptype = 'e'
-                  AND CASE WHEN CAST(:schema AS text) IS NULL
-                           THEN pg_catalog.pg_table_is_visible(rel.oid)
-                           ELSE ns.nspname = :schema END
-            """), {"schema": schema}).scalars()
-            table_names.difference_update(members)
-        if table_names:
-            raise Exception(
-                "to compare from base tables, cannot have any tables in database. "
-                f"have {len(table_names)}"
-            )
+        custom_sql_include_all = config.metadata.info.setdefault('custom_sql_include', {})
+        custom_sql_exclude_all= config.metadata.info.setdefault('custom_sql_exclude', {})
+        custom_sql_include_list = custom_sql_include_all.setdefault('public', [])
+        custom_sql_exclude_list = custom_sql_exclude_all.setdefault('public', [])
+        
+        custom_sql_include = None
+        custom_sql_exclude = None
+        
+        if len(custom_sql_include_list) > 0:
+            custom_sql_include = set(custom_sql_include_list)
+        if len(custom_sql_exclude_list) > 0:
+            custom_sql_exclude = set(custom_sql_exclude_list)
+            
+        def is_custom_op(obj: ops.ExecuteSQL):
+            return isinstance(obj, ops.ExecuteSQL) or isinstance(obj, alembicops.ExecuteSQLOp)
 
-    def migrations_against_empty(self, database=''):
-        dialect = self.connection.dialect.name
+        def include_rev(name: str):
+            if custom_sql_include is not None:
+                return name in custom_sql_include
+            if custom_sql_exclude is not None:
+                return name not in custom_sql_exclude
+            return True
+     
 
+        script_directory = self.cmd.get_script_directory()
+        revs = script_directory.walk_revisions()
+        
+        # this is cleared after each upgrade
+        temp_buffer = ClearableStringIO()
+
+        opts = Runner.get_opts()
+        opts['as_sql'] = True
+        opts['output_buffer'] = temp_buffer
+        mc = MigrationContext.configure(
+            connection=connection,
+            dialect_name=dialect,
+            opts=opts,
+        )
+        
+        custom_sql_buffer = io.StringIO()
+
+        # monkey patch the Dispatcher.dispatch method to know what's being changed/dispatched
+        # for each upgrade path, we'll know what the last object was and can make decisions based on that
+        
+        last_ops = []
+
+        def my_decorator(func):
+            @wraps(func)
+            def wrapper(self, *args, **kwargs):
+                nonlocal last_ops
+                last_ops.append(args[0])
+                return func(self, *args, **kwargs)  
+            return wrapper   
+            
+        Dispatcher.dispatch = my_decorator(Dispatcher.dispatch)
+
+        # order is flipped, it goes from most recent to oldest
+        # we want to go from oldest -> most recent 
+        revs = list(revs)
+        revs.reverse()
+
+        upgrade_ops = []
+        downgrade_ops = []
+        with Operations.context(mc):
+            for rev in revs:
+                # run upgrade(), we capture what's being changed via the dispatcher and see if it's custom sql 
+                rev.module.upgrade()
+
+                header_written = False
+                if include_rev(rev.revision):
+                    # the number of ops should match the number of sql chunks written
+                    # may eventually have ops that do more than 1 sql write and need to handle this differently???
+                    assert len(last_ops) == temp_buffer.chunk_len()
+
+                    for i in range(len(last_ops)):
+                        op = last_ops[i]
+                        if is_custom_op(op):
+                            if as_buffer:
+                                chunk = temp_buffer.get_chunk(i)
+                                if not header_written:
+                                    custom_sql_buffer.write(f"-- custom sql for rev {rev.revision}\n")
+                                    header_written = True
+                                    
+                                # only write if chunk is custom op 
+                                custom_sql_buffer.write(chunk)
+
+                            if as_ops:
+                                upgrade_ops.append(op)
+
+                    last_ops = []
+
+
+                    # run downgrade, capture what's being changed via the dispatcher and see if it's custom sql                        
+                    rev.module.downgrade()
+                    for op in last_ops:
+                        if is_custom_op(op):
+                            downgrade_ops.append(op)
+
+                last_ops = []
+
+                temp_buffer.clear()
+        
+        if as_ops:
+            return (upgrade_ops, downgrade_ops)
+
+        return custom_sql_buffer
+    
+    def migrations_against_empty(self, database='', *, schema_sql=False):
         raw_engine = self.args.get('engine', None)
         if raw_engine is None:
             raise ValueError("must specify engine")
@@ -820,6 +903,15 @@ class Runner(object):
 
         engine = sa.create_engine(url)
         connection = engine.connect()
+        try:
+            return self._compare_empty_database(connection, schema_sql)
+        except BaseException:
+            connection.close()
+            engine.dispose()
+            raise
+
+    def _compare_empty_database(self, connection, schema_sql):
+        dialect = connection.dialect.name
         if self.schema_name:
             Runner.setup_schema(
                 connection,
@@ -831,17 +923,37 @@ class Runner(object):
                 ),
             )
 
-        self._check_empty_database(connection)
-
-        # Only extension and bookkeeping tables can remain. Alembic's name
-        # filter applies to reflection, so it still creates all metadata tables.
-        def include_name(name, type_, parent_names):
-            return type_ != "table" and Runner.include_name(name, type_, parent_names)
+        inspector = sa.inspect(connection)
+        table_names = inspector.get_table_names(schema=self.schema_name or None)
+        excluded_tables = set(Runner.exclude_tables().split(','))
+        opts = Runner.get_opts()
+        if schema_sql and dialect == "postgresql":
+            # Extensions can own tables, including PostGIS's spatial_ref_sys.
+            # Only Ent's bookkeeping and genuine extension members are baseline objects.
+            excluded_tables = {"alembic_version", "ent_dev_schema_registry"} if self.schema_name else set()
+            if table_names:
+                excluded_tables.update(connection.execute(sa.text("""
+                    SELECT c.relname FROM pg_catalog.pg_class c
+                    JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                    JOIN pg_catalog.pg_depend d ON d.objid = c.oid
+                    WHERE d.classid = 'pg_catalog.pg_class'::regclass
+                      AND d.refclassid = 'pg_catalog.pg_extension'::regclass AND d.deptype = 'e'
+                      AND CASE WHEN CAST(:schema AS text) IS NULL THEN pg_catalog.pg_table_is_visible(c.oid)
+                               ELSE n.nspname = :schema END
+                """), {"schema": self.schema_name or None}).scalars())
+            opts["ent_schema_sql"] = True
+            opts["include_name"] = lambda name, kind, parents: kind != "table" and Runner.include_name(name, kind, parents)
+        table_names = [name for name in table_names if name not in excluded_tables]
+        if len(table_names) != 0:
+            raise Exception(
+                "to compare from base tables, cannot have any tables in database. "
+                f"have {len(table_names)}"
+            )
 
         mc = MigrationContext.configure(
             connection=connection,
             dialect_name=dialect,
-            opts={**Runner.get_opts(), "ent_from_scratch": True, "include_name": include_name},
+            opts=opts,
         )
         with Runner.dev_schema_compare_search_path(connection):
             migrations = produce_migrations(mc, self.metadata)
@@ -850,7 +962,7 @@ class Runner(object):
     # doesn't invoke env.py. completely different flow
     # progressive_sql and upgrade range do go through offline path
     def all_sql(self, file=None, database=''):
-        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
+        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database, schema_sql=True)
     
         buffer = io.StringIO()
 
@@ -858,6 +970,7 @@ class Runner(object):
         opts = Runner.get_opts()
         opts['as_sql'] = True
         opts['output_buffer'] = buffer
+        opts['ent_schema_sql'] = mc.opts.get('ent_schema_sql', False)
         mc2 = MigrationContext.configure(
             connection=connection,
             opts=opts
@@ -884,16 +997,22 @@ class Runner(object):
             # create alembic table to start
             mc2._version.create(bind=mc2.connection)
 
-            headers = self._include_custom_sql(migrations.upgrade_ops, mc)
             for op in migrations.upgrade_ops.ops:
-                if op in headers:
-                    buffer.write(f"-- custom sql for rev {headers[op]}\n")
                 invoke(op)
+
+            custom_sql_buffer = self._get_custom_sql(connection, dialect, as_buffer=True)
+
+            # add custom sql at the end
+            custom_sql = custom_sql_buffer.getvalue()
+            custom_sql_buffer.close()
+            buffer.write(custom_sql)
             sql = _normalize_generated_file_text(buffer.getvalue())
         finally:
             # restore this
             sa.Table._sorted_constraints = prev_sort
             buffer.close()
+            connection.close()
+            connection.engine.dispose()
 
         if file is not None:
             with open(file, 'w') as f:

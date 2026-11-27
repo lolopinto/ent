@@ -145,8 +145,7 @@ def render_drop_enum_op(autogen_context: AutogenContext, op: ops.DropEnumOp) -> 
 # hmm not sure why we need this. there's probably an easier way to do this that doesn't require this...
 @renderers.dispatch_for(ops.OurCreateCheckConstraintOp)
 def render_check_constraint(autogen_context: AutogenContext, op: ops.OurCreateCheckConstraintOp) -> str:
-    schema = f", schema={op.schema!r}" if op.schema is not None else ""
-    return f"op.create_check_constraint({op.constraint_name!r}, {op.table_name!r}, {str(op.condition)!r}{schema})"
+    return f"op.create_check_constraint('{op.constraint_name}', '{op.table_name}', '{op.condition}')"
 
 
 def _render_kw_args(d):
@@ -241,8 +240,7 @@ def render_drop_full_text_index(autogen_context: AutogenContext, op: ops.DropFul
 def render_create_db_extension(
     autogen_context: AutogenContext, op: ops.CreateExtensionOp
 ) -> str:
-    reconcile = ", reconcile_existing=True" if op.reconcile_existing else ""
-    return f"op.create_db_extension({_render_db_extension(op.extension)}{reconcile})"
+    return f"op.create_db_extension({_render_db_extension(op.extension)})"
 
 
 @renderers.dispatch_for(ops.DropExtensionOp)

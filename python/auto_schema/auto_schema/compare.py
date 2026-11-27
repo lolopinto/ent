@@ -76,8 +76,6 @@ def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, A
 def _get_extension_ops(
     metadata_extensions: list[dict[str, Any]],
     db_extensions: dict[str, dict[str, Any]],
-    *,
-    from_scratch: bool,
 ) -> list[ops.MigrateOpInterface]:
     extension_ops = []
     for extension in metadata_extensions:
@@ -86,16 +84,15 @@ def _get_extension_ops(
         db_extension = db_extensions.get(name.lower())
         version = extension.get("version")
         install_schema = extension.get("install_schema")
-        # Fresh installs must create every Ent-managed extension, even when the
-        # comparison database inherited it from its PostgreSQL image or template.
-        if ent_provisioned and (from_scratch or db_extension is None):
-            reconcile = from_scratch and (version is not None or install_schema is not None)
-            extension_ops.append(ops.CreateExtensionOp(extension, reconcile_existing=reconcile))
-            continue
         if db_extension is None:
-            raise ValueError(
-                f'required externally provisioned db extension "{name}" is not installed'
+            if not ent_provisioned:
+                raise ValueError(
+                    f'required externally provisioned db extension "{name}" is not installed'
+                )
+            extension_ops.append(
+                ops.CreateExtensionOp(extension)
             )
+            continue
 
         if version is not None and db_extension.get("version") != version:
             if not ent_provisioned:
@@ -182,42 +179,37 @@ def _plan_extension_ops(autogen_context):
         raise ValueError("db extensions are only supported for postgres")
 
     db_extensions = _get_db_extensions(autogen_context)
-    extension_ops = _get_extension_ops(
-        metadata_extensions, db_extensions,
-        from_scratch=autogen_context.opts.get("ent_from_scratch", False),
-    )
-    by_name = {}
-    for op in extension_ops:
-        name = op.extension["name"] if isinstance(op, ops.CreateExtensionOp) else op.extension_name
-        by_name.setdefault(name, []).append(op)
-    if len(by_name) < 2:
-        return extension_ops
+    if autogen_context.opts.get("ent_schema_sql"):
+        # A snapshot installs managed extensions and validates external ones.
+        for ext in metadata_extensions:
+            if _is_ent_provisioned(ext):
+                db_extensions.pop(ext["name"].lower(), None)
+        metadata_extensions = _order_snapshot_extensions(autogen_context.connection, metadata_extensions)
+    return _get_extension_ops(metadata_extensions, db_extensions)
 
-    # Control files declare prerequisites even when the comparison database
-    # has neither extension installed. Pins can select different requirements.
-    versions = {ext["name"]: ext["version"] for ext in metadata_extensions}
-    rows = autogen_context.connection.execute(sa.text("""
-        SELECT available.name, version.requires
+
+def _order_snapshot_extensions(connection, extensions):
+    # PostgreSQL's control files describe prerequisites even on a clean server.
+    managed = {ext["name"]: ext for ext in extensions if _is_ent_provisioned(ext)}
+    if len(managed) < 2:
+        return extensions
+    dependencies = TopologicalSorter({name: () for name in managed})
+    rows = connection.execute(sa.text("""
+        SELECT v.name, v.requires
         FROM unnest(CAST(:names AS text[]), CAST(:versions AS text[])) AS wanted(name, version)
-        JOIN pg_catalog.pg_available_extensions AS available ON available.name = wanted.name
-        JOIN pg_catalog.pg_available_extension_versions AS version
-          ON version.name = available.name
-         AND version.version = COALESCE(wanted.version, available.default_version)
-    """), {"names": list(by_name), "versions": [versions[name] for name in by_name]})
-    prerequisites = {name: [] for name in by_name}
+        JOIN pg_catalog.pg_available_extensions a ON a.name = wanted.name
+        JOIN pg_catalog.pg_available_extension_versions v
+          ON v.name = a.name AND v.version = COALESCE(wanted.version, a.default_version)
+    """), {"names": list(managed), "versions": [ext["version"] for ext in managed.values()]})
     for name, requires in rows:
-        prerequisites[name].extend(dep for dep in requires or () if dep in by_name)
-    # PostgreSQL normally preinstalls plpgsql. If the schema itself provides
-    # it, install it before another extension's replay-time DO block needs it.
-    if "plpgsql" in by_name:
-        for op in extension_ops:
-            if isinstance(op, ops.CreateExtensionOp) and op.reconcile_existing:
-                if op.extension["name"] != "plpgsql":
-                    prerequisites[op.extension["name"]].append("plpgsql")
-    if autogen_context.opts.get("ent_from_scratch"):
-        # Replay uses the same edges when custom SQL separates installations.
-        autogen_context.migration_context.opts["ent_extension_prerequisites"] = prerequisites
-    return [op for name in TopologicalSorter(prerequisites).static_order() for op in by_name[name]]
+        dependencies.add(name, *(dep for dep in requires or () if dep in managed))
+    if "plpgsql" in managed:
+        for name, ext in managed.items():
+            if name != "plpgsql" and (ext["version"] or ext["install_schema"]):
+                dependencies.add(name, "plpgsql")
+    return [managed[name] for name in dependencies.static_order()] + [
+        ext for ext in extensions if not _is_ent_provisioned(ext)
+    ]
 
 
 @comparators.dispatch_for("schema")
@@ -329,7 +321,7 @@ def _dialect_name(autogen_context: AutogenContext) -> str:
 
 # why isn't this just metadata.sorted_tables?
 def _table_exists(autogen_context: AutogenContext):
-    if autogen_context.opts.get("ent_from_scratch"):
+    if autogen_context.opts.get("ent_schema_sql"):
         return False
     dialect_map = {
         'sqlite': _execute_sqlite_dialect,
@@ -388,7 +380,7 @@ def _create_tuple_key(row, pkeys):
 
 def _reflect_app_metadata(autogen_context):
     metadata = sa.MetaData()
-    if not autogen_context.opts.get("ent_from_scratch"):
+    if not autogen_context.opts.get("ent_schema_sql"):
         metadata.reflect(autogen_context.inspector.bind)
     return metadata
 
