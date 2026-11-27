@@ -927,27 +927,22 @@ class Runner(object):
         table_names = inspector.get_table_names(schema=self.schema_name or None)
         excluded_tables = set(Runner.exclude_tables().split(','))
         opts = Runner.get_opts()
-        extension_tables = {}
         if schema_sql and dialect == "postgresql":
             # Extensions can own tables, including PostGIS's spatial_ref_sys.
             # Only Ent's bookkeeping and genuine extension members are baseline objects.
             excluded_tables = {"alembic_version", "ent_dev_schema_registry"} if self.schema_name else set()
             members = connection.execute(sa.text("""
-                SELECT n.nspname, c.relname, e.extname,
-                       CASE WHEN CAST(:schema AS text) IS NULL THEN pg_catalog.pg_table_is_visible(c.oid)
-                            ELSE n.nspname = :schema END AS in_comparison_schema
+                SELECT c.relname
                 FROM pg_catalog.pg_class c
                 JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
                 JOIN pg_catalog.pg_depend d ON d.objid = c.oid
-                JOIN pg_catalog.pg_extension e ON e.oid = d.refobjid
                 WHERE d.classid = 'pg_catalog.pg_class'::regclass
                   AND d.refclassid = 'pg_catalog.pg_extension'::regclass AND d.deptype = 'e'
                   AND c.relkind IN ('r', 'p', 'f')
+                  AND CASE WHEN CAST(:schema AS text) IS NULL THEN pg_catalog.pg_table_is_visible(c.oid)
+                           ELSE n.nspname = :schema END
             """), {"schema": self.schema_name or None})
-            for schema, table, owner, in_comparison_schema in members:
-                extension_tables[schema, table] = owner
-                if in_comparison_schema:
-                    excluded_tables.add(table)
+            excluded_tables.update(members.scalars())
             opts["ent_schema_sql"] = True
             opts["include_name"] = lambda name, kind, parents: kind != "table" and Runner.include_name(name, kind, parents)
         table_names = [name for name in table_names if name not in excluded_tables]
@@ -964,16 +959,6 @@ class Runner(object):
         )
         with Runner.dev_schema_compare_search_path(connection):
             migrations = produce_migrations(mc, self.metadata)
-        if extension_tables:
-            for op in migrations.upgrade_ops.ops:
-                if isinstance(op, alembicops.CreateTableOp):
-                    schema = op.schema or self.schema_name or connection.dialect.default_schema_name
-                    owner = extension_tables.get((schema, op.table_name))
-                    if owner is not None:
-                        raise ValueError(
-                            f'schema.sql would create table "{schema}"."{op.table_name}", '
-                            f'owned by extension "{owner}" in the comparison database'
-                        )
         return (migrations, connection, dialect, mc)
                     
     # doesn't invoke env.py. completely different flow

@@ -399,13 +399,6 @@ def _create_tuple_key(row, pkeys):
     return tuple(l)
 
 
-def _reflect_app_metadata(autogen_context):
-    metadata = sa.MetaData()
-    if not autogen_context.opts.get("ent_schema_sql"):
-        metadata.reflect(autogen_context.inspector.bind)
-    return metadata
-
-
 @ comparators.dispatch_for('schema', priority=DispatchPriority.LAST)
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
@@ -413,9 +406,17 @@ def compare_data(autogen_context, upgrade_ops, schemas):
 
     data = autogen_context.metadata.info.setdefault("data", {})
 
-    db_metadata = _reflect_app_metadata(autogen_context)
+    snapshot = autogen_context.opts.get("ent_schema_sql")
+    db_metadata = sa.MetaData()
+    if not snapshot:
+        db_metadata.reflect(autogen_context.inspector.bind)
+    created_tables = {
+        (op.schema or autogen_context.dialect.default_schema_name, op.table_name)
+        for op in upgrade_ops.ops if isinstance(op, alembicops.CreateTableOp)
+    }
 
     for sch in schemas:
+        table_schema = sch or autogen_context.dialect.default_schema_name
         sch = _get_schema_key(sch)
 
         if not sch in data:
@@ -437,8 +438,16 @@ def compare_data(autogen_context, upgrade_ops, schemas):
             # verify that each row is valid + create tuple key
             data_rows = {_create_tuple_key(row, pkeys): row for row in rows}
 
-            # new table. need to add
-            if not table_name in db_metadata.tables:
+            table_exists = table_name in db_metadata.tables
+            if snapshot:
+                # Application tables created by this snapshot start empty, even
+                # if an incidental extension member shares their name. Tables
+                # provisioned outside the snapshot retain seed reconciliation.
+                table_exists = (
+                    (table_schema, table_name) not in created_tables
+                    and autogen_context.inspector.has_table(table_name)
+                )
+            if not table_exists:
                 upgrade_ops.ops.append(ops.AddRowsOp(
                     table_name, pkeys, rows))
             else:
@@ -498,7 +507,9 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
 
 @ comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
 def compare_schema(autogen_context, upgrade_ops, schemas):
-    db_metadata = _reflect_app_metadata(autogen_context)
+    db_metadata = sa.MetaData()
+    if not autogen_context.opts.get("ent_schema_sql"):
+        db_metadata.reflect(autogen_context.inspector.bind)
 
     # TODO schema not being used
     # https://github.com/lolopinto/ent/issues/123
