@@ -3167,6 +3167,65 @@ class TestPostgresRunner(BaseTestRunner):
         assert target.connection.exec_driver_sql("SELECT id FROM app.lookup").scalars().all() == [1]
         assert populated_sql == clean_sql
 
+    @pytest.mark.parametrize("incidental_member", [False, True])
+    @pytest.mark.parametrize("search_path,created_schema,external_schema,reconcile", [
+        ("public,addons", "addons", "public", True),
+        ("addons,public", "public", "addons", True),
+        ("public,addons", "other", "addons", True),
+        ("addons,public", "addons", "public", False),
+        ("public,addons", None, "addons", False),
+    ])
+    def test_schema_sql_resolves_seed_table_through_search_path(
+        self, new_test_runner, tmp_path, search_path, created_schema,
+        external_schema, reconcile, incidental_member,
+    ):
+        metadata = _db_extension_metadata(name="hstore", provisioned_by="external", install_schema="public")
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer, primary_key=True),
+                 sa.Column("label", sa.Text), schema=created_schema)
+        metadata.info["data"] = {"public": {"lookup": {
+            "pkeys": ["id"],
+            "rows": [{"id": 1, "label": "updated"}, {"id": 3, "label": "new"}],
+        }}}
+        r = new_test_runner(metadata)
+        r.args = {**r.args, "engine": r.engine.url.update_query_dict({
+            "options": f"-csearch_path={search_path}",
+        })}
+        target = new_test_runner(metadata, new_database=True)
+        for provisioned in (r, target):
+            provisioned.connection.exec_driver_sql("CREATE SCHEMA addons")
+            provisioned.connection.exec_driver_sql("CREATE SCHEMA other")
+            provisioned.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA public")
+            provisioned.connection.exec_driver_sql(
+                f"CREATE TABLE {external_schema}.lookup (id int PRIMARY KEY, label text)")
+            provisioned.connection.exec_driver_sql(
+                f"INSERT INTO {external_schema}.lookup VALUES (1, 'old'), (2, 'remove')")
+            provisioned.connection.exec_driver_sql(
+                f"ALTER EXTENSION hstore ADD TABLE {external_schema}.lookup")
+            provisioned.connection.commit()
+
+        planned_schema = created_schema or search_path.split(",")[0]
+        if incidental_member:
+            # Only the comparison database contains this incidental member.
+            # It does not become part of a fresh extension installation.
+            r.connection.exec_driver_sql(
+                f"CREATE TABLE {planned_schema}.lookup (id int PRIMARY KEY, label text)")
+            r.connection.exec_driver_sql(
+                f"INSERT INTO {planned_schema}.lookup VALUES (1, 'updated'), (3, 'new')")
+            r.connection.exec_driver_sql(f"ALTER EXTENSION hstore ADD TABLE {planned_schema}.lookup")
+            r.connection.commit()
+
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path, database=r.engine.url.database)
+        target.connection.exec_driver_sql(f"SET search_path TO {search_path}")
+        target.connection.exec_driver_sql(path.read_text())
+        desired = [(1, "updated"), (3, "new")]
+        assert target.connection.exec_driver_sql(
+            f"SELECT id, label FROM {external_schema}.lookup ORDER BY id"
+        ).all() == (desired if reconcile else [(1, "old"), (2, "remove")])
+        assert target.connection.exec_driver_sql(
+            f"SELECT id, label FROM {planned_schema}.lookup ORDER BY id"
+        ).all() == ([] if reconcile else desired)
+
     @pytest.mark.parametrize("seed_rows", [[], [{"srid": 3, "auth_name": "new"}]])
     def test_schema_sql_preserves_rows_behind_seed_view(self, new_test_runner, tmp_path, seed_rows):
         metadata = _db_extension_metadata(name="hstore", provisioned_by="external", install_schema="gis")

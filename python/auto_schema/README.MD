@@ -36,6 +36,8 @@ Partial indexes are supported via `postgresql_where=sa.text(...)` and `sqlite_wh
 
 Application tables created by the snapshot start with their declared seed rows. Explicit seeds for physical tables provisioned outside the snapshot retain the existing comparison-based insert, update, and delete behavior; the comparison database must represent those tables and their initial data. Writable views retain insert-only seeding, preserving existing rows.
 
+Seed statements use unqualified table names. Generate and replay with the same `search_path` and required schemas already present. When table names repeat across schemas, seeds follow the first matching relation on that path, including tables created by the snapshot.
+
 This baseline requirement also applies to tables supplied by Ent-managed extensions. To override extension-supplied rows, use `--empty_database` to select a comparison database with the matching extension version and install schema already provisioned, including representative initial data. A fully empty comparison database cannot derive updates or deletions to those rows.
 
 Declare any required `version` or `installSchema` in `dbExtensions`. Generated extension statements run before retained custom SQL, so a later `CREATE EXTENSION IF NOT EXISTS` skips its install options. Create any custom install schema before replay. If retained revisions also create the schema or extension, use `CREATE SCHEMA IF NOT EXISTS` and `CREATE EXTENSION IF NOT EXISTS` in those revisions. Use `auto_schema --progressive_sql` when installation depends on the original migration order.

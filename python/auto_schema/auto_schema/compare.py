@@ -399,6 +399,38 @@ def _create_tuple_key(row, pkeys):
     return tuple(l)
 
 
+def _snapshot_seed_tables(autogen_context, upgrade_ops):
+    connection = autogen_context.connection
+    # Use the active path, not dialect.default_schema_name, which can be cached
+    # before dev-schema setup. Unqualified CREATE TABLE uses current_schema().
+    default_schema, search_path = connection.execute(sa.text(
+        "SELECT current_schema(), current_schemas(true)"
+    )).one()
+    created_tables = {
+        (op.schema or default_schema, op.table_name)
+        for op in upgrade_ops.ops if isinstance(op, alembicops.CreateTableOp)
+    }
+    # Match ordinary reflection's real-table semantics. Visibility also excludes
+    # physical tables hidden by views, which retain insert-only seeding.
+    baseline_tables = connection.execute(sa.text("""
+        SELECT n.nspname, c.relname
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE c.relkind IN ('r', 'p') AND pg_catalog.pg_table_is_visible(c.oid)
+    """))
+    tables = set()
+    for table_schema, table_name in baseline_tables:
+        for schema in search_path:
+            # A planned table at or before the baseline relation receives fresh
+            # inserts. Same-named creations later in the path are unrelated.
+            if (schema, table_name) in created_tables:
+                break
+            if schema == table_schema:
+                tables.add(table_name)
+                break
+    return tables
+
+
 @ comparators.dispatch_for('schema', priority=DispatchPriority.LAST)
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
@@ -410,15 +442,7 @@ def compare_data(autogen_context, upgrade_ops, schemas):
     db_metadata = sa.MetaData()
     if not snapshot:
         db_metadata.reflect(autogen_context.inspector.bind)
-    # Seed operations and row lookup use unqualified names. Match that contract
-    # so an explicit CreateTableOp.schema cannot hide a newly created table.
-    created_tables = {
-        op.table_name
-        for op in upgrade_ops.ops if isinstance(op, alembicops.CreateTableOp)
-    }
-    # Match ordinary reflection's real-table semantics. has_table() also accepts
-    # writable views, which previously received inserts without reconciliation.
-    baseline_tables = set(autogen_context.inspector.get_table_names()) if snapshot else set()
+    baseline_tables = _snapshot_seed_tables(autogen_context, upgrade_ops) if snapshot else set()
 
     for sch in schemas:
         sch = _get_schema_key(sch)
@@ -447,10 +471,7 @@ def compare_data(autogen_context, upgrade_ops, schemas):
                 # Application tables created by this snapshot start empty, even
                 # if an incidental extension member shares their name. Tables
                 # provisioned outside the snapshot retain seed reconciliation.
-                table_exists = (
-                    table_name not in created_tables
-                    and table_name in baseline_tables
-                )
+                table_exists = table_name in baseline_tables
             if not table_exists:
                 if rows:
                     upgrade_ops.ops.append(ops.AddRowsOp(
