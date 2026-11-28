@@ -1,7 +1,7 @@
 import { ID, Ent, Viewer, Context, Data } from "../core/base";
 import { logQuery } from "../core/ent";
 import { Changeset, Executor } from "../action/action";
-import { Builder, WriteOperation } from "../action";
+import { Builder } from "../action";
 import { OrchestratorOptions } from "./orchestrator";
 import DB, { Client, Queryer, SyncClient } from "../core/db";
 import { log } from "../core/logger";
@@ -27,7 +27,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   }
   private lastOp: DataOperation<T> | undefined;
   private createdEnt: T | null = null;
-  private changedOps: Map<ID, WriteOperation> = new Map();
+  private changedOps: Set<ID> = new Set();
 
   resolveValue(val: ID): Ent | null {
     if (val === this.placeholderID && val !== undefined) {
@@ -38,8 +38,7 @@ export class ListBasedExecutor<T extends Ent> implements Executor {
   }
 
   builderOpChanged(builder: Builder<any>): boolean {
-    const v = this.changedOps.get(builder.placeholderID);
-    return v !== undefined && v !== builder.operation;
+    return this.changedOps.has(builder.placeholderID);
   }
 
   [Symbol.iterator]() {
@@ -129,17 +128,20 @@ function getCreatedEnt<T extends Ent>(
 
 function maybeFlagOpOperationAsChanged<T extends Ent>(
   op: DataOperation<T> | undefined,
-  changedOps: Map<ID, WriteOperation>,
+  changedOps: Set<ID>,
 ) {
   if (!op || !op.updatedOperation) {
     return;
   }
   const r = op.updatedOperation();
-  if (!r || r.builder.operation === r.operation) {
+  if (!r) {
     return;
   }
 
-  changedOps.set(r.builder.placeholderID, r.operation);
+  // The operation reports a database conflict or conditional skip. Comparing
+  // it to builder.operation would lose changes after a write transformation:
+  // an Edit action can attempt an Insert that conflicts back to an Edit.
+  changedOps.add(r.builder.placeholderID);
 }
 
 interface ComplexExecutorOptions {
@@ -153,7 +155,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   private lastOp: DataOperation<Ent> | undefined;
   private allOperations: DataOperation<Ent>[] = [];
   private executors: Executor[] = [];
-  private changedOps: Map<ID, WriteOperation> = new Map();
+  private changedOps: Set<ID> = new Set();
   public builder?: Builder<Ent> | undefined;
 
   constructor(
@@ -311,8 +313,7 @@ export class ComplexExecutor<T extends Ent> implements Executor {
   }
 
   builderOpChanged(builder: Builder<any>): boolean {
-    const v = this.changedOps.get(builder.placeholderID);
-    return v !== undefined && v !== builder.operation;
+    return this.changedOps.has(builder.placeholderID);
   }
 
   async executeObservers() {
@@ -368,6 +369,10 @@ export async function executeOperations(
   const client = await DB.getInstance().getNewClient();
 
   const operations: DataOperation<Ent>[] = [];
+  const rollbackOperations = new Set<DataOperation<Ent>>();
+  let transactionStarted = false;
+  let committed = false;
+  let releaseStarted = false;
   try {
     if (executor.preFetch) {
       await executor.preFetch(client, context);
@@ -378,6 +383,9 @@ export async function executeOperations(
         for (const operation of executor) {
           if (operation.shortCircuit && operation.shortCircuit(executor)) {
             continue;
+          }
+          if (operation.onRollback) {
+            rollbackOperations.add(operation);
           }
           if (trackOps) {
             operations.push(operation);
@@ -391,9 +399,13 @@ export async function executeOperations(
     } else {
       logQuery("BEGIN", []);
       await client.query("BEGIN");
+      transactionStarted = true;
       for (const operation of executor) {
         if (operation.shortCircuit && operation.shortCircuit(executor)) {
           continue;
+        }
+        if (operation.onRollback) {
+          rollbackOperations.add(operation);
         }
 
         if (trackOps) {
@@ -409,19 +421,53 @@ export async function executeOperations(
       logQuery("COMMIT", []);
       await client.query("COMMIT");
     }
+    committed = true;
 
     if (executor.postFetch) {
       await executor.postFetch(client, context);
     }
-    client.release();
+    releaseStarted = true;
+    await client.release();
   } catch (e) {
-    if (!isSyncClient(client)) {
-      // TODO these changes break tests
-      logQuery("ROLLBACK", []);
-      await client.query("ROLLBACK");
+    const cleanupErrors: { message: string; error: unknown }[] = [];
+    const rollbackRequired =
+      !committed && transactionStarted && !isSyncClient(client);
+    // Invalidate before attempting ROLLBACK, which can itself fail. Once a
+    // commit completes, postFetch/release failures must preserve saved IDs.
+    if (!committed) {
+      for (const operation of rollbackOperations) {
+        try {
+          operation.onRollback?.();
+        } catch (error) {
+          cleanupErrors.push({ message: "rollback hook failed", error });
+        }
+      }
     }
-    client.release(e);
-    log("error", e);
+    try {
+      if (rollbackRequired) {
+        await client.query("ROLLBACK");
+      }
+    } catch (error) {
+      cleanupErrors.push({ message: "transaction rollback failed", error });
+    }
+    if (!releaseStarted) {
+      try {
+        await client.release(e);
+      } catch (error) {
+        cleanupErrors.push({ message: "client release failed", error });
+      }
+    }
+    // Report only after cleanup. Even a failing logger must not replace the
+    // original execution error.
+    try {
+      if (rollbackRequired) {
+        logQuery("ROLLBACK", []);
+      }
+      log("error", e);
+      for (const error of cleanupErrors) {
+        log("error", error);
+      }
+    } catch {}
     throw e;
   }
 

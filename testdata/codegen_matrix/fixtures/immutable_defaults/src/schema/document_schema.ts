@@ -1,6 +1,7 @@
 import {
   ActionOperation,
   EntSchema,
+  IntegerType,
   StringType,
   UUIDType,
 } from "@snowtop/ent/schema";
@@ -10,6 +11,7 @@ import type { Document } from "../ent";
 export default new EntSchema({
   fields: {
     title: StringType(),
+    revision: IntegerType({ defaultValueOnCreate: () => 0 }),
     ownerId: UUIDType({
       immutable: true,
       defaultToViewerOnCreate: true,

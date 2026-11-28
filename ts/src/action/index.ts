@@ -1,5 +1,6 @@
 export {
   WriteOperation,
+  getExistingEntForWrite,
   // make sure not to expose Executor...
   saveBuilder,
   saveBuilderX,

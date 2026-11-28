@@ -1,5 +1,5 @@
 import { Builder, WriteOperation } from "../action";
-import { Executor } from "../action/action";
+import { Executor, getExistingEntForWrite } from "../action/action";
 import {
   Context,
   CreateRowOptions,
@@ -64,11 +64,15 @@ export interface DataOperation<
 
   // optional to indicate that the operation should not be performed. used for conditional changesets/operations
   shortCircuit?(executor: Executor): boolean;
+  // Report a conflict or conditional skip of the planned write; return null
+  // when unchanged. builder.operation remains the original action type.
   updatedOperation?(): UpdatedOperation<TEnt, TViewer> | null;
   resolve?(executor: Executor): void; //throws?
 
   // any data that needs to be fetched asynchronously post write|post transaction
   postFetch?(queryer: Queryer, context?: Context): Promise<void>;
+  // Invalidate transaction-scoped results when a write does not commit.
+  onRollback?(): void;
 }
 
 export class DeleteNodeOperation<
@@ -795,9 +799,10 @@ export class EdgeOperation<TViewer extends Viewer = Viewer>
     let srcType: string;
 
     let srcPlaceholder = false;
-    if (srcBuilder.existingEnt) {
-      srcIDVal = srcBuilder.existingEnt.id;
-      srcType = srcBuilder.existingEnt.nodeType;
+    const existingEnt = getExistingEntForWrite(srcBuilder);
+    if (existingEnt) {
+      srcIDVal = existingEnt.id;
+      srcType = existingEnt.nodeType;
     } else {
       srcPlaceholder = true;
       // get placeholder.
@@ -905,13 +910,16 @@ export class EdgeOperation<TViewer extends Viewer = Viewer>
     id1: ID,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation<TViewer> {
-    if (!builder.existingEnt) {
+    // Explicit removals on an Edit/Delete transformed to Insert still refer
+    // to the original row. Generated field-edge removals are cleared separately.
+    const existingEnt = getExistingEntForWrite(builder) ?? builder.existingEnt;
+    if (!existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }
     const edge: AssocEdgeInput = {
       id1: id1,
       edgeType: edgeType,
-      id2: builder.existingEnt!.id,
+      id2: existingEnt.id,
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
       disableTransformations: options?.disableTransformations,
@@ -930,13 +938,16 @@ export class EdgeOperation<TViewer extends Viewer = Viewer>
     id2: ID,
     options?: AssocEdgeInputOptions,
   ): EdgeOperation<TViewer> {
-    if (!builder.existingEnt) {
+    // Explicit removals on an Edit/Delete transformed to Insert still refer
+    // to the original row. Generated field-edge removals are cleared separately.
+    const existingEnt = getExistingEntForWrite(builder) ?? builder.existingEnt;
+    if (!existingEnt) {
       throw new Error("cannot remove an edge from a non-existing ent");
     }
     const edge: AssocEdgeInput = {
       id2: id2,
       edgeType: edgeType,
-      id1: builder.existingEnt!.id,
+      id1: existingEnt.id,
       id2Type: "", // these 2 shouldn't matter
       id1Type: "",
       disableTransformations: options?.disableTransformations,
@@ -958,14 +969,20 @@ export class ConditionalOperation<
 
   constructor(
     protected op: DataOperation<TEnt, TViewer>,
-    private conditionalBuilder: Builder<TEnt, TViewer>,
+    private condition:
+      | Builder<TEnt, TViewer>
+      | ((executor: Executor) => boolean),
   ) {
     this.builder = op.builder;
     this.placeholderID = op.placeholderID;
   }
 
   shortCircuit(executor: Executor): boolean {
-    this.shortCircuited = executor.builderOpChanged(this.conditionalBuilder);
+    this.shortCircuited =
+      (typeof this.condition === "function"
+        ? this.condition(executor)
+        : executor.builderOpChanged(this.condition)) ||
+      (this.op.shortCircuit?.(executor) ?? false);
     return this.shortCircuited;
   }
 
@@ -1006,6 +1023,10 @@ export class ConditionalOperation<
     return null;
   }
 
+  onRollback(): void {
+    this.op.onRollback?.();
+  }
+
   resolve(executor: Executor): void {
     if (this.op.resolve) {
       return this.op.resolve(executor);
@@ -1022,7 +1043,8 @@ export class ConditionalOperation<
   }
 }
 
-// separate because we need to implement createdEnt and we manually run those before edge/other operations in executors
+// Node conditions must run in dependency order before descendants and edges,
+// Conditional deletes use a no-op decision here and perform the deletion later.
 export class ConditionalNodeOperation<
   TEnt extends Ent<TViewer>,
   TViewer extends Viewer = Viewer,
@@ -1035,10 +1057,7 @@ export class ConditionalNodeOperation<
   }
 
   updatedOperation(): UpdatedOperation<TEnt, TViewer> | null {
-    if (!this.op.updatedOperation) {
-      return null;
-    }
-    const ret = this.op.updatedOperation();
+    const ret = this.op.updatedOperation?.() ?? null;
     if (ret !== null) {
       return ret;
     }

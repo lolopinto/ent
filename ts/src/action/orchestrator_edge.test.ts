@@ -4,6 +4,7 @@ import { loadEdges, loadRow } from "../core/ent";
 import { LoggedOutViewer, IDViewer } from "../core/viewer";
 import { Changeset } from "../action";
 import { StringType } from "../schema/field";
+import { SQLStatementOperation } from "../schema";
 import {
   User,
   SimpleBuilder,
@@ -11,7 +12,7 @@ import {
   getBuilderSchemaFromFields,
 } from "../testutils/builder";
 import { FakeComms } from "../testutils/fake_comms";
-import { edgeDirection } from "./orchestrator";
+import { edgeDirection, EntChangeset } from "./orchestrator";
 import { createRowForTest } from "../testutils/write";
 import * as clause from "../core/clause";
 import {
@@ -146,6 +147,172 @@ const createUser = async (map: Map<string, any>): Promise<User> => {
 };
 
 function commonTests() {
+  test.each(
+    [WriteOperation.Edit, WriteOperation.Delete].flatMap((operation) =>
+      [SQLStatementOperation.Insert, SQLStatementOperation.Update].flatMap(
+        (transformedOp) =>
+          ["inbound", "outbound"].map((direction) => ({
+            operation,
+            transformedOp,
+            direction,
+          })),
+      ),
+    ),
+  )("transform changeset follows $operation to $transformedOp target ($direction)", async ({
+    operation,
+    transformedOp,
+    direction,
+  }) => {
+    const [original, target, other] = await Promise.all(
+      ["Original", "Target", "Other"].map((name) =>
+        getInsertUserAction(
+          new Map([
+            ["FirstName", name],
+            ["LastName", "Row"],
+          ]),
+        ).saveX(),
+      ),
+    );
+    const action = new SimpleAction(
+      original.viewer,
+      UserSchema,
+      new Map([
+        ["FirstName", "Changed"],
+        ["LastName", "Row"],
+      ]),
+      operation,
+      original,
+    );
+    const insert = transformedOp === SQLStatementOperation.Insert;
+    const createEdge =
+      direction === "inbound"
+        ? EntChangeset.changesetFromInboundEdge
+        : EntChangeset.changesetFromOutboundEdge;
+    Object.assign(action, {
+      transformWrite: () => ({
+        op: transformedOp,
+        existingEnt: target,
+        changeset: async () => {
+          expect(action.builder.orchestrator.getExistingEntForWrite()).toBe(
+            insert ? null : target,
+          );
+          if (insert) {
+            expect(action.builder.existingEnt).toBe(original);
+            await expect(
+              action.builder.orchestrator.getEntID(),
+            ).rejects.toThrow(/circular/);
+          } else {
+            expect(await action.builder.orchestrator.getEntID()).toBe(
+              target.id,
+            );
+          }
+          return createEdge(action.builder, "edge", other.id, "User");
+        },
+      }),
+    });
+    await action.saveX();
+    const saved = await action.editedEntX();
+    if (insert) {
+      expect([original.id, target.id]).not.toContain(saved.id);
+    } else {
+      expect(saved.id).toBe(target.id);
+    }
+    const edgeType = direction === "inbound" ? "inverseEdge" : "edge";
+    expect(
+      (await loadEdges({ id1: saved.id, edgeType })).map((edge) => edge.id2),
+    ).toEqual([other.id]);
+    expect(await loadEdges({ id1: original.id, edgeType })).toEqual([]);
+    expect(
+      (
+        await loadRow({
+          tableName: "users",
+          fields: ["first_name"],
+          clause: clause.Eq("id", original.id),
+        })
+      )?.first_name,
+    ).toBe("Original");
+  });
+
+  test.each([
+    "inbound",
+    "outbound",
+  ])("explicit %s removal survives an edit-to-insert transform", async (direction) => {
+    const existing = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Old"],
+        ["LastName", "Row"],
+      ]),
+    ).saveX();
+    const other = await getInsertUserAction(
+      new Map([
+        ["FirstName", "Other"],
+        ["LastName", "Row"],
+      ]),
+    ).saveX();
+    const seed = new SimpleAction(
+      existing.viewer,
+      UserSchema,
+      new Map(),
+      WriteOperation.Edit,
+      existing,
+    );
+    const inbound = direction === "inbound";
+    if (inbound) {
+      seed.builder.orchestrator.addInboundEdge(other.id, "edge", "User");
+    } else {
+      seed.builder.orchestrator.addOutboundEdge(other.id, "edge", "User");
+    }
+    await seed.saveX();
+    const action = new SimpleAction(
+      existing.viewer,
+      UserSchema,
+      new Map([
+        ["FirstName", "New"],
+        ["LastName", "Row"],
+      ]),
+      WriteOperation.Edit,
+      existing,
+    );
+    Object.assign(action, {
+      transformWrite: () => ({ op: SQLStatementOperation.Insert }),
+    });
+    if (inbound) {
+      action.builder.orchestrator.removeInboundEdge(other.id, "edge");
+      action.builder.orchestrator.addInboundEdge(other.id, "edge", "User");
+    } else {
+      action.builder.orchestrator.removeOutboundEdge(other.id, "edge");
+      action.builder.orchestrator.addOutboundEdge(other.id, "edge", "User");
+    }
+    const created = await action.saveX();
+    expect(created.id).not.toBe(existing.id);
+    expect(
+      (await loadRow({
+        tableName: "users",
+        fields: ["first_name"],
+        clause: clause.Eq("id", existing.id),
+      }))!.first_name,
+    ).toBe("Old");
+    const primary = await loadEdges({
+      id1: inbound ? other.id : existing.id,
+      edgeType: "edge",
+    });
+    expect(primary.map((edge) => edge.id2)).toEqual(
+      inbound ? [created.id] : [],
+    );
+    const inverse = await loadEdges({
+      id1: inbound ? existing.id : other.id,
+      edgeType: "inverseEdge",
+    });
+    expect(inverse.map((edge) => edge.id2)).toEqual(
+      inbound ? [] : [created.id],
+    );
+    const newEdges = await loadEdges({
+      id1: created.id,
+      edgeType: inbound ? "inverseEdge" : "edge",
+    });
+    expect(newEdges.map((edge) => edge.id2)).toEqual([other.id]);
+  });
+
   describe("inbound edge", () => {
     test("no options", async () => {
       const builder = getLoggedInBuilder();
