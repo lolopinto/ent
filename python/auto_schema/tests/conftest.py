@@ -59,6 +59,7 @@ class Postgres:
         return '"' + name.replace('"', '""') + '"'
 
     def _create_database(self, name):
+        assert self._globalConnection is not None
         self._globalConnection.exec_driver_sql(
             f"CREATE DATABASE {self._identifier(name)}")
         oid = self._globalConnection.execute(
@@ -93,6 +94,7 @@ class Postgres:
         if db not in self._dbs:
             raise RuntimeError("Cannot connect to a database this helper did not create")
         # Keep the server used for CREATE even if environment configuration changes.
+        assert self._globalEngine is not None
         url = self._globalEngine.url.set(database=db)
         engine = sa.create_engine(url, connect_args=self._connect_args())
         self._engines.append(engine)
@@ -112,6 +114,7 @@ class Postgres:
             raise
 
     def _drop_database(self, name, oid):
+        assert self._globalConnection is not None
         current_oid = self._globalConnection.execute(
             sa.text("SELECT oid FROM pg_database WHERE datname = :name"),
             {"name": name}).scalar_one_or_none()
@@ -138,6 +141,7 @@ class Postgres:
             safe_names = set()
             for name, expected_oid in self._dbs.items():
                 try:
+                    assert self._globalConnection is not None
                     current_oid = self._globalConnection.execute(
                         sa.text("SELECT oid FROM pg_database WHERE datname = :name"),
                         {"name": name}).scalar_one_or_none()

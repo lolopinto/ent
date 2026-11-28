@@ -92,7 +92,15 @@ describe("postgres cleanup", () => {
     const db = makeDB();
     await db.beforeAll(automatic);
     if (!automatic) {
-      DB.initDB({ connectionString: `postgres://localhost/${db.getDB()}` });
+      DB.initDB({
+        db: {
+          host: "localhost",
+          port: 5432,
+          database: db.getDB(),
+          user: process.env.POSTGRES_USER || "",
+          password: process.env.POSTGRES_PASSWORD || "",
+        },
+      });
       db.trackRuntimeDB();
     }
     const lease = await DB.getInstance().getNewClient();

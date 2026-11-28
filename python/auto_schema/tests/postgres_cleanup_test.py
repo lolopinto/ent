@@ -2,6 +2,7 @@ import os
 
 import pytest
 import sqlalchemy as sa
+from sqlalchemy.exc import ProgrammingError
 
 from . import conftest
 
@@ -97,7 +98,7 @@ def test_create_collision_preserves_database_and_connection(admin, helpers, monk
     expected_oid = oid(admin, sentinel._randomDB)
     monkeypatch.setattr(conftest, "randomDB", lambda: sentinel._randomDB)
     collision = helpers()
-    with pytest.raises(sa.exc.ProgrammingError):
+    with pytest.raises(ProgrammingError):
         collision.create_connection("unused")
     collision.get_finalizer()()
     assert collision._dbs == {}
@@ -111,7 +112,7 @@ def test_new_database_collision_does_not_claim_existing_database(admin, helpers,
     helper = helpers()
     helper.create_connection("unused")
     monkeypatch.setattr(conftest, "randomDB", lambda: sentinel._randomDB)
-    with pytest.raises(sa.exc.ProgrammingError):
+    with pytest.raises(ProgrammingError):
         helper.create_new_database("unused")
     assert sentinel._randomDB not in helper._dbs
     assert oid(admin, helper._randomDB) is None

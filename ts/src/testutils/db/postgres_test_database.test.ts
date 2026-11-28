@@ -62,7 +62,7 @@ test("a name collision preserves the existing database, data, and session", asyn
 test("cleanup refuses a replacement database with the same name", async () => {
   const original = await create();
   const originalOID = await oid(original.name);
-  DB.initDB({ connectionString: `postgres://localhost/${original.name}` });
+  DB.initDB({ db: { ...original.connection, database: original.name } });
   const runtime = DB.getInstance();
   original.trackRuntimeDB(runtime);
   // Only replace a database created by this test, never a pre-existing name.
@@ -116,7 +116,7 @@ test.each([
 
 test("cleanup does not close a different runtime database", async () => {
   const sentinel = await create();
-  DB.initDB({ connectionString: `postgres://localhost/${sentinel.name}` });
+  DB.initDB({ db: { ...sentinel.connection, database: sentinel.name } });
   const runtime = DB.getInstance();
   sentinel.trackRuntimeDB(runtime);
   const database = await create();
@@ -136,8 +136,7 @@ test("rejects names PostgreSQL would truncate before connecting", () => {
 test("a pending pool acquisition cannot escape cleanup", async () => {
   const database = await create();
   DB.initDB({
-    connectionString: `postgres://localhost/${database.name}`,
-    cfg: { max: 1 },
+    db: { ...database.connection, database: database.name, max: 1 },
   });
   const runtime = DB.getInstance();
   database.trackRuntimeDB(runtime);
