@@ -30,7 +30,8 @@ The following properties can be configured:
 - `generateRootResolvers`: for each type exposed to GraphQL instead of node(). Should be used in combination with
 - `defaultGraphQLMutationName`: default names for graphql actions|mutations is nounVerb e.g. userCreate. If you wanna change it to verbNoun e.g. createUser, set this field to `VERB_NOUN`
 - `defaultGraphQLFieldFormat`: default format for fields is lowerCamelCase e.g. firstName. If you wanna change it to snake_case e.g. first_name, set this field to snake_case
-- `schemaSQLFilePath`: if we should generate schema.sql file and path to generate it
+- `schemaSQLFilePath`: path for the standalone SQL snapshot generated during database codegen, for example `src/schema/schema.sql`. See [PostgreSQL snapshot requirements](/docs/ent-schema/global-schema#standalone-sql-snapshots) when using database extensions.
+- `databaseToCompareTo`: optional comparison database for standalone SQL generation, on the same PostgreSQL instance as the configured connection. Use a representative extension baseline when seed reconciliation needs existing extension-supplied rows.
 - `globalImportPath`: path to add to src/ent/internal.ts so that it's included everywhere. Where things like [global augmentation](https://www.typescriptlang.org/docs/handbook/declaration-merging.html#global-augmentation) can be done
 - `userOverridenFiles`: list of files to not override during codegen i.e. because there's a bug in codegen and the user has decided to override it.
 - `transformLoadMethod`: if set, overrides the loadNoTransform(X) methods to be this instead of the default loadNoTransform(X)

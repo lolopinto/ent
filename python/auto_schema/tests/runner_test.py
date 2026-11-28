@@ -3019,6 +3019,356 @@ class TestPostgresRunner(BaseTestRunner):
         r2 = new_test_runner(metadata, r)
         assert r2.compute_changes() == []
 
+    def test_schema_sql_with_preinstalled_extensions(self, new_test_runner, tmp_path):
+        metadata = _db_extension_metadata(name="Hstore", install_schema="addons", version="1.8")
+        metadata.info["db_extensions"]["public"].append({"name": "plpgsql", "provisioned_by": "external"})
+        sa.Table("settings", metadata, sa.Column("attrs", schema_item.CustomSQLAlchemyType("addons.hstore")))
+        r = new_test_runner(metadata)
+        path = tmp_path / "schema.sql"
+
+        # The default comparison database has no hstore. The alternate one
+        # has an older version and a table owned by the extension.
+        r.all_sql(file=path)
+        clean_sql = path.read_text()
+        r.connection.exec_driver_sql("CREATE EXTENSION hstore VERSION '1.4'")
+        r.connection.exec_driver_sql("CREATE TABLE extension_catalog (id int)")
+        r.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE extension_catalog")
+        r.connection.commit()
+        baseline = r.engine.url.database
+        r.all_sql(file=path, database=baseline)
+        assert path.read_text() == clean_sql
+        assert 'CREATE EXTENSION IF NOT EXISTS "hstore"' in clean_sql
+        assert 'CREATE EXTENSION IF NOT EXISTS "plpgsql"' not in clean_sql
+        assert "extension_catalog" not in clean_sql
+
+        # Removing membership makes the same table fail the application-table guard.
+        r.connection.exec_driver_sql("ALTER EXTENSION hstore DROP TABLE extension_catalog")
+        r.connection.commit()
+        with pytest.raises(Exception, match="cannot have any tables in database"):
+            r.all_sql(file=path, database=baseline)
+
+        for preinstalled in (False, True):
+            target = new_test_runner(metadata, new_database=True)
+            target.connection.exec_driver_sql("CREATE SCHEMA addons")
+            if preinstalled:
+                target.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA addons VERSION '1.8'")
+            target.connection.exec_driver_sql(clean_sql)
+            assert target.compute_changes() == []
+
+    @pytest.mark.parametrize("version,schema", [("1.4", "addons"), ("1.8", "public")])
+    def test_schema_sql_rejects_preinstalled_extension_mismatches(self, new_test_runner, tmp_path, version, schema):
+        r = new_test_runner(_db_extension_metadata(name="hstore", install_schema="addons", version="1.8"))
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        r.connection.exec_driver_sql("CREATE SCHEMA addons")
+        r.connection.exec_driver_sql(f"CREATE EXTENSION hstore WITH SCHEMA {schema} VERSION '{version}'")
+        r.connection.commit()
+        with pytest.raises(sa.exc.DBAPIError, match='schema.sql requires db extension "hstore"'):
+            r.connection.exec_driver_sql(path.read_text())
+        r.connection.rollback()
+        assert r.connection.exec_driver_sql("""
+            SELECT extversion, extnamespace::regnamespace::text
+            FROM pg_extension WHERE extname = 'hstore'
+        """).one() == (version, schema)
+        assert "ALTER EXTENSION" not in path.read_text()
+
+    def test_schema_sql_installs_extension_prerequisites_first(self, new_test_runner, tmp_path):
+        # Both extensions ship with PostgreSQL. Declare the dependent first.
+        metadata = _db_extension_metadata(name="EarthDistance")
+        metadata.info["db_extensions"]["public"].extend([
+            {"name": "CUBE", "install_schema": "public"}, {"name": "plpgsql"},
+        ])
+        r = new_test_runner(metadata)
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        r.connection.exec_driver_sql(path.read_text())
+        assert r.compute_changes() == []
+
+    @pytest.mark.parametrize("extension,version,error", [
+        ("ent_missing_extension", None, 'extension "ent_missing_extension" is not available'),
+        ("hstore", "0.0", 'extension "hstore" version "0.0"'),
+    ])
+    def test_schema_sql_rejects_missing_extension_metadata_without_replacing_output(
+        self, new_test_runner, tmp_path, capsys, extension, version, error,
+    ):
+        r = new_test_runner(_db_extension_metadata(name=extension, version=version))
+        path = tmp_path / "schema.sql"
+        path.write_text("previous snapshot\n")
+        with pytest.raises(ValueError, match=error):
+            r.all_sql(file=path)
+        assert path.read_text() == "previous snapshot\n"
+        with pytest.raises(ValueError, match=error):
+            r.all_sql()
+        assert capsys.readouterr().out == ""
+
+    @pytest.mark.parametrize("name", ["pg_database", "pg_class"])
+    def test_schema_sql_does_not_reconcile_system_catalog_seeds(self, new_test_runner, tmp_path, name):
+        metadata = sa.MetaData()
+        sa.Table(name, metadata, sa.Column("oid", sa.Integer, primary_key=True), schema="app")
+        metadata.info["data"] = {"public": {name: {"pkeys": ["oid"], "rows": []}}}
+        r = new_test_runner(metadata)
+        r.connection.exec_driver_sql("CREATE SCHEMA app")
+        r.connection.commit()
+        # Planning may read catalog metadata, but must never reconcile its rows.
+        # Keep the entire comparison connection read-only, including a failing test.
+        r.args = {**r.args, "engine": r.engine.url.update_query_dict({
+            "options": "-csearch_path=public,app -cdefault_transaction_read_only=on",
+        })}
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path, database=r.engine.url.database)
+        sql = path.read_text()
+        assert f"CREATE TABLE app.{name}" in sql
+        assert f"DELETE FROM {name}" not in sql
+        assert f"UPDATE {name}" not in sql
+
+    def test_schema_sql_does_not_reconcile_temporary_seed_tables(self, new_test_runner, tmp_path):
+        metadata = sa.MetaData()
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer, primary_key=True), schema="app")
+        metadata.info["data"] = {"public": {"lookup": {"pkeys": ["id"], "rows": []}}}
+        r = new_test_runner(metadata)
+
+        def temporary_table(connection):
+            # all_sql opens its own connection; give that comparison connection
+            # a temporary table which ordinary reflection deliberately ignores.
+            connection.exec_driver_sql("CREATE TEMP TABLE lookup (id int PRIMARY KEY)")
+            connection.exec_driver_sql("INSERT INTO lookup VALUES (1)")
+            connection.commit()
+
+        sa.event.listen(sa.engine.Engine, "engine_connect", temporary_table)
+        try:
+            path = tmp_path / "schema.sql"
+            r.all_sql(file=path)
+        finally:
+            sa.event.remove(sa.engine.Engine, "engine_connect", temporary_table)
+        assert "DELETE FROM lookup" not in path.read_text()
+
+    def test_schema_sql_extension_spelling_in_turkish_locale(self, new_test_runner, tmp_path):
+        r = new_test_runner(_db_extension_metadata(name="CITEXT"))
+        if r.engine.dialect.server_version_info < (15,) or not r.connection.exec_driver_sql(
+            "SELECT EXISTS (SELECT FROM pg_collation WHERE collprovider = 'i')"
+        ).scalar_one():
+            pytest.skip("per-database ICU locales require PostgreSQL 15+ with ICU")
+
+        database = conftest.randomDB()
+        path = tmp_path / "schema.sql"
+        with r.engine.connect().execution_options(isolation_level="AUTOCOMMIT") as admin:
+            admin.exec_driver_sql(f"CREATE DATABASE {database} TEMPLATE template0 LOCALE_PROVIDER icu ICU_LOCALE 'tr'")
+            baseline = sa.create_engine(r.engine.url.set(database=database))
+            try:
+                r.all_sql(file=path, database=database)
+                clean = path.read_text()
+                with baseline.begin() as conn:
+                    assert conn.exec_driver_sql("SELECT lower('CITEXT')").scalar_one() == "cıtext"
+                    conn.exec_driver_sql("CREATE EXTENSION citext")
+                r.all_sql(file=path, database=database)
+                assert path.read_text() == clean
+                assert 'CREATE EXTENSION IF NOT EXISTS "citext"' in clean
+                r.connection.exec_driver_sql(clean)
+                assert r.compute_changes() == []
+            finally:
+                baseline.dispose()
+                admin.exec_driver_sql(f"DROP DATABASE {database}")
+
+    @pytest.mark.parametrize("extension,install_schema,member_schema", [
+        ("hstore", None, "public"),
+        ("hstore", None, "addons"),
+        ("hstore", "addons", "public"),
+        ("pgcrypto", None, "addons"),
+    ])
+    def test_schema_sql_ignores_incidental_extension_members(
+        self, new_test_runner, tmp_path, extension, install_schema, member_schema,
+    ):
+        metadata = _db_extension_metadata(name=extension, install_schema=install_schema)
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer, primary_key=True),
+                 schema=None if member_schema == "public" else member_schema)
+        if member_schema == "public":
+            metadata.info["data"] = {"public": {"lookup": {
+                "pkeys": ["id"], "rows": [{"id": 1}],
+            }}}
+        r = new_test_runner(metadata)
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        clean_sql = path.read_text()
+
+        r.connection.exec_driver_sql("CREATE SCHEMA addons")
+        r.connection.exec_driver_sql("CREATE EXTENSION hstore")
+        r.connection.exec_driver_sql(f"CREATE TABLE {member_schema}.lookup (id int PRIMARY KEY)")
+        r.connection.exec_driver_sql(f"INSERT INTO {member_schema}.lookup VALUES (99)")
+        r.connection.exec_driver_sql(f"ALTER EXTENSION hstore ADD TABLE {member_schema}.lookup")
+        r.connection.commit()
+
+        r.all_sql(file=path, database=r.engine.url.database)
+        assert path.read_text() == clean_sql
+
+        # Installing hstore on a fresh target does not recreate manually attached
+        # members, even when its install schema changes or it is undeclared.
+        target = new_test_runner(metadata, new_database=True)
+        target.connection.exec_driver_sql("CREATE SCHEMA addons")
+        target.connection.exec_driver_sql(clean_sql)
+        assert sa.inspect(target.connection).has_table("lookup", schema=member_schema)
+        if member_schema == "public":
+            assert target.connection.exec_driver_sql("SELECT id FROM lookup").scalars().all() == [1]
+
+    @pytest.mark.parametrize("dev_schema", [False, True])
+    def test_schema_sql_seeds_qualified_tables(self, new_test_runner, tmp_path, dev_schema):
+        metadata = _db_extension_metadata(name="hstore", install_schema="public")
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer, primary_key=True), schema="app")
+        metadata.info["data"] = {"public": {"lookup": {
+            "pkeys": ["id"], "rows": [{"id": 1}],
+        }}}
+        args = {"db_schema": "app", "db_schema_include_public": False} if dev_schema else None
+        r = new_test_runner(metadata, args_override=args)
+        if not dev_schema:
+            # The comparison connection must use the same multi-schema path.
+            r.args = {**r.args, "engine": r.engine.url.update_query_dict({
+                "options": "-csearch_path=public,app",
+            })}
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        clean_sql = path.read_text()
+
+        r.connection.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS app")
+        r.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA public")
+        r.connection.exec_driver_sql("CREATE TABLE app.lookup (id int PRIMARY KEY)")
+        r.connection.exec_driver_sql("INSERT INTO app.lookup VALUES (1)")
+        r.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE app.lookup")
+        r.connection.commit()
+        r.all_sql(file=path, database=r.engine.url.database)
+        populated_sql = path.read_text()
+
+        target = new_test_runner(metadata, new_database=True, args_override=args)
+        target.connection.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS app")
+        if not dev_schema:
+            target.connection.exec_driver_sql("SET search_path TO public, app")
+        target.connection.exec_driver_sql(populated_sql)
+        assert target.connection.exec_driver_sql("SELECT id FROM app.lookup").scalars().all() == [1]
+        assert populated_sql == clean_sql
+
+    @pytest.mark.parametrize("incidental_member", [False, True])
+    @pytest.mark.parametrize("search_path,created_schema,external_schema,reconcile", [
+        ("public,addons", "addons", "public", True),
+        ("addons,public", "public", "addons", True),
+        ("public,addons", "other", "addons", True),
+        ("addons,public", "addons", "public", False),
+        ("public,addons", None, "addons", False),
+    ])
+    def test_schema_sql_resolves_seed_table_through_search_path(
+        self, new_test_runner, tmp_path, search_path, created_schema,
+        external_schema, reconcile, incidental_member,
+    ):
+        metadata = _db_extension_metadata(name="hstore", provisioned_by="external", install_schema="public")
+        sa.Table("lookup", metadata, sa.Column("id", sa.Integer, primary_key=True),
+                 sa.Column("label", sa.Text), schema=created_schema)
+        metadata.info["data"] = {"public": {"lookup": {
+            "pkeys": ["id"],
+            "rows": [{"id": 1, "label": "updated"}, {"id": 3, "label": "new"}],
+        }}}
+        r = new_test_runner(metadata)
+        r.args = {**r.args, "engine": r.engine.url.update_query_dict({
+            "options": f"-csearch_path={search_path}",
+        })}
+        target = new_test_runner(metadata, new_database=True)
+        for provisioned in (r, target):
+            provisioned.connection.exec_driver_sql("CREATE SCHEMA addons")
+            provisioned.connection.exec_driver_sql("CREATE SCHEMA other")
+            provisioned.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA public")
+            provisioned.connection.exec_driver_sql(
+                f"CREATE TABLE {external_schema}.lookup (id int PRIMARY KEY, label text)")
+            provisioned.connection.exec_driver_sql(
+                f"INSERT INTO {external_schema}.lookup VALUES (1, 'old'), (2, 'remove')")
+            provisioned.connection.exec_driver_sql(
+                f"ALTER EXTENSION hstore ADD TABLE {external_schema}.lookup")
+            provisioned.connection.commit()
+
+        planned_schema = created_schema or search_path.split(",")[0]
+        if incidental_member:
+            # Only the comparison database contains this incidental member.
+            # It does not become part of a fresh extension installation.
+            r.connection.exec_driver_sql(
+                f"CREATE TABLE {planned_schema}.lookup (id int PRIMARY KEY, label text)")
+            r.connection.exec_driver_sql(
+                f"INSERT INTO {planned_schema}.lookup VALUES (1, 'updated'), (3, 'new')")
+            r.connection.exec_driver_sql(f"ALTER EXTENSION hstore ADD TABLE {planned_schema}.lookup")
+            r.connection.commit()
+
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path, database=r.engine.url.database)
+        target.connection.exec_driver_sql(f"SET search_path TO {search_path}")
+        target.connection.exec_driver_sql(path.read_text())
+        desired = [(1, "updated"), (3, "new")]
+        assert target.connection.exec_driver_sql(
+            f"SELECT id, label FROM {external_schema}.lookup ORDER BY id"
+        ).all() == (desired if reconcile else [(1, "old"), (2, "remove")])
+        assert target.connection.exec_driver_sql(
+            f"SELECT id, label FROM {planned_schema}.lookup ORDER BY id"
+        ).all() == ([] if reconcile else desired)
+
+    @pytest.mark.parametrize("seed_rows", [[], [{"srid": 3, "auth_name": "new"}]])
+    def test_schema_sql_preserves_rows_behind_seed_view(self, new_test_runner, tmp_path, seed_rows):
+        metadata = _db_extension_metadata(name="hstore", provisioned_by="external", install_schema="gis")
+        # Model an externally provisioned PostGIS table exposed through a writable
+        # view, using stock Postgres so preservation is covered in normal CI.
+        sa.Table("spatial_ref_sys", metadata,
+                 sa.Column("srid", sa.Integer, primary_key=True), sa.Column("auth_name", sa.Text))
+        metadata.info["data"] = {"public": {"spatial_ref_sys": {
+            "pkeys": ["srid"], "rows": seed_rows,
+        }}}
+        r = new_test_runner(metadata)
+        target = new_test_runner(metadata, new_database=True)
+        for provisioned in (r, target):
+            provisioned.connection.exec_driver_sql("CREATE SCHEMA gis")
+            provisioned.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA gis")
+            provisioned.connection.exec_driver_sql(
+                "CREATE TABLE gis.spatial_ref_sys (srid int PRIMARY KEY, auth_name text)")
+            provisioned.connection.exec_driver_sql(
+                "INSERT INTO gis.spatial_ref_sys VALUES (1, 'keep'), (2, 'also keep')")
+            provisioned.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE gis.spatial_ref_sys")
+            provisioned.connection.exec_driver_sql(
+                "CREATE VIEW public.spatial_ref_sys AS SELECT * FROM gis.spatial_ref_sys")
+            provisioned.connection.commit()
+
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path, database=r.engine.url.database)
+        target.connection.exec_driver_sql(path.read_text())
+        assert target.connection.exec_driver_sql(
+            "SELECT srid, auth_name FROM gis.spatial_ref_sys ORDER BY srid"
+        ).all() == [(1, "keep"), (2, "also keep")] + [
+            (row["srid"], row["auth_name"]) for row in seed_rows
+        ]
+
+    @pytest.mark.parametrize("extension_member", [False, True])
+    def test_schema_sql_reconciles_externally_provisioned_seed_rows(self, new_test_runner, tmp_path, extension_member):
+        metadata = _db_extension_metadata(name="hstore", provisioned_by="external")
+        # spatial_ref_sys is excluded from Ent's table DDL. Model its external
+        # provisioning with a small table so this regression runs on stock Postgres.
+        sa.Table("spatial_ref_sys", metadata,
+                 sa.Column("srid", sa.Integer, primary_key=True), sa.Column("auth_name", sa.Text))
+        metadata.info["data"] = {"public": {"spatial_ref_sys": {
+            "pkeys": ["srid"],
+            "rows": [{"srid": 1, "auth_name": "updated"}, {"srid": 3, "auth_name": "new"}],
+        }}}
+        r = new_test_runner(metadata)
+        target = new_test_runner(metadata, new_database=True)
+        for provisioned in (r, target):
+            provisioned.connection.exec_driver_sql("CREATE EXTENSION hstore")
+            provisioned.connection.exec_driver_sql(
+                "CREATE TABLE spatial_ref_sys (srid int PRIMARY KEY, auth_name text)")
+            provisioned.connection.exec_driver_sql(
+                "INSERT INTO spatial_ref_sys VALUES (1, 'old'), (2, 'remove')")
+            if extension_member:
+                provisioned.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE spatial_ref_sys")
+            provisioned.connection.commit()
+
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path, database=r.engine.url.database)
+        sql = path.read_text()
+        assert "CREATE TABLE spatial_ref_sys" not in sql
+        target.connection.exec_driver_sql(sql)
+        assert target.connection.exec_driver_sql(
+            "SELECT srid, auth_name FROM spatial_ref_sys ORDER BY srid"
+        ).all() == [(1, "updated"), (3, "new")]
+        assert target.compute_changes() == []
+
     def test_external_db_extension_requires_installed_extension(
         self, new_test_runner
     ):
@@ -3030,6 +3380,8 @@ class TestPostgresRunner(BaseTestRunner):
             match='required externally provisioned db extension "pgcrypto" is not installed',
         ):
             r.compute_changes()
+        with pytest.raises(ValueError, match="externally provisioned db extension"):
+            r.all_sql(database=r.engine.url.database)
 
     def test_db_extension_version_mismatch_creates_update_op(
         self, new_test_runner, empty_metadata

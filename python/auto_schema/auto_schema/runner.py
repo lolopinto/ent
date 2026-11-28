@@ -893,9 +893,7 @@ class Runner(object):
 
         return custom_sql_buffer
     
-    def migrations_against_empty(self, database=''):
-        dialect = self.connection.dialect.name
-
+    def migrations_against_empty(self, database='', *, schema_sql=False):
         raw_engine = self.args.get('engine', None)
         if raw_engine is None:
             raise ValueError("must specify engine")
@@ -905,6 +903,15 @@ class Runner(object):
 
         engine = sa.create_engine(url)
         connection = engine.connect()
+        try:
+            return self._compare_empty_database(connection, schema_sql)
+        except BaseException:
+            connection.close()
+            engine.dispose()
+            raise
+
+    def _compare_empty_database(self, connection, schema_sql):
+        dialect = connection.dialect.name
         if self.schema_name:
             Runner.setup_schema(
                 connection,
@@ -919,6 +926,25 @@ class Runner(object):
         inspector = sa.inspect(connection)
         table_names = inspector.get_table_names(schema=self.schema_name or None)
         excluded_tables = set(Runner.exclude_tables().split(','))
+        opts = Runner.get_opts()
+        if schema_sql and dialect == "postgresql":
+            # Extensions can own tables, including PostGIS's spatial_ref_sys.
+            # Retain the existing DDL exclusions (including externally provisioned
+            # seed tables) and additionally allow genuine extension members.
+            members = connection.execute(sa.text("""
+                SELECT c.relname
+                FROM pg_catalog.pg_class c
+                JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+                JOIN pg_catalog.pg_depend d ON d.objid = c.oid
+                WHERE d.classid = 'pg_catalog.pg_class'::regclass
+                  AND d.refclassid = 'pg_catalog.pg_extension'::regclass AND d.deptype = 'e'
+                  AND c.relkind IN ('r', 'p', 'f')
+                  AND CASE WHEN CAST(:schema AS text) IS NULL THEN pg_catalog.pg_table_is_visible(c.oid)
+                           ELSE n.nspname = :schema END
+            """), {"schema": self.schema_name or None})
+            excluded_tables.update(members.scalars())
+            opts["ent_schema_sql"] = True
+            opts["include_name"] = lambda name, kind, parents: kind != "table" and Runner.include_name(name, kind, parents)
         table_names = [name for name in table_names if name not in excluded_tables]
         if len(table_names) != 0:
             raise Exception(
@@ -929,7 +955,7 @@ class Runner(object):
         mc = MigrationContext.configure(
             connection=connection,
             dialect_name=dialect,
-            opts=Runner.get_opts(),
+            opts=opts,
         )
         with Runner.dev_schema_compare_search_path(connection):
             migrations = produce_migrations(mc, self.metadata)
@@ -938,14 +964,18 @@ class Runner(object):
     # doesn't invoke env.py. completely different flow
     # progressive_sql and upgrade range do go through offline path
     def all_sql(self, file=None, database=''):
-        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database)
+        (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database, schema_sql=True)
     
         buffer = io.StringIO()
+        if mc.opts.get("ent_schema_sql"):
+            # Keep in sync with the one-time refresh in internal/db/db_schema.go.
+            buffer.write("-- ent schema snapshot format: 1\n")
 
         # use different migrations context with as_sql so that we don't have issues
         opts = Runner.get_opts()
         opts['as_sql'] = True
         opts['output_buffer'] = buffer
+        opts['ent_schema_sql'] = mc.opts.get('ent_schema_sql', False)
         mc2 = MigrationContext.configure(
             connection=connection,
             opts=opts
@@ -986,6 +1016,8 @@ class Runner(object):
             # restore this
             sa.Table._sorted_constraints = prev_sort
             buffer.close()
+            connection.close()
+            connection.engine.dispose()
 
         if file is not None:
             with open(file, 'w') as f:

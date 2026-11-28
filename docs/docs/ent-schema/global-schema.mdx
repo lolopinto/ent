@@ -159,6 +159,16 @@ Each entry supports the following options:
 
 Use `provisionedBy: "external"` for hosted Postgres setups where `CREATE EXTENSION` is not allowed but the extension is already present. Ent will not try to install or move it, and `auto_schema` will fail if the required extension, version, or install schema is missing.
 
+### Standalone SQL snapshots
+
+`schema.sql` and `auto_schema --all_sql` target a fresh application schema, optionally with matching extensions already installed. They include Ent-managed extensions even when those extensions are enabled in the comparison database. Snapshot generation pins each managed extension's requested version, or the comparison server's default version when none is declared, and orders declared prerequisites using PostgreSQL metadata.
+
+Install each managed extension's package on the PostgreSQL instance hosting the comparison database. Missing package/version metadata, ambiguous extension names, and installation paths whose prerequisites cannot be verified stop generation. The comparison database does not need to enable the managed extensions unless their initial rows are needed for seed reconciliation.
+
+Unlike normal migrations, generated snapshot setup does not upgrade, downgrade, or move preinstalled extensions. A version or declared `installSchema` mismatch fails during replay. Provision external extensions and custom schemas before replay, and use the same `search_path` as generation. Overriding extension-supplied seed rows requires a comparison baseline with the matching version, schema, and initial data.
+
+Snapshots append retained custom SQL after generated operations; they do not reconstruct historical backfill or installation order. Use `auto_schema --progressive_sql` when that order is required and validate replay on a disposable database. See the [snapshot contract and exclusions](https://github.com/lolopinto/ent/blob/main/python/auto_schema/README.MD#replaying-postgresql-extension-snapshots) for replay requirements, format upgrades, and CLI output behavior.
+
 ## Putting it all together
 
 1. Create a `GlobalSchema` file (either at `src/schema/__global__schema.ts` or whatever you set as `globalSchemaPath`).

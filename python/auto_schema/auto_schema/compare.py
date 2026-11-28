@@ -3,6 +3,7 @@ import pprint
 import re
 import uuid
 from dataclasses import dataclass, field
+from graphlib import TopologicalSorter
 from typing import Any
 
 import alembic.operations.ops as alembicops
@@ -67,7 +68,7 @@ def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, A
         )
     )
     return {
-        row._asdict()["name"].lower(): row._asdict()
+        row.name: row._asdict()
         for row in rows
     }
 
@@ -178,7 +179,129 @@ def _plan_extension_ops(autogen_context):
         raise ValueError("db extensions are only supported for postgres")
 
     db_extensions = _get_db_extensions(autogen_context)
-    return _get_extension_ops(metadata_extensions, db_extensions)
+    if autogen_context.opts.get("ent_schema_sql"):
+        return _plan_snapshot_extension_ops(
+            autogen_context.connection, metadata_extensions, db_extensions
+        )
+    return _get_extension_ops(
+        metadata_extensions, {name.lower(): ext for name, ext in db_extensions.items()},
+    )
+
+
+def _snapshot_extension_name(declared, names):
+    if declared in names:
+        return declared
+    matches = [name for name in names if name.lower() == declared.lower()]
+    if len(matches) > 1:
+        raise ValueError(f'ambiguous db extension "{declared}": use its exact catalog spelling')
+    return matches[0] if matches else None
+
+
+def _check_snapshot_installation_prerequisites(connection, name, version, requires):
+    # The catalogs expose update paths but not which versions have direct install
+    # scripts. Do not reproduce PostgreSQL's private start-version selection.
+    # Instead prove that the target prerequisites cover every installable version
+    # that can lead to it, including all possible intermediate steps. Versions
+    # with no path to the target are irrelevant. Reject rather than invent extra
+    # ordering constraints if the public metadata cannot establish this invariant.
+    predecessors = connection.execute(sa.text("""
+        SELECT v.version, v.requires
+        FROM pg_catalog.pg_extension_update_paths(:name) p
+        JOIN pg_catalog.pg_available_extension_versions v
+          ON v.name = :name AND v.version = p.source
+        WHERE p.target = :version AND p.path IS NOT NULL
+        ORDER BY v.version
+    """), {"name": name, "version": version})
+    for predecessor, predecessor_requires in predecessors:
+        additional = set(predecessor_requires or ()) - set(requires)
+        if additional:
+            raise ValueError(
+                f'cannot verify installation prerequisites for db extension "{name}" '
+                f'version "{version}": version "{predecessor}" can lead to it and '
+                f'requires {", ".join(sorted(additional))}, absent from the target prerequisites; '
+                'PostgreSQL does not expose the starting install version. '
+                'Use --progressive_sql with a verified migration installation order, '
+                'or an extension package/version whose target prerequisites cover its installation paths'
+            )
+
+
+def _plan_snapshot_extension_ops(connection, extensions, installed):
+    # External declarations use the ordinary installation, version and schema checks.
+    external = [ext for ext in extensions if not _is_ent_provisioned(ext)]
+    provided = set()
+    for ext in external:
+        name = _snapshot_extension_name(ext["name"], installed)
+        existing = {ext["name"].lower(): installed[name]} if name else {}
+        _get_extension_ops([ext], existing)
+        provided.add(name)
+    managed = [ext for ext in extensions if _is_ent_provisioned(ext)]
+    if not managed:
+        return []
+
+    # Fold catalog names in Python just as we do for installed extensions.
+    # PostgreSQL lower(text) depends on the comparison database's locale.
+    rows = connection.execute(sa.text("""
+        SELECT a.name, a.default_version, v.version, v.requires
+        FROM pg_catalog.pg_available_extensions a
+        LEFT JOIN pg_catalog.pg_available_extension_versions v
+          ON v.name = a.name
+         AND (v.version = a.default_version OR v.version = ANY(CAST(:versions AS text[])))
+    """), {"versions": [ext["version"] for ext in managed if ext["version"]]})
+    catalog = {}
+    version_requires = {}
+    for actual, default_version, version, requires in rows:
+        catalog[actual] = default_version
+        if version is not None:
+            # A present version with NULL requires has no prerequisites. A
+            # missing version row has unknown prerequisites and must fail below.
+            version_requires[actual, version] = requires or ()
+
+    resolved = {}
+    for ext in managed:
+        declared = ext["name"]
+        # A declaration already resolved to an installed extension must retain
+        # that exact identity, even if a differently cased package is available.
+        name = (_snapshot_extension_name(declared, installed)
+                or _snapshot_extension_name(declared, catalog) or declared)
+        if name not in catalog:
+            version_hint = f' providing version "{ext["version"]}"' if ext["version"] else ""
+            raise ValueError(
+                f'cannot generate schema.sql: db extension "{name}" is not available '
+                'on the comparison PostgreSQL instance; '
+                f'install its extension package{version_hint} on that instance'
+            )
+        version = ext["version"] or catalog[name]
+        if (name, version) not in version_requires:
+            version_label = f'version "{version}"' if version is not None else "default version"
+            raise ValueError(
+                f'cannot generate schema.sql: dependency metadata for db extension "{name}" '
+                f'{version_label} is not available on the comparison PostgreSQL instance; '
+                'install an extension package providing that version on that instance'
+            )
+        # Replay must install the version whose prerequisites we validated, even
+        # if the target server has a different default when the SQL is applied.
+        resolved[name] = {**ext, "name": name, "version": version}
+    provided.update(resolved)
+
+    # Register all nodes before their edges to keep ordering deterministic.
+    dependencies = TopologicalSorter({name: () for name in resolved})
+    for name, ext in resolved.items():
+        requires = version_requires[name, ext["version"]]
+        _check_snapshot_installation_prerequisites(connection, name, ext["version"], requires)
+        for dep in requires:
+            if dep not in provided:
+                conflicts = sorted(candidate for candidate in provided if candidate.lower() == dep.lower())
+                if conflicts:
+                    raise ValueError(
+                        f'cannot generate schema.sql: db extension "{name}" requires exact db extension '
+                        f'"{dep}", but declarations resolve to {", ".join(conflicts)}; '
+                        'declare the exact prerequisite and use a matching comparison baseline'
+                    )
+        dependencies.add(name, *(dep for dep in requires if dep in resolved))
+        # Every managed extension now has a pinned version and a replay check.
+        if "plpgsql" in resolved and name != "plpgsql":
+            dependencies.add(name, "plpgsql")
+    return [ops.CreateExtensionOp(resolved[name]) for name in dependencies.static_order()]
 
 
 @comparators.dispatch_for("schema")
@@ -290,6 +413,8 @@ def _dialect_name(autogen_context: AutogenContext) -> str:
 
 # why isn't this just metadata.sorted_tables?
 def _table_exists(autogen_context: AutogenContext):
+    if autogen_context.opts.get("ent_schema_sql"):
+        return False
     dialect_map = {
         'sqlite': _execute_sqlite_dialect,
         'postgresql': _execute_postgres_dialect,
@@ -345,6 +470,44 @@ def _create_tuple_key(row, pkeys):
     return tuple(l)
 
 
+def _snapshot_seed_tables(autogen_context, upgrade_ops):
+    connection = autogen_context.connection
+    # Reflection owns eligibility: in particular, system catalogs and temporary
+    # tables must not become reconciliation targets merely because they resolve.
+    table_names = autogen_context.inspector.get_table_names()
+    if not table_names:
+        return set()
+    # Use the active path, not dialect.default_schema_name, which can be cached
+    # before dev-schema setup. Unqualified CREATE TABLE uses current_schema().
+    default_schema, search_path = connection.execute(sa.text(
+        "SELECT current_schema(), current_schemas(true)"
+    )).one()
+    created_tables = {
+        (op.schema or default_schema, op.table_name)
+        for op in upgrade_ops.ops if isinstance(op, alembicops.CreateTableOp)
+    }
+    # Resolve only eligible real tables. Visibility also excludes physical tables
+    # hidden by views, which retain insert-only seeding.
+    baseline_tables = connection.execute(sa.text("""
+        SELECT n.nspname, c.relname
+        FROM pg_catalog.pg_class c
+        JOIN pg_catalog.pg_namespace n ON n.oid = c.relnamespace
+        WHERE c.relname = ANY(CAST(:table_names AS text[]))
+          AND pg_catalog.pg_table_is_visible(c.oid)
+    """), {"table_names": table_names})
+    tables = set()
+    for table_schema, table_name in baseline_tables:
+        for schema in search_path:
+            # A planned table at or before the baseline relation receives fresh
+            # inserts. Same-named creations later in the path are unrelated.
+            if (schema, table_name) in created_tables:
+                break
+            if schema == table_schema:
+                tables.add(table_name)
+                break
+    return tables
+
+
 @ comparators.dispatch_for('schema', priority=DispatchPriority.LAST)
 def compare_data(autogen_context, upgrade_ops, schemas):
     # TODO not using schema correctly
@@ -352,9 +515,11 @@ def compare_data(autogen_context, upgrade_ops, schemas):
 
     data = autogen_context.metadata.info.setdefault("data", {})
 
-    inspector = autogen_context.inspector
+    snapshot = autogen_context.opts.get("ent_schema_sql")
     db_metadata = sa.MetaData()
-    db_metadata.reflect(inspector.bind)
+    if not snapshot:
+        db_metadata.reflect(autogen_context.inspector.bind)
+    baseline_tables = _snapshot_seed_tables(autogen_context, upgrade_ops) if snapshot else set()
 
     for sch in schemas:
         sch = _get_schema_key(sch)
@@ -378,10 +543,16 @@ def compare_data(autogen_context, upgrade_ops, schemas):
             # verify that each row is valid + create tuple key
             data_rows = {_create_tuple_key(row, pkeys): row for row in rows}
 
-            # new table. need to add
-            if not table_name in db_metadata.tables:
-                upgrade_ops.ops.append(ops.AddRowsOp(
-                    table_name, pkeys, rows))
+            table_exists = table_name in db_metadata.tables
+            if snapshot:
+                # Application tables created by this snapshot start empty, even
+                # if an incidental extension member shares their name. Tables
+                # provisioned outside the snapshot retain seed reconciliation.
+                table_exists = table_name in baseline_tables
+            if not table_exists:
+                if rows:
+                    upgrade_ops.ops.append(ops.AddRowsOp(
+                        table_name, pkeys, rows))
             else:
                 _compare_db_values(autogen_context, upgrade_ops,
                                    table_name, pkeys, data_rows)
@@ -439,10 +610,9 @@ def _compare_db_values(autogen_context, upgrade_ops, table_name, pkeys, data_row
 
 @ comparators.dispatch_for("schema", priority=DispatchPriority.LAST)
 def compare_schema(autogen_context, upgrade_ops, schemas):
-    inspector = autogen_context.inspector
-
     db_metadata = sa.MetaData()
-    db_metadata.reflect(inspector.bind)
+    if not autogen_context.opts.get("ent_schema_sql"):
+        db_metadata.reflect(autogen_context.inspector.bind)
 
     # TODO schema not being used
     # https://github.com/lolopinto/ent/issues/123

@@ -26,6 +26,8 @@ def _quote_ident(val: str) -> str:
 
 
 def _quote_literal(val: str) -> str:
+    if "\\" in val:
+        return "E'" + val.replace("\\", "\\\\").replace("'", "''") + "'"
     return "'" + val.replace("'", "''") + "'"
 
 
@@ -273,7 +275,8 @@ def create_db_extension(
     operations: ops.Operations, operation: ops.CreateExtensionOp
 ):
     extension = operation.extension
-    stmt = f"CREATE EXTENSION IF NOT EXISTS {_quote_ident(extension['name'])}"
+    name = _quote_ident(extension["name"])
+    stmt = f"CREATE EXTENSION IF NOT EXISTS {name}"
     with_clauses = []
     if (install_schema := extension.get("install_schema")) is not None:
         with_clauses.append(f"SCHEMA {_quote_ident(install_schema)}")
@@ -281,7 +284,36 @@ def create_db_extension(
         with_clauses.append(f"VERSION {_quote_literal(version)}")
     if with_clauses:
         stmt = f"{stmt} WITH {' '.join(with_clauses)}"
-    operations.get_bind().execute(sa.text(stmt))
+    context = operations.get_context()
+    if not context.opts.get("ent_schema_sql"):
+        operations.get_bind().execute(sa.text(stmt))
+        return
+    # Snapshot planning always pins a version. IF NOT EXISTS must verify the
+    # existing installation instead of upgrading or relocating it.
+    assert version is not None
+    mismatch = f"installed.extversion <> {_quote_literal(version)}"
+    expected = f'version "{version}"'
+    if install_schema is not None:
+        mismatch += f" OR installed.nspname <> {_quote_literal(install_schema)}"
+        expected += f' in schema "{install_schema}"'
+    message = _quote_literal(
+        f'schema.sql requires db extension "{extension["name"]}" {expected}; '
+        'use normal migrations to prepare a matching extension before replay'
+    )
+    body = (
+        "DECLARE installed record;\nBEGIN\n"
+        "    SELECT e.extversion, n.nspname INTO STRICT installed\n"
+        "    FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace\n"
+        f"    WHERE e.extname = {_quote_literal(extension['name'])};\n"
+        f"    IF {mismatch} THEN\n"
+        f"        RAISE EXCEPTION USING MESSAGE = {message},\n"
+        "            DETAIL = 'Installed version: ' || installed.extversion || ', schema: ' || installed.nspname;\n"
+        "    END IF;\nEND"
+    )
+    tag = "ent"
+    while f"${tag}$" in body:
+        tag += "_"
+    context.impl.static_output(f"{stmt};\n\nDO ${tag}$\n{body}\n${tag}$;")
 
 
 @Operations.implementation_for(ops.DropExtensionOp)

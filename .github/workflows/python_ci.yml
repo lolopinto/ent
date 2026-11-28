@@ -71,8 +71,17 @@ jobs:
       run: |
         ty check --python "$(pipenv --py)"
 
+    - name: Install test extension packages
+      env:
+        POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+      run: |
+        python tests/fixtures/write_extension_packages.py /tmp/auto-schema-extensions.tar
+        pg_share_dir=$(docker exec "$POSTGRES_CONTAINER" psql -U postgres -Atc "SELECT setting FROM pg_config WHERE name = 'SHAREDIR'")
+        docker cp - "$POSTGRES_CONTAINER:$pg_share_dir/extension/" < /tmp/auto-schema-extensions.tar
+
     - name: run test suite
       run: |
         pipenv run pytest -svv
       env:
         DB_CONNECTION_STRING: 'postgresql://postgres:postgres@localhost:5432'
+        AUTO_SCHEMA_EXTENSION_FIXTURES: '1'

@@ -4,6 +4,7 @@ import traceback
 import argparse
 import warnings
 import alembic
+from contextlib import nullcontext, redirect_stdout
 
 import sqlalchemy
 
@@ -143,7 +144,10 @@ def main():
                 elif args.progressive_sql is True:
                     r.progressive_sql(file=args.file)
                 else:
-                    r.run()
+                    # Keep stdout executable when it is the snapshot destination.
+                    # File-output callers retain their existing progress stream.
+                    with redirect_stdout(sys.stderr) if args.run_and_all_sql and args.file is None else nullcontext():
+                        r.run()
                     if args.run_and_all_sql:
                         r.all_sql(file=args.file, database=args.empty_database)
 
@@ -153,6 +157,7 @@ def main():
             sys.stderr.write("auto_schema error: "+str(err))
             if args.debug or os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
                 traceback.print_exception(*sys.exc_info())
+            raise SystemExit(1) from err
 
 
 # no logic should be in here. everything in main()

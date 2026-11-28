@@ -767,6 +767,14 @@ func compareDbFilesInfo(processor *codegen.Processor, before, after *dbFileInfo)
 	}
 
 	if after.schemaSql.exists && before.schemaSql.exists && string(before.schemaSql.contents) != string(after.schemaSql.contents) {
+		// auto_schema's PostgreSQL snapshots now pin and validate extensions.
+		// Refresh the legacy format once without inventing a database migration.
+		// Equal formats, unknown formats and downgrades retain the drift check.
+		const formatPrefix = "-- ent schema snapshot format: "
+		if !strings.HasPrefix(string(before.schemaSql.contents), formatPrefix) &&
+			strings.HasPrefix(string(after.schemaSql.contents), formatPrefix+"1\n") {
+			return nil
+		}
 		return fmt.Errorf("schema.sql changed when no version files changed. there's an ent db error. you should file a bug report about what you were trying to do. it's probably unsupported")
 	}
 
