@@ -111,15 +111,23 @@ export class PostgresTestDatabase {
     const url = config.connectionString
       ? new URL(config.connectionString)
       : undefined;
-    const name = url
-      ? decodeURIComponent(url.pathname.slice(1))
-      : config.database;
-    const host = url ? url.hostname : config.host;
-    const port = Number((url ? url.port : config.port) || 5432);
+    // Resolve pg's destination with the driver itself, without connecting.
+    // Its URL parser preserves reserved escapes (e.g. %2F); Bun SQL decodes
+    // those escapes, so it must retain its separate ownership comparison.
+    const destination =
+      db.db.postgresDriver === "bun"
+        ? {
+            database: url
+              ? decodeURIComponent(url.pathname.slice(1))
+              : config.database,
+            host: url ? url.hostname : config.host,
+            port: Number((url ? url.port : config.port) || 5432),
+          }
+        : new PGClient(config);
     if (
-      name !== this.name ||
-      host !== this.connection.host ||
-      port !== this.connection.port ||
+      destination.database !== this.name ||
+      destination.host !== this.connection.host ||
+      destination.port !== this.connection.port ||
       // A URL query can override pg's actual destination. Fail closed instead
       // of treating a similarly named database on another server as ours.
       (url &&

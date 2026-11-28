@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import { Client } from "pg";
 import DB from "../../core/db";
 import { PostgresTestDatabase } from "./postgres_test_database";
@@ -32,6 +33,13 @@ async function oid(name: string) {
   return (
     await admin.query("SELECT oid FROM pg_database WHERE datname = $1", [name])
   ).rows[0]?.oid;
+}
+function runtimeURL(name: string) {
+  const url = new URL("postgres://localhost:5432/");
+  url.username = admin.user || "";
+  url.password = process.env.POSTGRES_PASSWORD || "";
+  url.pathname = name;
+  return url.toString();
 }
 
 beforeAll(() => admin.connect());
@@ -126,6 +134,72 @@ test("cleanup does not close a different runtime database", async () => {
     (await runtime.getPool().query("SELECT 42 AS value")).rows[0].value,
   ).toBe(42);
 });
+
+test.each(["%2F", "%3F", "%23"])(
+  "cleanup preserves a different pool whose database name contains %s",
+  async (escape) => {
+    const prefix = `ent_test_${randomBytes(8).toString("hex")}`;
+    const database = await create(prefix + decodeURIComponent(escape));
+    const sentinel = await create(prefix + escape);
+    const originalOID = await oid(sentinel.name);
+    DB.initDB({ connectionString: runtimeURL(sentinel.name) });
+    const runtime = DB.getInstance();
+    const endPool = jest.spyOn(runtime, "endPool");
+    try {
+      await runtime.getPool().query("CREATE TABLE sentinel (value text)");
+      await runtime.getPool().query("INSERT INTO sentinel VALUES ('keep')");
+      const session = await runtime
+        .getPool()
+        .query("SELECT current_database(), pg_backend_pid()");
+      expect(session.rows[0].current_database).toBe(sentinel.name);
+      database.trackRuntimeDB(runtime);
+
+      await database.close();
+
+      expect(endPool).not.toHaveBeenCalled();
+      expect(await oid(database.name)).toBeUndefined();
+      expect(await oid(sentinel.name)).toBe(originalOID);
+      expect(
+        (await runtime.getPool().query("SELECT * FROM sentinel")).rows,
+      ).toEqual([{ value: "keep" }]);
+      expect(
+        (
+          await runtime
+            .getPool()
+            .query("SELECT current_database(), pg_backend_pid()")
+        ).rows,
+      ).toEqual(session.rows);
+    } finally {
+      await runtime.endPool().catch(() => {});
+    }
+  },
+);
+
+test.each(["%2F", "%3F", "%23"])(
+  "cleanup closes its own pool when the database name contains %s",
+  async (escape) => {
+    const database = await create(
+      `ent_test_${randomBytes(8).toString("hex")}${escape}`,
+    );
+    DB.initDB({ connectionString: runtimeURL(database.name) });
+    const runtime = DB.getInstance();
+    const endPool = jest.spyOn(runtime, "endPool");
+    try {
+      expect(
+        (await runtime.getPool().query("SELECT current_database()")).rows[0]
+          .current_database,
+      ).toBe(database.name);
+      database.trackRuntimeDB(runtime);
+
+      await database.close();
+
+      expect(endPool).toHaveBeenCalledTimes(1);
+      expect(await oid(database.name)).toBeUndefined();
+    } finally {
+      await runtime.endPool().catch(() => {});
+    }
+  },
+);
 
 test("rejects names PostgreSQL would truncate before connecting", () => {
   expect(() => new PostgresTestDatabase("x".repeat(64))).toThrow(
