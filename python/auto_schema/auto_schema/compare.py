@@ -227,10 +227,12 @@ def _check_snapshot_installation_prerequisites(connection, name, version, requir
 def _plan_snapshot_extension_ops(connection, extensions, installed):
     # External declarations use the ordinary installation, version and schema checks.
     external = [ext for ext in extensions if not _is_ent_provisioned(ext)]
+    provided = set()
     for ext in external:
         name = _snapshot_extension_name(ext["name"], installed)
         existing = {ext["name"].lower(): installed[name]} if name else {}
         _get_extension_ops([ext], existing)
+        provided.add(name)
     managed = [ext for ext in extensions if _is_ent_provisioned(ext)]
     if not managed:
         return []
@@ -255,7 +257,6 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
 
     resolved = {}
     prerequisites = {}
-    versions = {}
     for ext in managed:
         declared = ext["name"]
         # A declaration already resolved to an installed extension must retain
@@ -277,17 +278,29 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
                 f'{version_label} is not available on the comparison PostgreSQL instance; '
                 'install an extension package providing that version on that instance'
             )
-        resolved[name] = {**ext, "name": name}
+        # Replay must install the version whose prerequisites we validated, even
+        # if the target server has a different default when the SQL is applied.
+        resolved[name] = {**ext, "name": name, "version": version}
         prerequisites[name] = version_requires[name, version]
-        versions[name] = version
+    provided.update(resolved)
 
     # Register all nodes before their edges to keep ordering deterministic.
     dependencies = TopologicalSorter({name: () for name in resolved})
     for name, requires in prerequisites.items():
-        _check_snapshot_installation_prerequisites(connection, name, versions[name], requires)
-        dependencies.add(name, *(dep for dep in requires if dep in resolved))
         ext = resolved[name]
-        if "plpgsql" in resolved and name != "plpgsql" and (ext["version"] or ext["install_schema"]):
+        _check_snapshot_installation_prerequisites(connection, name, ext["version"], requires)
+        for dep in requires:
+            if dep not in provided:
+                conflicts = sorted(candidate for candidate in provided if candidate.lower() == dep.lower())
+                if conflicts:
+                    raise ValueError(
+                        f'cannot generate schema.sql: db extension "{name}" requires exact db extension '
+                        f'"{dep}", but declarations resolve to {", ".join(conflicts)}; '
+                        'declare the exact prerequisite and use a matching comparison baseline'
+                    )
+        dependencies.add(name, *(dep for dep in requires if dep in resolved))
+        # Every managed extension now has a pinned version and a replay check.
+        if "plpgsql" in resolved and name != "plpgsql":
             dependencies.add(name, "plpgsql")
     return [ops.CreateExtensionOp(resolved[name]) for name in dependencies.static_order()]
 

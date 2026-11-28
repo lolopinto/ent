@@ -20,7 +20,7 @@ Changelog for the docker image are [here](/docker_CHANGELOG.md).
 
 ### Fixed
 
-- Preserve Ent-managed PostgreSQL extensions and their exact installed identities in `schema.sql`; reject missing or insufficient installation dependency metadata before emitting snapshots, with a nonzero CLI exit status (#2057).
+- Preserve Ent-managed PostgreSQL extensions in `schema.sql` with validated names and pinned versions; reject insufficient dependency metadata during generation and incompatible preinstalled versions or declared schemas during replay, without upgrading or relocating extensions. CLI errors return a nonzero status (#2057).
 - update example CSV parsers, the RSVP frontend, and documentation dependencies to patched releases; preserve CSV uploads with quoted fields and empty records (#2048).
 - enforce custom-query privacy for rows and counts (#2049).
 - update the YAML parser and compatible transitive dependencies to address security advisories (#2047).

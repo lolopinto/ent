@@ -1,10 +1,16 @@
+import io
 import os
 from pathlib import Path
 import subprocess
 import sys
+from unittest.mock import Mock
 
+from alembic.migration import MigrationContext
+from alembic.operations import Operations
 import pytest
 import sqlalchemy as sa
+
+from auto_schema import compare
 
 
 @pytest.fixture
@@ -13,7 +19,7 @@ def extension_runner(new_test_runner):
     packages = set(r.connection.execute(sa.text(
         "SELECT name FROM pg_available_extensions"
     )).scalars())
-    required = {"ent_snapshot_path", "Ent_Snapshot_Identity", "ent_snapshot_identity"}
+    required = {"ent_snapshot_path", "ent_snapshot_dependent", "Ent_Snapshot_Identity", "ent_snapshot_identity"}
     if not required <= packages:
         message = "Install tests/fixtures extension packages as described in README.MD"
         if os.getenv("AUTO_SCHEMA_EXTENSION_FIXTURES") == "1":
@@ -23,6 +29,79 @@ def extension_runner(new_test_runner):
 
 
 class TestPostgresSnapshotExtensions:
+    @pytest.mark.parametrize("preinstalled", [False, True])
+    def test_snapshot_uses_validated_default_on_another_server(self, extension_runner, preinstalled):
+        r = extension_runner
+        # Model a comparison server with default 2 while this replay server has
+        # default 1. Only comparison metadata is mocked; render and replay are real.
+        comparison = Mock()
+        comparison.execute.side_effect = [[("ent_snapshot_identity", "2", "2", None)], []]
+        planned = compare._plan_snapshot_extension_ops(comparison, [
+            compare._normalize_db_extension({"name": "ent_snapshot_identity"}),
+        ], {})
+        output = io.StringIO()
+        operations = Operations(MigrationContext.configure(connection=r.connection, opts={
+            "as_sql": True, "ent_schema_sql": True, "output_buffer": output,
+        }))
+        for op in planned:
+            operations.invoke(op)
+        sql = output.getvalue()
+        assert r.connection.exec_driver_sql("""
+            SELECT default_version FROM pg_available_extensions WHERE name = 'ent_snapshot_identity'
+        """).scalar_one() == "1"
+        if preinstalled:
+            r.connection.exec_driver_sql("CREATE EXTENSION ent_snapshot_identity")
+            r.connection.commit()
+            with pytest.raises(sa.exc.DBAPIError, match='schema.sql requires db extension "ent_snapshot_identity" version "2"'):
+                r.connection.exec_driver_sql(sql)
+            r.connection.rollback()
+        else:
+            r.connection.exec_driver_sql(sql)
+        assert r.connection.exec_driver_sql("""
+            SELECT extversion FROM pg_extension WHERE extname = 'ent_snapshot_identity'
+        """).scalar_one() == ("1" if preinstalled else "2")
+
+    @pytest.mark.parametrize("external", [False, True])
+    def test_rejects_installed_identity_conflicting_with_exact_prerequisite(self, extension_runner, tmp_path, external):
+        r = extension_runner
+        r.connection.exec_driver_sql('CREATE EXTENSION "Ent_Snapshot_Identity"')
+        r.connection.commit()
+        r.metadata.info["db_extensions"] = {"public": [
+            {"name": "ent_snapshot_dependent"},
+            {"name": "ent_snapshot_identity", "provisioned_by": "external" if external else "ent"},
+        ]}
+        path = tmp_path / "schema.sql"
+        path.write_text("previous snapshot\n")
+        with pytest.raises(ValueError, match='requires exact db extension "ent_snapshot_identity"'):
+            r.all_sql(file=path, database=r.engine.url.database)
+        assert path.read_text() == "previous snapshot\n"
+        # Once the exact prerequisite is present, the same declarations resolve
+        # correctly even while the differently cased installation remains.
+        r.connection.exec_driver_sql("CREATE EXTENSION ent_snapshot_identity")
+        r.connection.commit()
+        r.all_sql(file=path, database=r.engine.url.database)
+        r.connection.exec_driver_sql(path.read_text())
+        assert r.connection.exec_driver_sql("""
+            SELECT count(*) FROM pg_extension WHERE extname = 'ent_snapshot_dependent'
+        """).scalar_one() == 1
+
+    def test_snapshot_rejects_upgrading_a_preinstalled_extension(self, extension_runner, tmp_path):
+        r = extension_runner
+        r.metadata.info["db_extensions"] = {"public": [
+            {"name": "ent_snapshot_path", "version": "4"}, {"name": "cube"},
+        ]}
+        r.connection.exec_driver_sql("CREATE EXTENSION ent_snapshot_path VERSION '1'")
+        r.connection.commit()
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        with pytest.raises(sa.exc.DBAPIError, match='schema.sql requires db extension "ent_snapshot_path" version "4"'):
+            r.connection.exec_driver_sql(path.read_text())
+        r.connection.rollback()
+        assert r.connection.exec_driver_sql("""
+            SELECT extversion FROM pg_extension WHERE extname = 'ent_snapshot_path'
+        """).scalar_one() == "1"
+        assert "ALTER EXTENSION" not in path.read_text()
+
     @pytest.mark.parametrize("version", [None, "3"])
     def test_rejects_prerequisites_dropped_by_target_version(self, extension_runner, tmp_path, version):
         r = extension_runner

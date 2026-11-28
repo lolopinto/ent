@@ -32,13 +32,15 @@ Partial indexes are supported via `postgresql_where=sa.text(...)` and `sqlite_wh
 
 ## Replaying PostgreSQL extension snapshots
 
-`auto_schema --all_sql` includes Ent-managed extensions in `schema.sql` even when the comparison database already has them, and orders them using PostgreSQL's dependency metadata.
+`auto_schema --all_sql` builds a snapshot for a fresh application schema. It includes Ent-managed extensions even when the comparison database already has them, and orders them using PostgreSQL's dependency metadata. Managed extension setup uses the exact resolved package name and version. If no version is declared, the snapshot pins the comparison server's default version that was validated during generation; it does not choose a new default during replay.
+
+The replay target may already contain matching extensions. A different installed version or declared `installSchema` produces a clear replay error. Generated extension setup does not upgrade, downgrade, or relocate installed extensions; apply those changes through normal migrations before replay. Extension checks use PL/pgSQL, so the target needs `plpgsql` and the replay role needs `USAGE` on that language.
 
 The PostgreSQL instance hosting the comparison database must have the package files and dependency metadata for each Ent-managed extension's requested version, or its default version when none is specified. The extensions do not need to be enabled with `CREATE EXTENSION` in the comparison database. Generation fails if a package or version's metadata is unavailable; install the matching extension package on that PostgreSQL instance before generating the snapshot. An empty comparison database on the same instance shares its available extension packages.
 
 PostgreSQL can install a target version by installing an earlier version and running update scripts. Snapshot generation verifies that the target's prerequisites cover those of every installable version with an update path to the target. Versions with no path to the target do not affect ordering. PostgreSQL's public catalogs do not identify the starting install script, so this conservative check can reject a package even when the target has a direct install script. If the check fails, use `--progressive_sql` with a verified migration installation order, or a package/version whose target prerequisites cover its installation paths. Generation does not guess the path or add dependencies from unrelated versions.
 
-An already installed extension retains its exact catalog identity. A differently cased package cannot substitute for it; missing metadata for that exact package still fails generation. Ambiguous case-insensitive names require an exact declaration. Extension identity and prerequisite validation errors leave an existing snapshot file untouched, emit no snapshot SQL, and return a nonzero CLI exit status, including with `--run_and_all_sql`.
+An extension installed in the comparison database retains its exact catalog identity. A differently cased package cannot substitute for it; missing metadata for that exact package still fails generation. Ambiguous case-insensitive names require an exact declaration. If a declaration resolves to a different spelling than a prerequisite requires, generation fails; declare the exact prerequisite and provide a matching comparison baseline. Extension identity and prerequisite validation errors leave an existing snapshot file untouched, emit no snapshot SQL, and return a nonzero CLI exit status, including with `--run_and_all_sql`.
 
 Extension-owned tables are allowed in the comparison database, but their ownership does not predict which objects a fresh extension installation will create. Validate the generated SQL by replaying it on a disposable target with the required external prerequisites; object-name conflicts are reported during replay.
 
@@ -50,7 +52,19 @@ This baseline requirement also applies to tables supplied by Ent-managed extensi
 
 Declare any required `version` or `installSchema` in `dbExtensions`. Generated extension statements run before retained custom SQL, so a later `CREATE EXTENSION IF NOT EXISTS` skips its install options. Create any custom install schema before replay. If retained revisions also create the schema or extension, use `CREATE SCHEMA IF NOT EXISTS` and `CREATE EXTENSION IF NOT EXISTS` in those revisions. Use `auto_schema --progressive_sql` when installation depends on the original migration order.
 
-If a managed extension declares `version` or `installSchema`, replay checks the installed extension in a PL/pgSQL block. The target database needs `plpgsql` and the replay role needs `USAGE` on that language, even when the extension already matches. Changing the version or schema requires extension ownership.
+### Scope and exclusions
+
+| Outside the snapshot contract | Required handling |
+| --- | --- |
+| Automatically upgrading, downgrading, or relocating preinstalled extensions, including their historical update paths | Use normal migrations. Generated extension setup rejects a version or declared-schema mismatch. |
+| Installing server packages or automatically provisioning undeclared/external prerequisites | Install matching packages and provision external prerequisites on the replay target. Generated extension setup does not use `CREATE EXTENSION ... CASCADE`. |
+| Fresh-install paths whose prerequisite coverage cannot be established from public metadata | Generation rejects them conservatively, even if a direct install script might work. Use a compatible package/version or verified progressive migration SQL. |
+| Reconstructing historical custom-SQL or backfill ordering | Snapshots append retained custom SQL after generated schema operations. Use `--progressive_sql` when original migration order is required, and test its replay. |
+| Creating custom install schemas or translating seed statements between search paths | Precreate schemas and use matching generation/replay search paths. |
+| Deriving updates/deletions to extension-supplied seed rows from a fully empty baseline | Provide representative initial data in the comparison database. |
+| Predicting arbitrary extension-script object creation, collisions, or changes to package contents under the same version label | Validate replay against the intended packages on a disposable target. Name/version checks do not compare package contents. |
+
+Retained custom SQL runs as written; the generated extension checks do not constrain its effects. `--run_and_all_sql` still performs normal migrations before snapshot generation. If generation then fails, its nonzero status does not roll back those completed migrations. For replay, use a transaction where supported if the entire snapshot must succeed atomically.
 
 ## Testing extension installation paths
 

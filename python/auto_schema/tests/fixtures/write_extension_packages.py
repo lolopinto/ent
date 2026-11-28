@@ -18,10 +18,13 @@ def write_packages(archive):
         # An unrelated installable version must not add dependencies to 3 or 4.
         "ent_snapshot_path--9.sql": "SELECT hstore('key', 'value');\n",
         "ent_snapshot_path--9.control": "requires = 'hstore'\n",
+        "ent_snapshot_dependent.control": "default_version = '1'\nrequires = 'ent_snapshot_identity'\nrelocatable = true\n",
+        "ent_snapshot_dependent--1.sql": "SELECT 1;\n",
     }
     for name in ("Ent_Snapshot_Identity", "ent_snapshot_identity"):
         files[f"{name}.control"] = "default_version = '1'\nrelocatable = true\n"
         files[f"{name}--1.sql"] = "SELECT 1;\n"
+        files[f"{name}--2.sql"] = "SELECT 1;\n"
     # A tar archive preserves both case variants even on a case-insensitive host.
     with tarfile.open(archive, "w") as output:
         for name, contents in files.items():

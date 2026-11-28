@@ -3051,9 +3051,26 @@ class TestPostgresRunner(BaseTestRunner):
             target = new_test_runner(metadata, new_database=True)
             target.connection.exec_driver_sql("CREATE SCHEMA addons")
             if preinstalled:
-                target.connection.exec_driver_sql("CREATE EXTENSION hstore VERSION '1.4'")
+                target.connection.exec_driver_sql("CREATE EXTENSION hstore WITH SCHEMA addons VERSION '1.8'")
             target.connection.exec_driver_sql(clean_sql)
             assert target.compute_changes() == []
+
+    @pytest.mark.parametrize("version,schema", [("1.4", "public"), ("1.4", "addons"), ("1.8", "public")])
+    def test_schema_sql_rejects_preinstalled_extension_mismatches(self, new_test_runner, tmp_path, version, schema):
+        r = new_test_runner(_db_extension_metadata(name="hstore", install_schema="addons", version="1.8"))
+        path = tmp_path / "schema.sql"
+        r.all_sql(file=path)
+        r.connection.exec_driver_sql("CREATE SCHEMA addons")
+        r.connection.exec_driver_sql(f"CREATE EXTENSION hstore WITH SCHEMA {schema} VERSION '{version}'")
+        r.connection.commit()
+        with pytest.raises(sa.exc.DBAPIError, match='schema.sql requires db extension "hstore"'):
+            r.connection.exec_driver_sql(path.read_text())
+        r.connection.rollback()
+        assert r.connection.exec_driver_sql("""
+            SELECT extversion, extnamespace::regnamespace::text
+            FROM pg_extension WHERE extname = 'hstore'
+        """).one() == (version, schema)
+        assert "ALTER EXTENSION" not in path.read_text()
 
     def test_schema_sql_installs_extension_prerequisites_first(self, new_test_runner, tmp_path):
         # Both extensions ship with PostgreSQL. Declare the dependent first.

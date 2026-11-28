@@ -290,18 +290,29 @@ def create_db_extension(
         return
     if with_clauses:
         # IF NOT EXISTS skips VERSION and SCHEMA on preinstalled extensions.
-        # Test the replay target, which may differ from the generation server.
+        # A snapshot creates a fresh installation or verifies an existing match.
+        # Upgrades and relocations belong to normal migrations.
         checks = []
         if version is not None:
             target = _quote_literal(version)
+            message = _quote_literal(
+                f'schema.sql requires db extension "{extension["name"]}" version "{version}"; '
+                'migrate the extension before replay'
+            )
             checks.append(
                 f"    IF installed.extversion <> {target} THEN\n"
-                f"        ALTER EXTENSION {name} UPDATE TO {target};\n    END IF;"
+                f"        RAISE EXCEPTION USING MESSAGE = {message},\n"
+                "            DETAIL = 'Installed version: ' || installed.extversion;\n    END IF;"
             )
         if install_schema is not None:
+            message = _quote_literal(
+                f'schema.sql requires db extension "{extension["name"]}" in schema "{install_schema}"; '
+                'relocate the extension before replay'
+            )
             checks.append(
                 f"    IF installed.nspname <> {_quote_literal(install_schema)} THEN\n"
-                f"        ALTER EXTENSION {name} SET SCHEMA {_quote_ident(install_schema)};\n    END IF;"
+                f"        RAISE EXCEPTION USING MESSAGE = {message},\n"
+                "            DETAIL = 'Installed schema: ' || installed.nspname;\n    END IF;"
             )
         body = (
             "DECLARE installed record;\nBEGIN\n"
