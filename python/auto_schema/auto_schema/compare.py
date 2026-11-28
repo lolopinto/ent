@@ -53,7 +53,7 @@ def _get_metadata_extensions(autogen_context: AutogenContext) -> list[dict[str, 
     return [_normalize_db_extension(extension) for extension in extensions]
 
 
-def _get_db_extensions(autogen_context: AutogenContext, *, exact_names=False) -> dict[str, dict[str, Any]]:
+def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, Any]]:
     rows = autogen_context.connection.execute(
         sa.text(
             """
@@ -68,7 +68,7 @@ def _get_db_extensions(autogen_context: AutogenContext, *, exact_names=False) ->
         )
     )
     return {
-        (row.name if exact_names else row.name.lower()): row._asdict()
+        row.name: row._asdict()
         for row in rows
     }
 
@@ -178,13 +178,14 @@ def _plan_extension_ops(autogen_context):
     if dialect != "postgresql":
         raise ValueError("db extensions are only supported for postgres")
 
-    snapshot = autogen_context.opts.get("ent_schema_sql", False)
-    db_extensions = _get_db_extensions(autogen_context, exact_names=snapshot)
-    if snapshot:
+    db_extensions = _get_db_extensions(autogen_context)
+    if autogen_context.opts.get("ent_schema_sql"):
         return _plan_snapshot_extension_ops(
             autogen_context.connection, metadata_extensions, db_extensions
         )
-    return _get_extension_ops(metadata_extensions, db_extensions)
+    return _get_extension_ops(
+        metadata_extensions, {name.lower(): ext for name, ext in db_extensions.items()},
+    )
 
 
 def _snapshot_extension_name(declared, names):
@@ -256,7 +257,6 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
             version_requires[actual, version] = requires or ()
 
     resolved = {}
-    prerequisites = {}
     for ext in managed:
         declared = ext["name"]
         # A declaration already resolved to an installed extension must retain
@@ -281,13 +281,12 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
         # Replay must install the version whose prerequisites we validated, even
         # if the target server has a different default when the SQL is applied.
         resolved[name] = {**ext, "name": name, "version": version}
-        prerequisites[name] = version_requires[name, version]
     provided.update(resolved)
 
     # Register all nodes before their edges to keep ordering deterministic.
     dependencies = TopologicalSorter({name: () for name in resolved})
-    for name, requires in prerequisites.items():
-        ext = resolved[name]
+    for name, ext in resolved.items():
+        requires = version_requires[name, ext["version"]]
         _check_snapshot_installation_prerequisites(connection, name, ext["version"], requires)
         for dep in requires:
             if dep not in provided:

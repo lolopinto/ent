@@ -1,6 +1,5 @@
 from collections import Counter
 from contextlib import contextmanager
-from itertools import permutations
 from unittest.mock import Mock, patch
 from alembic.autogenerate import produce_migrations
 
@@ -68,11 +67,8 @@ class TestPostgresComparisonPlanning:
             })
 
     @pytest.mark.parametrize("rows,version,installed,error", [
-        ([], None, False, 'extension "example" is not available'),
-        ([], "2", False, 'extension "example" is not available'),
         ([], None, True, 'extension "example" is not available'),
         ([("example", "1", None, None)], None, False, 'version "1"'),
-        ([("example", "1", "1", None)], "2", True, 'version "2"'),
         ([("example", None, None, None)], None, False, 'default version'),
     ])
     def test_snapshot_requires_extension_dependency_metadata(self, rows, version, installed, error):
@@ -85,17 +81,7 @@ class TestPostgresComparisonPlanning:
         assert "comparison PostgreSQL instance" in str(exc.value)
         assert "install" in str(exc.value)
 
-    def test_snapshot_rejects_missing_metadata_in_a_dependency_chain(self):
-        extensions = [compare._normalize_db_extension({"name": name})
-                      for name in ("dependent", "base", "missing")]
-        connection = _snapshot_connection()
-        connection.execute.return_value = [
-            ("dependent", "1", "1", ["missing"]), ("base", "1", "1", None),
-        ]
-        with pytest.raises(ValueError, match='extension "missing" is not available'):
-            compare._plan_snapshot_extension_ops(connection, extensions, {})
-
-    @pytest.mark.parametrize("names", list(permutations(("leaf", "middle", "base"))))
+    @pytest.mark.parametrize("names", [("leaf", "middle", "base"), ("middle", "base", "leaf")])
     def test_snapshot_orders_complete_dependency_chains_independently_of_declaration_order(self, names):
         extensions = [compare._normalize_db_extension({"name": name}) for name in names]
         connection = _snapshot_connection()

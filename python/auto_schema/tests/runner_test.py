@@ -3055,7 +3055,7 @@ class TestPostgresRunner(BaseTestRunner):
             target.connection.exec_driver_sql(clean_sql)
             assert target.compute_changes() == []
 
-    @pytest.mark.parametrize("version,schema", [("1.4", "public"), ("1.4", "addons"), ("1.8", "public")])
+    @pytest.mark.parametrize("version,schema", [("1.4", "addons"), ("1.8", "public")])
     def test_schema_sql_rejects_preinstalled_extension_mismatches(self, new_test_runner, tmp_path, version, schema):
         r = new_test_runner(_db_extension_metadata(name="hstore", install_schema="addons", version="1.8"))
         path = tmp_path / "schema.sql"

@@ -77,4 +77,4 @@ docker cp - "$POSTGRES_CONTAINER:$pg_share_dir/extension/" < /tmp/auto-schema-ex
 AUTO_SCHEMA_EXTENSION_FIXTURES=1 DB_CONNECTION_STRING=postgresql://postgres:password@localhost:5432 pytest
 ```
 
-Set `POSTGRES_CONTAINER` to the disposable container's name and use its connection URL. The tar archive preserves both package spellings on case-insensitive host filesystems. Without the packages, their integration tests skip locally; `AUTO_SCHEMA_EXTENSION_FIXTURES=1` makes missing fixtures fail, as in CI. CLI and catalog-planning unit regressions always run.
+Set `POSTGRES_CONTAINER` to the disposable container's name and use its connection URL. The tar archive preserves both package spellings on case-insensitive host filesystems. Without the packages, their CLI/replay tests skip locally; `AUTO_SCHEMA_EXTENSION_FIXTURES=1` makes missing fixtures fail, as in CI. Catalog-planning unit regressions always run.

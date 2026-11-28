@@ -288,44 +288,32 @@ def create_db_extension(
     if not context.opts.get("ent_schema_sql"):
         operations.get_bind().execute(sa.text(stmt))
         return
-    if with_clauses:
-        # IF NOT EXISTS skips VERSION and SCHEMA on preinstalled extensions.
-        # A snapshot creates a fresh installation or verifies an existing match.
-        # Upgrades and relocations belong to normal migrations.
-        checks = []
-        if version is not None:
-            target = _quote_literal(version)
-            message = _quote_literal(
-                f'schema.sql requires db extension "{extension["name"]}" version "{version}"; '
-                'migrate the extension before replay'
-            )
-            checks.append(
-                f"    IF installed.extversion <> {target} THEN\n"
-                f"        RAISE EXCEPTION USING MESSAGE = {message},\n"
-                "            DETAIL = 'Installed version: ' || installed.extversion;\n    END IF;"
-            )
-        if install_schema is not None:
-            message = _quote_literal(
-                f'schema.sql requires db extension "{extension["name"]}" in schema "{install_schema}"; '
-                'relocate the extension before replay'
-            )
-            checks.append(
-                f"    IF installed.nspname <> {_quote_literal(install_schema)} THEN\n"
-                f"        RAISE EXCEPTION USING MESSAGE = {message},\n"
-                "            DETAIL = 'Installed schema: ' || installed.nspname;\n    END IF;"
-            )
-        body = (
-            "DECLARE installed record;\nBEGIN\n"
-            "    SELECT e.extversion, n.nspname INTO STRICT installed\n"
-            "    FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace\n"
-            f"    WHERE e.extname = {_quote_literal(extension['name'])};\n"
-            + "\n".join(checks) + "\nEND"
-        )
-        tag = "ent"
-        while f"${tag}$" in body:
-            tag += "_"
-        stmt += f";\n\nDO ${tag}$\n{body}\n${tag}$"
-    context.impl.static_output(stmt + ";")
+    # Snapshot planning always pins a version. IF NOT EXISTS must verify the
+    # existing installation instead of upgrading or relocating it.
+    assert version is not None
+    mismatch = f"installed.extversion <> {_quote_literal(version)}"
+    expected = f'version "{version}"'
+    if install_schema is not None:
+        mismatch += f" OR installed.nspname <> {_quote_literal(install_schema)}"
+        expected += f' in schema "{install_schema}"'
+    message = _quote_literal(
+        f'schema.sql requires db extension "{extension["name"]}" {expected}; '
+        'use normal migrations to prepare a matching extension before replay'
+    )
+    body = (
+        "DECLARE installed record;\nBEGIN\n"
+        "    SELECT e.extversion, n.nspname INTO STRICT installed\n"
+        "    FROM pg_catalog.pg_extension e JOIN pg_catalog.pg_namespace n ON n.oid = e.extnamespace\n"
+        f"    WHERE e.extname = {_quote_literal(extension['name'])};\n"
+        f"    IF {mismatch} THEN\n"
+        f"        RAISE EXCEPTION USING MESSAGE = {message},\n"
+        "            DETAIL = 'Installed version: ' || installed.extversion || ', schema: ' || installed.nspname;\n"
+        "    END IF;\nEND"
+    )
+    tag = "ent"
+    while f"${tag}$" in body:
+        tag += "_"
+    context.impl.static_output(f"{stmt};\n\nDO ${tag}$\n{body}\n${tag}$;")
 
 
 @Operations.implementation_for(ops.DropExtensionOp)

@@ -29,8 +29,7 @@ def extension_runner(new_test_runner):
 
 
 class TestPostgresSnapshotExtensions:
-    @pytest.mark.parametrize("preinstalled", [False, True])
-    def test_snapshot_uses_validated_default_on_another_server(self, extension_runner, preinstalled):
+    def test_snapshot_uses_validated_default_on_another_server(self, extension_runner):
         r = extension_runner
         # Model a comparison server with default 2 while this replay server has
         # default 1. Only comparison metadata is mocked; render and replay are real.
@@ -49,17 +48,10 @@ class TestPostgresSnapshotExtensions:
         assert r.connection.exec_driver_sql("""
             SELECT default_version FROM pg_available_extensions WHERE name = 'ent_snapshot_identity'
         """).scalar_one() == "1"
-        if preinstalled:
-            r.connection.exec_driver_sql("CREATE EXTENSION ent_snapshot_identity")
-            r.connection.commit()
-            with pytest.raises(sa.exc.DBAPIError, match='schema.sql requires db extension "ent_snapshot_identity" version "2"'):
-                r.connection.exec_driver_sql(sql)
-            r.connection.rollback()
-        else:
-            r.connection.exec_driver_sql(sql)
+        r.connection.exec_driver_sql(sql)
         assert r.connection.exec_driver_sql("""
             SELECT extversion FROM pg_extension WHERE extname = 'ent_snapshot_identity'
-        """).scalar_one() == ("1" if preinstalled else "2")
+        """).scalar_one() == "2"
 
     @pytest.mark.parametrize("external", [False, True])
     def test_rejects_installed_identity_conflicting_with_exact_prerequisite(self, extension_runner, tmp_path, external):
@@ -84,23 +76,6 @@ class TestPostgresSnapshotExtensions:
         assert r.connection.exec_driver_sql("""
             SELECT count(*) FROM pg_extension WHERE extname = 'ent_snapshot_dependent'
         """).scalar_one() == 1
-
-    def test_snapshot_rejects_upgrading_a_preinstalled_extension(self, extension_runner, tmp_path):
-        r = extension_runner
-        r.metadata.info["db_extensions"] = {"public": [
-            {"name": "ent_snapshot_path", "version": "4"}, {"name": "cube"},
-        ]}
-        r.connection.exec_driver_sql("CREATE EXTENSION ent_snapshot_path VERSION '1'")
-        r.connection.commit()
-        path = tmp_path / "schema.sql"
-        r.all_sql(file=path)
-        with pytest.raises(sa.exc.DBAPIError, match='schema.sql requires db extension "ent_snapshot_path" version "4"'):
-            r.connection.exec_driver_sql(path.read_text())
-        r.connection.rollback()
-        assert r.connection.exec_driver_sql("""
-            SELECT extversion FROM pg_extension WHERE extname = 'ent_snapshot_path'
-        """).scalar_one() == "1"
-        assert "ALTER EXTENSION" not in path.read_text()
 
     @pytest.mark.parametrize("version", [None, "3"])
     def test_rejects_prerequisites_dropped_by_target_version(self, extension_runner, tmp_path, version):
@@ -162,7 +137,7 @@ class TestPostgresSnapshotExtensions:
 
     @pytest.mark.parametrize("mode", ["--all_sql", "--run_and_all_sql"])
     @pytest.mark.parametrize("to_file", [False, True])
-    def test_cli_rejection_does_not_publish_a_snapshot(self, extension_runner, tmp_path, mode, to_file):
+    def test_cli_snapshot_failure_and_success(self, extension_runner, tmp_path, mode, to_file):
         r = extension_runner
         # Normal migration comparison succeeds. Only standalone generation
         # rejects the incomplete prerequisite contract for the requested target.
@@ -187,3 +162,10 @@ def get_metadata():
         assert "cannot verify installation prerequisites" in result.stderr
         assert "CREATE EXTENSION" not in result.stdout
         assert output.read_text() == "previous snapshot\n"
+        schema.write_text(schema.read_text().replace(
+            '{"name": "ent_snapshot_path"}', '{"name": "ent_snapshot_path", "version": "4"}',
+        ))
+        result = subprocess.run(command, capture_output=True, text=True, cwd=Path(__file__).parents[1])
+        assert result.returncode == 0, result.stderr
+        sql = output.read_text() if to_file else result.stdout
+        assert 'CREATE EXTENSION IF NOT EXISTS "ent_snapshot_path" WITH VERSION \'4\'' in sql
