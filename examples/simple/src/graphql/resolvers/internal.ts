@@ -70,8 +70,6 @@ export * from "../generated/resolvers/user_type";
 export { UserType } from "../generated/resolvers/user_type";
 export * from "../generated/resolvers/with_day_of_week_type";
 export { WithDayOfWeekType } from "../generated/resolvers/with_day_of_week_type";
-export * from "../generated/resolvers/address/address_to_hosted_events_connection_type";
-export { AddressToHostedEventsConnectionType } from "../generated/resolvers/address/address_to_hosted_events_connection_type";
 export * from "../generated/resolvers/comment/comment_article_to_comments_connection_type";
 export { CommentArticleToCommentsConnectionType } from "../generated/resolvers/comment/comment_article_to_comments_connection_type";
 export * from "../generated/resolvers/comment/comment_to_post_connection_type";

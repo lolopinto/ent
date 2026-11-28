@@ -52,7 +52,8 @@ const EventSchema = new EntSchema({
     }),
     addressId: UUIDType({
       nullable: true,
-      fieldEdge: { schema: "Address", inverseEdge: "hostedEvents" },
+      // Do not expose the inverse relationship: it would bypass addressId privacy.
+      fieldEdge: { schema: "Address" },
       privacyPolicy: {
         // only creator or attendees can see event address
         rules: [

@@ -1,3 +1,6 @@
+import { Address } from "../address";
+import schema from "../../graphql/generated/schema";
+import { isObjectType } from "graphql";
 import { LoggedOutExampleViewer } from "../../viewer/viewer";
 import CreateAddressAction from "../address/actions/create_address_action";
 
@@ -34,4 +37,13 @@ test("create UK", async () => {
   expect(address.state).toEqual("London");
   expect(address.zip).toEqual("SW1A 2AA");
   expect(address.country).toEqual("UK");
+});
+
+test("public addresses do not expose the private inverse event relationship", () => {
+  expect("queryHostedEvents" in Address.prototype).toBe(false);
+  const addressType = schema.getType("Address");
+  expect(isObjectType(addressType)).toBe(true);
+  if (!isObjectType(addressType)) throw new Error("missing Address type");
+  expect(addressType.getFields().hostedEvents).toBeUndefined();
+  expect(schema.getType("AddressToHostedEventsConnection")).toBeUndefined();
 });

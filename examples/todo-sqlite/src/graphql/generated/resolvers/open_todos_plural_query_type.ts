@@ -29,6 +29,6 @@ export const OpenTodosPluralQueryType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     const r = new TodoResolver();
-    return r.openTodosPlural(args.id);
+    return r.openTodosPlural(context, args.id);
   },
 };

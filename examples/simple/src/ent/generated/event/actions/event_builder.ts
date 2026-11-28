@@ -441,26 +441,6 @@ export class EventBuilder<
         { existingIDs },
       );
     }
-    {
-      const value = result.get("addressId");
-      let existingIDs: ID[] = [];
-      if (this.existingEnt) {
-        // Load stored IDs for inverse edges even when field privacy hides the values.
-        const rawData = await Event.loadRawData(
-          this.existingEnt.id,
-          this.viewer.context,
-        );
-        const stored = rawData?.address_id;
-        existingIDs = stored == null ? [] : [stored];
-      }
-      this.orchestrator.__setFieldEdges(
-        "addressId",
-        value === undefined ? undefined : value === null ? [] : [value],
-        EdgeType.AddressToHostedEvents,
-        NodeType.Address,
-        { existingIDs },
-      );
-    }
     return result;
   }
 

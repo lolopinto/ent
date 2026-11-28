@@ -655,3 +655,115 @@ describe("rsvps", () => {
     expect(rsvpStatus2).toBe(EventActivityRsvpStatus.Declined);
   });
 });
+
+test("invited guests cannot edit, delete, or create addresses for an activity", async () => {
+  const { default: EditActivity } = await import(
+    "../event_activity/actions/edit_event_activity_action"
+  );
+  const { default: DeleteActivity } = await import(
+    "../event_activity/actions/delete_event_activity_action"
+  );
+  const [activity, guests] = await createAndInvitePlusGuests(0);
+  const viewer = new IDViewer(guests[0].id);
+  const visible = await EventActivity.loadX(viewer, activity.id);
+  await expect(
+    EditActivity.create(viewer, visible, { name: "unauthorized" }).saveX(),
+  ).rejects.toThrow(/permission/);
+  await expect(DeleteActivity.create(viewer, visible).saveX()).rejects.toThrow(
+    /permission/,
+  );
+  await expect(
+    CreateAddressAction.create(viewer, {
+      street: "1 Main",
+      city: "SF",
+      state: "CA",
+      zipCode: "94103",
+      ownerId: activity.id,
+      ownerType: activity.nodeType,
+    }).saveX(),
+  ).rejects.toThrow(/permission/);
+  expect((await EventActivity.loadX(activity.viewer, activity.id)).name).toBe(
+    activity.name,
+  );
+  const edited = await EditActivity.create(activity.viewer, activity, {
+    name: "authorized",
+  }).saveX();
+  expect(edited.name).toBe("authorized");
+  await DeleteActivity.create(activity.viewer, edited).saveX();
+  expect(await EventActivity.load(activity.viewer, activity.id)).toBeNull();
+});
+
+test("activity edits cannot move an activity into another creator's event", async () => {
+  const { default: EditActivity } = await import(
+    "../event_activity/actions/edit_event_activity_action"
+  );
+  const activity = await createActivity();
+  const other = await createEvent();
+  await expect(
+    EditActivity.create(activity.viewer, activity, {
+      eventId: other.id,
+    }).saveX(),
+  ).rejects.toThrow(/permission/);
+  expect(
+    (await EventActivity.loadX(activity.viewer, activity.id)).eventId,
+  ).toBe(activity.eventId);
+});
+
+test("only a user can create their own address", async () => {
+  const owner = await createUser();
+  const other = await createUser();
+  const input = {
+    street: "1 Main",
+    city: "SF",
+    state: "CA",
+    zipCode: "94103",
+    ownerId: owner.id,
+    ownerType: owner.nodeType,
+  };
+  await expect(
+    CreateAddressAction.create(new IDViewer(other.id), input).saveX(),
+  ).rejects.toThrow(/permission/);
+  const address = await CreateAddressAction.create(
+    new IDViewer(owner.id),
+    input,
+  ).saveX();
+  expect(address.ownerId).toBe(owner.id);
+});
+
+test("an activity creator can move it between their own events", async () => {
+  const { default: EditActivity } = await import(
+    "../event_activity/actions/edit_event_activity_action"
+  );
+  const owner = await createUser();
+  const first = await createEvent(owner);
+  const second = await createEvent(owner);
+  const activity = await CreateEventActivityAction.create(first.viewer, {
+    startTime: new Date(),
+    location: "Here",
+    name: "Party",
+    eventId: first.id,
+  }).saveX();
+  const edited = await EditActivity.create(first.viewer, activity, {
+    eventId: second.id,
+  }).saveX();
+  expect(edited.eventId).toBe(second.id);
+});
+
+test("addresses accept an existing activity builder with unchanged event", async () => {
+  const { default: EditActivity } = await import(
+    "../event_activity/actions/edit_event_activity_action"
+  );
+  const activity = await createActivity();
+  const edit = EditActivity.create(activity.viewer, activity, {
+    name: "Updated",
+  });
+  const action = CreateAddressAction.create(activity.viewer, {
+    street: "1 Main",
+    city: "SF",
+    state: "CA",
+    zipCode: "94103",
+    ownerId: edit.builder,
+    ownerType: activity.nodeType,
+  });
+  await expect(action.validX()).resolves.toBeUndefined();
+});

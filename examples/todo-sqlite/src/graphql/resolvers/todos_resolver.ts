@@ -1,6 +1,5 @@
 import {
   ID,
-  IDViewer,
   query,
   RequestContext,
   CustomClauseQuery,
@@ -46,6 +45,7 @@ export class TodoResolver {
     name: "open_todos_plural",
     type: "[Todo]",
     args: [
+      gqlContextType(),
       {
         name: "id",
         type: GraphQLID,
@@ -53,8 +53,8 @@ export class TodoResolver {
     ],
     async: true,
   })
-  async openTodosPlural(id: ID): Promise<Todo[]> {
-    const viewer = new IDViewer(id);
+  async openTodosPlural(context: RequestContext, id: ID): Promise<Todo[]> {
+    const viewer = context.getViewer();
     return Todo.loadCustom(
       viewer,
       query.And(query.Eq("assignee_id", id), query.Eq("completed", false)),
@@ -74,12 +74,8 @@ export class TodoResolver {
       },
     ],
   })
-  openTodos(
-    // we're not using context but have it here to show that it works
-    _context: RequestContext,
-    id: ID,
-  ) {
-    const viewer = new IDViewer(id);
+  openTodos(context: RequestContext, id: ID) {
+    const viewer = context.getViewer();
     return new AccountToOpenTodosQuery2(viewer, id);
   }
 

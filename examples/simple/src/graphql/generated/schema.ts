@@ -191,7 +191,6 @@ import {
 } from "./mutations/user_statistics/user_statistics_edit_type";
 import { QueryType } from "./resolvers/query_type";
 import {
-  AddressToHostedEventsConnectionType,
   AddressType,
   AttachmentType,
   AuthorToCommentsConnectionType,
@@ -376,7 +375,6 @@ export default new GraphQLSchema({
     UserSuperNestedObjectType,
     UserType,
     WithDayOfWeekType,
-    AddressToHostedEventsConnectionType(),
     AuthorToCommentsConnectionType(),
     CommentArticleToCommentsConnectionType(),
     CommentToPostConnectionType(),

@@ -142,3 +142,65 @@ describe("privacy", () => {
     }
   });
 });
+
+test("guests must belong to a group in their event", async () => {
+  const { createUser } = await import("src/testutils");
+  const owner = await createUser();
+  const first = await createEvent(owner);
+  const second = await createEvent(owner);
+  const foreign = await createEvent();
+  const group = await CreateGuestGroupAction.create(second.viewer, {
+    invitationName: "Other event",
+    eventId: second.id,
+  }).saveX();
+  const foreignGroup = await CreateGuestGroupAction.create(foreign.viewer, {
+    invitationName: "Private",
+    eventId: foreign.id,
+  }).saveX();
+  for (const guestGroupId of [group.id, foreignGroup.id]) {
+    await expect(
+      CreateGuestAction.create(first.viewer, {
+        name: "Wrong event",
+        eventId: first.id,
+        guestGroupId,
+      }).saveX(),
+    ).rejects.toThrow(/guest group must belong/);
+  }
+  const pending = CreateGuestGroupAction.create(second.viewer, {
+    invitationName: "Pending",
+    eventId: second.id,
+  });
+  await expect(
+    CreateGuestAction.create(first.viewer, {
+      name: "Wrong builder",
+      eventId: first.id,
+      guestGroupId: pending.builder,
+    }).saveX(),
+  ).rejects.toThrow(/guest group must belong/);
+  const guest = await CreateGuestAction.create(second.viewer, {
+    name: "Matching",
+    eventId: second.id,
+    guestGroupId: group.id,
+  }).saveX();
+  expect(guest.guestGroupId).toBe(group.id);
+});
+
+test("guests accept an existing group builder with unchanged event", async () => {
+  const { default: EditGroup } = await import(
+    "../guest_group/actions/edit_guest_group_action"
+  );
+  const event = await createEvent();
+  const group = await CreateGuestGroupAction.create(event.viewer, {
+    invitationName: "Group",
+    eventId: event.id,
+  }).saveX();
+  const edit = EditGroup.create(event.viewer, group, {
+    invitationName: "Updated",
+  });
+  const action = CreateGuestAction.create(event.viewer, {
+    name: "Guest",
+    eventId: event.id,
+    guestGroupId: edit.builder,
+  });
+  await expect(action.validX()).resolves.toBeUndefined();
+});

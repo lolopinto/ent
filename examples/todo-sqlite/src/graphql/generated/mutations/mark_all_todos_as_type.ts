@@ -34,6 +34,6 @@ export const MarkAllTodosAsType: GraphQLFieldConfig<
     _info: GraphQLResolveInfo,
   ) => {
     const r = new TodosResolver();
-    return r.markAllTodos(args.accountID, args.completed);
+    return r.markAllTodos(context, args.accountID, args.completed);
   },
 };

@@ -1,3 +1,4 @@
+import { EditUserPrivacy } from "./edit_user_privacy";
 import type { Trigger, Validator } from "@snowtop/ent/action";
 import DeleteAuthCodeAction from "../../auth_code/actions/delete_auth_code_action";
 import { User } from "../../";
@@ -20,6 +21,10 @@ async function findAuthCode(
 }
 
 export default class ConfirmEditEmailAddressAction extends ConfirmEditEmailAddressActionBase {
+  getPrivacyPolicy() {
+    return EditUserPrivacy;
+  }
+
   getValidators(): Validator<
     User,
     UserBuilder<ConfirmEditEmailAddressInput, User>,
