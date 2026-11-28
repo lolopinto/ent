@@ -33,6 +33,7 @@ test("lots of writes at once", async () => {
       host: "localhost",
     },
   });
+  tdb.trackRuntimeDB();
   const data: any[] = [];
   // when run with other tests, need to lower this amount
   for (let i = 0; i < 80; i++) {

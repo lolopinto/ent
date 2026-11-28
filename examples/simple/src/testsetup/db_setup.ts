@@ -1,5 +1,6 @@
 import { DB } from "@snowtop/ent";
 import { Client as PGClient } from "pg";
+import { PostgresTestDatabase } from "@snowtop/ent/testutils/db/postgres_test_database";
 import * as path from "path";
 import * as fs from "fs";
 import { loadExampleRuntimeConfig } from "../runtime_config";
@@ -8,7 +9,8 @@ type TestDBSetup = {
   db: string;
   user: string;
   password: string;
-  client: PGClient;
+  cleanup: () => Promise<void>;
+  database: PostgresTestDatabase;
 };
 
 type BunTestSetupState = {
@@ -17,13 +19,6 @@ type BunTestSetupState = {
 };
 
 const sqlPath = "../schema/schema.sql";
-
-function randomDB(): string {
-  const str = Math.random().toString(16).substring(2);
-
-  // always ensure it starts with an alpha character
-  return "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)] + str;
-}
 
 function getBunTestSetupState(): BunTestSetupState {
   const globalState = globalThis as typeof globalThis & {
@@ -36,36 +31,24 @@ function getBunTestSetupState(): BunTestSetupState {
 }
 
 export async function createDB(dbName?: string): Promise<TestDBSetup> {
-  const user = process.env.POSTGRES_USER || "";
-  const password = process.env.POSTGRES_PASSWORD || "";
-
-  const client = new PGClient({
-    host: "localhost",
-    user,
-    password,
-  });
-  await client.connect();
-
-  const db = dbName || randomDB();
-  if (dbName) {
-    await client.query(`DROP DATABASE IF EXISTS ${db}`);
+  const database = new PostgresTestDatabase(dbName);
+  const { name: db, user, password } = database;
+  const cleanup = async () => {
+    await database.close();
+  };
+  try {
+    await database.create();
+    const fullPath = path.join(__dirname, sqlPath);
+    const sql = fs.readFileSync(fullPath).toString();
+    const dbClient = new PGClient({ ...database.connection, database: db });
+    database.trackClient(dbClient);
+    await dbClient.connect();
+    await dbClient.query(sql);
+    await dbClient.end();
+    return { db, user, password, cleanup, database };
+  } catch (error) {
+    return database.cleanupAfterFailure(error);
   }
-  await client.query(`CREATE DATABASE ${db}`);
-
-  const fullPath = path.join(__dirname, sqlPath);
-  const sql = fs.readFileSync(fullPath).toString();
-
-  const dbClient = new PGClient({
-    host: "localhost",
-    user,
-    password,
-    database: db,
-  });
-  await dbClient.connect();
-  await dbClient.query(sql);
-  await dbClient.end();
-
-  return { db, user, password, client };
 }
 
 export async function ensureBunTestDB() {
@@ -73,20 +56,31 @@ export async function ensureBunTestDB() {
   if (!state.setupPromise) {
     state.setupPromise = (async () => {
       const setup = await createDB();
-      process.env.POSTGRES_TEST_DB = setup.db;
+      const previousDatabase = process.env.POSTGRES_TEST_DB;
+      try {
+        process.env.POSTGRES_TEST_DB = setup.db;
 
-      loadExampleRuntimeConfig({
-        runtime: "bun",
-        postgresDriver: "bun",
-        db: {
-          database: setup.db,
-          host: "localhost",
-          user: setup.user,
-          password: setup.password,
-          port: 5432,
-          sslmode: "disable",
-        },
-      });
+        loadExampleRuntimeConfig({
+          runtime: "bun",
+          postgresDriver: "bun",
+          db: {
+            database: setup.db,
+            host: "localhost",
+            user: setup.user,
+            password: setup.password,
+            port: 5432,
+            sslmode: "disable",
+          },
+        });
+        setup.database.trackRuntimeDB(DB.instance);
+      } catch (error) {
+        if (previousDatabase === undefined) {
+          delete process.env.POSTGRES_TEST_DB;
+        } else {
+          process.env.POSTGRES_TEST_DB = previousDatabase;
+        }
+        return setup.database.cleanupAfterFailure(error);
+      }
 
       return setup;
     })();
@@ -101,13 +95,14 @@ export async function teardownBunTestDB() {
       if (!state.setupPromise) {
         return;
       }
-      const { db, client } = await state.setupPromise;
-      await DB.getInstance().endPool();
+      let setup: TestDBSetup;
       try {
-        await client.query(`DROP DATABASE ${db}`);
-      } finally {
-        await client.end();
+        setup = await state.setupPromise;
+      } catch {
+        // Failed setup already cleaned up and preserved the original error.
+        return;
       }
+      await setup.cleanup();
     })();
   }
   await state.teardownPromise;
