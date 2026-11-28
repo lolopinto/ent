@@ -40,7 +40,33 @@ def _more_indexes(metadata, predicate, count):
     return metadata
 
 
+def _snapshot_connection():
+    connection = Mock()
+    connection.execute.side_effect = lambda query, *args: (
+        [] if "pg_extension_update_paths" in str(query) else connection.execute.return_value
+    )
+    return connection
+
+
 class TestPostgresComparisonPlanning:
+    def test_snapshot_rejects_substitution_of_an_installed_extension(self):
+        extension = compare._normalize_db_extension({"name": "example"})
+        connection = _snapshot_connection()
+        connection.execute.return_value = [("example", "1", "1", None)]
+        with pytest.raises(ValueError, match='extension "Example" is not available'):
+            compare._plan_snapshot_extension_ops(connection, [extension], {
+                "Example": {"name": "Example", "version": "1"},
+            })
+
+    def test_snapshot_rejects_ambiguous_installed_identity(self):
+        extension = compare._normalize_db_extension({"name": "EXAMPLE"})
+        connection = _snapshot_connection()
+        connection.execute.return_value = [("example", "1", "1", None)]
+        with pytest.raises(ValueError, match='ambiguous db extension "EXAMPLE"'):
+            compare._plan_snapshot_extension_ops(connection, [extension], {
+                name: {"name": name, "version": "1"} for name in ("example", "Example")
+            })
+
     @pytest.mark.parametrize("rows,version,installed,error", [
         ([], None, False, 'extension "example" is not available'),
         ([], "2", False, 'extension "example" is not available'),
@@ -51,7 +77,7 @@ class TestPostgresComparisonPlanning:
     ])
     def test_snapshot_requires_extension_dependency_metadata(self, rows, version, installed, error):
         extension = compare._normalize_db_extension({"name": "example", "version": version})
-        connection = Mock()
+        connection = _snapshot_connection()
         connection.execute.return_value = rows
         existing = {"example": {"name": "example", "version": version or "1"}} if installed else {}
         with pytest.raises(ValueError, match=error) as exc:
@@ -62,7 +88,7 @@ class TestPostgresComparisonPlanning:
     def test_snapshot_rejects_missing_metadata_in_a_dependency_chain(self):
         extensions = [compare._normalize_db_extension({"name": name})
                       for name in ("dependent", "base", "missing")]
-        connection = Mock()
+        connection = _snapshot_connection()
         connection.execute.return_value = [
             ("dependent", "1", "1", ["missing"]), ("base", "1", "1", None),
         ]
@@ -72,7 +98,7 @@ class TestPostgresComparisonPlanning:
     @pytest.mark.parametrize("names", list(permutations(("leaf", "middle", "base"))))
     def test_snapshot_orders_complete_dependency_chains_independently_of_declaration_order(self, names):
         extensions = [compare._normalize_db_extension({"name": name}) for name in names]
-        connection = Mock()
+        connection = _snapshot_connection()
         connection.execute.return_value = [
             ("leaf", "1", "1", ["middle"]), ("middle", "1", "1", ["base"]),
             ("base", "1", "1", None),
@@ -82,14 +108,14 @@ class TestPostgresComparisonPlanning:
 
     def test_snapshot_accepts_explicit_version_without_a_default(self):
         extension = compare._normalize_db_extension({"name": "example", "version": "1"})
-        connection = Mock()
+        connection = _snapshot_connection()
         connection.execute.return_value = [("example", None, "1", None)]
         planned = compare._plan_snapshot_extension_ops(connection, [extension], {})
         assert [op.extension for op in planned] == [extension]
 
     def test_snapshot_external_extensions_do_not_require_package_metadata(self):
         extension = compare._normalize_db_extension({"name": "example", "provisioned_by": "external"})
-        connection = Mock()
+        connection = _snapshot_connection()
         assert compare._plan_snapshot_extension_ops(
             connection, [extension], {"example": {"name": "example", "version": "1"}},
         ) == []
@@ -106,7 +132,7 @@ class TestPostgresComparisonPlanning:
             ("Parent", "1", "1", []),
             ("parent", "1", "1", []),
         ]
-        connection = Mock()
+        connection = _snapshot_connection()
         for catalog_order in (rows, rows[::-1]):
             connection.execute.return_value = catalog_order
             planned = compare._plan_snapshot_extension_ops(connection, extensions, {})

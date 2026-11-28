@@ -153,6 +153,7 @@ def main():
             sys.stderr.write("auto_schema error: "+str(err))
             if args.debug or os.getenv('LOCAL_AUTO_SCHEMA') == 'true':
                 traceback.print_exception(*sys.exc_info())
+            raise SystemExit(1) from err
 
 
 # no logic should be in here. everything in main()

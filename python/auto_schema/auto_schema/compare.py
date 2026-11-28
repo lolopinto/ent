@@ -53,7 +53,7 @@ def _get_metadata_extensions(autogen_context: AutogenContext) -> list[dict[str, 
     return [_normalize_db_extension(extension) for extension in extensions]
 
 
-def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, Any]]:
+def _get_db_extensions(autogen_context: AutogenContext, *, exact_names=False) -> dict[str, dict[str, Any]]:
     rows = autogen_context.connection.execute(
         sa.text(
             """
@@ -68,7 +68,7 @@ def _get_db_extensions(autogen_context: AutogenContext) -> dict[str, dict[str, A
         )
     )
     return {
-        row._asdict()["name"].lower(): row._asdict()
+        (row.name if exact_names else row.name.lower()): row._asdict()
         for row in rows
     }
 
@@ -178,18 +178,59 @@ def _plan_extension_ops(autogen_context):
     if dialect != "postgresql":
         raise ValueError("db extensions are only supported for postgres")
 
-    db_extensions = _get_db_extensions(autogen_context)
-    if autogen_context.opts.get("ent_schema_sql"):
+    snapshot = autogen_context.opts.get("ent_schema_sql", False)
+    db_extensions = _get_db_extensions(autogen_context, exact_names=snapshot)
+    if snapshot:
         return _plan_snapshot_extension_ops(
             autogen_context.connection, metadata_extensions, db_extensions
         )
     return _get_extension_ops(metadata_extensions, db_extensions)
 
 
+def _snapshot_extension_name(declared, names):
+    if declared in names:
+        return declared
+    matches = [name for name in names if name.lower() == declared.lower()]
+    if len(matches) > 1:
+        raise ValueError(f'ambiguous db extension "{declared}": use its exact catalog spelling')
+    return matches[0] if matches else None
+
+
+def _check_snapshot_installation_prerequisites(connection, name, version, requires):
+    # The catalogs expose update paths but not which versions have direct install
+    # scripts. Do not reproduce PostgreSQL's private start-version selection.
+    # Instead prove that the target prerequisites cover every installable version
+    # that can lead to it, including all possible intermediate steps. Versions
+    # with no path to the target are irrelevant. Reject rather than invent extra
+    # ordering constraints if the public metadata cannot establish this invariant.
+    predecessors = connection.execute(sa.text("""
+        SELECT v.version, v.requires
+        FROM pg_catalog.pg_extension_update_paths(:name) p
+        JOIN pg_catalog.pg_available_extension_versions v
+          ON v.name = :name AND v.version = p.source
+        WHERE p.target = :version AND p.path IS NOT NULL
+        ORDER BY v.version
+    """), {"name": name, "version": version})
+    for predecessor, predecessor_requires in predecessors:
+        additional = set(predecessor_requires or ()) - set(requires)
+        if additional:
+            raise ValueError(
+                f'cannot verify installation prerequisites for db extension "{name}" '
+                f'version "{version}": version "{predecessor}" can lead to it and '
+                f'requires {", ".join(sorted(additional))}, absent from the target prerequisites; '
+                'PostgreSQL does not expose the starting install version. '
+                'Use --progressive_sql with a verified migration installation order, '
+                'or an extension package/version whose target prerequisites cover its installation paths'
+            )
+
+
 def _plan_snapshot_extension_ops(connection, extensions, installed):
     # External declarations use the ordinary installation, version and schema checks.
     external = [ext for ext in extensions if not _is_ent_provisioned(ext)]
-    _get_extension_ops(external, installed)
+    for ext in external:
+        name = _snapshot_extension_name(ext["name"], installed)
+        existing = {ext["name"].lower(): installed[name]} if name else {}
+        _get_extension_ops([ext], existing)
     managed = [ext for ext in extensions if _is_ent_provisioned(ext)]
     if not managed:
         return []
@@ -206,7 +247,7 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
     catalog = {}
     version_requires = {}
     for actual, default_version, version, requires in rows:
-        catalog.setdefault(actual.lower(), {})[actual] = default_version
+        catalog[actual] = default_version
         if version is not None:
             # A present version with NULL requires has no prerequisites. A
             # missing version row has unknown prerequisites and must fail below.
@@ -214,20 +255,21 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
 
     resolved = {}
     prerequisites = {}
+    versions = {}
     for ext in managed:
         declared = ext["name"]
-        names = catalog.get(declared.lower(), {})
-        if not names:
+        # A declaration already resolved to an installed extension must retain
+        # that exact identity, even if a differently cased package is available.
+        name = (_snapshot_extension_name(declared, installed)
+                or _snapshot_extension_name(declared, catalog) or declared)
+        if name not in catalog:
             version_hint = f' providing version "{ext["version"]}"' if ext["version"] else ""
             raise ValueError(
-                f'cannot generate schema.sql: db extension "{declared}" is not available '
+                f'cannot generate schema.sql: db extension "{name}" is not available '
                 'on the comparison PostgreSQL instance; '
                 f'install its extension package{version_hint} on that instance'
             )
-        if declared not in names and len(names) > 1:
-            raise ValueError(f'ambiguous db extension "{declared}": use its exact catalog spelling')
-        name = declared if declared in names else next(iter(names))
-        version = ext["version"] or names[name]
+        version = ext["version"] or catalog[name]
         if (name, version) not in version_requires:
             version_label = f'version "{version}"' if version is not None else "default version"
             raise ValueError(
@@ -237,10 +279,12 @@ def _plan_snapshot_extension_ops(connection, extensions, installed):
             )
         resolved[name] = {**ext, "name": name}
         prerequisites[name] = version_requires[name, version]
+        versions[name] = version
 
     # Register all nodes before their edges to keep ordering deterministic.
     dependencies = TopologicalSorter({name: () for name in resolved})
     for name, requires in prerequisites.items():
+        _check_snapshot_installation_prerequisites(connection, name, versions[name], requires)
         dependencies.add(name, *(dep for dep in requires if dep in resolved))
         ext = resolved[name]
         if "plpgsql" in resolved and name != "plpgsql" and (ext["version"] or ext["install_schema"]):
