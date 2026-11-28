@@ -9,6 +9,7 @@ import { BuilderSchema, getTableName } from "../builder";
 import { Ent } from "../../core/base";
 import { testEdgeGlobalSchema } from "../test_edge_global_schema";
 import { toDBColumnOrTable } from "../../names/names";
+import { PostgresTestDatabase } from "./postgres_test_database";
 
 interface SchemaItem {
   name: string;
@@ -449,7 +450,7 @@ interface TempDBOptions {
 
 export class TempDB {
   private db: string;
-  private client: PGClient;
+  private postgres?: PostgresTestDatabase;
   private dbClient: PGClient;
   private tables = new Map<string, CoreConcept>();
   private dialect: Dialect;
@@ -484,20 +485,22 @@ export class TempDB {
   }
 
   async beforeAll(setupConnString: boolean = true) {
+    try {
+      await this.setup(setupConnString);
+    } catch (error) {
+      if (this.postgres) {
+        await this.postgres.cleanupAfterFailure(error);
+      }
+      throw error;
+    }
+  }
+
+  private async setup(setupConnString: boolean) {
     if (this.dialect === Dialect.Postgres) {
-      const user = process.env.POSTGRES_USER || "";
-      const password = process.env.POSTGRES_PASSWORD || "";
-
-      this.client = new PGClient({
-        host: "localhost",
-        user,
-        password,
-      });
-      await this.client.connect();
-
-      this.db = randomDB();
-
-      await this.client.query(`CREATE DATABASE ${this.db}`);
+      this.postgres = new PostgresTestDatabase();
+      this.db = this.postgres.name;
+      await this.postgres.create();
+      const { user, password } = this.postgres;
 
       if (setupConnString) {
         delete process.env.DB_CONNECTION_STRING;
@@ -514,17 +517,17 @@ export class TempDB {
             idleTimeoutMillis: 10000,
           },
         });
+        this.postgres.trackRuntimeDB(DB.instance);
       } else {
         // will probably be setup via loadConfig
         delete process.env.DB_CONNECTION_STRING;
       }
 
       this.dbClient = new PGClient({
-        host: "localhost",
+        ...this.postgres.connection,
         database: this.db,
-        user,
-        password,
       });
+      this.postgres.trackClient(this.dbClient);
       await this.dbClient.connect();
     } else {
       let connString: string;
@@ -583,6 +586,12 @@ export class TempDB {
     return this.dbClient;
   }
 
+  // Call after configuring the runtime yourself with beforeAll(false), before
+  // borrowing any clients. Teardown never discovers or closes a global pool.
+  trackRuntimeDB() {
+    this.postgres?.trackRuntimeDB(DB.instance);
+  }
+
   async afterAll() {
     if (this.dialect === Dialect.SQLite) {
       this.sqlite.close();
@@ -599,16 +608,9 @@ export class TempDB {
       return;
     }
 
-    // end our connection to db
-    await this.dbClient.end();
-    // end any pool connection
-    await DB.getInstance().endPool();
-
-    // drop db
-    await this.client.query(`DROP DATABASE ${this.db}`);
-    // console.debug(this.db);
-
-    await this.client.end();
+    if (this.postgres) {
+      await this.postgres.close();
+    }
   }
 
   getDB(): string {

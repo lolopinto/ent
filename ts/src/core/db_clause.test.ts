@@ -119,6 +119,7 @@ beforeAll(async () => {
     },
   });
 
+  tdb.trackRuntimeDB();
   await createEdgeRows(["edge"]);
 });
 

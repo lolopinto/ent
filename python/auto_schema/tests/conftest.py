@@ -32,15 +32,16 @@ def randomDB() -> str:
 class Postgres:
     def __init__(self) -> None:
         self._randomDB = randomDB()
-        self._dbs = [self._randomDB]
+        # Record identities only after CREATE DATABASE succeeds. A failed create
+        # (including a name collision) never grants permission to clean up.
+        self._dbs = {}
         self._globalConnection = None
         self._globalEngine = None
-
         self._conns = []
         self._engines = []
+        self._closed = False
 
     def _connect_args(self):
-        # avoid hanging on unreachable postgres in CI/local
         timeout = os.getenv("AUTO_SCHEMA_CONNECT_TIMEOUT", "3")
         try:
             timeout_val = int(timeout)
@@ -49,58 +50,121 @@ class Postgres:
         return {"connect_timeout": timeout_val}
 
     def _get_url(self, _schema_path):
-        url = os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
-        return url
+        return os.getenv("DB_CONNECTION_STRING", "postgresql://localhost")
+
+    @staticmethod
+    def _identifier(name):
+        if not name or "\0" in name or len(name.encode("utf-8")) > 63:
+            raise ValueError("Invalid test database name")
+        return '"' + name.replace('"', '""') + '"'
+
+    def _create_database(self, name):
+        assert self._globalConnection is not None
+        self._globalConnection.exec_driver_sql(
+            f"CREATE DATABASE {self._identifier(name)}")
+        oid = self._globalConnection.execute(
+            sa.text("SELECT oid FROM pg_database WHERE datname = :name"),
+            {"name": name}).scalar_one()
+        self._dbs[name] = oid
+
+    def _cleanup_after_failure(self, error):
+        try:
+            self.get_finalizer()()
+        except Exception as cleanup_error:
+            error.add_note(f"Test database cleanup also failed: {cleanup_error}")
 
     def create_connection(self, schema_path) -> ConnInfo:
-        if self._globalConnection is None:
-            engine = sa.create_engine(self._get_url(schema_path),
-                                      isolation_level='AUTOCOMMIT',
-                                      connect_args=self._connect_args())
-            self._globalEngine = engine
-            self._globalConnection = engine.connect()
-            self._globalConnection.execute(
-                sa.text('CREATE DATABASE %s' % self._randomDB))
+        if self._closed:
+            raise RuntimeError("Test database helper is already closed")
+        try:
+            if self._globalConnection is None:
+                self._globalEngine = sa.create_engine(
+                    self._get_url(schema_path), isolation_level='AUTOCOMMIT',
+                    connect_args=self._connect_args())
+                self._globalConnection = self._globalEngine.connect()
+                self._globalConnection.exec_driver_sql("SET statement_timeout = '5s'")
+                self._globalConnection.exec_driver_sql("SET lock_timeout = '2s'")
+                self._create_database(self._randomDB)
+            return self._conn_info_for_engine(schema_path, self._randomDB)
+        except Exception as error:
+            self._cleanup_after_failure(error)
+            raise
 
-        return self._conn_info_for_engine(schema_path, self._randomDB)
-    
     def _conn_info_for_engine(self, schema_path: str, db: str) -> ConnInfo:
-        url = ("%s/%s" %
-               (self._get_url(schema_path), db))
-
+        if db not in self._dbs:
+            raise RuntimeError("Cannot connect to a database this helper did not create")
+        # Keep the server used for CREATE even if environment configuration changes.
+        assert self._globalEngine is not None
+        url = self._globalEngine.url.set(database=db)
         engine = sa.create_engine(url, connect_args=self._connect_args())
         self._engines.append(engine)
-
         conn = engine.connect()
         self._conns.append(conn)
+        return ConnInfo(engine, url.render_as_string(hide_password=False), conn)
 
-        return ConnInfo(engine, url, conn)
-    
-    
     def create_new_database(self, schema_path) -> ConnInfo:
+        if self._closed or self._globalConnection is None:
+            raise RuntimeError("Test database helper is not connected")
+        try:
+            new_db = randomDB()
+            self._create_database(new_db)
+            return self._conn_info_for_engine(schema_path, new_db)
+        except Exception as error:
+            self._cleanup_after_failure(error)
+            raise
+
+    def _drop_database(self, name, oid):
         assert self._globalConnection is not None
-        new_db = randomDB()
-        self._dbs.append(new_db)
-        self._globalConnection.execute(
-                sa.text('CREATE DATABASE %s' % new_db))
-
-
-        return self._conn_info_for_engine(schema_path, new_db)
-
+        current_oid = self._globalConnection.execute(
+            sa.text("SELECT oid FROM pg_database WHERE datname = :name"),
+            {"name": name}).scalar_one_or_none()
+        if current_oid is None:
+            return
+        if current_oid != oid:
+            raise RuntimeError(f"Refusing to drop replaced test database {name}")
+        self._globalConnection.exec_driver_sql(
+            f"DROP DATABASE {self._identifier(name)} WITH (FORCE)")
 
     def get_finalizer(self):
         def fn():
+            if self._closed:
+                return
+            self._closed = True
+            errors = []
+
+            def attempt(operation):
+                try:
+                    operation()
+                except Exception as error:
+                    errors.append(error)
+
+            safe_names = set()
+            for name, expected_oid in self._dbs.items():
+                try:
+                    assert self._globalConnection is not None
+                    current_oid = self._globalConnection.execute(
+                        sa.text("SELECT oid FROM pg_database WHERE datname = :name"),
+                        {"name": name}).scalar_one_or_none()
+                    if current_oid is not None and current_oid != expected_oid:
+                        raise RuntimeError(f"Refusing to clean up replaced test database {name}")
+                    safe_names.add(name)
+                except Exception as error:
+                    errors.append(error)
             for conn in self._conns:
-                conn.close()
-
+                if conn.engine.url.database in safe_names:
+                    attempt(conn.close)
             for engine in self._engines:
-                engine.dispose()
-
-            for db in self._dbs:
-                self._globalConnection.execute(
-                    sa.text('DROP DATABASE %s' % db))
-            self._globalConnection.close()
-            self._globalEngine.dispose()
+                if engine.url.database in safe_names:
+                    attempt(engine.dispose)
+            for name, oid in self._dbs.items():
+                if name in safe_names:
+                    attempt(lambda: self._drop_database(name, oid))
+            if self._globalConnection is not None:
+                attempt(self._globalConnection.close)
+            if self._globalEngine is not None:
+                attempt(self._globalEngine.dispose)
+            if errors:
+                raise ExceptionGroup("Test database cleanup failed", errors)
 
         return fn
 

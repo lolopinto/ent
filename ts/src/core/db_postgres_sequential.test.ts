@@ -33,6 +33,7 @@ test("sequential", async () => {
       host: "localhost",
     },
   });
+  tdb.trackRuntimeDB();
   const data: any[] = [];
   for (let i = 0; i < 100; i++) {
     data.push({

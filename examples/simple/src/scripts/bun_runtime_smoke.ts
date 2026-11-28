@@ -9,8 +9,7 @@ import { loadExampleRuntimeConfig } from "../runtime_config";
 import { createDB } from "../testsetup/db_setup";
 
 async function main() {
-  const { db, user, password, client } = await createDB();
-  let dbInitialized = false;
+  const { db, user, password, cleanup, database } = await createDB();
   try {
     loadExampleRuntimeConfig({
       runtime: "bun",
@@ -25,8 +24,8 @@ async function main() {
         max: 200,
       },
     });
-    dbInitialized = true;
 
+    database.trackRuntimeDB(DB.instance);
     const result = await DB.getInstance().getPool().query("SELECT 1 AS ok");
     if (result.rows[0]?.ok !== 1) {
       throw new Error("bun runtime smoke test did not return expected row");
@@ -74,11 +73,7 @@ async function main() {
       );
     }
   } finally {
-    if (dbInitialized) {
-      await DB.getInstance().endPool();
-    }
-    await client.query(`DROP DATABASE ${db}`);
-    await client.end();
+    await cleanup();
   }
 }
 
