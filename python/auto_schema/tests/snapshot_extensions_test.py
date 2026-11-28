@@ -137,7 +137,7 @@ class TestPostgresSnapshotExtensions:
 
     @pytest.mark.parametrize("mode", ["--all_sql", "--run_and_all_sql"])
     @pytest.mark.parametrize("to_file", [False, True])
-    def test_cli_snapshot_failure_and_success(self, extension_runner, tmp_path, mode, to_file):
+    def test_cli_snapshot_failure_and_success(self, extension_runner, new_test_runner, tmp_path, mode, to_file):
         r = extension_runner
         # Normal migration comparison succeeds. Only standalone generation
         # rejects the incomplete prerequisite contract for the requested target.
@@ -169,3 +169,11 @@ def get_metadata():
         assert result.returncode == 0, result.stderr
         sql = output.read_text() if to_file else result.stdout
         assert 'CREATE EXTENSION IF NOT EXISTS "ent_snapshot_path" WITH VERSION \'4\'' in sql
+        target = new_test_runner(sa.MetaData(), new_database=True)
+        # Replay the complete CLI output, including anything emitted by the
+        # migration phase, rather than extracting the SQL-looking portion.
+        target.connection.exec_driver_sql(sql)
+        assert sql.startswith("-- ent schema snapshot format: 1\n")
+        assert target.connection.exec_driver_sql(
+            "SELECT extversion FROM pg_extension WHERE extname = 'ent_snapshot_path'"
+        ).scalar_one() == "4"

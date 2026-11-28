@@ -929,8 +929,8 @@ class Runner(object):
         opts = Runner.get_opts()
         if schema_sql and dialect == "postgresql":
             # Extensions can own tables, including PostGIS's spatial_ref_sys.
-            # Only Ent's bookkeeping and genuine extension members are baseline objects.
-            excluded_tables = {"alembic_version", "ent_dev_schema_registry"} if self.schema_name else set()
+            # Retain the existing DDL exclusions (including externally provisioned
+            # seed tables) and additionally allow genuine extension members.
             members = connection.execute(sa.text("""
                 SELECT c.relname
                 FROM pg_catalog.pg_class c
@@ -967,6 +967,9 @@ class Runner(object):
         (migrations, connection, dialect, mc) = self.migrations_against_empty(database=database, schema_sql=True)
     
         buffer = io.StringIO()
+        if mc.opts.get("ent_schema_sql"):
+            # Keep in sync with the one-time refresh in internal/db/db_schema.go.
+            buffer.write("-- ent schema snapshot format: 1\n")
 
         # use different migrations context with as_sql so that we don't have issues
         opts = Runner.get_opts()

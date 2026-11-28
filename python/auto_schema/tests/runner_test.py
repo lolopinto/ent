@@ -3336,7 +3336,8 @@ class TestPostgresRunner(BaseTestRunner):
             (row["srid"], row["auth_name"]) for row in seed_rows
         ]
 
-    def test_schema_sql_reconciles_externally_provisioned_seed_rows(self, new_test_runner, tmp_path):
+    @pytest.mark.parametrize("extension_member", [False, True])
+    def test_schema_sql_reconciles_externally_provisioned_seed_rows(self, new_test_runner, tmp_path, extension_member):
         metadata = _db_extension_metadata(name="hstore", provisioned_by="external")
         # spatial_ref_sys is excluded from Ent's table DDL. Model its external
         # provisioning with a small table so this regression runs on stock Postgres.
@@ -3354,7 +3355,8 @@ class TestPostgresRunner(BaseTestRunner):
                 "CREATE TABLE spatial_ref_sys (srid int PRIMARY KEY, auth_name text)")
             provisioned.connection.exec_driver_sql(
                 "INSERT INTO spatial_ref_sys VALUES (1, 'old'), (2, 'remove')")
-            provisioned.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE spatial_ref_sys")
+            if extension_member:
+                provisioned.connection.exec_driver_sql("ALTER EXTENSION hstore ADD TABLE spatial_ref_sys")
             provisioned.connection.commit()
 
         path = tmp_path / "schema.sql"
